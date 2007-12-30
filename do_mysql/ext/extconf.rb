@@ -22,7 +22,6 @@ else
 end
 
 require 'mkmf'
-require 'open3'
 
 def config_value(type)
   ENV["MYSQL_#{type.upcase}"] || mysql_config(type)
@@ -33,13 +32,13 @@ end
 def mysql_config(type)
   return @mysql_config[type] if @mysql_config[type]
 
-  sin, sout, serr = Open3.popen3("#{@mysql_config_bin} --#{type}")
+  sout = `#{@mysql_config_bin} --#{type}`
   
-  unless serr.read.empty?
+  unless $?.success?
     raise "mysql_config not found"
   end
   
-  @mysql_config[type] = sout.readline.chomp[2..-1]
+  @mysql_config[type] = sout.chomp[2..-1]
   @mysql_config[type]  
 end
 
