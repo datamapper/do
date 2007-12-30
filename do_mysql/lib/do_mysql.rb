@@ -32,7 +32,7 @@ module DataObject
         @db = Mysql_c.mysql_init(nil)
         raise ConnectionFailed, "could not allocate a MySQL connection" unless @db
         conn = Mysql_c.mysql_real_connect(@db, @host, @user, @password, @dbname, @port || 0, @socket, @flags || 0)
-        raise ConnectionFailed, "The connection with connection string #{@connection_string} failed\n#{Mysql_c.mysql_error(@db)}" unless conn
+        raise ConnectionFailed, "Unable to connect to database with provided connection string. \n#{Mysql_c.mysql_error(@db)}" unless conn
         @state = STATE_OPEN
         true
       end

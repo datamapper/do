@@ -18,7 +18,7 @@ module DataObject
       def open
         @db = Postgres_c.PQconnectdb(@connection_string)
         if Postgres_c.PQstatus(@db) != Postgres_c::CONNECTION_OK
-          raise ConnectionFailed, "The connection with connection string #{@connection_string} failed\n#{Postgres_c.PQerrorMessage(@db)}"
+          raise ConnectionFailed, "Unable to connect to database with provided connection string. \n#{Postgres_c.PQerrorMessage(@db)}"
         end
         @state = STATE_OPEN
         true

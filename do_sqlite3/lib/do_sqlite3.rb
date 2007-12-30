@@ -20,7 +20,7 @@ module DataObject
       def open
         r, d = Sqlite3_c.sqlite3_open(@conn)
         unless r == Sqlite3_c::SQLITE_OK
-          raise ConnectionFailed, "The connection with connection string #{@connection_string} failed\n#{Sqlite3_c.sqlite3_errmsg(d)}"
+          raise ConnectionFailed, "Unable to connect to database with provided connection string. \n#{Sqlite3_c.sqlite3_errmsg(d)}"
         else
           @db = d
         end
