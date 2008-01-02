@@ -51,12 +51,10 @@ def have_build_env
     have_library(libs.shift)
   end
   true
-  # have_header('mysql.h')
 end
 
-required_libraries = [] #%w(m z socket nsl)
+required_libraries = []
 desired_functions = %w(mysql_ssl_set)
-# compat_functions = %w(PQescapeString PQexecParams)
 
 if have_build_env
   $CFLAGS << ' -Wall '

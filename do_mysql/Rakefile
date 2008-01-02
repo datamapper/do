@@ -3,7 +3,7 @@ require 'rake/gempackagetask'
 
 PLUGIN = "do_mysql"
 NAME = "do_mysql"
-VERSION = "0.2.1"
+VERSION = "0.2.3"
 AUTHOR = "Yehuda Katz"
 EMAIL = "wycats@gmail.com"
 HOMEPAGE = "http://dataobjects.devjavu.com"
@@ -24,7 +24,7 @@ spec = Gem::Specification.new do |s|
   s.require_path = 'lib'
   s.autorequire = PLUGIN
   s.extensions = ["ext/extconf.rb"]
-  s.files = %w(LICENSE README Rakefile TODO) + Dir.glob("{lib,specs,ext}/**/*")
+  s.files = %w(LICENSE README Rakefile TODO) + Dir.glob("{lib,specs,ext}/**/*").reject {|x| x =~ /\.(o|bundle)$/ }
 end
 
 Rake::GemPackageTask.new(spec) do |pkg|
