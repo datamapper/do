@@ -1,5 +1,7 @@
 require 'sqlite3_c'
 require 'data_objects'
+require 'set'
+require 'fastthread'
 
 module DataObject
   module Sqlite3
@@ -11,13 +13,43 @@ module DataObject
       
       attr_reader :db
       
+      def self.new(connection_string)
+        conn = nil
+        
+        self.connection_lock.synchronize do          
+          unless self.available_connections[connection_string].empty?
+            conn = self.available_connections[connection_string].pop
+          else
+            conn = allocate
+            conn.send(:initialize, connection_string)
+          end
+          
+          self.reserved_connections << conn
+        end
+        
+        return conn
+      end
+      
+      @mutex = Mutex.new
+      @available_connections = Hash.new { |h,k| h[k] = [] }
+      @reserved_connections = Set.new
+      
+      def self.connection_lock
+        @mutex
+      end
+      
+      def self.available_connections
+        @available_connections
+      end
+      
+      def self.reserved_connections
+        @reserved_connections
+      end
+      
       def initialize(connection_string)
         @state = STATE_CLOSED        
         @connection_string = connection_string
-        @conn = Hash[*connection_string.split(" ").map {|x| x.split("=")}.flatten]["dbname"]
-      end
-
-      def open
+        @conn = Hash[*@connection_string.split(" ").map {|x| x.split("=")}.flatten]["dbname"]
         r, d = Sqlite3_c.sqlite3_open(@conn)
         unless r == Sqlite3_c::SQLITE_OK
           raise ConnectionFailed, "Unable to connect to database with provided connection string. \n#{Sqlite3_c.sqlite3_errmsg(d)}"
@@ -28,14 +60,21 @@ module DataObject
         true
       end
 
+      def create_command(text)
+        Command.new(self, text)
+      end
+            
       def close
+        self.class::connection_lock.synchronize do
+          self.class::available_connections[@connection_string] << self.class::reserved_connections.delete(self)
+        end
+        return self
+      end
+      
+      def close_socket
         Sqlite3_c.sqlite3_close(@db)
         @state = STATE_CLOSED
         true
-      end
-      
-      def create_command(text)
-        Command.new(self, text)
       end
       
       def begin_transaction
@@ -82,7 +121,6 @@ module DataObject
         Sqlite3_c.sqlite3_finalize(reader)
         exec_result
       end
-
     end
     
     class Reader < DataObject::Reader

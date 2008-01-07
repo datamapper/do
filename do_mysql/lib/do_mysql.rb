@@ -216,7 +216,7 @@ module DataObject
         @connection.logger.debug { sql }
         result = Mysql_c.mysql_query(@connection.db, sql)
         # TODO: Real Error
-        raise QueryError, "Your query failed.\n#{Mysql_c.mysql_error(@connection.db)}\n#{@text}" unless result == 0
+        raise QueryError, "Your query failed.\n#{Mysql_c.mysql_error(@connection.db)}\n#{sql}" unless result == 0
         reader = Reader.new(@connection.db, Mysql_c.mysql_use_result(@connection.db))
         if block_given?
           result = yield(reader)
@@ -232,7 +232,7 @@ module DataObject
         sql = escape_sql(args)
         @connection.logger.debug { sql }
         result = Mysql_c.mysql_query(@connection.db, sql)
-        raise QueryError, "Your query failed.\n#{Mysql_c.mysql_error(@connection.db)}\n#{@text}" unless result == 0         
+        raise QueryError, "Your query failed.\n#{Mysql_c.mysql_error(@connection.db)}\n#{sql}" unless result == 0         
         reader = Mysql_c.mysql_store_result(@connection.db)
         raise QueryError, "You called execute_non_query on a query: #{@text}" if reader
         rows_affected = Mysql_c.mysql_affected_rows(@connection.db)

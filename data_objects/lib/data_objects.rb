@@ -1,5 +1,6 @@
 require 'date'
 require 'logger'
+require File.dirname(__FILE__) + '/connection_pool'
 
 # Thanks http://www.rubyweeklynews.org/20051120
 class DateTime
