@@ -12,6 +12,7 @@ module DataObject
     class Connection < DataObject::Connection
       
       attr_reader :db, :connection_string
+      undef :open
       
       def self.new(connection_string)
         aquire(connection_string)
