@@ -3,7 +3,7 @@ require 'rake/gempackagetask'
 
 PLUGIN = "do_sqlite3"
 NAME = "do_sqlite3"
-VERSION = "0.2.3"
+VERSION = "0.2.4"
 AUTHOR = "Yehuda Katz"
 EMAIL = "wycats@gmail.com"
 HOMEPAGE = "http://dataobjects.devjavu.com"
