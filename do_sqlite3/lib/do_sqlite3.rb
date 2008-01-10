@@ -11,26 +11,13 @@ module DataObject
     
     class Connection < DataObject::Connection
       
-      attr_reader :db
+      attr_reader :db, :connection_string
       
       def self.new(connection_string)
-        conn = nil
-        
-        self.connection_lock.synchronize do          
-          unless self.available_connections[connection_string].empty?
-            conn = self.available_connections[connection_string].pop
-          else
-            conn = allocate
-            conn.send(:initialize, connection_string)
-          end
-          
-          self.reserved_connections << conn
-        end
-        
-        return conn
+        aquire(connection_string)
       end
       
-      @mutex = Mutex.new
+      @connection_lock = Mutex.new
       @available_connections = Hash.new { |h,k| h[k] = [] }
       @reserved_connections = Set.new
       
@@ -38,12 +25,35 @@ module DataObject
         @mutex
       end
       
-      def self.available_connections
-        @available_connections
+      def self.aquire(connection_string)
+        conn = nil
+        
+        @connection_lock.synchronize do          
+          unless @available_connections[connection_string].empty?
+            conn = @available_connections[connection_string].pop
+          else
+            conn = allocate
+            conn.send(:initialize, connection_string)
+            at_exit { conn.close_socket }
+          end
+          
+          @reserved_connections << conn
+        end
+        
+        return conn
       end
       
-      def self.reserved_connections
-        @reserved_connections
+      def self.release(connection)
+        @connection_lock.synchronize do
+          if @reserved_connections.delete?(connection)
+            @available_connections[connection.connection_string] << connection
+          end
+        end
+        return nil
+      end
+      
+      def close
+        self.class.release(self)
       end
       
       def initialize(connection_string)
@@ -62,13 +72,6 @@ module DataObject
 
       def create_command(text)
         Command.new(self, text)
-      end
-            
-      def close
-        self.class::connection_lock.synchronize do
-          self.class::available_connections[@connection_string] << self.class::reserved_connections.delete(self)
-        end
-        return self
       end
       
       def close_socket
@@ -120,7 +123,10 @@ module DataObject
         exec_result = Sqlite3_c.sqlite3_step(reader)
         Sqlite3_c.sqlite3_finalize(reader)
         exec_result
+      def inspect
+        "#<%s:0x%x>" % [ self.class.name, (object_id * 2) ]
       end
+
     end
     
     class Reader < DataObject::Reader
