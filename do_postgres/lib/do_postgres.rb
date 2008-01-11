@@ -190,6 +190,15 @@ module DataObject
         ResultData.new(@connection, rows_affected)
       end
       
+      def quote_string(value)
+        if value =~ /[\x00-\x80]/
+          raise "String cannot contain $Text$ in the body" if value.include?("$Text$")
+          "$Text$#{value}$Text$"
+        else
+          super
+        end
+      end
+      
     end
     
   end
