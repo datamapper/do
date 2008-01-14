@@ -38,7 +38,7 @@
 %}
 
 %ignore st_mysql_options;
-%include "/usr/local/mysql-5.0.45-osx10.4-i686/include/mysql.h"
+%include "/usr/local/mysql/include/mysql.h"
 
 VALUE mysql_c_fetch_field_names(MYSQL_RES *reader, int count);
 VALUE mysql_c_fetch_field_types(MYSQL_RES *reader, int count);
