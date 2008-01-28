@@ -42,8 +42,7 @@ module DataObject
     end
     
     def begin_transaction
-      # TODO: Hook this up
-      Transaction.new
+      Transaction.new(self)
     end
     
     def change_database(database_name)
@@ -89,6 +88,10 @@ module DataObject
     # Creates a savepoint for rolling back later (not commonly supported)
     def save(name)
       raise NotImplementedError
+    end
+
+    def create_command(*args)
+      @connection.create_command(*args)
     end
     
   end

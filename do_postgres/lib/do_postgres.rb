@@ -34,6 +34,40 @@ module DataObject
         Command.new(self, text)
       end
       
+      def begin_transaction
+        Transaction.new(self)
+      end
+
+    end
+
+    class Transaction < Connection
+
+      attr_reader :connection
+
+      def initialize(conn)
+        @connection = conn
+        Postgres_c.PQexec(@connection.db, "BEGIN")
+      end
+
+      # Commits the transaction
+      def commit
+        Postgres_c.PQexec(@connection.db, "COMMIT")
+      end
+
+      # Rolls back the transaction
+      def rollback(savepoint = nil)
+        Postgres_c.PQexec(@connection.db, "ROLLBACK#{savepoint ? " TO " + savepoint : ""}")
+      end
+
+      # Creates a savepoint for rolling back later (not commonly supported)
+      def save(name)
+        Postgres_c.PQexec(@connection.db, "SAVEPOINT #{name}")
+      end
+
+      def create_command(*args)
+        @connection.create_command(*args)
+      end
+
     end
     
     class Reader < DataObject::Reader

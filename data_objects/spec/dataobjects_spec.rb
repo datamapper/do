@@ -38,7 +38,7 @@ describe "DO::Command" do
   it "should be able to be executed if it's a select" do
     cmd = @c.create_command("select * from table1")
     r = cmd.execute_reader
-    r.has_rows.should be_true
+    r.has_rows?.should be_true
     r.close
   end
   
@@ -65,6 +65,62 @@ describe "DO::Command" do
     delete_3
   end
   
+end
+
+describe "DO::Transaction" do
+  it_should_behave_like "Connectable"
+
+  before do
+    @transaction = @c.begin_transaction
+  end
+
+  def row_exists?
+    cmd = @c.create_command("SELECT * FROM table1 WHERE id = 42")
+    r = cmd.execute_reader
+    res = r.has_rows?
+    r.close
+    res
+  end
+
+  def insert_row
+    unless $adapter_module.to_s == "DataObject::Sqlite3"
+      cmd = @c.create_command("INSERT INTO table1(#{$escaped_columns}) VALUES ( 42, 12, NOW(), true, NOW() )")
+    else
+      cmd = @c.create_command("INSERT INTO table1(#{$escaped_columns}) VALUES ( 42, 12, CURRENT_TIME, 1, CURRENT_DATE )")
+    end
+    cmd.execute_reader
+  end
+
+  def delete_rows
+    cmd = @c.create_command("DELETE FROM table1 WHERE id=42")
+    cmd.execute_reader
+  end
+
+
+  it "should begin a transaction" do
+    @transaction.should be_kind_of(DataObject::Transaction)
+  end
+
+  [:commit, :rollback, :save].each do |action|
+  it "should #{action} a transaction" do
+    @transaction.should respond_to(action)
+  end
+  end
+
+  it "should execute the query when commited" do
+    insert_row
+    @transaction.commit
+    row_exists?.should be_true
+    delete_rows
+  end
+
+  it "should not execute the query on rollback" do
+    insert_row
+    @transaction.rollback
+    row_exists?.should be_false
+    delete_rows
+  end
+
 end
 
 describe "DO::Reader" do

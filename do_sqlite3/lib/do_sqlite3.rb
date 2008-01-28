@@ -38,6 +38,51 @@ module DataObject
         Command.new(self, text)
       end
       
+      def begin_transaction
+        Transaction.new(self)
+      end
+
+    end
+
+    class Transaction < DataObject::Transaction
+
+      attr_reader :connection
+
+      def initialize(conn)
+        @connection = conn
+        exec_sql("BEGIN")
+      end
+
+      # Commits the transaction
+      def commit
+        exec_sql("COMMIT")
+      end
+
+      # Rolls back the transaction
+      def rollback(savepoint = nil)
+        raise NotImplementedError, "SQLite3 does not support savepoints" if savepoint
+        exec_sql("ROLLBACK")
+      end
+
+      # Creates a savepoint for rolling back later (not commonly supported)
+      def save(name)
+        raise NotImplementedError, "SQLite3 does not support savepoints"
+      end
+
+      def create_command(*args)
+        @connection.create_command(*args)
+      end
+
+      protected
+
+      def exec_sql(sql)
+        @connection.logger.debug { sql }
+        result, reader = Sqlite3_c.sqlite3_prepare_v2(@connection.db, sql, sql.size + 1)
+        exec_result = Sqlite3_c.sqlite3_step(reader)
+        Sqlite3_c.sqlite3_finalize(reader)
+        exec_result
+      end
+
     end
     
     class Reader < DataObject::Reader

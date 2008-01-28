@@ -50,6 +50,10 @@ module DataObject
       def create_command(text)
         Command.new(self, text)
       end
+
+      def begin_transaction
+        Transaction.new(self)
+      end
       
     end
     
@@ -59,6 +63,38 @@ module DataObject
       def initialize(ptr)
         @name, @type = ptr.name.to_s, ptr.type.to_s
       end
+    end
+
+    class Transaction
+
+      attr_reader :connection
+
+      def initialize(conn)
+        @connection = conn
+        Mysql_c.mysql_query(@connection.db, "BEGIN")
+      end
+
+      # Commits the transaction
+      def commit
+        Mysql_c.mysql_query(@connection.db, "COMMIT")
+      end
+
+      # Rolls back the transaction
+      def rollback(savepoint = nil)
+        raise NotImplementedError, "MySQL does not support savepoints" if savepoint
+
+        Mysql_c.mysql_query(@connection.db, "ROLLBACK")
+      end
+
+      # Creates a savepoint for rolling back later (not commonly supported)
+      def save(name)
+        raise NotImplementedError, "MySQL does not support savepoints"
+      end
+
+      def create_command(*args)
+        @connection.create_command(*args)
+      end
+
     end
     
     class Reader < DataObject::Reader

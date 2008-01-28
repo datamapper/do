@@ -1,6 +1,12 @@
 require 'spec'
 $:.push File.join(File.dirname(__FILE__), '..', 'lib')
-require 'do'
+
+#require do_* from this project, rather than from gems
+%w{sqlite3 mysql postgres}.each do |a|
+  $:.push File.join(File.dirname(__FILE__), '..', '..', "do_#{a}", 'lib')
+end
+
+require 'data_objects'
 
 adapter = (ENV["ADAPTER"] || "sqlite3").dup
 
@@ -14,7 +20,7 @@ $connection_string = case adapter
 when "sqlite3"
   "dbname=do_rb"
 when "mysql"
-  "socket=/tmp/mysql.sock user=root dbname=do_rb"
+  "dbname=do_rb"
 when "postgres"
   "dbname=do_rb"
 end
