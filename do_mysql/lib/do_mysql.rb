@@ -183,15 +183,17 @@ module DataObject
       end
       
       def typecast(val, idx)
-        return nil if val.nil?
+        return nil if val.nil? || val == "NULL"
         field = @native_fields[idx]
         case TYPES[field]
+          when "NULL"
+            nil
           when "TINY"
             val != "0"
           when "BIT"
             val.to_i(2)
           when "SHORT", "LONG", "INT24", "LONGLONG"
-            val.to_i
+            val == '' ? nil : val.to_i
           when "DECIMAL", "NEWDECIMAL", "FLOAT", "DOUBLE", "YEAR"
             val.to_f
           when "TIMESTAMP", "DATETIME"
@@ -200,8 +202,6 @@ module DataObject
             DateTime.parse(val).to_time rescue nil
           when "DATE"
             Date.parse(val) rescue nil
-          when "NULL"
-            nil
           else
             val
         end

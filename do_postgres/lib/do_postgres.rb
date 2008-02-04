@@ -156,12 +156,12 @@ module DataObject
       end
       
       def typecast(val, field_type)
-        return nil if val.nil?
+        return nil if val.nil? || val == "NULL"
         case TYPES[field_type]
           when "BOOL"
             val == "t"
           when "INT2", "INT4", "OID", "TID", "XID", "CID", "INT8"
-            val.to_i
+            val == '' ? nil : val.to_i
           when "FLOAT4", "FLOAT8", "NUMERIC", "CASH"
             val.to_f
           when "TIMESTAMP", "TIMETZ", "TIMESTAMPTZ"
