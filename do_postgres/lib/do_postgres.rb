@@ -46,26 +46,33 @@ module DataObject
 
       def initialize(conn)
         @connection = conn
-        Postgres_c.PQexec(@connection.db, "BEGIN")
+        exec_sql("BEGIN")
       end
 
       # Commits the transaction
       def commit
-        Postgres_c.PQexec(@connection.db, "COMMIT")
+        exec_sql("COMMIT")
       end
 
       # Rolls back the transaction
       def rollback(savepoint = nil)
-        Postgres_c.PQexec(@connection.db, "ROLLBACK#{savepoint ? " TO " + savepoint : ""}")
+        exec_sql("ROLLBACK#{savepoint ? " TO " + savepoint : ""}")
       end
 
       # Creates a savepoint for rolling back later (not commonly supported)
       def save(name)
-        Postgres_c.PQexec(@connection.db, "SAVEPOINT #{name}")
+        exec_sql("SAVEPOINT #{name}")
       end
 
       def create_command(*args)
         @connection.create_command(*args)
+      end
+
+      protected
+
+      def exec_sql(sql)
+        @connection.logger.debug(sql)
+        Postgres_c.PQexec(@connection.db, "COMMIT")
       end
 
     end
