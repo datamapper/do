@@ -1,15 +1,13 @@
 require 'sqlite3_c'
-require 'data_objects'
-require 'set'
-require 'fastthread'
+#require 'data_objects'
 
-module DataObject
+module DataObjects
   module Sqlite3
     
     QUOTE_STRING = "\""
     QUOTE_COLUMN = "'"
     
-    class Connection < DataObject::Connection
+    class Connection < DataObjects::Connection
       
       attr_reader :db, :connection_string
       undef :open
@@ -130,7 +128,7 @@ module DataObject
 
     end
     
-    class Reader < DataObject::Reader
+    class Reader < DataObjects::Reader
       
       def initialize(db, reader)
         @reader = reader
@@ -201,7 +199,7 @@ module DataObject
       
     end
     
-    class Command < DataObject::Command
+    class Command < DataObjects::Command
       
       def execute_reader(*args)
         super
