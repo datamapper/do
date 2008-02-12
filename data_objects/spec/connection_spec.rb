@@ -2,23 +2,21 @@ require File.dirname(__FILE__) + '/spec_helper'
 
 describe DataObjects::Connection do
   
-  it "should return a new connection and add it to the available connections pool when released" do
+  it "should define a standard API" do
+    DataObjects::Connection.should respond_to(:new)
+    DataObjects::Connection.should respond_to(:aquire)
+    DataObjects::Connection.should respond_to(:release)
     
-    connection = DataObjects::Connection.new('sqlite3://do_rb.db')
+    connection = DataObjects::Connection.new('mock://localhost')
     
+    connection.should respond_to(:close)
     
+    connection.should respond_to(:to_s)
+    connection.should respond_to(:begin_transaction)
+    connection.should respond_to(:real_close)
+    connection.should respond_to(:create_command)
     
-  end
-
-  it "should be able to be opened" do
-    @c.should be_is_a($adapter_module::Connection)
-    @c.state.should == 0
-  end
-
-  it "should be able to create a related command" do
-    @c.open
-    cmd = @c.create_command("select * from table1")
-    cmd.connection.should == @c
+    connection.close
   end
   
 end

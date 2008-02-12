@@ -1,23 +1,20 @@
+require 'uri'
+require 'set'
+require 'fastthread'
+require 'logger'
+
 module DataObjects
   class Connection
-  
-    STATE_OPEN   = 0
-    STATE_CLOSED = 1
-  
-    attr_reader :timeout, :database, :datasource, :server_version, :state
     
-    attr_reader :db, :connection_string
-    
-    def self.new(uri)
-      aquire(uri)
+    def self.inherited(base)
+      base.instance_variable_set('@connection_lock', Mutex.new)
+      base.instance_variable_set('@available_connections', Hash.new { |h,k| h[k] = [] })
+      base.instance_variable_set('@reserved_connections', Set.new)
     end
     
-    @connection_lock = Mutex.new
-    @available_connections = Hash.new { |h,k| h[k] = [] }
-    @reserved_connections = Set.new
-    
-    def self.connection_lock
-      @mutex
+    def self.new(uri)
+      uri = uri.is_a?(String) ? URI::parse(uri) : uri
+      DataObjects.const_get(uri.scheme.capitalize)::Connection.aquire(uri.to_s)
     end
     
     def self.aquire(connection_string)
@@ -29,7 +26,7 @@ module DataObjects
         else
           conn = allocate
           conn.send(:initialize, connection_string)
-          at_exit { conn.close_socket }
+          at_exit { conn.real_close }
         end
         
         @reserved_connections << conn
@@ -41,7 +38,7 @@ module DataObjects
     def self.release(connection)
       @connection_lock.synchronize do
         if @reserved_connections.delete?(connection)
-          @available_connections[connection.connection_string] << connection
+          @available_connections[connection.to_s] << connection
         end
       end
       return nil
@@ -50,38 +47,29 @@ module DataObjects
     def close
       self.class.release(self)
     end
+        
+    #####################################################
+    # Standard API Definition
+    #####################################################
+    def to_s
+      @uri
+    end
     
-    def initialize(connection_string)
+    def initialize(uri)
+      raise NotImplementedError.new
     end
-  
-    def logger
-      @logger || @logger = Logger.new(nil)
-    end
-  
-    def logger=(value)
-      @logger = value
-    end
-  
+
     def begin_transaction
-      # TODO: Hook this up
-      Transaction.new
+      raise NotImplementedError.new
     end
-  
-    def change_database(database_name)
-      raise NotImplementedError
+    
+    def real_close
+      raise NotImplementedError.new
     end
-  
-    def close
-      raise NotImplementedError
-    end
-  
+    
     def create_command(text)
-      Command.new(self, text)
+      raise NotImplementedError.new
     end
-  
-    def closed?
-      @state == STATE_CLOSED
-    end
-  
+      
   end
 end

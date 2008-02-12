@@ -1,3 +1,3 @@
 require 'spec'
-$:.push File.join(File.dirname(__FILE__), '..', 'lib')
-require 'data_objects'
+require File.dirname(__FILE__) + "/../lib/data_objects"
+require File.dirname(__FILE__) + "/do_mock"
