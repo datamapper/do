@@ -68,7 +68,7 @@ module DataObjects
     end
     
     def create_command(text)
-      raise NotImplementedError.new
+      Command.new(self, text)
     end
       
   end

@@ -20,6 +20,10 @@ module DataObjects
       raise NotImplementedError
     end
     
+    def to_s
+      @text
+    end
+    
     # Escape a string of SQL with a set of arguments.
     # The first argument is assumed to be the SQL to escape,
     # the remaining arguments (if any) are assumed to be
