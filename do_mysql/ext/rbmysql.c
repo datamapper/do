@@ -31,7 +31,7 @@ VALUE cConnection_initialize(VALUE self, VALUE host, VALUE user, VALUE password,
 		0
 	);
 	
-	rb_iv_set(self, "@connection", Data_Wrap_Struct(cConnection, 0, free, db));
+	rb_iv_set(self, "@connection", Data_Wrap_Struct(rb_cObject, 0, 0, db));
 	
 	return Qtrue;
 }
@@ -57,15 +57,17 @@ VALUE cConnection_execute_non_query(VALUE self, VALUE query) {
 	
 	response = (MYSQL_RES *)mysql_store_result(db);
 	
-	// if (!response)
-	// 		return Qnil;
+	my_ulonglong affected_rows = mysql_affected_rows(db);
 	
-	// Create a reader and populate the affected rows and field count
-	// reader = Data_Wrap_Struct(cResult, 0, free, response);
+	if (-1 == affected_rows)
+		return Qnil;
+	
 	reader = rb_funcall(cResult, ID_NEW, 0);
-	// int field_count = (int)mysql_field_count(db);
+	rb_iv_set(reader, "@affected_rows", INT2NUM(affected_rows));
+	rb_iv_set(reader, "@reader", Qnil);
 	
-	rb_iv_set(reader, "@affected_rows", INT2NUM(mysql_affected_rows(db)));
+	mysql_free_result(response);
+	
 	rb_iv_set(reader, "@inserted_id", INT2NUM(mysql_insert_id(db)));
 	
 	return reader;
@@ -77,21 +79,26 @@ VALUE cConnection_execute_reader(VALUE self, VALUE query) {
 	
 	int query_result = 0;
 	MYSQL_RES *response = 0;
-	VALUE reader = Qnil;
+	VALUE result = Qnil;
 	
 	query_result = mysql_query(db, StringValuePtr(query));
 	
 	response = (MYSQL_RES *)mysql_use_result(db);
 	
-	if (!response)
-	    return Qnil;
+	if (!response) {
+		return Qnil;
+	}
 
 	// Create a reader and populate the affected rows and field count
-	reader = Data_Wrap_Struct(cResult, 0, free, response);
-	int field_count = (int)mysql_field_count(db);
+	// reader = Data_Wrap_Struct(cResult, 0, mysql_free_result, response);
+	result = rb_funcall(cResult, ID_NEW, 0);
+	rb_iv_set(result, "@reader", Data_Wrap_Struct(rb_cObject, 0, 0, response));
 
-	rb_iv_set(reader, "@affected_rows", INT2NUM(mysql_affected_rows(db)));
-	rb_iv_set(reader, "@field_count", INT2NUM(field_count));
+	int field_count = (int)mysql_field_count(db);
+	
+	// rb_iv_set(result, "@affected_rows", INT2NUM(mysql_affected_rows(db)));
+	rb_iv_set(result, "@affected_rows", Qnil);
+	rb_iv_set(result, "@field_count", INT2NUM(field_count));
 
 	VALUE field_names = rb_ary_new();
   VALUE field_types = rb_ary_new();
@@ -109,14 +116,14 @@ VALUE cConnection_execute_reader(VALUE self, VALUE query) {
 		rb_ary_push(field_types, INT2NUM(field_ptr[i]->type));
   }
 
-	rb_iv_set(reader, "@field_names", field_names);
-	rb_iv_set(reader, "@field_types", field_types);
+	rb_iv_set(result, "@field_names", field_names);
+	rb_iv_set(result, "@field_types", field_types);
 	
 	// So we can typecast in fetch_row
 	VALUE native_field_types = Data_Wrap_Struct(rb_cObject, 0, free, field_ptr);
-	rb_iv_set(reader, "@native_field_types", native_field_types);
+	rb_iv_set(result, "@native_field_types", native_field_types);
 
-	return reader;
+	return result;
 }
 
 VALUE cConnection_close(VALUE self) {
@@ -129,12 +136,20 @@ VALUE cConnection_close(VALUE self) {
 }
 
 VALUE cResult_close(VALUE self) {
-	MYSQL_RES *reader;
-	Data_Get_Struct(self, MYSQL_RES, reader);
+	VALUE reader_value = rb_iv_get(self, "@reader");
 	
-	mysql_free_result(reader);
-	
-	return Qtrue;
+	if (Qnil != reader_value) {
+		MYSQL_RES *reader;
+		Data_Get_Struct(reader_value, MYSQL_RES, reader);
+		
+		mysql_free_result(reader);	
+		
+		rb_iv_set(self, "@reader", Qnil);
+		
+		return Qtrue;
+	} else {
+		return Qfalse;
+	}
 }
 
 VALUE typecast(const char* data, MYSQL_FIELD * field) {
@@ -158,6 +173,8 @@ VALUE typecast(const char* data, MYSQL_FIELD * field) {
   // else
   //   val
 
+	// TODO: This is hacky and slow, we shouldn't be casting to a Ruby string
+	// just because its easy...
 	VALUE ruby_value = rb_str_new2(data);
 
 	switch(field->type) {
@@ -166,7 +183,7 @@ VALUE typecast(const char* data, MYSQL_FIELD * field) {
 			break;
 		}
 		case MYSQL_TYPE_TINY: {
-			ruby_value = "0" == data ? Qfalse : Qtrue;
+			ruby_value = (0 == strcmp("0", data) ? Qfalse : Qtrue);
 			break;
 		}
 		case MYSQL_TYPE_BIT: {
@@ -211,7 +228,7 @@ VALUE typecast(const char* data, MYSQL_FIELD * field) {
 
 VALUE cResult_fetch_row(VALUE self) {
 	MYSQL_RES *reader;
-	Data_Get_Struct(self, MYSQL_RES, reader);
+	Data_Get_Struct(rb_iv_get(self, "@reader"), MYSQL_RES, reader);
 	
 	// There's got to be a better/faster way to do this.
 	MYSQL_FIELD **field_ptr;
@@ -236,8 +253,6 @@ VALUE cResult_fetch_row(VALUE self) {
 }
 
 void Init_rbmysql() {
-	mysql_init(NULL);
-
 	// Get references to Date and DateTime
 	rb_cDate = rb_funcall(rb_mKernel, ID_CONST_GET, 1, rb_str_new2("Date"));
 	rb_cDateTime = rb_funcall(rb_mKernel, ID_CONST_GET, 1, rb_str_new2("DateTime"));
@@ -245,20 +260,21 @@ void Init_rbmysql() {
 	// Top Level Module that all the classes live under
 	mRbMysql = rb_define_module("RbMysql");
 	
+	cConnection = rb_define_class_under(mRbMysql, "Connection", rb_cObject);
+	rb_define_method(cConnection, "initialize", cConnection_initialize, 7);
+	rb_define_method(cConnection, "execute_reader", cConnection_execute_reader, 1);
+	rb_define_method(cConnection, "execute_non_query", cConnection_execute_non_query, 1);
+	rb_define_method(cConnection, "last_error", cConnection_last_error, 0);
+	rb_define_method(cConnection, "close", cConnection_close, 0);
+
 	cResult = rb_define_class_under(mRbMysql, "Result", rb_cObject);
 	rb_define_attr(cResult, "affected_rows", 1, 0);
 	rb_define_attr(cResult, "field_count", 1, 0);
 	rb_define_attr(cResult, "field_names", 1, 0);
 	rb_define_attr(cResult, "field_types", 1, 0);
 	rb_define_attr(cResult, "inserted_id", 1, 0);
-	rb_define_method(cResult, "close", cResult_close, 0);
 	rb_define_method(cResult, "fetch_row", cResult_fetch_row, 0);
-
-	cConnection = rb_define_class_under(mRbMysql, "Connection", rb_cObject);
-	rb_define_method(cConnection, "initialize", cConnection_initialize, 7);
-	rb_define_method(cConnection, "execute_reader", cConnection_execute_reader, 1);
-	rb_define_method(cConnection, "execute_non_query", cConnection_execute_non_query, 1);
-	rb_define_method(cConnection, "close", cConnection_close, 0);
+	rb_define_method(cResult, "close", cResult_close, 0);
 
   // rb_define_singleton_method(RbMysql, "mysql_port", mysql_port_get, 0);
   // rb_define_singleton_method(RbMysql, "mysql_port=", mysql_port_set, 1);

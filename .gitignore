@@ -3,3 +3,6 @@
 ./cov
 ./pkg
 .DS_Store
+*.o
+*.bundle
+Makefile
