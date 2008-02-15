@@ -1,4 +1,4 @@
-do_sqlite3
+do_mysql
 =================
 
 A plugin for the Merb framework that provides ....
