@@ -109,6 +109,20 @@ describe "A new connection" do
         row[index].should be_kind_of(types[index])
       end
     end
+    
+    it "should typecast according to #set_types" do
+      types = [Fixnum, String]
+      res = @result.set_types types
+      res.should == types
+      
+      row = @result.fetch_row
+      
+      puts row.inspect
+      
+      types.each_with_index do |type, index|
+        row[index].should be_kind_of(types[index])
+      end
+    end
   end
   
   describe "executing an INSERT non-query" do

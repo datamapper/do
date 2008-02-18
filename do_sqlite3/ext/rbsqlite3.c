@@ -1,3 +1,4 @@
+#include <string.h>
 #include <ruby.h>
 #include <sqlite3.h>
 
@@ -51,19 +52,6 @@ VALUE cConnection_execute_non_query(VALUE self, VALUE query) {
 	rb_iv_set(reader, "@inserted_id", INT2NUM(last_insert_id));
 	
 	return reader;
-}
-
-
-int cConnection_reader_callback(VALUE *result, int field_count, char **p_fields, char **p_col_names) {
-	int i;
-	
-	rb_iv_set(*result, "@field_count", INT2NUM(field_count));
-	
-	for ( i = 0; i < field_count; i++ ) {
-		
-	}
-	
-	return 0;
 }
 
 VALUE cConnection_execute_reader(VALUE self, VALUE query) {
@@ -127,7 +115,12 @@ VALUE cResult_close(VALUE self) {
 	}
 }
 
-VALUE typecast(sqlite3_value *value, int type) {
+VALUE cResult_set_types(VALUE self, VALUE array) {
+	rb_iv_set(self, "@field_types", array);
+	return array;
+}
+
+VALUE native_typecast(sqlite3_value *value, int type) {
 	VALUE ruby_value = Qnil;
 	switch(type) {
 		case SQLITE_NULL: {
@@ -146,15 +139,32 @@ VALUE typecast(sqlite3_value *value, int type) {
 	return ruby_value;
 }
 
+VALUE ruby_typecast(sqlite3_value *value, char *type) {
+	char test[] = "Fixnum";
+	if ( test == type ) {
+		return rb_str_new2("FIXNUM!");
+		return INT2NUM(sqlite3_value_int(value));
+	}
+	else {
+		return rb_str_new2(sqlite3_value_text(value));
+	}
+}
+
 VALUE cResult_fetch_row(VALUE self) {
 	sqlite3_stmt *reader;
 	int field_count;
 	int result;
 	int i;
+	int ft_length;
 	VALUE arr = rb_ary_new();
+	VALUE field_types;
+	VALUE value;
 	
 	Data_Get_Struct(rb_iv_get(self, "@reader"), sqlite3_stmt, reader);
 	field_count = NUM2INT(rb_iv_get(self, "@field_count"));
+	
+	field_types = rb_iv_get(self, "@field_types");
+	ft_length = RARRAY(field_types)->len;
 	
 	result = sqlite3_step(reader);
 	
@@ -163,7 +173,14 @@ VALUE cResult_fetch_row(VALUE self) {
 	}
 	
 	for ( i = 0; i < field_count; i++ ) {
-		rb_ary_push(arr, typecast(sqlite3_column_value(reader, i), sqlite3_column_type(reader, i)));
+		if ( ft_length == 0 ) {
+			value = native_typecast(sqlite3_column_value(reader, i), sqlite3_column_type(reader, i));
+		}
+		else {
+			char *val = rb_class2name(RARRAY(field_types)->ptr[i]);
+			value = ruby_typecast(sqlite3_column_value(reader, i), val);
+		}
+		rb_ary_push(arr, value);
 	}
 	
 	return arr;
@@ -191,6 +208,7 @@ void Init_rbsqlite3() {
 	rb_define_attr(cResult, "field_types", 1, 0);
 	rb_define_attr(cResult, "inserted_id", 1, 0);
 	
+	rb_define_method(cResult, "set_types", cResult_set_types, 1);
 	rb_define_method(cResult, "fetch_row", cResult_fetch_row, 0);
 	rb_define_method(cResult, "close", cResult_close, 0);
 }
