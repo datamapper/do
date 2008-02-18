@@ -95,6 +95,7 @@ VALUE cConnection_execute_reader(VALUE self, VALUE query) {
 	
 	for ( i = 0; i < field_count; i++ ) {
 		rb_ary_push(field_names, rb_str_new2(sqlite3_column_name(reader, i)));
+		// TODO figure out how to get the field types before sqlite3_step() is called
 		// rb_ary_push(field_types, INT2NUM(sqlite3_column_type(reader, i)));
 	}
 	
