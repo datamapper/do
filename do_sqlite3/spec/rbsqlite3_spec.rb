@@ -96,12 +96,18 @@ describe "A new connection" do
     end
 
     it "should fetch 2 rows" do
-      r = @result.fetch_row
-      r.should be_kind_of(Array)
-      puts @result.inspect
-      puts r.inspect
+      @result.fetch_row.should be_kind_of(Array)
       @result.fetch_row.should be_kind_of(Array)
       @result.fetch_row.should be_nil
+    end
+    
+    it "should typecast to the proper Ruby type" do
+      row = @result.fetch_row
+      
+      types = [Fixnum, String]
+      types.each_with_index do |type, index|
+        row[index].should be_kind_of(types[index])
+      end
     end
   end
   
@@ -117,8 +123,31 @@ describe "A new connection" do
       result = @connection.execute_non_query("INSERT INTO users (name) VALUES ('Sam Smoot')")
       result.inserted_id.should == 1
       
-      result = @connection.execute_non_query("INSERT INTO users (name) VALUES ('Ezra')")
+      result = @connection.execute_non_query("INSERT INTO users (name) VALUES ('Bernerd Schaefer')")
       result.inserted_id.should == 2
+    end
+  end
+  
+  describe "executing an UPDATE non-query" do
+    it "should be able to determine the affected_rows" do
+      [
+        "DELETE FROM users",
+        "INSERT INTO users (name) VALUES ('Sam Smoot')",
+        "INSERT INTO users (name) VALUES ('Bernerd Schaefer')"
+      ].each { |q| @connection.execute_non_query(q) }
+
+      result = @connection.execute_non_query("UPDATE users SET name = 'John Doe'")
+      result.affected_rows.should == 2
+    end
+  end
+  
+  describe "executing an INVALID non-query" do
+    it "should return nil instead of a reader" do
+      result = @connection.execute_non_query("UPDwhoopsATE invoices SET invoice_number = '3456'")
+      result.should be_nil
+      
+      @connection.last_error.should_not be_nil
+      @connection.last_error.should be_kind_of(String)
     end
   end
 end

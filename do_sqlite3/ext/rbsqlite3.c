@@ -22,7 +22,7 @@ VALUE cConnection_initialize(VALUE self, VALUE filename) {
 }
 
 VALUE cConnection_last_error(VALUE self) {
-	return Qtrue;
+	return rb_iv_get(self, "@last_error");
 }
 
 VALUE cConnection_execute_non_query(VALUE self, VALUE query) {
@@ -38,6 +38,7 @@ VALUE cConnection_execute_non_query(VALUE self, VALUE query) {
 	ret = sqlite3_exec(db, StringValuePtr(query), 0, 0, &errmsg);
 	
 	if ( ret != SQLITE_OK ) {
+		rb_iv_set(self, "@last_error", rb_str_new2(errmsg));
 		return Qnil;
 	}
 	
@@ -78,6 +79,7 @@ VALUE cConnection_execute_reader(VALUE self, VALUE query) {
 	ret = sqlite3_prepare_v2(db, StringValuePtr(query), -1, &reader, 0);
 	
 	if ( ret != SQLITE_OK ) {
+		rb_iv_set(self, "@last_error", rb_str_new2(sqlite3_errmsg(db)));
 		return Qnil;
 	}
 	
