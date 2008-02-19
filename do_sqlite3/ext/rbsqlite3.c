@@ -2,12 +2,18 @@
 #include <ruby.h>
 #include <sqlite3.h>
 
+#define ID_TO_S rb_intern("to_s")
 #define ID_TO_I rb_intern("to_i")
 #define ID_TO_F rb_intern("to_f")
 #define ID_PARSE rb_intern("parse")
 #define ID_TO_TIME rb_intern("to_time")
 #define ID_NEW rb_intern("new")
 #define ID_CONST_GET rb_intern("const_get")
+
+#define RUBY_FIXNUM		0
+#define RUBY_STRING 	1
+
+char *ruby_types[2] = {"Fixnum", "String"};
 
 VALUE mRbSqlite3;
 VALUE cConnection;
@@ -120,6 +126,8 @@ VALUE cResult_set_types(VALUE self, VALUE array) {
 	return array;
 }
 
+
+// Add rescue handling for null, etc.
 VALUE native_typecast(sqlite3_value *value, int type) {
 	VALUE ruby_value = Qnil;
 	switch(type) {
@@ -135,19 +143,38 @@ VALUE native_typecast(sqlite3_value *value, int type) {
 			ruby_value = rb_str_new2(sqlite3_value_text(value));
 			break;
 		}
+		case SQLITE_FLOAT: {
+			ruby_value = rb_float_new(sqlite3_value_double(value));
+			break;
+		}
 	}
 	return ruby_value;
 }
 
+// Add rescue handling for null, etc.
 VALUE ruby_typecast(sqlite3_value *value, char *type) {
-	char test[] = "Fixnum";
-	if ( test == type ) {
-		return rb_str_new2("FIXNUM!");
-		return INT2NUM(sqlite3_value_int(value));
+	VALUE ruby_value = Qnil;
+	if ( strcmp(type, "Fixnum") == 0 ) {
+		ruby_value = INT2NUM(sqlite3_value_int(value));
 	}
-	else {
-		return rb_str_new2(sqlite3_value_text(value));
+	else if ( strcmp(type, "String") == 0 ) {
+		ruby_value = rb_str_new2(sqlite3_value_text(value));
 	}
+	else if ( strcmp(type, "Float") == 0 ) {
+		ruby_value = rb_float_new(sqlite3_value_double(value));
+	}
+	else if ( strcmp(type, "Date") == 0 ) {
+		ruby_value = rb_funcall(rb_cDate, ID_PARSE, 1, rb_str_new2(sqlite3_value_text(value)));
+	}
+	else if ( strcmp(type, "DateTime") == 0 ) {
+		ruby_value = rb_funcall(rb_cDateTime, ID_PARSE, 1, rb_str_new2(sqlite3_value_text(value)));
+	}
+	else if ( strcmp(type, "Time") == 0 ) {
+		// Requires DateTime.to_time to be defined
+		VALUE dt_value = rb_funcall(rb_cDateTime, ID_PARSE, 1, rb_str_new2(sqlite3_value_text(value)));
+		ruby_value = rb_funcall(dt_value, ID_TO_TIME, 0);
+	}
+	return ruby_value;
 }
 
 VALUE cResult_fetch_row(VALUE self) {
@@ -177,8 +204,7 @@ VALUE cResult_fetch_row(VALUE self) {
 			value = native_typecast(sqlite3_column_value(reader, i), sqlite3_column_type(reader, i));
 		}
 		else {
-			char *val = rb_class2name(RARRAY(field_types)->ptr[i]);
-			value = ruby_typecast(sqlite3_column_value(reader, i), val);
+			value = ruby_typecast(sqlite3_column_value(reader, i), rb_class2name(RARRAY(field_types)->ptr[i]));
 		}
 		rb_ary_push(arr, value);
 	}

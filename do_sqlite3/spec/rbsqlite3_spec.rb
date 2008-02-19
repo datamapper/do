@@ -92,7 +92,7 @@ describe "A new connection" do
     end
 
     it "should return the proper number of fields" do
-      @result.field_count.should == 2
+      @result.field_count.should == 4
     end
 
     it "should fetch 2 rows" do
@@ -103,22 +103,48 @@ describe "A new connection" do
     
     it "should typecast to the proper Ruby type" do
       row = @result.fetch_row
+      types = [Fixnum, String, Float, String]
+      types.each_with_index do |type, index|
+        row[index].should be_kind_of(types[index])
+      end
+    end
+  end
+  
+  describe "typecasting with #set_types" do
+    before(:each) do
+      @result = @connection.execute_reader("SELECT * FROM users LIMIT 1")
+    end
+
+    after(:each) do
+      @result.close
+    end
+    
+    it "should work with the native types" do
+      types = [Fixnum, String, Float, String]
+      res = @result.set_types types
+      res.should == types
+      @result.field_types.should == types
       
-      types = [Fixnum, String]
+      row = @result.fetch_row
+      
       types.each_with_index do |type, index|
         row[index].should be_kind_of(types[index])
       end
     end
     
-    it "should typecast according to #set_types" do
-      types = [Fixnum, String]
-      res = @result.set_types types
-      res.should == types
-      
+    it "should be able to typecast to different types" do
+      types = [String, String, Fixnum, DateTime]
+      @result.set_types types
       row = @result.fetch_row
-      
-      puts row.inspect
-      
+      types.each_with_index do |type, index|
+        row[index].should be_kind_of(types[index])
+      end
+    end
+    
+    it "should be able to typecast to some more types" do
+      types = [Float, String, String, Date]
+      @result.set_types types
+      row = @result.fetch_row
       types.each_with_index do |type, index|
         row[index].should be_kind_of(types[index])
       end
@@ -127,17 +153,17 @@ describe "A new connection" do
   
   describe "executing an INSERT non-query" do
     it "should be able to determine the affected_rows" do
-      result = @connection.execute_non_query("INSERT INTO users (name) VALUES ('Joe Namath')")
+      result = @connection.execute_non_query("INSERT INTO users (name, created_at) VALUES ('Joe Namath', 'Mon Feb 18 21:10:53 -0600 2008')")
       result.affected_rows.should == 1
     end
     
     it "should yield the last inserted id" do
       @connection.execute_non_query("DELETE FROM users")
 
-      result = @connection.execute_non_query("INSERT INTO users (name) VALUES ('Sam Smoot')")
+      result = @connection.execute_non_query("INSERT INTO users (name, created_at) VALUES ('Sam Smoot', 'Mon Feb 18 21:10:53 -0600 2008')")
       result.inserted_id.should == 1
       
-      result = @connection.execute_non_query("INSERT INTO users (name) VALUES ('Bernerd Schaefer')")
+      result = @connection.execute_non_query("INSERT INTO users (name, created_at) VALUES ('Bernerd Schaefer', 'Mon Feb 18 21:10:53 -0600 2008')")
       result.inserted_id.should == 2
     end
   end
@@ -146,8 +172,8 @@ describe "A new connection" do
     it "should be able to determine the affected_rows" do
       [
         "DELETE FROM users",
-        "INSERT INTO users (name) VALUES ('Sam Smoot')",
-        "INSERT INTO users (name) VALUES ('Bernerd Schaefer')"
+        "INSERT INTO users (name, fraction, created_at) VALUES ('Sam Smoot', 0.3, 'Mon Feb 18 21:10:53 -0600 2008')",
+        "INSERT INTO users (name, fraction, created_at) VALUES ('Bernerd Schaefer', 0.5, 'Mon Feb 18 21:10:53 -0600 2008')"
       ].each { |q| @connection.execute_non_query(q) }
 
       result = @connection.execute_non_query("UPDATE users SET name = 'John Doe'")
