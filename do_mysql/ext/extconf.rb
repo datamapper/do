@@ -58,8 +58,8 @@ desired_functions = %w(mysql_ssl_set)
 
 if have_build_env
   $CFLAGS << ' -Wall '
-  dir_config("mysql_c")
-  create_makefile("mysql_c")
+  dir_config("rbmysql")
+  create_makefile("rbmysql")
 else
   puts 'Could not find MySQL build environment (libraries & headers): Makefile not created'
 end
