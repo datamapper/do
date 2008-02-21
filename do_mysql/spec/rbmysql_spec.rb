@@ -64,10 +64,6 @@ describe "RbMysql" do
       @result.should respond_to(:close)
     end
 
-    it "should expose a #set_types method" do
-      @result.should respond_to(:set_types)
-    end
-
   end
     
 end
@@ -113,31 +109,6 @@ describe "A new connection" do
     
     # HACK: this is a weak test...
     it "should typecast all fields to the proper Ruby type" do
-
-      @result.set_types [
-        Fixnum,
-        String,
-        String,
-        String, 
-        String,
-        String,
-        String,
-        String, 
-        String,
-        String,
-        FalseClass,
-        Fixnum,
-        Fixnum, 
-        Bignum,
-        Float,
-        Float,
-        Float, 
-        Date,
-        DateTime,
-        DateTime,
-        String
-      ]
-      
       row = @result.fetch_row
 
       types = [
@@ -167,7 +138,7 @@ describe "A new connection" do
       types.each_with_index do |t, idx|
         # puts row[idx].class
         # puts "Field #{idx} - #{@result.field_names[idx]}/#{@result.field_types[idx]}: #{row[idx].inspect}"
-        row[idx].class.should == types[idx]
+        row[idx].should be_kind_of(types[idx])
       end
     end
     
