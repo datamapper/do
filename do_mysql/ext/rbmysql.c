@@ -5,6 +5,7 @@
  
 #define RUBY_CLASS(name) rb_const_get(rb_cObject, rb_intern(name))
 #define CHAR_TO_STRING(name) rb_str_new2(name)
+#define TAINTED_STRING(name) rb_tainted_str_new2(name)
 #define ID_TO_I rb_intern("to_i")
 #define ID_TO_F rb_intern("to_f")
 #define ID_PARSE rb_intern("parse")
@@ -79,17 +80,17 @@ VALUE cast_mysql_value_to_ruby_value(const char* data, char* ruby_class_name) {
 	if (0 == strcmp("Fixnum", ruby_class_name) || 0 == strcmp("Bignum", ruby_class_name)) {
 		ruby_value = (0 == strlen(data) ? Qnil : LL2NUM(atoi(data)));
 	} else if (0 == strcmp("String", ruby_class_name)) {
-		ruby_value = CHAR_TO_STRING(data);
+		ruby_value = TAINTED_STRING(data);
 	} else if (0 == strcmp("Float", ruby_class_name) ) {
 		ruby_value = rb_float_new(strtod(data, NULL));
 	} else if (0 == strcmp("TrueClass", ruby_class_name) || 0 == strcmp("FalseClass", ruby_class_name)) {
-		ruby_value = !(NULL == data || 0 == data || 0 == strcmp("0", data));
+		ruby_value = (NULL == data || 0 == data || 0 == strcmp("0", data)) ? Qfalse : Qtrue;
 	} else if (0 == strcmp("Date", ruby_class_name)) {
-		ruby_value = rb_funcall(rb_cDate, ID_PARSE, 1, CHAR_TO_STRING(data)); 
+		ruby_value = rb_funcall(rb_cDate, ID_PARSE, 1, TAINTED_STRING(data)); 
 	} else if (0 == strcmp("DateTime", ruby_class_name)) {
-		ruby_value = rb_funcall(rb_cDateTime, ID_PARSE, 1, CHAR_TO_STRING(data));
+		ruby_value = rb_funcall(rb_cDateTime, ID_PARSE, 1, TAINTED_STRING(data));
 	} else {
-		ruby_value = CHAR_TO_STRING(data);
+		ruby_value = TAINTED_STRING(data);
 	}
  
 	return ruby_value;

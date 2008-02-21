@@ -111,6 +111,10 @@ describe "A new connection" do
       @result.fetch_row.should be_nil
     end
     
+    it "should contain tainted strings" do
+      @result.fetch_row[1].should be_tainted
+    end
+    
     # HACK: this is a weak test...
     it "should typecast all fields to the proper Ruby type" do
 
