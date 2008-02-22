@@ -34,3 +34,35 @@ end
 task :install => [:package] do
   sh %{sudo gem install pkg/#{NAME}-#{VERSION}}
 end
+
+
+task :benchmark do
+  $:.push 'lib'
+  require 'do_mysql'
+  require 'benchmark'
+  
+  @connection = DataObject::Mysql::Connection.new('host=127.0.0.1 user=root dbname=rbmysql_test')
+  @connection.open
+
+  begin
+    Benchmark.bm do |bm|
+      bm.report do
+          1000.times do |i|
+            command = @connection.create_command('SELECT * FROM widgets')
+
+            reader = command.execute_reader
+            
+            until (row = reader.next).nil?
+              reader.field_count.times { |i|
+                reader.item(i)
+              }
+            end
+            # reader.close
+          end
+      end
+    end
+  ensure
+    @connection.close
+  end
+  
+end

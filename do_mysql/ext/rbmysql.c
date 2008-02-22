@@ -1,4 +1,6 @@
 #include <ruby.h>
+#include <string.h>
+#include <math.h>
 #include <mysql.h>
 #include <errmsg.h>
 #include <mysqld_error.h>
@@ -6,15 +8,18 @@
 #define RUBY_CLASS(name) rb_const_get(rb_cObject, rb_intern(name))
 #define CHAR_TO_STRING(name) rb_str_new2(name)
 #define TAINTED_STRING(name) rb_tainted_str_new2(name)
-#define ID_TO_I rb_intern("to_i")
-#define ID_TO_F rb_intern("to_f")
-#define ID_PARSE rb_intern("parse")
-#define ID_TO_TIME rb_intern("to_time")
-#define ID_NEW rb_intern("new")
-#define ID_CONST_GET rb_intern("const_get")
- 
+
+static ID ID_TO_I;
+static ID ID_TO_F;
+static ID ID_PARSE;
+static ID ID_TO_TIME;
+static ID ID_NEW;
+static ID ID_NEW_BANG;
+static ID ID_CONST_GET;
+
 static VALUE rb_cDate;
 static VALUE rb_cDateTime;
+static VALUE rb_cRational;
  
 VALUE mRbMysql;
 VALUE cConnection;
@@ -86,9 +91,61 @@ VALUE cast_mysql_value_to_ruby_value(const char* data, char* ruby_class_name) {
 	} else if (0 == strcmp("TrueClass", ruby_class_name) || 0 == strcmp("FalseClass", ruby_class_name)) {
 		ruby_value = (NULL == data || 0 == data || 0 == strcmp("0", data)) ? Qfalse : Qtrue;
 	} else if (0 == strcmp("Date", ruby_class_name)) {
-		ruby_value = rb_funcall(rb_cDate, ID_PARSE, 1, TAINTED_STRING(data)); 
+
+		int year, month, day;
+
+		// Used by math pulled out of Date.civil_to_jd and jd_to_ajd
+		int a, b, jd, ajd;
+		VALUE rational;
+
+		sscanf(data, "%4d-%2d-%2d", &year, &month, &day);
+
+		// Math from Date.civil_to_jd
+		if ( month <= 2 ) {
+			year -= 1;
+			month += 12;
+		}
+		a = year / 100;
+		b = 2 - a + (a / 4);
+		jd = floor(365.25 * (year + 4716)) + floor(30.6001 * (month + 1)) + day + b - 1524;
+
+		// Math from Date.jd_to_ajd
+		ajd = jd * 2 - 1;
+		rational = rb_funcall(rb_cRational, ID_NEW_BANG, 2, INT2NUM(ajd), INT2NUM(2));
+
+		// Original (slooooow) Date [~5.8 seconds / 1000.times]:
+		//		ruby_value = rb_funcall(rb_cDate, ID_PARSE, 1, rb_str_new2(sqlite3_value_text(value)));
+		// Faster Date [~2.2 seconds / 1000.times]: 
+		// 		ruby_value = rb_funcall(rb_cDate, ID_CIVIL, 3, INT2NUM(year), INT2NUM(month), INT2NUM(day));
+
+		// Super fastest Date creation! [~0.25 seconds / 1000.times]
+		// Yeah, that's 23 times faster than Date.parse
+		ruby_value = rb_funcall(rb_cDate, ID_NEW_BANG, 3, rational, INT2NUM(0), INT2NUM(2299161));
 	} else if (0 == strcmp("DateTime", ruby_class_name)) {
-		ruby_value = rb_funcall(rb_cDateTime, ID_PARSE, 1, TAINTED_STRING(data));
+		int a, b, jd;
+				int y, m, d, h, min, s;
+
+				sscanf(data, "%4d-%2d-%2d %2d:%2d:%2d", &y, &m, &d, &h, &min, &s);
+
+				// Original (slooooow) DateTime [~12 seconds / 1000.times]
+				// 		ruby_value = rb_funcall(rb_cDateTime, ID_PARSE, 1, rb_str_new2(sqlite3_value_text(value)));
+
+				// Faster DateTime [ ~7.3 seconds / 1000.times]
+				// 		ruby_value = rb_funcall(rb_cDateTime, ID_CIVIL, 6, INT2NUM(y), INT2NUM(m), INT2NUM(d), INT2NUM(h), INT2NUM(min), INT2NUM(s));
+
+				// Somewhat Faster [~6.3 seconds / 1000.times ]
+
+				if ( m <= 2 ) {
+					y -= 1;
+					m += 12;
+				}
+				a = y / 100;
+				b = 2 - a + (a / 4);
+				jd = floor(365.25 * (y + 4716)) + floor(30.6001 * (m + 1)) + d + b - 1524;
+
+				VALUE fraction = rb_funcall(rb_cDate, rb_intern("time_to_day_fraction"), 3, INT2NUM(h), INT2NUM(min), INT2NUM(s));
+				VALUE ajd = rb_funcall(rb_cDate, rb_intern("jd_to_ajd"), 2, INT2NUM(jd), fraction);
+				ruby_value = rb_funcall(rb_cDateTime, rb_intern("new!"), 3, ajd, INT2NUM(0), INT2NUM(2299161));
 	} else {
 		ruby_value = TAINTED_STRING(data);
 	}
@@ -267,9 +324,18 @@ VALUE cResult_close(VALUE self) {
  
  
 void Init_rbmysql() {
+	ID_TO_I = rb_intern("to_i");
+	ID_TO_F = rb_intern("to_f");
+	ID_PARSE = rb_intern("parse");
+	ID_TO_TIME = rb_intern("to_time");
+	ID_NEW = rb_intern("new");
+	ID_NEW_BANG = rb_intern("new!");
+	ID_CONST_GET = rb_intern("const_get");
+
 	// Store references to a few helpful clases that aren't in Ruby Core
 	rb_cDate = RUBY_CLASS("Date");
 	rb_cDateTime = RUBY_CLASS("DateTime");
+	rb_cRational = RUBY_CLASS("Rational");
  
 	// Top Level Module that all the classes live under
 	mRbMysql = rb_define_module("RbMysql");
