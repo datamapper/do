@@ -1,4 +1,5 @@
 #include <string.h>
+#include <math.h>
 #include <ruby.h>
 #include <sqlite3.h>
 
@@ -8,18 +9,16 @@
 #define ID_PARSE rb_intern("parse")
 #define ID_TO_TIME rb_intern("to_time")
 #define ID_NEW rb_intern("new")
+#define ID_CIVIL rb_intern("civil")
 #define ID_CONST_GET rb_intern("const_get")
-
-#define RUBY_FIXNUM		0
-#define RUBY_STRING 	1
-
-char *ruby_types[2] = {"Fixnum", "String"};
 
 VALUE mRbSqlite3;
 VALUE cConnection;
 VALUE cResult;
 VALUE rb_cDate;
 VALUE rb_cDateTime;
+VALUE rb_cTime;
+VALUE rb_cRational;
 
 VALUE cConnection_initialize(VALUE self, VALUE filename) {
 	sqlite3 *db;
@@ -164,18 +163,76 @@ VALUE ruby_typecast(sqlite3_value *value, char *type) {
 		ruby_value = rb_float_new(sqlite3_value_double(value));
 	}
 	else if ( strcmp(type, "Date") == 0 ) {
-		ruby_value = rb_funcall(rb_cDate, ID_PARSE, 1, rb_str_new2(sqlite3_value_text(value)));
+		int year, month, day;
+		char *date = sqlite3_value_text(value);
+		
+		// Used by math pulled out of Date.civil_to_jd and jd_to_ajd
+		int a, b, jd, ajd;
+		VALUE rational;
+		
+		sscanf(date, "%4d-%2d-%2d", &year, &month, &day);
+		
+		// Math from Date.civil_to_jd
+		if ( month <= 2 ) {
+			year -= 1;
+			month += 12;
+		}
+		a = year / 100;
+		b = 2 - a + (a / 4);
+		jd = floor(365.25 * (year + 4716)) + floor(30.6001 * (month + 1)) + day + b - 1524;
+		
+		// Math from Date.jd_to_ajd
+		ajd = jd * 2 - 1;
+		rational = rb_funcall(rb_cRational, rb_intern("new!"), 2, INT2NUM(ajd), INT2NUM(2));
+		
+		// Original (slooooow) Date [~5.8 seconds / 1000.times]:
+		//		ruby_value = rb_funcall(rb_cDate, ID_PARSE, 1, rb_str_new2(sqlite3_value_text(value)));
+		// Faster Date [~2.2 seconds / 1000.times]: 
+		// 		ruby_value = rb_funcall(rb_cDate, ID_CIVIL, 3, INT2NUM(year), INT2NUM(month), INT2NUM(day));
+		
+		// Super fastest Date creation! [~0.25 seconds / 1000.times]
+		// Yeah, that's 23 times faster than Date.parse
+		ruby_value = rb_funcall(rb_cDate, rb_intern("new!"), 3, rational, INT2NUM(0), INT2NUM(2299161));
 	}
 	else if ( strcmp(type, "DateTime") == 0 ) {
-		ruby_value = rb_funcall(rb_cDateTime, ID_PARSE, 1, rb_str_new2(sqlite3_value_text(value)));
+		int a, b, jd;
+		int y, m, d, h, min, s;
+		char *date = sqlite3_value_text(value);
+		
+		sscanf(date, "%4d-%2d-%2d %2d:%2d:%2d", &y, &m, &d, &h, &min, &s);
+		
+		// Original (slooooow) DateTime [~12 seconds / 1000.times]
+		// 		ruby_value = rb_funcall(rb_cDateTime, ID_PARSE, 1, rb_str_new2(sqlite3_value_text(value)));
+		
+		// Faster DateTime [ ~7.3 seconds / 1000.times]
+		// 		ruby_value = rb_funcall(rb_cDateTime, ID_CIVIL, 6, INT2NUM(y), INT2NUM(m), INT2NUM(d), INT2NUM(h), INT2NUM(min), INT2NUM(s));
+		
+		// Somewhat Faster [~6.3 seconds / 1000.times ]
+		
+		if ( m <= 2 ) {
+			y -= 1;
+			m += 12;
+		}
+		a = y / 100;
+		b = 2 - a + (a / 4);
+		jd = floor(365.25 * (y + 4716)) + floor(30.6001 * (m + 1)) + d + b - 1524;
+		
+		VALUE fraction = rb_funcall(rb_cDate, rb_intern("time_to_day_fraction"), 3, INT2NUM(h), INT2NUM(min), INT2NUM(s));
+		VALUE ajd = rb_funcall(rb_cDate, rb_intern("jd_to_ajd"), 2, INT2NUM(jd), fraction);
+		ruby_value = rb_funcall(rb_cDateTime, rb_intern("new!"), 3, ajd, INT2NUM(0), INT2NUM(2299161));
 	}
 	else if ( strcmp(type, "Time") == 0 ) {
-		// Requires DateTime.to_time to be defined
-		VALUE dt_value = rb_funcall(rb_cDateTime, ID_PARSE, 1, rb_str_new2(sqlite3_value_text(value)));
-		ruby_value = rb_funcall(dt_value, ID_TO_TIME, 0);
+		int y, m, d, h, min, s;
+		char *date = sqlite3_value_text(value);
+		
+		sscanf(date, "%4d-%2d-%2d %2d:%2d:%2d", &y, &m, &d, &h, &min, &s);
+		
+		ruby_value = rb_funcall(rb_cTime, rb_intern("utc"), 6, INT2NUM(y), INT2NUM(m), INT2NUM(d), INT2NUM(h), INT2NUM(min), INT2NUM(s));
 	}
 	return ruby_value;
 }
+
+
 
 VALUE cResult_fetch_row(VALUE self) {
 	sqlite3_stmt *reader;
@@ -216,6 +273,8 @@ void Init_rbsqlite3() {
 	// Get references to Date and DateTime
 	rb_cDate = rb_funcall(rb_mKernel, ID_CONST_GET, 1, rb_str_new2("Date"));
 	rb_cDateTime = rb_funcall(rb_mKernel, ID_CONST_GET, 1, rb_str_new2("DateTime"));
+	rb_cTime = rb_funcall(rb_mKernel, ID_CONST_GET, 1, rb_str_new2("Time"));
+	rb_cRational = rb_funcall(rb_mKernel, ID_CONST_GET, 1, rb_str_new2("Rational"));
 	
 	// Top Level Module
 	mRbSqlite3 = rb_define_module("RbSqlite3");

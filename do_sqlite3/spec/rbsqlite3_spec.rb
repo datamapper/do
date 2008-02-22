@@ -126,6 +126,7 @@ describe "A new connection" do
       @result.field_types.should == types
       
       row = @result.fetch_row
+      puts row.inspect
       
       types.each_with_index do |type, index|
         row[index].should be_kind_of(types[index])
@@ -136,6 +137,7 @@ describe "A new connection" do
       types = [String, String, Fixnum, DateTime]
       @result.set_types types
       row = @result.fetch_row
+      puts row.inspect
       types.each_with_index do |type, index|
         row[index].should be_kind_of(types[index])
       end
@@ -145,6 +147,7 @@ describe "A new connection" do
       types = [Float, String, String, Date]
       @result.set_types types
       row = @result.fetch_row
+      puts row.inspect
       types.each_with_index do |type, index|
         row[index].should be_kind_of(types[index])
       end
