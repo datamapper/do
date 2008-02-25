@@ -305,27 +305,19 @@ VALUE cResult_fetch_row(VALUE self) {
 	MYSQL_RES *reader = DATA_PTR(reader_container);
 	
 	// The Meat
-	printf("1\n");
 	VALUE ruby_field_type_strings = rb_iv_get(self, "@field_types");
- 	printf("2\n");
-
   VALUE row = rb_ary_new();
-printf("3\n");
   MYSQL_ROW result = (MYSQL_ROW)mysql_fetch_row(reader);
- printf("4\n");
+
 	if (!result)
 		return Qnil;
-printf("5\n");
+
   int i;
  
 	for (i = 0; i < reader->field_count; i++) {
-		printf("6 - %d\n", i);
-		rb_funcall(rb_mKernel, rb_intern("puts"), 1, ruby_field_type_strings);
 		// The field_type data could be cached in a c-array
 		char* field_type = RSTRING(rb_ary_entry(ruby_field_type_strings, i))->ptr;
-		printf("7\n");
 		rb_ary_push(row, cast_mysql_value_to_ruby_value(result[i], field_type));
-		printf("8\n");
   }
  
 	return row;
