@@ -135,7 +135,7 @@ describe "A new connection" do
       types = [
         Fixnum, String, String, String, String, String,
         String, String, String, String, FalseClass, Fixnum, Fixnum, 
-        Bignum, Float, Float, Float, Date, DateTime, DateTime, String
+        Bignum, BigDecimal, BigDecimal, BigDecimal, Date, DateTime, DateTime, String
       ]
 
       @result.set_types types
@@ -150,11 +150,9 @@ describe "A new connection" do
     # HACK: This seems like a weak test
     it "should throw an DataObjects::LengthMismatchError when you call set_types with an array with an incorrect number of fields" do
       
-      types = [
-        Fixnum, String, String, String, String, String
-      ]
+      types = [ Fixnum, String, String, String, String, String ]
 
-      lambda { @result.set_types types }.should raise_error(DataObjects::LengthMismatchError)
+      lambda { @result.set_types(types) }.should raise_error(DataObjects::LengthMismatchError)
     end
     
   end

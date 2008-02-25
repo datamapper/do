@@ -21,6 +21,7 @@ static ID ID_CONST_GET;
 static VALUE rb_cDate;
 static VALUE rb_cDateTime;
 static VALUE rb_cRational;
+static VALUE rb_cBigDecimal;
 
 static VALUE rb_mDataObjects;
 static VALUE rb_do_eLengthMismatchError;
@@ -47,16 +48,16 @@ char * ruby_type_from_mysql_type(MYSQL_FIELD *field) {
 		case MYSQL_TYPE_SHORT:
 		case MYSQL_TYPE_LONG:
 		case MYSQL_TYPE_INT24:
-		case MYSQL_TYPE_LONGLONG: {
+		case MYSQL_TYPE_LONGLONG:
+		case MYSQL_TYPE_YEAR: {
 			ruby_type_name = "FixNum";
 			break;
 		}
 		case MYSQL_TYPE_DECIMAL:
 		case MYSQL_TYPE_NEWDECIMAL:
 		case MYSQL_TYPE_FLOAT:
-		case MYSQL_TYPE_DOUBLE:
-		case MYSQL_TYPE_YEAR: {
-			ruby_type_name = "Float"; break;
+		case MYSQL_TYPE_DOUBLE: {
+			ruby_type_name = "BigDecimal"; break;
 		}
 		case MYSQL_TYPE_TIMESTAMP:
 		case MYSQL_TYPE_DATETIME: {
@@ -92,6 +93,9 @@ VALUE cast_mysql_value_to_ruby_value(const char* data, char* ruby_class_name) {
 		ruby_value = TAINTED_STRING(data);
 	} else if (0 == strcmp("Float", ruby_class_name) ) {
 		ruby_value = rb_float_new(strtod(data, NULL));
+	} else if (0 == strcmp("BigDecimal", ruby_class_name) ) {
+		// There's a much faster way to do this I'm sure...
+		ruby_value = rb_funcall(rb_cBigDecimal, ID_NEW, 1, TAINTED_STRING(data));
 	} else if (0 == strcmp("TrueClass", ruby_class_name) || 0 == strcmp("FalseClass", ruby_class_name)) {
 		ruby_value = (NULL == data || 0 == data || 0 == strcmp("0", data)) ? Qfalse : Qtrue;
 	} else if (0 == strcmp("Date", ruby_class_name)) {
@@ -260,13 +264,18 @@ VALUE cConnection_execute_reader(VALUE self, VALUE query) {
 }
  
 VALUE cConnection_close(VALUE self) {
-	MYSQL *db = DATA_PTR(rb_iv_get(self, "@connection"));
+	VALUE connection_container = rb_iv_get(self, "@connection");
+	
+	if (Qnil == connection_container)
+		return Qfalse;
+		
+	MYSQL *db = DATA_PTR(connection_container);
  
 	if (NULL == db)
 		return Qfalse;
  
 	mysql_close(db);
-	free(db);
+	// free(db);
  
 	rb_iv_set(self, "@connection", Qnil);
  
@@ -280,16 +289,14 @@ VALUE cConnection_is_opened(VALUE self) {
 // Accepts an array of Ruby types (Fixnum, Float, String, etc...) and turns them
 // into Ruby-strings so we can easily typecast later
 VALUE cResult_set_types(VALUE self, VALUE array) {
-	VALUE field_type_array = rb_iv_get(self, "@field_types");
+	VALUE field_count = rb_iv_get(self, "@field_count");
+	Check_Type(field_count, T_FIXNUM);
 	VALUE type_strings = rb_ary_new();
 	
-	if (RARRAY(array)->len != RARRAY(field_type_array)->len) {
-		char* error_message;
-		sprintf(error_message, "Result#set_type expected %d fields, but received %d", RARRAY(field_type_array)->len, RARRAY(array)->len);
-
-		rb_raise(rb_do_eLengthMismatchError, error_message);
+	if (RARRAY(array)->len != NUM2INT(field_count)) {
+		rb_raise(rb_do_eLengthMismatchError, "Result#set_type expected %d fields, but received %d", NUM2INT(field_count), RARRAY(array)->len);
 	}
-	
+
 	int i;
  
 	for (i = 0; i < RARRAY(array)->len; i++) {
@@ -355,6 +362,8 @@ VALUE cResult_close(VALUE self) {
 }
 
 void Init_rbmysql() {
+	rb_require("bigdecimal");
+	
 	ID_TO_I = rb_intern("to_i");
 	ID_TO_F = rb_intern("to_f");
 	ID_PARSE = rb_intern("parse");
@@ -367,6 +376,7 @@ void Init_rbmysql() {
 	rb_cDate = RUBY_CLASS("Date");
 	rb_cDateTime = RUBY_CLASS("DateTime");
 	rb_cRational = RUBY_CLASS("Rational");
+	rb_cBigDecimal = RUBY_CLASS("BigDecimal");
 	rb_mDataObjects = RUBY_CLASS("DataObjects");
 	
 	// Store references to Errors we'll use
