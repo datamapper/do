@@ -26,7 +26,7 @@ VALUE cConnection;
 VALUE cResult;
  
 // Figures out what we should cast a given mysql field type to
-VALUE ruby_type_from_mysql_type(MYSQL_FIELD *field) {
+char * ruby_type_from_mysql_type(MYSQL_FIELD *field) {
  
 	char* ruby_type_name;
  
@@ -72,7 +72,7 @@ VALUE ruby_type_from_mysql_type(MYSQL_FIELD *field) {
 		}
 	}
  
-	return CHAR_TO_STRING(ruby_type_name);
+	return ruby_type_name;
 }
  
 // Convert C-string to a Ruby instance of type "ruby_class_name"
@@ -152,7 +152,7 @@ VALUE cast_mysql_value_to_ruby_value(const char* data, char* ruby_class_name) {
  
 	return ruby_value;
 }
- 
+
 VALUE cConnection_initialize(VALUE self, VALUE host, VALUE user, VALUE password, VALUE database, VALUE port, VALUE unix_socket, VALUE client_flag) {
   MYSQL *db = 0 ;
   db = (MYSQL *)mysql_init(NULL);
@@ -208,7 +208,7 @@ VALUE cConnection_execute_non_query(VALUE self, VALUE query) {
  
 	return reader;
 }
- 
+
 VALUE cConnection_execute_reader(VALUE self, VALUE query) {
 	MYSQL *db = DATA_PTR(rb_iv_get(self, "@connection"));
  
@@ -223,10 +223,11 @@ VALUE cConnection_execute_reader(VALUE self, VALUE query) {
 	if (!response) {
 		return Qnil;
 	}
- 
+	
 	result = rb_funcall(cResult, ID_NEW, 0);
 	rb_iv_set(result, "@connection", self);	
 	rb_iv_set(result, "@reader", Data_Wrap_Struct(rb_cObject, 0, 0, response));
+	rb_iv_set(result, "@opened", Qtrue);
  
 	int field_count = (int)mysql_field_count(db);
  
@@ -237,17 +238,20 @@ VALUE cConnection_execute_reader(VALUE self, VALUE query) {
   VALUE field_types = rb_ary_new();
  
 	MYSQL_FIELD *field;
- 
+
 	int i;
   for(i = 0; i < field_count; i++) {
-		field = mysql_fetch_field_direct(response, i);;
+		field = mysql_fetch_field_direct(response, i);
+		
+		VALUE field_ruby_type_name = CHAR_TO_STRING(ruby_type_from_mysql_type(field));
+		
 		rb_ary_push(field_names, rb_str_new2(field->name));
-		rb_ary_push(field_types, ruby_type_from_mysql_type(field));
+		rb_ary_push(field_types, field_ruby_type_name);
   }
  
 	rb_iv_set(result, "@field_names", field_names);
 	rb_iv_set(result, "@field_types", field_types);
- 
+
 	return result;
 }
  
@@ -272,10 +276,14 @@ VALUE cConnection_is_opened(VALUE self) {
 // Accepts an array of Ruby types (Fixnum, Float, String, etc...) and turns them
 // into Ruby-strings so we can easily typecast later
 VALUE cResult_set_types(VALUE self, VALUE array) {
- 
-	int i;
- 
+	VALUE field_type_array = rb_iv_get(self, "@field_types");
 	VALUE type_strings = rb_ary_new();
+	
+	if (RARRAY(array)->len != RARRAY(field_type_array)->len) {
+		rb_raise(rb_eStandardError, "Too few fields");
+	}
+	
+	int i;
  
 	for (i = 0; i < RARRAY(array)->len; i++) {
 		rb_ary_push(type_strings, rb_str_new2(rb_class2name(rb_ary_entry(array, i))));
@@ -288,41 +296,65 @@ VALUE cResult_set_types(VALUE self, VALUE array) {
  
 // Retrieve a single row
 VALUE cResult_fetch_row(VALUE self) {
-	MYSQL_RES *reader = DATA_PTR(rb_iv_get(self, "@reader"));
+	// Get the reader from the instance variable, maybe refactor this?
+	VALUE reader_container = rb_iv_get(self, "@reader");
+	
+	if (Qnil == reader_container)
+		return Qfalse;
+		
+	MYSQL_RES *reader = DATA_PTR(reader_container);
+	
+	// The Meat
+	printf("1\n");
 	VALUE ruby_field_type_strings = rb_iv_get(self, "@field_types");
- 
+ 	printf("2\n");
+
   VALUE row = rb_ary_new();
+printf("3\n");
   MYSQL_ROW result = (MYSQL_ROW)mysql_fetch_row(reader);
- 
-  // TODO: there's probably something more specific we need to do here.
+ printf("4\n");
 	if (!result)
 		return Qnil;
- 
+printf("5\n");
   int i;
  
 	for (i = 0; i < reader->field_count; i++) {
-		// The field_type data could be cached
+		printf("6 - %d\n", i);
+		rb_funcall(rb_mKernel, rb_intern("puts"), 1, ruby_field_type_strings);
+		// The field_type data could be cached in a c-array
 		char* field_type = RSTRING(rb_ary_entry(ruby_field_type_strings, i))->ptr;
+		printf("7\n");
 		rb_ary_push(row, cast_mysql_value_to_ruby_value(result[i], field_type));
+		printf("8\n");
   }
  
 	return row;
 }
+
+VALUE cResult_is_closed(VALUE self) {
+	return (Qnil == rb_iv_get(self, "@reader")) ? Qtrue : Qfalse;
+}
  
 // This should be called to ensure that the internal result reader is freed
 VALUE cResult_close(VALUE self) {
-	MYSQL_RES *reader = DATA_PTR(rb_iv_get(self, "@reader"));
- 
+	// Get the reader from the instance variable, maybe refactor this?
+	VALUE reader_container = rb_iv_get(self, "@reader");
+	
+	if (Qnil == reader_container)
+		return Qfalse;
+
+	MYSQL_RES *reader = DATA_PTR(reader_container);
+
+	// The Meat
 	if (NULL == reader)
 		return Qfalse;
- 
+ 	
 	mysql_free_result(reader);		
 	rb_iv_set(self, "@reader", Qnil);
  
 	return Qtrue;
 }
- 
- 
+
 void Init_rbmysql() {
 	ID_TO_I = rb_intern("to_i");
 	ID_TO_F = rb_intern("to_f");
@@ -359,5 +391,6 @@ void Init_rbmysql() {
 	rb_define_attr(cResult, "inserted_id", 1, 0);
 	rb_define_method(cResult, "fetch_row", cResult_fetch_row, 0);
 	rb_define_method(cResult, "close", cResult_close, 0);
+	rb_define_method(cResult, "closed?", cResult_is_closed, 0);
 	rb_define_method(cResult, "set_types", cResult_set_types, 1);
 }

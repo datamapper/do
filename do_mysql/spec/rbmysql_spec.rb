@@ -94,7 +94,7 @@ describe "A new connection" do
     end
 
     after(:each) do
-      @result.close
+      @result.close unless @result.closed?
     end
 
     it "shouldn't be able to determine the affected_rows" do
@@ -106,73 +106,55 @@ describe "A new connection" do
     end
 
     it "should fetch 2 rows" do
-      @result.fetch_row.should be_kind_of(Array)
-      @result.fetch_row.should be_kind_of(Array)
+      2.times { @result.fetch_row.should be_kind_of(Array) }
+    end
+    
+    it "should return nil when calling #fetch_row after fetching all available rows" do
+      2.times { @result.fetch_row }
       @result.fetch_row.should be_nil
     end
     
     it "should contain tainted strings" do
-      @result.fetch_row[1].should be_tainted
+      @result.fetch_row.each do |value|
+        (value.should be_tainted) if value.is_a?(String)
+      end
     end
     
-    # HACK: this is a weak test...
-    it "should typecast all fields to the proper Ruby type" do
+    it "should NOT be closed after fetching all rows" do
+      2.times { @result.fetch_row }
+      @result.should_not be_closed
+    end
 
-      @result.set_types [
-        Fixnum,
-        String,
-        String,
-        String, 
-        String,
-        String,
-        String,
-        String, 
-        String,
-        String,
-        FalseClass,
-        Fixnum,
-        Fixnum, 
-        Bignum,
-        Float,
-        Float,
-        Float, 
-        Date,
-        DateTime,
-        DateTime,
-        String
+    it "should be closeable before fetching all rows" do
+      @result.close.should == true
+    end
+
+    # HACK: This seems like a weak test
+    it "should typecast all fields to the proper Ruby type" do
+      
+      types = [
+        Fixnum, String, String, String, String, String,
+        String, String, String, String, FalseClass, Fixnum, Fixnum, 
+        Bignum, Float, Float, Float, Date, DateTime, DateTime, String
       ]
+
+      @result.set_types types
       
       row = @result.fetch_row
-
-      types = [
-        Fixnum,
-        String,
-        String,
-        String, 
-        String,
-        String,
-        String,
-        String, 
-        String,
-        String,
-        FalseClass,
-        Fixnum,
-        Fixnum, 
-        Bignum,
-        Float,
-        Float,
-        Float, 
-        Date,
-        DateTime,
-        DateTime,
-        String
-      ]
       
       types.each_with_index do |t, idx|
-        # puts row[idx].class
-        # puts "Field #{idx} - #{@result.field_names[idx]}/#{@result.field_types[idx]}: #{row[idx].inspect}"
         row[idx].class.should == types[idx]
       end
+    end
+
+    # HACK: This seems like a weak test
+    it "should throw an CustomError when you call set_types with an array with an incorrect number of fields" do
+      
+      types = [
+        Fixnum, String, String, String, String, String
+      ]
+
+      lambda { @result.set_types types }.should raise_error(CustomError)
     end
     
   end

@@ -35,34 +35,91 @@ task :install => [:package] do
   sh %{sudo gem install pkg/#{NAME}-#{VERSION}}
 end
 
+desc "Benchmark the ruby-mysql gem againsint the RbyMysql library"
+task :benchmark_drivers do
+  $:.push 'lib'
+  
+  require 'rbmysql'
+  require 'mysql'
+  require 'benchmark'
+  
+    
+  Benchmark.bm do |bm|
 
-task :benchmark do
+    types = [
+      Fixnum, String,String,String, String,String,String,String,String,String,
+      FalseClass,Fixnum,Fixnum, Bignum,Float,Float,Float, Date,DateTime,DateTime,String
+    ]
+
+    # types = [ Fixnum, String, Fixnum, DateTime, DateTime, Fixnum, Fixnum, Fixnum, String, Fixnum, Fixnum, Fixnum, DateTime, DateTime, TrueClass
+    # ]
+    
+    bm.report('RbMysql w/ set_types') do 
+      connection = RbMysql::Connection.new('localhost', 'root', '', 'rbmysql_test', 3306, nil, nil)
+      reader = connection.execute_reader("SELECT * FROM widgets")
+      reader.set_types types
+
+      until (row = reader.fetch_row).nil?
+        row.each { |v| v } # Touch all the elements in the row, they've already been typecast
+      end
+    end
+
+    bm.report('Mysql Gem') do
+      connection = Mysql.real_connect('localhost', 'root', '', 'rbmysql_test', 3306, nil, nil)
+      reader = connection.query("SELECT * FROM widgets")
+
+      until (row = reader.fetch_row).nil?
+        types.each_with_index do |t, i|
+          unless String == t || row[i].nil?
+            row[i] = if Fixnum == t || Bignum == t
+              row[i].to_i
+            elsif Float == t
+              row[i].to_f
+            elsif Date == t
+              Date.parse(row[i])
+            elsif DateTime == t
+              DateTime.parse(row[i])
+            elsif FalseClass == t || TrueClass == t
+              row[i]
+            else
+              row[i]
+            end
+          end
+        end
+      end
+    end
+  end
+end
+
+task :benchmark_do do
   $:.push 'lib'
   require 'do_mysql'
   require 'benchmark'
   
-  @connection = DataObject::Mysql::Connection.new('host=127.0.0.1 user=root dbname=rbmysql_test')
-  @connection.open
+  connection = nil
 
   begin
     Benchmark.bm do |bm|
       bm.report do
-          1000.times do |i|
-            command = @connection.create_command('SELECT * FROM widgets')
+        conneciton = DataObject::Mysql::Connection.new('host=127.0.0.1 user=root dbname=rbmysql_test')
+        connection.open
 
-            reader = command.execute_reader
-            
-            until (row = reader.next).nil?
-              reader.field_count.times { |i|
-                reader.item(i)
-              }
-            end
-            # reader.close
+        1000.times do |i|
+          command = connection.create_command('SELECT * FROM widgets')
+
+          reader = command.execute_reader
+          
+          until (row = reader.next).nil?
+            reader.field_count.times { |i|
+              reader.item(i)
+            }
           end
+          # reader.close
+        end
       end
     end
   ensure
-    @connection.close
+    connection.close
   end
   
 end
