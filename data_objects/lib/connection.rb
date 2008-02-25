@@ -68,7 +68,22 @@ module DataObjects
     end
     
     def create_command(text)
-      Command.new(self, text)
+      concrete_command.new(self, text)
+    end
+    
+    private
+    def concrete_command
+      @concrete_command || begin
+        
+        class << self
+          private
+          def concrete_command
+            @concrete_command
+          end
+        end
+
+        @concrete_command = DataObjects::const_get(self.class.name.split('::')[-2]).const_get('Command')
+      end
     end
       
   end

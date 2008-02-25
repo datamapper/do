@@ -12,6 +12,18 @@ module DataObjects
         nil
       end
     end
+    
+    class Command < DataObjects::Command
+      def execute_non_query(*args)
+        Result.new(self, 0, nil)
+      end
+    end
+    
+    class Result < DataObjects::Result
+    end
+    
+    class Reader < DataObjects::Reader
+    end
   end
   
 end
