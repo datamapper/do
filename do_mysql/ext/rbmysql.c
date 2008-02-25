@@ -6,6 +6,7 @@
 #include <mysqld_error.h>
  
 #define RUBY_CLASS(name) rb_const_get(rb_cObject, rb_intern(name))
+#define DO_CLASS(name) rb_const_get(rb_mDataObjects, rb_intern(name))
 #define CHAR_TO_STRING(name) rb_str_new2(name)
 #define TAINTED_STRING(name) rb_tainted_str_new2(name)
 
@@ -20,6 +21,9 @@ static ID ID_CONST_GET;
 static VALUE rb_cDate;
 static VALUE rb_cDateTime;
 static VALUE rb_cRational;
+
+static VALUE rb_mDataObjects;
+static VALUE rb_do_eLengthMismatchError;
  
 VALUE mRbMysql;
 VALUE cConnection;
@@ -280,7 +284,10 @@ VALUE cResult_set_types(VALUE self, VALUE array) {
 	VALUE type_strings = rb_ary_new();
 	
 	if (RARRAY(array)->len != RARRAY(field_type_array)->len) {
-		rb_raise(rb_eStandardError, "Too few fields");
+		char* error_message;
+		sprintf(error_message, "Result#set_type expected %d fields, but received %d", RARRAY(field_type_array)->len, RARRAY(array)->len);
+
+		rb_raise(rb_do_eLengthMismatchError, error_message);
 	}
 	
 	int i;
@@ -355,12 +362,16 @@ void Init_rbmysql() {
 	ID_NEW = rb_intern("new");
 	ID_NEW_BANG = rb_intern("new!");
 	ID_CONST_GET = rb_intern("const_get");
-
+	
 	// Store references to a few helpful clases that aren't in Ruby Core
 	rb_cDate = RUBY_CLASS("Date");
 	rb_cDateTime = RUBY_CLASS("DateTime");
 	rb_cRational = RUBY_CLASS("Rational");
- 
+	rb_mDataObjects = RUBY_CLASS("DataObjects");
+	
+	// Store references to Errors we'll use
+	rb_do_eLengthMismatchError = DO_CLASS("LengthMismatchError");
+
 	// Top Level Module that all the classes live under
 	mRbMysql = rb_define_module("RbMysql");
  

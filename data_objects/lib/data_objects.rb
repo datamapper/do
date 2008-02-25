@@ -5,8 +5,11 @@ require File.dirname(__FILE__) + "/result"
 require File.dirname(__FILE__) + "/reader"
 require File.dirname(__FILE__) + "/field"
 
-# class NotImplementedError < StandardError; end
-# 
+
+module DataObjects
+  class LengthMismatchError < StandardError; end
+end
+
 # class ConnectionFailed < StandardError; end
 # 
 # class ReaderClosed < StandardError; end

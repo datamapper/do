@@ -148,13 +148,13 @@ describe "A new connection" do
     end
 
     # HACK: This seems like a weak test
-    it "should throw an CustomError when you call set_types with an array with an incorrect number of fields" do
+    it "should throw an DataObjects::LengthMismatchError when you call set_types with an array with an incorrect number of fields" do
       
       types = [
         Fixnum, String, String, String, String, String
       ]
 
-      lambda { @result.set_types types }.should raise_error(CustomError)
+      lambda { @result.set_types types }.should raise_error(DataObjects::LengthMismatchError)
     end
     
   end
