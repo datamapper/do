@@ -122,6 +122,8 @@ module DataObjects
         exec_result = Sqlite3_c.sqlite3_step(reader)
         Sqlite3_c.sqlite3_finalize(reader)
         exec_result
+      end
+
       def inspect
         "#<%s:0x%x>" % [ self.class.name, (object_id * 2) ]
       end
