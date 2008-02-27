@@ -3,310 +3,49 @@
 #include <ruby.h>
 #include <sqlite3.h>
 
-#define ID_TO_S rb_intern("to_s")
-#define ID_TO_I rb_intern("to_i")
-#define ID_TO_F rb_intern("to_f")
-#define ID_PARSE rb_intern("parse")
-#define ID_TO_TIME rb_intern("to_time")
-#define ID_NEW rb_intern("new")
-#define ID_CIVIL rb_intern("civil")
 #define ID_CONST_GET rb_intern("const_get")
 
-VALUE mRbSqlite3;
-VALUE cConnection;
-VALUE cResult;
+#define CONST_GET(scope, constant) (rb_funcall(scope, ID_CONST_GET, 1, rb_str_new2(constant)))
+#define SQLITE3_CLASS(klass, parent) (rb_define_class_under(mSqlite3, klass, parent))
+
+VALUE mDO;
+VALUE cDO_Connection;
+VALUE cDO_Command;
+VALUE cDO_Result;
+VALUE cDO_Reader;
+
 VALUE rb_cDate;
 VALUE rb_cDateTime;
 VALUE rb_cTime;
 VALUE rb_cRational;
 
-VALUE cConnection_initialize(VALUE self, VALUE filename) {
-	sqlite3 *db;
-	sqlite3_open(StringValuePtr(filename), &db);
-	rb_iv_set(self, "@connection", Data_Wrap_Struct(rb_cObject, 0, 0, db));
-	return Qtrue;
-}
+VALUE mSqlite3;
+VALUE cConnection;
+VALUE cCommand;
+VALUE cResult;
+VALUE cReader;
 
-VALUE cConnection_last_error(VALUE self) {
-	return rb_iv_get(self, "@last_error");
-}
-
-VALUE cConnection_execute_non_query(VALUE self, VALUE query) {
-	sqlite3 *db;
-	char *errmsg;
-	int ret;
-	int affected_rows;
-	int last_insert_id;
-	VALUE reader = Qnil;
-	
-	Data_Get_Struct(rb_iv_get(self, "@connection"), sqlite3, db);
-	
-	ret = sqlite3_exec(db, StringValuePtr(query), 0, 0, &errmsg);
-	
-	if ( ret != SQLITE_OK ) {
-		rb_iv_set(self, "@last_error", rb_str_new2(errmsg));
-		return Qnil;
-	}
-	
-	affected_rows = sqlite3_changes(db);
-	last_insert_id = sqlite3_last_insert_rowid(db);
-	
-	reader = rb_funcall(cResult, ID_NEW, 0);
-	rb_iv_set(reader, "@affected_rows", INT2NUM(affected_rows));
-	rb_iv_set(reader, "@reader", Qnil);
-	rb_iv_set(reader, "@inserted_id", INT2NUM(last_insert_id));
-	
-	return reader;
-}
-
-VALUE cConnection_execute_reader(VALUE self, VALUE query) {
-	sqlite3 *db;
-	sqlite3_stmt *reader;
-	int ret;
-	int field_count;
-	int i;
-	VALUE result = Qnil;
-	
-	Data_Get_Struct(rb_iv_get(self, "@connection"), sqlite3, db);
-	
-	ret = sqlite3_prepare_v2(db, StringValuePtr(query), -1, &reader, 0);
-	
-	if ( ret != SQLITE_OK ) {
-		rb_iv_set(self, "@last_error", rb_str_new2(sqlite3_errmsg(db)));
-		return Qnil;
-	}
-	
-	field_count = sqlite3_column_count(reader);
-	
-	result = rb_funcall(cResult, ID_NEW, 0);
-	rb_iv_set(result, "@reader", Data_Wrap_Struct(rb_cObject, 0, 0, reader));
-	rb_iv_set(result, "@affected_rows", Qnil);
-	rb_iv_set(result, "@field_count", INT2NUM(field_count));
-	
-	VALUE field_names = rb_ary_new();
-	VALUE field_types = rb_ary_new();
-	
-	for ( i = 0; i < field_count; i++ ) {
-		rb_ary_push(field_names, rb_str_new2(sqlite3_column_name(reader, i)));
-		// TODO figure out how to get the field types before sqlite3_step() is called
-		// rb_ary_push(field_types, INT2NUM(sqlite3_column_type(reader, i)));
-	}
-	
-	rb_iv_set(result, "@field_names", field_names);
-	rb_iv_set(result, "@field_types", field_types);
-	
-	return result;
-}
-
-VALUE cConnection_close(VALUE self) {
-	sqlite3 *db;
-	Data_Get_Struct(rb_iv_get(self, "@connection"), sqlite3, db);
-	sqlite3_close(db);
-	return Qtrue;
-}
-
-VALUE cResult_close(VALUE self) {
-	VALUE reader_value = rb_iv_get(self, "@reader");
-	
-	if ( reader_value != Qnil ) {
-		sqlite3_stmt *reader;
-		Data_Get_Struct(reader_value, sqlite3_stmt, reader);
-		sqlite3_finalize(reader);
-		rb_iv_set(self, "@reader", Qnil);
-		return Qtrue;
-	}
-	else {
-		return Qfalse;
-	}
-}
-
-VALUE cResult_set_types(VALUE self, VALUE array) {
-	rb_iv_set(self, "@field_types", array);
-	return array;
-}
-
-
-// Add rescue handling for null, etc.
-VALUE native_typecast(sqlite3_value *value, int type) {
-	VALUE ruby_value = Qnil;
-	switch(type) {
-		case SQLITE_NULL: {
-			ruby_value = Qnil;
-			break;
-		}
-		case SQLITE_INTEGER: {
-			ruby_value = INT2NUM(sqlite3_value_int(value));
-			break;
-		}
-		case SQLITE3_TEXT: {
-			ruby_value = rb_str_new2((char*)sqlite3_value_text(value));
-			break;
-		}
-		case SQLITE_FLOAT: {
-			ruby_value = rb_float_new(sqlite3_value_double(value));
-			break;
-		}
-	}
-	return ruby_value;
-}
-
-// Find the greatest common denominator and reduce the provided numerator and denominator.
-// This replaces calles to Rational.reduce! which does the same thing, but really slowly.
-void reduce( unsigned long long int *numerator, unsigned long long int *denominator ) {
-	unsigned long long int a, b, c;
-	a = *numerator;
-	b = *denominator;
-	while ( a != 0 ) {
-		c = a; a = b % a; b = c;
-	}
-	*numerator = *numerator / b;
-	*denominator = *denominator / b;
-}
-
-// Generate the date integer which Date.civil_to_jd returns
-int jd_from_date(int year, int month, int day) {
-	int a, b;
-	if ( month <= 2 ) {
-		year -= 1;
-		month += 12;
-	}
-	a = year / 100;
-	b = 2 - a + (a / 4);
-	return floor(365.25 * (year + 4716)) + floor(30.6001 * (month + 1)) + day + b - 1524;
-}
-
-// Add rescue handling for null, etc.
-VALUE ruby_typecast(sqlite3_value *value, char *type) {
-	VALUE ruby_value = Qnil;
-	if ( strcmp(type, "Fixnum") == 0 ) {
-		ruby_value = INT2NUM(sqlite3_value_int(value));
-	}
-	else if ( strcmp(type, "String") == 0 ) {
-		ruby_value = rb_str_new2((char*)sqlite3_value_text(value));
-	}
-	else if ( strcmp(type, "Float") == 0 ) {
-		ruby_value = rb_float_new(sqlite3_value_double(value));
-	}
-	else if ( strcmp(type, "Date") == 0 ) {
-		int year, month, day;
-		char *date = (char*)sqlite3_value_text(value);
-		int jd, ajd;
-		VALUE rational;
-		
-		sscanf(date, "%4d-%2d-%2d", &year, &month, &day);
-		
-		jd = jd_from_date(year, month, day);
-		
-		// Math from Date.jd_to_ajd
-		ajd = jd * 2 - 1;
-		rational = rb_funcall(rb_cRational, rb_intern("new!"), 2, INT2NUM(ajd), INT2NUM(2));
-		ruby_value = rb_funcall(rb_cDate, rb_intern("new!"), 3, rational, INT2NUM(0), INT2NUM(2299161));
-	}
-	else if ( strcmp(type, "DateTime") == 0 ) {
-		int jd;
-		int y, m, d, h, min, s;
-		char *date = (char*)sqlite3_value_text(value);
-		
-		sscanf(date, "%4d-%2d-%2d %2d:%2d:%2d", &y, &m, &d, &h, &min, &s);
-		
-		jd = jd_from_date(y, m, d);
-		
-		// Generate ajd with fractional days for the time
-		// Extracted from Date#jd_to_ajd, Date#day_fraction_to_time, and Rational#+ and #-
-		unsigned long long int num, den;
-		
-		num = (h * 1440) + (min * 24);
-		den = (24 * 1440);
-		reduce(&num, &den);
-		
-		num = (num * 86400) + (s * den);
-		den = den * 86400;
-		reduce(&num, &den);
-		
-		num = (jd * den) + num;
-		
-		num = num * 2;
-		num = num - den;
-		den = den * 2;
-		
-		reduce(&num, &den);
-		
-		VALUE ajd = rb_funcall(rb_cRational, rb_intern("new!"), 2, rb_ull2inum(num), rb_ull2inum(den));
-		ruby_value = rb_funcall(rb_cDateTime, rb_intern("new!"), 3, ajd, INT2NUM(0), INT2NUM(2299161));
-	}
-	else if ( strcmp(type, "Time") == 0 ) {
-		int y, m, d, h, min, s;
-		char *date = (char*)sqlite3_value_text(value);
-		
-		sscanf(date, "%4d-%2d-%2d %2d:%2d:%2d", &y, &m, &d, &h, &min, &s);
-		
-		ruby_value = rb_funcall(rb_cTime, rb_intern("utc"), 6, INT2NUM(y), INT2NUM(m), INT2NUM(d), INT2NUM(h), INT2NUM(min), INT2NUM(s));
-	}
-	return ruby_value;
-}
-
-
-
-VALUE cResult_fetch_row(VALUE self) {
-	sqlite3_stmt *reader;
-	int field_count;
-	int result;
-	int i;
-	int ft_length;
-	VALUE arr = rb_ary_new();
-	VALUE field_types;
-	VALUE value;
-	
-	Data_Get_Struct(rb_iv_get(self, "@reader"), sqlite3_stmt, reader);
-	field_count = NUM2INT(rb_iv_get(self, "@field_count"));
-	
-	field_types = rb_iv_get(self, "@field_types");
-	ft_length = RARRAY(field_types)->len;
-	
-	result = sqlite3_step(reader);
-	
-	if ( result != SQLITE_ROW ) {
-		return Qnil;
-	}
-	
-	for ( i = 0; i < field_count; i++ ) {
-		if ( ft_length == 0 ) {
-			value = native_typecast(sqlite3_column_value(reader, i), sqlite3_column_type(reader, i));
-		}
-		else {
-			value = ruby_typecast(sqlite3_column_value(reader, i), rb_class2name(RARRAY(field_types)->ptr[i]));
-		}
-		rb_ary_push(arr, value);
-	}
-	
-	return arr;
-}
 
 void Init_rbsqlite3() {
-	// Get references to Date and DateTime
-	rb_cDate = rb_funcall(rb_mKernel, ID_CONST_GET, 1, rb_str_new2("Date"));
-	rb_cDateTime = rb_funcall(rb_mKernel, ID_CONST_GET, 1, rb_str_new2("DateTime"));
-	rb_cTime = rb_funcall(rb_mKernel, ID_CONST_GET, 1, rb_str_new2("Time"));
-	rb_cRational = rb_funcall(rb_mKernel, ID_CONST_GET, 1, rb_str_new2("Rational"));
 	
-	// Top Level Module
-	mRbSqlite3 = rb_define_module("RbSqlite3");
+	// Get references classes needed for Date/Time parsing 
+	rb_cDate = CONST_GET(rb_mKernel, "Date");
+	rb_cDateTime = CONST_GET(rb_mKernel, "DateTime");
+	rb_cTime = CONST_GET(rb_mKernel, "Time");
+	rb_cRational = CONST_GET(rb_mKernel, "Rational");
 	
-	cConnection = rb_define_class_under(mRbSqlite3, "Connection", rb_cObject);
-	rb_define_method(cConnection, "initialize", cConnection_initialize, 1);
-	rb_define_method(cConnection, "execute_reader", cConnection_execute_reader, 1);
-	rb_define_method(cConnection, "execute_non_query", cConnection_execute_non_query, 1);
-	rb_define_method(cConnection, "last_error", cConnection_last_error, 0);
-	rb_define_method(cConnection, "close", cConnection_close, 0);
+	// Get references to the DataObjects module and its classes
+	mDO = CONST_GET(rb_mKernel, "DataObjects");
+	cDO_Connection = CONST_GET(mDO, "Connection");
+	cDO_Command = CONST_GET(mDO, "Command");
+	cDO_Result = CONST_GET(mDO, "Result");
+	cDO_Reader = CONST_GET(mDO, "Reader");
 	
-	cResult = rb_define_class_under(mRbSqlite3, "Result", rb_cObject);
-	rb_define_attr(cResult, "affected_rows", 1, 0);
-	rb_define_attr(cResult, "field_count", 1, 0);
-	rb_define_attr(cResult, "field_names", 1, 0);
-	rb_define_attr(cResult, "field_types", 1, 0);
-	rb_define_attr(cResult, "inserted_id", 1, 0);
+	// Initialize the DataObjects::Sqlite3 module, and define its classes
+	mSqlite3 = rb_define_module_under(mDO, "Sqlite3");
+	cConnection = SQLITE3_CLASS("Connection", cDO_Connection);
+	cCommand = SQLITE3_CLASS("Command", cDO_Command);
+	cResult = SQLITE3_CLASS("Result", cDO_Result);
+	cReader = SQLITE3_CLASS("Reader", cDO_Reader);
 	
-	rb_define_method(cResult, "set_types", cResult_set_types, 1);
-	rb_define_method(cResult, "fetch_row", cResult_fetch_row, 0);
-	rb_define_method(cResult, "close", cResult_close, 0);
 }
