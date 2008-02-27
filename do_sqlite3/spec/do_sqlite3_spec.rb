@@ -5,8 +5,19 @@ require 'date'
 require 'rbsqlite3'
 
 describe "DataObjects::Sqlite3::Connection" do
-  it "should return the uri when initialized" do
+  it "should connect" do
     connection = DataObjects::Connection.new("sqlite3:///usr/local/projects/do_svn/do_sqlite3/profile.db")
+    connection.real_close
+  end
+end
+
+describe "DataObjects::Sqlite3::Result" do
+  it "should return the affected rows and insert_id" do    
+    connection = DataObjects::Connection.new("sqlite3:///usr/local/projects/do_svn/do_sqlite3/profile.db")
+    
+    command = connection.create_command("INSERT INTO users (name) VALUES ('Joe Schmoe')")
+    result = command.execute_non_query
+    
     connection.real_close
   end
 end
