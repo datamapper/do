@@ -14,18 +14,19 @@ module DataObjects
     
     def self.new(uri)
       uri = uri.is_a?(String) ? URI::parse(uri) : uri
-      DataObjects.const_get(uri.scheme.capitalize)::Connection.aquire(uri.to_s)
+      DataObjects.const_get(uri.scheme.capitalize)::Connection.acquire(uri)
     end
     
-    def self.aquire(connection_string)
+    def self.acquire(connection_uri)
       conn = nil
+      connection_string = connection_uri.to_s
       
       @connection_lock.synchronize do          
         unless @available_connections[connection_string].empty?
           conn = @available_connections[connection_string].pop
         else
           conn = allocate
-          conn.send(:initialize, connection_string)
+          conn.send(:initialize, connection_uri)
           at_exit { conn.real_close }
         end
         

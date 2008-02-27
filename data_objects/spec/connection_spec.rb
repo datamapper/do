@@ -4,7 +4,7 @@ describe DataObjects::Connection do
   
   it "should define a standard API" do
     DataObjects::Connection.should respond_to(:new)
-    DataObjects::Connection.should respond_to(:aquire)
+    DataObjects::Connection.should respond_to(:acquire)
     DataObjects::Connection.should respond_to(:release)
     
     connection = DataObjects::Connection.new('mock://localhost')
