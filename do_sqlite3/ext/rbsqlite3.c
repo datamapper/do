@@ -59,6 +59,8 @@ VALUE cCommand_execute_non_query(int argc, VALUE *argv) {
 	int status;
 	int affected_rows;
 	int insert_id;
+	VALUE self = argv[0];
+	VALUE query = rb_iv_get(self, "@text");
 	
 	Data_Get_Struct(rb_iv_get(self, "@connection"), sqlite3, db);
 	
