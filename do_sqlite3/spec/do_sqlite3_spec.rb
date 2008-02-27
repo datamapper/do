@@ -1,10 +1,13 @@
 # require File.dirname(__FILE__) + '/spec_helper'
+require 'rubygems'
+require '/usr/local/projects/do/data_objects/lib/data_objects'
 require 'date'
 require 'rbsqlite3'
 
-describe "do_sqlite3" do
-  it "should do nothing" do
-    true.should == true
+describe "DataObjects::Sqlite3::Connection" do
+  it "should return the uri when initialized" do
+    connection = DataObjects::Connection.new("sqlite3:///usr/local/projects/do_svn/do_sqlite3/profile.db")
+    connection.real_close
   end
 end
 
