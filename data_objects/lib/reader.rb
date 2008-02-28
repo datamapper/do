@@ -5,10 +5,6 @@ module DataObjects
       raise NotImplementedError.new
     end
   
-    def eof?
-      raise NotImplementedError.new
-    end
-  
     def values
       raise NotImplementedError.new
     end

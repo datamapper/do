@@ -53,7 +53,7 @@ module DataObjects
     # Standard API Definition
     #####################################################
     def to_s
-      @uri
+      @uri.to_s
     end
     
     def initialize(uri)

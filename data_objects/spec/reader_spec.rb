@@ -10,7 +10,6 @@ describe DataObjects::Reader do
     reader = command.execute_reader
         
     result.should respond_to(:close)
-    result.should respond_to(:eof?)
     result.should respond_to(:next!)
     result.should respond_to(:values)
     result.should respond_to(:fields)

@@ -20,7 +20,7 @@ module DataObjects
     # This method is meant mostly for adapters that don't support
     # bind-parameters.
     def escape_sql(args)
-      sql = text.dup
+      sql = @text.dup
     
       unless args.empty?
         sql.gsub!(/\?/) do |x|

@@ -4,6 +4,7 @@ require File.dirname(__FILE__) + "/command"
 require File.dirname(__FILE__) + "/result"
 require File.dirname(__FILE__) + "/reader"
 require File.dirname(__FILE__) + "/field"
+require File.dirname(__FILE__) + "/quoting"
 
 
 module DataObjects
