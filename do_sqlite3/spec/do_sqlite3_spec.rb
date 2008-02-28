@@ -4,75 +4,71 @@ require '/usr/local/projects/do/data_objects/lib/data_objects'
 require 'date'
 require 'rbsqlite3'
 
-describe "DataObjects::Sqlite3::Connection" do
-  it "should connect" do
-    connection = DataObjects::Connection.new("sqlite3:///usr/local/projects/do_svn/do_sqlite3/profile.db")
-    connection.real_close
-  end
-end
 
 describe "DataObjects::Sqlite3::Result" do
+  before(:all) do
+    @connection = DataObjects::Connection.new("sqlite3:///usr/local/projects/do/do_sqlite3/profile.db")
+  end
+  
   it "should return the affected rows and insert_id" do    
-    connection = DataObjects::Connection.new("sqlite3:///usr/local/projects/do_svn/do_sqlite3/profile.db")
-    
-    command = connection.create_command("INSERT INTO users (name) VALUES ('Joe Schmoe')")
+    command = @connection.create_command("DROP TABLE users")
+    command.execute_non_query
+    command = @connection.create_command("CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT)")
     result = command.execute_non_query
-    
-    connection.real_close
+    command = @connection.create_command("INSERT INTO users (name) VALUES ('test')")    
+    result = command.execute_non_query
+    result.insert_id.should == 1
+    result.to_i.should == 1
   end
-end
+  
+  it "should use DO::Quoting.escape_sql with passed params" do
+    command = @connection.create_command("INSERT INTO users (name) VALUES (?)")
+    result = command.execute_non_query("John Doe")
+    result.insert_id.should == 2
+    result.to_i.should == 1
+  end
+  
+  it "should do a reader query" do
+    command = @connection.create_command("SELECT * FROM users")
+    reader = command.execute_reader
+    
+    lambda { reader.values }.should raise_error
+    
+    while ( reader.next! )
+      lambda { reader.values }.should_not raise_error
+      reader.values.should be_a_kind_of(Array)
+    end
+    
+    lambda { reader.values }.should raise_error
+    
+    reader.close
+  end
 
-=begin
-module DataObjects
-  module Sqlite3
-    class Connection < DataObjects::Connection
-      
-      def initialize
-      end
-      
-      def begin_transaction
-      end
-      
-      def real_close
-      end
-      
+  it "should do a paramaterized reader query" do
+    command = @connection.create_command("SELECT * FROM users WHERE id = ?")
+    reader = command.execute_reader(1)
+    reader.next!
+    
+    reader.values[0].should == 1
+    
+    reader.next!
+
+    lambda { reader.values }.should raise_error
+
+    reader.close
+  end
+  
+  it "should do a custom typecast reader" do
+    command = @connection.create_command("SELECT name, id FROM users")
+    command.set_types [String, String]
+    reader = command.execute_reader
+    
+    while ( reader.next! )
+      reader.fields.should == ["name", "id"]
+      reader.values.each { |v| v.should be_a_kind_of(String) }
     end
     
-    class Command < DataObjects::Command
-      
-      def set_types
-      end
-      
-      def execute_non_query
-      end
-      
-      def execute_reader
-      end
-      
-    end
+    reader.close
     
-    class Result < DataObjects::Result
-      
-    end
-    
-    class Reader < DataObjects::Reader
-      
-      def close
-      end
-      
-      def eof?
-      end
-      
-      def next!
-      end
-      
-      def values
-      end
-      
-      def fields
-      end
-      
-    end
   end
 end
-=end
