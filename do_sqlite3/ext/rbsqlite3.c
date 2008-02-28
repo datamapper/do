@@ -334,7 +334,7 @@ VALUE cReader_fields(VALUE self) {
 	return rb_iv_get(self, "@fields");
 }
 
-void Init_rbsqlite3() {
+void Init_do_sqlite3() {
 	
 	// Get references classes needed for Date/Time parsing 
 	rb_cDate = CONST_GET(rb_mKernel, "Date");

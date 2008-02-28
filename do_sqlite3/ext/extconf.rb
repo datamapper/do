@@ -14,7 +14,7 @@
 require 'mkmf'
 
 # Give it a name
-extension_name = 'rbsqlite3'
+extension_name = 'do_sqlite3'
 
 dir_config("sqlite3", "/usr")
 

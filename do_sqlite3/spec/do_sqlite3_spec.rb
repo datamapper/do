@@ -1,13 +1,13 @@
 # require File.dirname(__FILE__) + '/spec_helper'
 require 'rubygems'
-require '/usr/local/projects/do/data_objects/lib/data_objects'
+require File.dirname(__FILE__) + "/../../data_objects/lib/data_objects"
 require 'date'
-require 'rbsqlite3'
+require 'do_sqlite3'
 
 
 describe "DataObjects::Sqlite3::Result" do
   before(:all) do
-    @connection = DataObjects::Connection.new("sqlite3:///usr/local/projects/do/do_sqlite3/profile.db")
+    @connection = DataObjects::Connection.new("sqlite3://#{File.expand_path(File.dirname(__FILE__))}/test.db")
   end
   
   it "should return the affected rows and insert_id" do    
