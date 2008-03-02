@@ -342,6 +342,9 @@ void Init_do_sqlite3() {
 	rb_cTime = CONST_GET(rb_mKernel, "Time");
 	rb_cRational = CONST_GET(rb_mKernel, "Rational");
 	
+	rb_require("rubygems");
+  rb_funcall(rb_mKernel, rb_intern("require"), 1, rb_str_new2("data_objects"));
+     
 	// Get references to the DataObjects module and its classes
 	mDO = CONST_GET(rb_mKernel, "DataObjects");
 	cDO_Quoting = CONST_GET(mDO, "Quoting");
