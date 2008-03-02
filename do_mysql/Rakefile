@@ -58,40 +58,47 @@ task :bench_rbmysql do
     ]
     
     bm.report('RbMysql w/ set_types') do 
-      connection = RbMysql::Connection.new('localhost', 'root', '', 'rbmysql_test', 3306, nil, nil)
-      reader = connection.execute_reader("SELECT * FROM widget_types")
-      reader.set_types widget_types
+      
+      50.times do
+        connection = DataObjects::Mysql::Connection.new('mysql://root@localhost/st_development_9')
+        command = connection.create_command("SELECT * FROM tickets")
+        # command.set_types widget_types
+        reader = command.execute_reader
    
-      until (row = reader.fetch_row).nil?
-        row.each { |v| v } # Touch all the elements in the row, they've already been typecast
-      end
+        until (!reader.next!)
+          reader.values.each { |v| v } # Touch all the elements in the row, they've already been typecast
+        end
      
-      reader.close
-      connection.close
+        reader.close
+        connection.close
+      end
     end
     
   end
 end
 
 task :bench_do do
+  require 'active_record'
+
+  # Weaksauce, but AR refuses to connect any other way I've tried
+  ActiveRecord::Base.establish_connection({
+    :adapter => "mysql", 
+    :host => "localhost",
+    :user => 'root',
+    :password => '',
+    :database => 'rbmysql_test'
+  })
+  ActiveRecord::Base.connection.execute("SELECT 1;")
+  
   
   $:.unshift 'lib'
   $:.unshift File.join('..', 'data_objects', 'lib')
   
   require 'data_objects'
-  require 'do_mysql'
-  require 'active_record'
+  require 'rbmysql'
   require 'benchmark'
   
   Benchmark.bm do |bm|
-
-      ActiveRecord::Base.establish_connection({
-        :adapter => "mysql", 
-        :host => "localhost",
-        :user => 'root',
-        :password => '',
-        :database => 'rbmysql_test'
-      })
     
     class Widget < ActiveRecord::Base
     end 
@@ -109,7 +116,7 @@ task :bench_do do
 
         reader = command.execute_reader
 
-        until reader.eof?
+        until (row = reader.next!).nil?
           reader.values.each do |v|
             v # This is the type-cast field value
           end
