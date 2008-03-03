@@ -200,7 +200,7 @@ VALUE cast_mysql_value_to_ruby_value(const char* data, char* ruby_class_name) {
 
 void raise_mysql_error(MYSQL *db, int mysql_error_code) {
 	char *error_message = (char *)mysql_error(db);
-	char *extra = "";
+	// char *extra = "";
 
 	switch(mysql_error_code) {
 		case CR_UNKNOWN_ERROR: 
@@ -619,7 +619,9 @@ VALUE cReader_fields(VALUE self) {
 }
 
 void Init_rbmysql() {
+	rb_require("rubygems");
 	rb_require("bigdecimal");
+  rb_funcall(rb_mKernel, rb_intern("require"), 1, rb_str_new2("data_objects"));
 	
 	ID_TO_I = rb_intern("to_i");
 	ID_TO_F = rb_intern("to_f");
