@@ -1,7 +1,7 @@
 *.log
 ./doc
 ./cov
-./pkg
+./pkg/*
 .DS_Store
 *.o
 *.bundle
