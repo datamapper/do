@@ -534,7 +534,7 @@ VALUE cTransaction_rollback(int argc, VALUE *argv, VALUE self) {
 	}
 	
 	VALUE connection = rb_iv_get(self, "@connection");
-	VALUE command = rb_funcall(connection, rb_intern("create_command"), 1, "COMMIT");
+	VALUE command = rb_funcall(connection, rb_intern("create_command"), 1, "ROLLBACK");
 	VALUE result = rb_funcall(command, rb_intern("execute_non_query"), 0);
 
 	rb_iv_set(connection, "@transaction", Qnil);
@@ -621,6 +621,7 @@ VALUE cReader_fields(VALUE self) {
 void Init_rbmysql() {
 	rb_require("rubygems");
 	rb_require("bigdecimal");
+        rb_require("date");
   rb_funcall(rb_mKernel, rb_intern("require"), 1, rb_str_new2("data_objects"));
 	
 	ID_TO_I = rb_intern("to_i");
