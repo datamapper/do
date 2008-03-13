@@ -3,7 +3,7 @@ require 'rake/gempackagetask'
 
 PLUGIN = "do_mysql"
 NAME = "do_mysql"
-VERSION = "0.2.4"
+VERSION = "0.9.0"
 AUTHOR = "Yehuda Katz"
 EMAIL = "wycats@gmail.com"
 HOMEPAGE = "http://dataobjects.devjavu.com"
@@ -20,7 +20,7 @@ spec = Gem::Specification.new do |s|
   s.author = AUTHOR
   s.email = EMAIL
   s.homepage = HOMEPAGE
-  s.add_dependency('data_objects')
+  s.add_dependency('data_objects', '>= 0.9.0')
   s.require_path = 'lib'
   s.autorequire = PLUGIN
   s.extensions = ["ext/extconf.rb"]
