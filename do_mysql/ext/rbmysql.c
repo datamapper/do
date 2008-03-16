@@ -133,7 +133,7 @@ VALUE cast_mysql_value_to_ruby_value(const char* data, char* ruby_class_name) {
 	VALUE ruby_value = Qnil;
  
 	if (0 == strcmp("Fixnum", ruby_class_name) || 0 == strcmp("Bignum", ruby_class_name)) {
-		ruby_value = (0 == strlen(data) ? Qnil : LL2NUM(atoi(data)));
+		ruby_value = (0 == strlen(data) ? Qnil : LL2NUM(atol(data)));
 	} else if (0 == strcmp("String", ruby_class_name)) {
 		ruby_value = TAINTED_STRING(data);
 	} else if (0 == strcmp("Float", ruby_class_name) ) {
