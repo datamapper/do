@@ -43,6 +43,11 @@ describe "A new connection" do
     command = @connection.create_command("SELECT * FROM widgets")
     command.should be_kind_of(DataObjects::Mysql::Command)
   end
+
+  it "should raise an error when attempting to execute a bad query" do
+    lambda { @connection.create_command("INSERT INTO non_existant_table (tester) VALUES (1)").execute_non_query }.should raise_error(MysqlError)
+    lambda { @connection.create_command("SELECT * FROM non_existant table").execute_reader }.should raise_error(MysqlError)
+  end
   
   describe "executing a query" do
     before(:each) do
@@ -53,16 +58,16 @@ describe "A new connection" do
       before(:each) do
         @reader = @command.execute_reader
       end
-
+  
       it "should return the proper number of fields" do
         @reader.fields.size.should == 21
       end
-
+  
       it "should return raise an exception if .values is called after reading all available rows" do
         3.times { @reader.next! }
         lambda { @reader.values }.should raise_error(Exception)
       end
-
+  
       it "should fetch 2 rows" do
         @reader.next!.should == true
         @reader.values.should be_kind_of(Array)
@@ -75,7 +80,7 @@ describe "A new connection" do
       
       it "should contain tainted strings" do
         @reader.next!
-
+  
         @reader.values.each do |value|
           (value.should be_tainted) if value.is_a?(String)
         end
@@ -91,7 +96,7 @@ describe "A new connection" do
       # end
     end
     
-    describe "executing a query w/ set_types" do
+    describe "executing a query w/ set_types" do      
       before(:all) do
         @types = [
           Fixnum, String, String, String, String, String,
@@ -119,13 +124,29 @@ describe "A new connection" do
 
   end
   
+  # An awful lot of setup here just to get a typecast value back...
+  def type_test(value, type_string, ruby_type = nil)
+    test_table = "test_table_#{rand(10000)}"
+    value = 'null' if value.nil?
+    @connection.create_command("DROP TABLE IF EXISTS #{test_table}").execute_non_query
+    @connection.create_command("CREATE TABLE `#{test_table}` ( `test_field` #{type_string} )").execute_non_query
+    @connection.create_command("INSERT INTO #{test_table} (test_field) VALUES (#{value})").execute_non_query
+    @cmd = @connection.create_command("SELECT test_field FROM #{test_table}")
+    @cmd.set_types [ruby_type || value.class]
+    @reader = @cmd.execute_reader
+    @reader.next!
+    value = @reader.values[0]
+    @reader.close
+    value
+  end
+  
   describe "executing a non-query" do
     it "should return a Result" do
       command = @connection.create_command("INSERT INTO invoices (invoice_number) VALUES ('1234')")
       result = command.execute_non_query
       result.should be_kind_of(DataObjects::Mysql::Result)
     end
-
+  
     it "should be able to determine the affected_rows" do
       command = @connection.create_command("INSERT INTO invoices (invoice_number) VALUES ('1234')")
       result = command.execute_non_query
@@ -134,35 +155,35 @@ describe "A new connection" do
     
     it "should yield the last inserted id" do
       @connection.create_command("TRUNCATE TABLE invoices").execute_non_query
-
+  
       result = @connection.create_command("INSERT INTO invoices (invoice_number) VALUES ('1234')").execute_non_query
       result.insert_id.should == 1
       
       result = @connection.create_command("INSERT INTO invoices (invoice_number) VALUES ('3456')").execute_non_query
       result.insert_id.should == 2
     end
-
+  
     it "should be able to determine the affected_rows" do
       [
         "TRUNCATE TABLE invoices",
         "INSERT INTO invoices (invoice_number) VALUES ('1234')",
         "INSERT INTO invoices (invoice_number) VALUES ('1234')"
       ].each { |q| @connection.create_command(q).execute_non_query }
-
+  
       result = @connection.create_command("UPDATE invoices SET invoice_number = '3456'").execute_non_query
       result.to_i.should == 2
     end
     
     it "should raise an error when executing an invalid query" do
       command = @connection.create_command("UPDwhoopsATE invoices SET invoice_number = '3456'")
-
+  
       lambda { command.execute_non_query }.should raise_error(Exception)
     end
-
+  
   end
   
   describe "executing a non-query during a transaction" do
-
+  
     it "shouldn't effect results on other connections" do
       counter = lambda { |connection|
         command = connection.create_command("SELECT count(*) as invoice_count FROM invoices")
@@ -175,7 +196,7 @@ describe "A new connection" do
       
       # Get the number of invoices BEFORE we add one
       original_count = counter.call(@connection)
-
+  
       transaction = @connection.begin_transaction
       result = transaction.create_command("INSERT INTO invoices (invoice_number) VALUES ('Superman')").execute_non_query
       

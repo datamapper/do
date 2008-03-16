@@ -47,6 +47,7 @@ VALUE cCommand;
 VALUE cTransaction;
 VALUE cResult;
 VALUE cReader;
+VALUE eMysqlError;
  
 // Figures out what we should cast a given mysql field type to
 char * ruby_type_from_mysql_type(MYSQL_FIELD *field) {
@@ -268,7 +269,7 @@ void raise_mysql_error(MYSQL *db, int mysql_error_code) {
 		}
 	}
 	
-	rb_raise(rb_eException, error_message);
+	rb_raise(eMysqlError, error_message);
 }
 
 VALUE cConnection_initialize(VALUE self, VALUE uri) {
@@ -454,6 +455,7 @@ VALUE cCommand_execute_reader(int argc, VALUE *argv, VALUE self) {
 	}
  
 	query_result = mysql_query(db, StringValuePtr(query));
+	CHECK_AND_RAISE(query_result);
  
 	response = (MYSQL_RES *)mysql_use_result(db);
  
@@ -623,7 +625,8 @@ VALUE cReader_fields(VALUE self) {
 void Init_rbmysql() {
 	rb_require("rubygems");
 	rb_require("bigdecimal");
-        rb_require("date");
+  rb_require("date");
+
   rb_funcall(rb_mKernel, rb_intern("require"), 1, rb_str_new2("data_objects"));
 	
 	ID_TO_I = rb_intern("to_i");
@@ -658,6 +661,8 @@ void Init_rbmysql() {
 
 	// Top Level Module that all the classes live under
 	mRbMysql = rb_define_module_under(mDO, "Mysql");
+	
+	eMysqlError = rb_define_class("MysqlError", rb_eStandardError);
 	
 	cConnection = DRIVER_CLASS("Connection", cDO_Connection);
 	rb_define_method(cConnection, "initialize", cConnection_initialize, 1);
