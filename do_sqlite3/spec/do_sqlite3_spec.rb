@@ -1,13 +1,32 @@
 # require File.dirname(__FILE__) + '/spec_helper'
 require 'rubygems'
-require File.dirname(__FILE__) + "/../../data_objects/lib/data_objects"
+# require File.dirname(__FILE__) + "/../../data_objects/lib/data_objects"
+require 'data_objects'
 require 'date'
 require 'do_sqlite3'
+
+
+describe "DataObjects::Sqlite3" do
+  it "should raise error on bad connection string" do
+    lambda { DataObjects::Connection.new("sqlite3:///ac0d9iopalmsdcasd/asdc9pomasd/test.db") }.should raise_error("unable to open database file")
+  end
+end
 
 
 describe "DataObjects::Sqlite3::Result" do
   before(:all) do
     @connection = DataObjects::Connection.new("sqlite3://#{File.expand_path(File.dirname(__FILE__))}/test.db")
+  end
+  
+  it "should raise an error for a bad query" do
+    command = @connection.create_command("INSER INTO table_which_doesnt_exist (id) VALUES (1)")
+    lambda { command.execute_non_query }.should raise_error('near "INSER": syntax error')
+  
+    command = @connection.create_command("INSERT INTO table_which_doesnt_exist (id) VALUES (1)")
+    lambda { command.execute_non_query }.should raise_error("no such table: table_which_doesnt_exist")
+    
+    command = @connection.create_command("SELECT * FROM table_which_doesnt_exist")
+    lambda { command.execute_reader }.should raise_error("no such table: table_which_doesnt_exist")
   end
   
   it "should return the affected rows and insert_id" do    

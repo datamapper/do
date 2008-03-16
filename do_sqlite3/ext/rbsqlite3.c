@@ -29,6 +29,8 @@ VALUE cCommand;
 VALUE cResult;
 VALUE cReader;
 
+VALUE eSqlite3Error;
+
 
 /****** Typecasting ******/
 VALUE native_typecast(sqlite3_value *value, int type) {
@@ -153,11 +155,16 @@ VALUE ruby_typecast(sqlite3_value *value, char *type) {
 /****** Public API ******/
 
 VALUE cConnection_initialize(VALUE self, VALUE uri) {
+	int ret;
 	VALUE path;
 	sqlite3 *db;
 	
 	path = rb_funcall(uri, ID_PATH, 0);
-	sqlite3_open(StringValuePtr(path), &db);
+	ret = sqlite3_open(StringValuePtr(path), &db);
+	
+	if ( ret != SQLITE_OK ) {
+		rb_raise(eSqlite3Error, sqlite3_errmsg(db));
+	}
 	
 	rb_iv_set(self, "@uri", uri);
 	rb_iv_set(self, "@connection", Data_Wrap_Struct(rb_cObject, 0, 0, db));
@@ -202,8 +209,7 @@ VALUE cCommand_execute_non_query(int argc, VALUE *argv[], VALUE self) {
 	status = sqlite3_exec(db, StringValuePtr(query), 0, 0, &error_message);
 	
 	if ( status != SQLITE_OK ) {
-		rb_iv_set(self, "@last_error", INT2NUM(status));
-		return Qnil;
+		rb_raise(eSqlite3Error, sqlite3_errmsg(db));
 	}
 	
 	affected_rows = sqlite3_changes(db);
@@ -239,8 +245,7 @@ VALUE cCommand_execute_reader(int argc, VALUE *argv[], VALUE self) {
 	status = sqlite3_prepare_v2(db, StringValuePtr(query), -1, &sqlite3_reader, 0);
 	
 	if ( status != SQLITE_OK ) {
-		rb_iv_set(self, "@last_error", rb_str_new2(sqlite3_errmsg(db)));
-		return Qnil;
+		rb_raise(eSqlite3Error, sqlite3_errmsg(db));
 	}
 	
 	field_count = sqlite3_column_count(sqlite3_reader);
@@ -336,14 +341,16 @@ VALUE cReader_fields(VALUE self) {
 
 void Init_do_sqlite3() {
 	
+	rb_require("rubygems");
+	rb_require("date");
+	
 	// Get references classes needed for Date/Time parsing 
 	rb_cDate = CONST_GET(rb_mKernel, "Date");
 	rb_cDateTime = CONST_GET(rb_mKernel, "DateTime");
 	rb_cTime = CONST_GET(rb_mKernel, "Time");
 	rb_cRational = CONST_GET(rb_mKernel, "Rational");
 	
-	rb_require("rubygems");
-  rb_funcall(rb_mKernel, rb_intern("require"), 1, rb_str_new2("data_objects"));
+	rb_funcall(rb_mKernel, rb_intern("require"), 1, rb_str_new2("data_objects"));
      
 	// Get references to the DataObjects module and its classes
 	mDO = CONST_GET(rb_mKernel, "DataObjects");
@@ -355,6 +362,8 @@ void Init_do_sqlite3() {
 	
 	// Initialize the DataObjects::Sqlite3 module, and define its classes
 	mSqlite3 = rb_define_module_under(mDO, "Sqlite3");
+	
+	eSqlite3Error = rb_define_class("Sqlite3Error", rb_eStandardError);
 	
 	cConnection = SQLITE3_CLASS("Connection", cDO_Connection);
 	rb_define_method(cConnection, "initialize", cConnection_initialize, 1);
