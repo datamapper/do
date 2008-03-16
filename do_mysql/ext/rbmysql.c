@@ -132,8 +132,10 @@ VALUE cast_mysql_value_to_ruby_value(const char* data, char* ruby_class_name) {
  
 	VALUE ruby_value = Qnil;
  
-	if (0 == strcmp("Fixnum", ruby_class_name) || 0 == strcmp("Bignum", ruby_class_name)) {
+	if (0 == strcmp("Fixnum", ruby_class_name)) {
 		ruby_value = (0 == strlen(data) ? Qnil : LL2NUM(atol(data)));
+	} else if (0 == strcmp("Bignum", ruby_class_name)) {
+		ruby_value = (0 == strlen(data) ? Qnil : rb_int2big(atol(data)));
 	} else if (0 == strcmp("String", ruby_class_name)) {
 		ruby_value = TAINTED_STRING(data);
 	} else if (0 == strcmp("Float", ruby_class_name) ) {
@@ -417,7 +419,7 @@ VALUE cCommand_execute_non_query(int argc, VALUE *argv, VALUE self) {
 		}
 		query = rb_funcall(self, ID_ESCAPE_SQL, 1, array);
 	}
-	
+
 	query_result = mysql_query(db, StringValuePtr(query));
 	CHECK_AND_RAISE(query_result);
 	
