@@ -24,8 +24,8 @@ if have_build_env
   required_libraries.each(&method(:have_library))
   desired_functions.each(&method(:have_func))
   $CFLAGS << ' -Wall '
-  dir_config("postgres_c")
-  create_makefile("postgres_c")
+  dir_config("do_postgres")
+  create_makefile("do_postgres")
 else
   puts 'Could not find PostgreSQL build environment (libraries & headers): Makefile not created'
 end

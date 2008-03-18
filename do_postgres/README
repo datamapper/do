@@ -1,4 +1,4 @@
-do_sqlite3
+do_postgres
 =================
 
-A plugin for the Merb framework that provides ....
+Data Objects PostgreSQL adapter
