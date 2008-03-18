@@ -82,17 +82,35 @@ describe DataObjects::Connection do
   describe 'connection pooling' do
     before do
       @uri = URI.parse('mock://localhost/database')
+
+      clear_connections!
+
+      DataObjects::Mock::Connection.instance_variable_get("@available_connections")[@uri.to_s].should be_empty
+      DataObjects::Mock::Connection.instance_variable_get("@reserved_connections").should be_empty
+    end
+
+    def clear_connections!
+      # in real life, we should close the connections, but since its just a mock adapter...
+      DataObjects::Mock::Connection.instance_variable_set("@reserved_connections", Set.new)
+      DataObjects::Mock::Connection.instance_variable_set("@available_connections", Hash.new { |h,k| h[k] = [] })
     end
 
     it "should make a new connection if the pool is empty" do
-      DataObjects::Mock::Connection.instance_variable_get("@available_connections")[@uri.to_s].should be_empty
       c = DataObjects::Mock::Connection.acquire(@uri)
       DataObjects::Mock::Connection.instance_variable_get("@available_connections")[@uri.to_s].should be_empty
       DataObjects::Mock::Connection.instance_variable_get("@reserved_connections").should include(c)
     end
 
+    it "should add the connection to available connections on release" do
+      c = DataObjects::Mock::Connection.acquire(@uri)
+      DataObjects::Mock::Connection.instance_variable_get("@reserved_connections").should_not be_empty
+      c.close
+      DataObjects::Mock::Connection.instance_variable_get("@reserved_connections").should be_empty
+      DataObjects::Mock::Connection.instance_variable_get("@available_connections")[@uri.to_s].should_not be_empty
+      DataObjects::Mock::Connection.instance_variable_get("@available_connections")[@uri.to_s].should include(c)
+    end
+
     it "should reuse a connection if there's one available" do
-      DataObjects::Mock::Connection.instance_variable_get("@available_connections")[@uri.to_s].should be_empty
       c = DataObjects::Mock::Connection.acquire(@uri)
       c.close
       DataObjects::Mock::Connection.instance_variable_get("@available_connections")[@uri.to_s].should_not be_empty
@@ -100,18 +118,9 @@ describe DataObjects::Connection do
     end
 
     it "should make a new connection if they're all in use" do
-      DataObjects::Mock::Connection.instance_variable_get("@available_connections")[@uri.to_s].should be_empty
       c = DataObjects::Mock::Connection.acquire(@uri)
       DataObjects::Mock::Connection.instance_variable_get("@available_connections")[@uri.to_s].should be_empty
       c.should_not == DataObjects::Mock::Connection.acquire(@uri)
-    end
-
-    it "should add the connection to available connections on release" do
-      DataObjects::Mock::Connection.instance_variable_get("@available_connections")[@uri.to_s].should be_empty
-      c = DataObjects::Mock::Connection.acquire(@uri)
-      c.close
-      DataObjects::Mock::Connection.instance_variable_get("@available_connections")[@uri.to_s].should_not be_empty
-      DataObjects::Mock::Connection.instance_variable_get("@available_connections")[@uri.to_s].should include(c)
     end
 
   end
