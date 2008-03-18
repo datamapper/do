@@ -1,23 +1,36 @@
 require File.dirname(__FILE__) + '/spec_helper'
 
 describe DataObjects::Command do
-  
-  it "should define a standard API" do
-    connection = DataObjects::Connection.new('mock://localhost')
-    
-    command = connection.create_command("SELECT * FROM example")
+  before do
+    @command = DataObjects::Command.new('connection://uri', 'SQL STRING')
+  end
 
-    command.should respond_to(:connection)
-    
-    # #to_s returns the command-text, ie: the SQL.
-    command.should respond_to(:to_s)
-    
-    command.should respond_to(:set_types)
-    
-    command.should respond_to(:execute_non_query)
-    command.should respond_to(:execute_reader)
-    
-    connection.close
+  it "should assign the connection object to @connection" do
+    @command.instance_variable_get("@connection").should == 'connection://uri'
+  end
+
+  it "should assign the sql text to @text" do
+    @command.instance_variable_get("@text").should == 'SQL STRING'
+  end
+  
+  %w{connection execute_non_query execute_reader set_types to_s}.each do |meth|
+    it "should respond to ##{meth}" do
+      @command.should respond_to(meth.intern)
+    end
+  end
+
+  %w{execute_non_query execute_reader set_types}.each do |meth|
+    it "should raise NotImplementedError on ##{meth}" do
+      lambda { @command.send(meth.intern, nil) }.should raise_error(NotImplementedError)
+    end
+  end
+
+  it "should make the connection object available in #connection" do
+    @command.connection.should == @command.instance_variable_get("@connection")
+  end
+
+  it "should make the SQL text available in #to_s" do
+    @command.to_s.should == @command.instance_variable_get("@text")
   end
   
 end
