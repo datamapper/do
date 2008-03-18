@@ -33,7 +33,6 @@ VALUE ePostgresError;
 
 VALUE cConnection_initialize(VALUE self, VALUE uri) {
 	
-	const char *connection_string;
 	PGconn *db;
 	
 	VALUE r_host = rb_funcall(uri, rb_intern("host"), 0);
@@ -43,7 +42,7 @@ VALUE cConnection_initialize(VALUE self, VALUE uri) {
 	}
 	
 	VALUE r_user = rb_funcall(uri, rb_intern("user"), 0);
-	char * user = "root";
+	char * user = "postgres";
 	if (Qnil != r_user) {
 		user = StringValuePtr(r_user);
 	}
@@ -64,13 +63,28 @@ VALUE cConnection_initialize(VALUE self, VALUE uri) {
 	if (NULL == database || 0 == strlen(database)) {
 		rb_raise(ePostgresError, "Database must be specified");
 	}
+	
 	VALUE r_port = rb_funcall(uri, rb_intern("port"), 0);
-	int port = 5432;
+	char *port = "5432";
 	if (Qnil != r_port) {
-		port = NUM2INT(r_port);
+		r_port = rb_funcall(r_port, rb_intern("to_s"), 0);
+		port = StringValuePtr(r_port);
 	}
 	
-	db = PQsetdbLogin(host, port, NULL, NULL, database, user, password);
+	db = PQsetdbLogin(
+		host, 
+		port, 
+		NULL, 
+		NULL, 
+		database, 
+		user, 
+		password
+	);
+	
+	
+	if ( PQstatus(db) == CONNECTION_BAD ) {
+		rb_raise(rb_eException, PQerrorMessage(db));
+	}
 	
 	rb_iv_set(self, "@uri", uri);
 	rb_iv_set(self, "@connection", Data_Wrap_Struct(rb_cObject, 0, 0, db));
@@ -86,7 +100,8 @@ VALUE cConnection_real_close(VALUE self) {
 }
 
 VALUE cCommand_set_types(VALUE self, VALUE array) {
-	return Qtrue;
+	rb_iv_set(self, "@field_types", array);
+	return array;
 }
 
 VALUE cCommand_execute_non_query(int argc, VALUE *argv[], VALUE self) {
