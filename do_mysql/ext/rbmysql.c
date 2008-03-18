@@ -1,6 +1,7 @@
 #include <ruby.h>
 #include <string.h>
 #include <math.h>
+#include <ctype.h>
 #include <mysql.h>
 #include <errmsg.h>
 #include <mysqld_error.h>
@@ -15,6 +16,7 @@
 // To store rb_intern values
 ID ID_TO_I;
 ID ID_TO_F;
+ID ID_TO_S;
 ID ID_PARSE;
 ID ID_TO_TIME;
 ID ID_NEW;
@@ -39,8 +41,9 @@ VALUE rb_cDateTime;
 VALUE rb_cRational;
 VALUE rb_cBigDecimal;
 VALUE rb_cURI;
+VALUE rb_cCGI;
 
-VALUE rb_do_eLengthMismatchError; 
+// Classes that we'll build in Init
 VALUE mRbMysql;
 VALUE cConnection;
 VALUE cCommand;
@@ -272,9 +275,39 @@ void raise_mysql_error(MYSQL *db, int mysql_error_code) {
 	rb_raise(eMysqlError, error_message);
 }
 
+// Convert a string to lowercase
+char *lc(char *str) {
+	char *t;
+	for (t = str; *t; t++) {
+		(*t) = tolower(*t);
+	}
+	
+	return (str);
+}
+
+// Pull an option out of a querystring-formmated option list using CGI::parse
+char * get_uri_option(VALUE querystring, char * key) {
+	// Ensure that we're dealing with a string
+	querystring = rb_funcall(querystring, ID_TO_S, 0);
+	
+	VALUE options_hash = rb_funcall(rb_cCGI, ID_PARSE, 1, querystring);
+
+	// TODO: rb_hash_aref always returns an array?
+	VALUE option_value = rb_ary_entry(rb_hash_aref(options_hash, RUBY_STRING(key)), 0);
+	char * value = NULL;
+
+	if (Qnil != option_value) {
+		value = StringValuePtr(option_value);
+	}
+	
+	return value;
+}
+
 VALUE cConnection_initialize(VALUE self, VALUE uri) {
   MYSQL *db = 0 ;
   db = (MYSQL *)mysql_init(NULL);
+
+	rb_iv_set(self, "@using_socket", Qfalse);
 
 	VALUE r_host = rb_funcall(uri, rb_intern("host"), 0);
 	char * host = "localhost";
@@ -302,7 +335,24 @@ VALUE cConnection_initialize(VALUE self, VALUE uri) {
 	}
 
 	if (NULL == database || 0 == strlen(database)) {
-		rb_raise(rb_eException, "Database must be specified");
+		rb_raise(eMysqlError, "Database must be specified");
+	}
+	
+	// Pull the querystring off the URI
+	VALUE r_options = rb_funcall(uri, rb_intern("query"), 0);
+
+	char * socket = NULL;
+	// Check to see if we're on the db machine.  If so, try to use the socket
+	if (0 == strcmp(lc(host), "localhost")) {
+		// TODO: Read the socket path from my.conf [client]
+		// char *options = NULL;
+		// options = mysql_options(db, MYSQL_READ_DEFAULT_GROUP, "client");
+		// parse the socket=<path> line here.
+
+		socket = get_uri_option(r_options, "socket");
+		if (NULL != socket) {
+			rb_iv_set(self, "@using_socket", Qtrue);
+		}
 	}
 
 	VALUE r_port = rb_funcall(uri, rb_intern("port"), 0);
@@ -315,17 +365,19 @@ VALUE cConnection_initialize(VALUE self, VALUE uri) {
 	//   mysql_ssl_set(db, key, cert, ca, capath, cipher)
 	// }
  
-	int result;
+	unsigned long client_flags = 0;
+
+	MYSQL *result;
 	
-	result = mysql_real_connect(
+	result = (MYSQL *)mysql_real_connect(
 		db,
 		host,
 		user,
 		password,
 		database,
 		port,
-		NULL,
-		0
+		socket,
+		client_flags
 	);
 	
 	if (NULL == result) {
@@ -336,6 +388,10 @@ VALUE cConnection_initialize(VALUE self, VALUE uri) {
 	rb_iv_set(self, "@connection", Data_Wrap_Struct(rb_cObject, 0, 0, db));
  
 	return Qtrue;
+}
+
+VALUE cConnection_is_using_socket(VALUE self) {
+	return rb_iv_get(self, "@using_socket");
 }
 
 VALUE cConnection_begin_transaction(VALUE self) {
@@ -408,7 +464,6 @@ VALUE cCommand_execute_non_query(int argc, VALUE *argv, VALUE self) {
  
 	int query_result = 0;
 	MYSQL_RES *response = 0;
-	VALUE reader = Qnil;
 	
 	VALUE query = rb_iv_get(self, "@text");
 	
@@ -439,7 +494,6 @@ VALUE cCommand_execute_reader(int argc, VALUE *argv, VALUE self) {
  
 	int query_result = 0;
 	MYSQL_RES *response = 0;
-	VALUE result = Qnil;
 	VALUE query;
 	VALUE reader;
 
@@ -626,11 +680,13 @@ void Init_rbmysql() {
 	rb_require("rubygems");
 	rb_require("bigdecimal");
   rb_require("date");
+  rb_require("cgi");
 
   rb_funcall(rb_mKernel, rb_intern("require"), 1, rb_str_new2("data_objects"));
 	
 	ID_TO_I = rb_intern("to_i");
 	ID_TO_F = rb_intern("to_f");
+	ID_TO_S = rb_intern("to_s");
 	ID_PARSE = rb_intern("parse");
 	ID_TO_TIME = rb_intern("to_time");
 	ID_NEW = rb_intern("new");
@@ -646,6 +702,7 @@ void Init_rbmysql() {
 	rb_cRational = RUBY_CLASS("Rational");
 	rb_cBigDecimal = RUBY_CLASS("BigDecimal");
 	rb_cURI = RUBY_CLASS("URI");
+	rb_cCGI = RUBY_CLASS("CGI");
 	
 	// Get references to the DataObjects module and its classes
 	mDO = CONST_GET(rb_mKernel, "DataObjects");
@@ -655,9 +712,6 @@ void Init_rbmysql() {
 	cDO_Transaction = CONST_GET(mDO, "Transaction");
 	cDO_Result = CONST_GET(mDO, "Result");
 	cDO_Reader = CONST_GET(mDO, "Reader");
-	
-	// Store references to Errors we'll use
-	// rb_do_eLengthMismatchError = DO_CLASS("LengthMismatchError");
 
 	// Top Level Module that all the classes live under
 	mRbMysql = rb_define_module_under(mDO, "Mysql");
@@ -666,6 +720,7 @@ void Init_rbmysql() {
 	
 	cConnection = DRIVER_CLASS("Connection", cDO_Connection);
 	rb_define_method(cConnection, "initialize", cConnection_initialize, 1);
+	rb_define_method(cConnection, "using_socket?", cConnection_is_using_socket, 0);
 	rb_define_method(cConnection, "real_close", cConnection_real_close, 0);
 	rb_define_method(cConnection, "begin_transaction", cConnection_begin_transaction, 0);
 	

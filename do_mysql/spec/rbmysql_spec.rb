@@ -5,10 +5,7 @@ require File.dirname(__FILE__) + '/spec_helper'
 # testing purposes
 `mysql -u root < #{File.dirname(__FILE__)}/rbmysql.sql`
 
-describe "RbMysql" do
-  it "should exist" do
-    DataObjects.const_get('Mysql').should_not be_nil
-  end
+describe DataObjects::Mysql do
   
   it "should expose the proper DataObjects classes" do
     DataObjects::Mysql.const_get('Connection').should_not be_nil
@@ -17,19 +14,38 @@ describe "RbMysql" do
     DataObjects::Mysql.const_get('Reader').should_not be_nil
   end
   
-  it "should connect successfully when given a proper server uri" do
-    DataObjects::Mysql::Connection.new("mysql://root@localhost:3306/rbmysql_test").should be_kind_of(DataObjects::Mysql::Connection)
+  it "should connect successfully via TCP" do
+    connection = DataObjects::Mysql::Connection.new("mysql://root@127.0.0.1:3306/rbmysql_test")
+    connection.class.should == DataObjects::Mysql::Connection
+    connection.should_not be_using_socket
+  end
+
+  it "should connect successfully via the socket file" do
+    socket_path = `mysql_config --socket`.strip
+    connection = DataObjects::Mysql::Connection.new("mysql://root@localhost:3306/rbmysql_test/?socket=#{socket_path}")
+    connection.class.should == DataObjects::Mysql::Connection
+    connection.should be_using_socket
   end
   
+  it "should connect via the socket file if my.cnf tells us where to find it"
+  # do
+  # connection = DataObjects::Mysql::Connection.new("mysql://root@localhost:3306/rbmysql_test")
+  # connection.class.should == DataObjects::Mysql::Connection
+  # connection.should be_using_socket
+  # end
+  
   it "should raise an error when opened with an invalid server uri" do
-    lambda { DataObjects::Mysql::Connection.new("mysql://root@localhost:3306/") }.should raise_error(Exception)
-    lambda { DataObjects::Mysql::Connection.new("mysql://root@localhost:666/") }.should raise_error(Exception)
-    lambda { DataObjects::Mysql::Connection.new("mysql://baduser@localhost:3306/") }.should raise_error(Exception)
-    lambda { DataObjects::Mysql::Connection.new("mysql://root:wrongpassword@localhost:3306/") }.should raise_error(Exception)
-    lambda { DataObjects::Mysql::Connection.new("mysql://root@localhost:3306/bad_database") }.should raise_error(Exception)
-    lambda { DataObjects::Mysql::Connection.new("mysql://root@localhost:3306/") }.should raise_error(Exception)
-    # lambda { DataObjects::Mysql::Connection.new("mysql://root@example.com:3306/rbmysql_test") }.should raise_error(Exception)
+    lambda { DataObjects::Mysql::Connection.new("mysql://root@localhost:3306/") }.should raise_error(MysqlError)
+    lambda { DataObjects::Mysql::Connection.new("mysql://root@localhost:666/") }.should raise_error(MysqlError)
+    lambda { DataObjects::Mysql::Connection.new("mysql://baduser@localhost:3306/") }.should raise_error(MysqlError)
+    lambda { DataObjects::Mysql::Connection.new("mysql://root:wrongpassword@localhost:3306/") }.should raise_error(MysqlError)
+    lambda { DataObjects::Mysql::Connection.new("mysql://root@localhost:3306/bad_database") }.should raise_error(MysqlError)
+    lambda { DataObjects::Mysql::Connection.new("mysql://root@localhost:3306/rbmysql_test/?socket=/invalid/path/mysql.sock") }.should raise_error(MysqlError)
   end
+end
+
+describe DataObjects::Mysql::Connection do
+  
 end
 
 describe "A new connection" do
