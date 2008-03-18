@@ -75,9 +75,45 @@ describe DataObjects::Connection do
 
     it "should return the Connection specified by the scheme" do
       c = DataObjects::Connection.new(URI.parse('mock://localhost/database'))
-      c.should be_kind_of DataObjects::Mock::Connection
+      c.should be_kind_of(DataObjects::Mock::Connection)
     end
-    
+  end
+
+  describe 'connection pooling' do
+    before do
+      @uri = URI.parse('mock://localhost/database')
+    end
+
+    it "should make a new connection if the pool is empty" do
+      DataObjects::Mock::Connection.instance_variable_get("@available_connections")[@uri.to_s].should be_empty
+      c = DataObjects::Mock::Connection.acquire(@uri)
+      DataObjects::Mock::Connection.instance_variable_get("@available_connections")[@uri.to_s].should be_empty
+      DataObjects::Mock::Connection.instance_variable_get("@reserved_connections").should include(c)
+    end
+
+    it "should reuse a connection if there's one available" do
+      DataObjects::Mock::Connection.instance_variable_get("@available_connections")[@uri.to_s].should be_empty
+      c = DataObjects::Mock::Connection.acquire(@uri)
+      c.close
+      DataObjects::Mock::Connection.instance_variable_get("@available_connections")[@uri.to_s].should_not be_empty
+      c.should == DataObjects::Mock::Connection.acquire(@uri)
+    end
+
+    it "should make a new connection if they're all in use" do
+      DataObjects::Mock::Connection.instance_variable_get("@available_connections")[@uri.to_s].should be_empty
+      c = DataObjects::Mock::Connection.acquire(@uri)
+      DataObjects::Mock::Connection.instance_variable_get("@available_connections")[@uri.to_s].should be_empty
+      c.should_not == DataObjects::Mock::Connection.acquire(@uri)
+    end
+
+    it "should add the connection to available connections on release" do
+      DataObjects::Mock::Connection.instance_variable_get("@available_connections")[@uri.to_s].should be_empty
+      c = DataObjects::Mock::Connection.acquire(@uri)
+      c.close
+      DataObjects::Mock::Connection.instance_variable_get("@available_connections")[@uri.to_s].should_not be_empty
+      DataObjects::Mock::Connection.instance_variable_get("@available_connections")[@uri.to_s].should include(c)
+    end
+
   end
 
 end
