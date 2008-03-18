@@ -93,8 +93,7 @@ VALUE cConnection_initialize(VALUE self, VALUE uri) {
 }
 
 VALUE cConnection_real_close(VALUE self) {
-	PGconn *db;
-	Data_Get_Struct(rb_iv_get(self, "@connection"), PGconn, db);
+	PGconn *db = DATA_PTR(rb_iv_get(self, "@connection"));
 	PQfinish(db);
 	return Qtrue;
 }
@@ -105,7 +104,45 @@ VALUE cCommand_set_types(VALUE self, VALUE array) {
 }
 
 VALUE cCommand_execute_non_query(int argc, VALUE *argv[], VALUE self) {
-	return Qtrue;
+	PGconn *db = DATA_PTR(rb_iv_get(rb_iv_get(self, "@connection"), "@connection"));
+	PGresult *response;
+	int status;
+	
+	int affected_rows;
+	int insert_id;
+	
+	VALUE query = rb_iv_get(self, "@text");
+	
+	if ( argc > 0 ) {
+		int i;
+		VALUE array = rb_ary_new();
+		for ( i = 0; i < argc; i++) {
+			rb_ary_push(array, argv[i]);
+		}
+		query = rb_funcall(self, ID_ESCAPE, 1, array);
+	}
+	
+	response = PQexec(db, StringValuePtr(query));
+	
+	status = PQresultStatus(response);
+	
+	if ( status == PGRES_TUPLES_OK ) {
+		insert_id = atoi(PQgetvalue(response, 0, 0));
+		affected_rows = 1;
+	}
+	else if ( status == PGRES_COMMAND_OK ) {
+		insert_id = 0;
+		affected_rows = atoi(PQcmdTuples(response));
+	}
+	else {
+		char *message = PQresultErrorMessage(response);
+		PQclear(response);
+		rb_raise(ePostgresError, message);
+	}
+	
+	PQclear(response);
+	
+	return rb_funcall(cResult, ID_NEW, 3, self, INT2NUM(affected_rows), INT2NUM(insert_id));
 }
 
 VALUE cCommand_execute_reader(int argc, VALUE *argv[], VALUE self) {
