@@ -1,65 +1,51 @@
-if `uname -sr` =~ /^Darwin/
-  ENV["RC_ARCHS"] = `uname -m`.chomp
-  unless File.exists?("/usr/local/mysql/lib/mysql")
-    `sudo ln -s /usr/local/mysql/lib /usr/local/mysql/lib/mysql` rescue nil
-  end
-end
-
-# Figure out where mysql_config is
-if !`which mysql_config`.chomp.empty?
-  @mysql_config_bin = "mysql_config"
-elsif !`which mysql_config5`.chomp.empty?
-  @mysql_config_bin = "mysql_config5"  
-else
-  puts "Cannot find mysql_config in your path. Please enter a location: "
-  location = gets.chomp
-  if File.exists?(location)
-    @mysql_config_bin = location
-  else
-    puts "Cannot find that file. Exiting."
-    exit
-  end
-end
-
 require 'mkmf'
 
-def config_value(type)
-  ENV["MYSQL_#{type.upcase}"] || mysql_config(type)
-end
-
-@mysql_config = {}
-
-def mysql_config(type)
-  return @mysql_config[type] if @mysql_config[type]
-
-  sout = `#{@mysql_config_bin} --#{type}`
-  
-  unless $?.success?
-    raise "mysql_config not found"
+# All instances of mysql_config on PATH ...
+def mysql_config_paths
+  ENV['PATH'].split(File::PATH_SEPARATOR).collect do |path|
+    [ "#{path}/mysql_config", "#{path}/mysql_config5" ].
+      detect { |bin| File.exist?(bin) }
   end
-  
-  @mysql_config[type] = sout.chomp[2..-1]
-  @mysql_config[type]  
 end
 
-$inc, $lib = dir_config('mysql', config_value('include'), config_value('libs_r')) 
+# The first mysql_config binary on PATH ...
+def default_mysql_config_path
+  mysql_config_paths.compact.first
+end
 
-def have_build_env
-  libs = ['m', 'z', 'socket', 'nsl']
-  while not find_library('mysqlclient', "mysql_query", config_value('libs'), $lib, "#{$lib}/mysql") do
-    exit 1 if libs.empty?
-    have_library(libs.shift)
+def default_prefix
+  if mc = default_mysql_config_path
+    File.dirname(File.dirname(mc))
+  else
+    "/usr/local"
   end
-  true
 end
 
-required_libraries = []
-desired_functions = %w(mysql_ssl_set)
-
-if have_build_env
-  $CFLAGS << ' -Wall '
-  dir_config("rbmysql")
-  create_makefile("rbmysql")
+# Allow overriding path to mysql_config on command line using:
+# ruby extconf.rb --with-mysql-config=/path/to/mysql_config
+if mc = with_config('mysql-config', default_mysql_config_path)
+  mc = default_mysql_config_path if mc == true
+  cflags = `#{mc} --cflags`.chomp
+  exit 1 if $? != 0
+  libs = `#{mc} --libs`.chomp
+  exit 1 if $? != 0
+  $CPPFLAGS += ' ' + cflags
+  $libs = libs + " " + $libs
 else
-  puts 'Could not find MySQL build environment (libraries & headers): Makefile not created'
+  inc, lib = dir_config('mysql', default_prefix)
+  libs = ['m', 'z', 'socket', 'nsl']
+  lib_dirs =
+    [ lib, "/usr/lib", "/usr/local/lib", "/opt/local/lib" ].collect do |path|
+      [ path, "#{path}/mysql", "#{path}/mysql5/mysql" ]
+    end
+  find_library('mysqlclient', 'mysql_query', *lib_dirs.flatten) || exit 1
+  find_header('mysql.h', *lib_dirs.flatten.map { |p| p.gsub('/lib', '/include') })
 end
+
+have_header 'mysql.h'
+have_library 'mysqlclient' || exit 1
+have_func 'mysql_query' || exit 1
+have_func 'mysql_ssl_set'
+
+$CFLAGS << ' -Wall '
+create_makefile("rbmysql")
