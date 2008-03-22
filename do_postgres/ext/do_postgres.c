@@ -3,8 +3,7 @@
 #include <ruby.h>
 #include <libpq-fe.h>
 #include "type-oids.h"
-#include <netinet/in.h>
-#include <arpa/inet.h>
+// #include "time_parse.c"
 
 #define ID_CONST_GET rb_intern("const_get")
 #define ID_PATH rb_intern("path")
@@ -33,6 +32,142 @@ VALUE cResult;
 VALUE cReader;
 
 VALUE ePostgresError;
+
+/* ====== Time/Date Parsing Helper Functions ====== */
+void reduce( unsigned long long int *numerator, unsigned long long int *denominator ) {
+	unsigned long long int a, b, c;
+	a = *numerator;
+	b = *denominator;
+	while ( a != 0 ) {
+		c = a; a = b % a; b = c;
+	}
+	*numerator = *numerator / b;
+	*denominator = *denominator / b;
+}
+
+// Generate the date integer which Date.civil_to_jd returns
+int jd_from_date(int year, int month, int day) {
+	int a, b;
+	if ( month <= 2 ) {
+		year -= 1;
+		month += 12;
+	}
+	a = year / 100;
+	b = 2 - a + (a / 4);
+	return floor(365.25 * (year + 4716)) + floor(30.6001 * (month + 1)) + day + b - 1524;
+}
+
+VALUE parse_date(char *date) {
+	int year, month, day;
+	int jd, ajd;
+	VALUE rational;
+	
+	sscanf(date, "%4d-%2d-%2d", &year, &month, &day);
+	
+	jd = jd_from_date(year, month, day);
+	
+	// Math from Date.jd_to_ajd
+	ajd = jd * 2 - 1;
+	rational = rb_funcall(rb_cRational, rb_intern("new!"), 2, INT2NUM(ajd), INT2NUM(2));
+	
+	return rb_funcall(rb_cDate, rb_intern("new!"), 3, rational, INT2NUM(0), INT2NUM(2299161));
+}
+
+VALUE parse_date_time(char *date) {
+	int y, m, d, h, min, s;
+	int jd;
+	VALUE ajd;
+	sscanf(date, "%4d-%2d-%2d %2d:%2d:%2d", &y, &m, &d, &h, &min, &s);
+	
+	jd = jd_from_date(y, m, d);
+	
+	// Generate ajd with fractional days for the time
+	// Extracted from Date#jd_to_ajd, Date#day_fraction_to_time, and Rational#+ and #-
+	unsigned long long int num, den;
+	
+	num = (h * 1440) + (min * 24);
+	den = (24 * 1440);
+	reduce(&num, &den);
+	
+	num = (num * 86400) + (s * den);
+	den = den * 86400;
+	reduce(&num, &den);
+	
+	num = (jd * den) + num;
+	
+	num = num * 2;
+	num = num - den;
+	den = den * 2;
+	
+	reduce(&num, &den);
+	
+	ajd = rb_funcall(rb_cRational, rb_intern("new!"), 2, rb_ull2inum(num), rb_ull2inum(den));
+	return rb_funcall(rb_cDateTime, rb_intern("new!"), 3, ajd, INT2NUM(0), INT2NUM(2299161));
+}
+
+VALUE parse_time(char *date) {	
+	int y, m, d, h, min, s;
+	sscanf(date, "%4d-%2d-%2d %2d:%2d:%2d", &y, &m, &d, &h, &min, &s);
+	
+	return rb_funcall(rb_cTime, rb_intern("utc"), 6, INT2NUM(y), INT2NUM(m), INT2NUM(d), INT2NUM(h), INT2NUM(min), INT2NUM(s));
+}
+
+/* ===== Typecasting Functions ===== */
+
+VALUE infer_ruby_type(Oid type) {
+	char *ruby_type = "String";
+	switch(type) {
+		case INT2OID:
+		case INT4OID:
+		case INT8OID: {
+			ruby_type = "Fixnum";
+			break;
+		}
+		case FLOAT4OID:
+		case FLOAT8OID: {
+			ruby_type = "Float";
+			break;
+		}
+		case BOOLOID: {
+			ruby_type = "TrueClass";
+			break;
+		}
+		// case TIMESTAMPOID
+		// case TIMESTAMPTZOID
+		// case TIMETXOID
+		// case DATEOID: {
+		// 			ruby_type = "Date";
+		// 			break;
+		// 		}
+	}
+	return rb_str_new2(ruby_type);
+}
+
+VALUE typecast(char *value, char *type) {
+	if ( strcmp(type, "Fixnum") == 0 || strcmp(type, "Bignum") == 0 ) {
+		return rb_cstr2inum(value, 10);
+	}
+	else if ( strcmp(type, "Float") == 0 ) {
+		return rb_float_new(rb_cstr_to_dbl(value, Qfalse));
+	}
+	else if ( strcmp(type, "TrueClass") == 0 ) {
+		return *value == 't' ? Qtrue : Qfalse;
+	}
+	// else if ( strcmp(type, "Date") == 0 ) {
+	// 	return parse_date(value);
+	// }
+	// else if ( strcmp(type, "DateTime") == 0 ) {
+	// 	return parse_date_time(value);
+	// }
+	// else if ( strcmp(type, "Time") == 0 ) {
+	// 	return parse_time(value);
+	// }
+	else {
+		return rb_tainted_str_new2(value);
+	}
+}
+
+/* ====== Public API ======= */
 
 VALUE cConnection_initialize(VALUE self, VALUE uri) {
 	
@@ -152,16 +287,6 @@ VALUE cCommand_execute_non_query(int argc, VALUE *argv[], VALUE self) {
 	return rb_funcall(cResult, ID_NEW, 3, self, INT2NUM(affected_rows), INT2NUM(insert_id));
 }
 
-VALUE infer_ruby_type(Oid type) {
-	char *ruby_type = "String";
-	switch(type) {
-		case INT4OID: {
-			ruby_type = "Fixnum";
-		}
-	}
-	return rb_str_new2(ruby_type);
-}
-
 VALUE cCommand_execute_reader(int argc, VALUE *argv[], VALUE self) {
 	PGconn *db = DATA_PTR(rb_iv_get(rb_iv_get(self, "@connection"), "@connection"));
 	PGresult *response;
@@ -225,15 +350,6 @@ VALUE cReader_close(VALUE self) {
 	PQclear(reader);
 	rb_iv_set(self, "@reader", Qnil);
 	return Qtrue;
-}
-
-VALUE typecast(char *value, char *type) {
-	if ( strcmp(type, "Fixnum") == 0 ) {
-		return rb_cstr2inum(value, 10);
-	}
-	else {
-		return rb_tainted_str_new2(value);
-	}
 }
 
 VALUE cReader_next(VALUE self) {

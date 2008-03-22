@@ -84,14 +84,37 @@ describe "DataObjects::Postgres::Reader" do
   end
   
   it "should typecast a value from the postgres type" do
-    command = @connection.create_command("SELECT id, name FROM users ORDER BY id DESC LIMIT 3")
+    command = @connection.create_command("SELECT id, name, registered, money FROM users ORDER BY id DESC LIMIT 3")
     reader = command.execute_reader
-    reader.send(:instance_variable_get, "@field_count").should == 2
+    reader.send(:instance_variable_get, "@field_count").should == 4
     reader.send(:instance_variable_get, "@row_count").should == 3
     while ( reader.next!)
       reader.values[0].should be_a_kind_of(Integer)
       reader.values[1].should be_a_kind_of(String)
+      reader.values[2].should == false
+      reader.values[3].should == 1908.56
     end
     reader.close
   end
 end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
