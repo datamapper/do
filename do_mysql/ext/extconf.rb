@@ -38,13 +38,13 @@ else
     [ lib, "/usr/lib", "/usr/local/lib", "/opt/local/lib" ].collect do |path|
       [ path, "#{path}/mysql", "#{path}/mysql5/mysql" ]
     end
-  find_library('mysqlclient', 'mysql_query', *lib_dirs.flatten) || exit 1
+  find_library('mysqlclient', 'mysql_query', *lib_dirs.flatten) || exit(1)
   find_header('mysql.h', *lib_dirs.flatten.map { |p| p.gsub('/lib', '/include') })
 end
 
 have_header 'mysql.h'
-have_library 'mysqlclient' || exit 1
-have_func 'mysql_query' || exit 1
+have_library 'mysqlclient' || exit(1)
+have_func 'mysql_query' || exit(1)
 have_func 'mysql_ssl_set'
 
 $CFLAGS << ' -Wall '
