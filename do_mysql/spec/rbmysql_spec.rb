@@ -5,6 +5,8 @@ require File.dirname(__FILE__) + '/spec_helper'
 # testing purposes
 `mysql -u root < #{File.dirname(__FILE__)}/rbmysql.sql`
 
+SOCKET_PATH = `mysql_config --socket`.strip
+
 describe DataObjects::Mysql do
   
   it "should expose the proper DataObjects classes" do
@@ -21,18 +23,10 @@ describe DataObjects::Mysql do
   end
 
   it "should connect successfully via the socket file" do
-    socket_path = `mysql_config --socket`.strip
-    connection = DataObjects::Mysql::Connection.new("mysql://root@localhost:3306/rbmysql_test/?socket=#{socket_path}")
+    connection = DataObjects::Mysql::Connection.new("mysql://root@localhost:3306/rbmysql_test/?socket=#{SOCKET_PATH}")
     connection.class.should == DataObjects::Mysql::Connection
     connection.should be_using_socket
   end
-  
-  it "should connect via the socket file if my.cnf tells us where to find it"
-  # do
-  # connection = DataObjects::Mysql::Connection.new("mysql://root@localhost:3306/rbmysql_test")
-  # connection.class.should == DataObjects::Mysql::Connection
-  # connection.should be_using_socket
-  # end
   
   it "should raise an error when opened with an invalid server uri" do
     lambda { DataObjects::Mysql::Connection.new("mysql://root@localhost:3306/") }.should raise_error(MysqlError)
@@ -46,13 +40,9 @@ end
 
 describe DataObjects::Mysql::Connection do
   
-end
-
-describe "A new connection" do
-  
   before(:each) do
     # Open a connection for the specs to work with
-    @connection = DataObjects::Mysql::Connection.new("mysql://root@localhost:3306/rbmysql_test")
+    @connection = DataObjects::Mysql::Connection.new("mysql://root@localhost:3306/rbmysql_test/?socket=#{SOCKET_PATH}")
   end
   
   it "should be able to create a command" do
@@ -220,7 +210,7 @@ describe "A new connection" do
       same_connection_count = counter.call(@connection)
       
       # Open a new connection and get the invoice count
-      new_connection = DataObjects::Mysql::Connection.new("mysql://root@localhost:3306/rbmysql_test")
+      new_connection = DataObjects::Mysql::Connection.new("mysql://root@127.0.0.1:3306/rbmysql_test/?socket=#{SOCKET_PATH}")
       other_connection_count = counter.call(new_connection)
       
       same_connection_count.should == (original_count + 1)      
