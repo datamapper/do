@@ -87,7 +87,9 @@ describe "DataObjects::Sqlite3::Result" do
   describe "quoting" do
     
     before do
-      @connection.create_command("CREATE TABLE sail_boats ( id INTEGER PRIMARY KEY, name VARCHAR(50), port VARCHAR(50), notes VARCHAR(50) )").execute_non_query
+      begin
+        @connection.create_command("CREATE TABLE sail_boats ( id INTEGER PRIMARY KEY, name VARCHAR(50), port VARCHAR(50), notes VARCHAR(50) )").execute_non_query
+      end
       command = @connection.create_command("INSERT INTO sail_boats (id, name, port, name) VALUES (?, ?, ?, ?)")
       command.execute_non_query(1, "A", "C", "Fortune Pig!")
       command.execute_non_query(2, "B", "B", "Happy Cow!")

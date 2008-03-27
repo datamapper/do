@@ -35,6 +35,7 @@ VALUE eSqlite3Error;
 /****** Typecasting ******/
 VALUE native_typecast(sqlite3_value *value, int type) {
 	VALUE ruby_value = Qnil;
+	
 	switch(type) {
 		case SQLITE_NULL: {
 			ruby_value = Qnil;
@@ -81,10 +82,13 @@ int jd_from_date(int year, int month, int day) {
 	return floor(365.25 * (year + 4716)) + floor(30.6001 * (month + 1)) + day + b - 1524;
 }
 
-// Add rescue handling for null, etc.
-VALUE ruby_typecast(sqlite3_value *value, char *type) {
+VALUE ruby_typecast(sqlite3_value *value, char *type, int original_type) {
 	VALUE ruby_value = Qnil;
-	if ( strcmp(type, "Fixnum") == 0 ) {
+	
+	if ( original_type == SQLITE_NULL ) {
+		return ruby_value;
+	}
+	else if ( strcmp(type, "Fixnum") == 0 ) {
 		ruby_value = INT2NUM(sqlite3_value_int(value));
 	}
 	else if ( strcmp(type, "String") == 0 ) {
@@ -315,7 +319,7 @@ VALUE cReader_next(VALUE self) {
 			value = native_typecast(sqlite3_column_value(reader, i), sqlite3_column_type(reader, i));
 		}
 		else {
-			value = ruby_typecast(sqlite3_column_value(reader, i), rb_class2name(RARRAY(field_types)->ptr[i]));
+			value = ruby_typecast(sqlite3_column_value(reader, i), rb_class2name(RARRAY(field_types)->ptr[i]), sqlite3_column_type(reader, i));
 		}
 		rb_ary_push(arr, value);
 	}
