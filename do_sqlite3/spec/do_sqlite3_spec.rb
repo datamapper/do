@@ -32,18 +32,11 @@ describe "DataObjects::Sqlite3::Result" do
   it "should return the affected rows and insert_id" do    
     command = @connection.create_command("DROP TABLE users")
     command.execute_non_query
-    command = @connection.create_command("CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT)")
+    command = @connection.create_command("CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT, age INTEGER)")
     result = command.execute_non_query
     command = @connection.create_command("INSERT INTO users (name) VALUES ('test')")    
     result = command.execute_non_query
     result.insert_id.should == 1
-    result.to_i.should == 1
-  end
-  
-  it "should use DO::Quoting.escape_sql with passed params" do
-    command = @connection.create_command("INSERT INTO users (name) VALUES (?)")
-    result = command.execute_non_query("John Doe")
-    result.insert_id.should == 2
     result.to_i.should == 1
   end
   
@@ -89,5 +82,42 @@ describe "DataObjects::Sqlite3::Result" do
     
     reader.close
     
+  end
+  
+  describe "quoting" do
+    
+    it "should quote a String" do
+      command = @connection.create_command("INSERT INTO users (name) VALUES (?)")
+      result = command.execute_non_query("John Doe")
+      result.insert_id.should == 2
+      result.to_i.should == 1
+    end
+    
+    it "should quote multiple values" do
+      command = @connection.create_command("INSERT INTO users (name, age) VALUES (?, ?)")
+      result = command.execute_non_query("Sam Smoot", 1)
+      result.to_i.should == 1
+    end
+    
+    it "should quote an Array" do
+      begin
+        @connection.create_command("CREATE TABLE sail_boats ( id INTEGER PRIMARY KEY, name VARCHAR(50), port VARCHAR(50), notes VARCHAR(50) )").execute_non_query
+        command = @connection.create_command("INSERT INTO sail_boats (id, name, port, name) VALUES (?, ?, ?, ?)")
+        command.execute_non_query(1, "A", "C", "Fortune Pig!")
+        command.execute_non_query(2, "B", "B", "Happy Cow!")
+        command.execute_non_query(3, "C", "A", "Spoon")
+      
+        command = @connection.create_command("SELECT id, notes FROM sail_boats WHERE (id IN ?)")
+        reader = command.execute_reader([1, 2, 3])
+      
+        i = 1
+        while(reader.next!)
+          reader.values[0].should == i
+          i += 1
+        end
+      ensure
+        @connection.create_command("DROP TABLE sail_boats").execute_non_query
+      end
+    end
   end
 end
