@@ -86,6 +86,14 @@ describe "DataObjects::Sqlite3::Result" do
   
   describe "quoting" do
     
+    before do
+      @connection.create_command("CREATE TABLE sail_boats ( id INTEGER PRIMARY KEY, name VARCHAR(50), port VARCHAR(50), notes VARCHAR(50) )").execute_non_query
+      command = @connection.create_command("INSERT INTO sail_boats (id, name, port, name) VALUES (?, ?, ?, ?)")
+      command.execute_non_query(1, "A", "C", "Fortune Pig!")
+      command.execute_non_query(2, "B", "B", "Happy Cow!")
+      command.execute_non_query(3, "C", "A", "Spoon")
+    end
+    
     it "should quote a String" do
       command = @connection.create_command("INSERT INTO users (name) VALUES (?)")
       result = command.execute_non_query("John Doe")
@@ -99,25 +107,44 @@ describe "DataObjects::Sqlite3::Result" do
       result.to_i.should == 1
     end
     
-    it "should quote an Array" do
-      begin
-        @connection.create_command("CREATE TABLE sail_boats ( id INTEGER PRIMARY KEY, name VARCHAR(50), port VARCHAR(50), notes VARCHAR(50) )").execute_non_query
-        command = @connection.create_command("INSERT INTO sail_boats (id, name, port, name) VALUES (?, ?, ?, ?)")
-        command.execute_non_query(1, "A", "C", "Fortune Pig!")
-        command.execute_non_query(2, "B", "B", "Happy Cow!")
-        command.execute_non_query(3, "C", "A", "Spoon")
-      
-        command = @connection.create_command("SELECT id, notes FROM sail_boats WHERE (id IN ?)")
-        reader = command.execute_reader([1, 2, 3])
-      
-        i = 1
-        while(reader.next!)
-          reader.values[0].should == i
-          i += 1
-        end
-      ensure
-        @connection.create_command("DROP TABLE sail_boats").execute_non_query
+    it "should quote an Array" do      
+      command = @connection.create_command("SELECT id, notes FROM sail_boats WHERE (id IN ?)")
+      reader = command.execute_reader([1, 2, 3])
+    
+      i = 1
+      while(reader.next!)
+        reader.values[0].should == i
+        i += 1
       end
     end
-  end
+    
+    it "should quote an Array with NULL values returned" do      
+      command = @connection.create_command("SELECT id, NULL AS notes FROM sail_boats WHERE (id IN ?)")
+      reader = command.execute_reader([1, 2, 3])
+    
+      i = 1
+      while(reader.next!)
+        reader.values[0].should == i
+        i += 1
+      end
+    end
+    
+    it "should quote an Array with NULL values returned AND set_types called" do      
+      command = @connection.create_command("SELECT id, NULL AS notes FROM sail_boats WHERE (id IN ?)")
+      command.set_types [ Fixnum, String ]
+      
+      reader = command.execute_reader([1, 2, 3])
+    
+      i = 1
+      while(reader.next!)
+        reader.values[0].should == i
+        i += 1
+      end
+    end
+    
+    after do
+      @connection.create_command("DROP TABLE sail_boats").execute_non_query
+    end
+    
+  end # describe "quoting"
 end
