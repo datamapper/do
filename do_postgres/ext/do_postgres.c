@@ -3,7 +3,6 @@
 #include <ruby.h>
 #include <libpq-fe.h>
 #include "type-oids.h"
-// #include "time_parse.c"
 
 #define ID_CONST_GET rb_intern("const_get")
 #define ID_PATH rb_intern("path")
@@ -106,10 +105,13 @@ VALUE parse_date_time(char *date) {
 }
 
 VALUE parse_time(char *date) {	
-	int y, m, d, h, min, s;
-	sscanf(date, "%4d-%2d-%2d %2d:%2d:%2d", &y, &m, &d, &h, &min, &s);
+	int seconds, h, min, s;
+	sscanf(date, "%2d:%2d:%2d", &h, &min, &s);
 	
-	return rb_funcall(rb_cTime, rb_intern("utc"), 6, INT2NUM(y), INT2NUM(m), INT2NUM(d), INT2NUM(h), INT2NUM(min), INT2NUM(s));
+	seconds = h * 3600 + min * 60 + s;
+	seconds += 6 * 3600; // Epoch begins at 6pm, so this gets our times fixed up
+	
+	return rb_funcall(rb_cTime, rb_intern("at"), 1, INT2NUM(seconds));
 }
 
 /* ===== Typecasting Functions ===== */
@@ -132,19 +134,29 @@ VALUE infer_ruby_type(Oid type) {
 			ruby_type = "TrueClass";
 			break;
 		}
-		// case TIMESTAMPOID
+		case TIMESTAMPOID: {
+			ruby_type = "DateTime";
+			break;
+		}
 		// case TIMESTAMPTZOID
 		// case TIMETXOID
-		// case DATEOID: {
-		// 			ruby_type = "Date";
-		// 			break;
-		// 		}
+		case TIMEOID: {
+			ruby_type = "Time";
+			break;
+		}
+		case DATEOID: {
+			ruby_type = "Date";
+			break;
+		}
 	}
 	return rb_str_new2(ruby_type);
 }
 
 VALUE typecast(char *value, char *type) {
-	if ( strcmp(type, "Fixnum") == 0 || strcmp(type, "Bignum") == 0 ) {
+	if ( strcmp(value, "") == 0 ) {
+		return Qnil;
+	}
+	else if ( strcmp(type, "Fixnum") == 0 || strcmp(type, "Bignum") == 0 ) {
 		return rb_cstr2inum(value, 10);
 	}
 	else if ( strcmp(type, "Float") == 0 ) {
@@ -153,15 +165,15 @@ VALUE typecast(char *value, char *type) {
 	else if ( strcmp(type, "TrueClass") == 0 ) {
 		return *value == 't' ? Qtrue : Qfalse;
 	}
-	// else if ( strcmp(type, "Date") == 0 ) {
-	// 	return parse_date(value);
-	// }
-	// else if ( strcmp(type, "DateTime") == 0 ) {
-	// 	return parse_date_time(value);
-	// }
-	// else if ( strcmp(type, "Time") == 0 ) {
-	// 	return parse_time(value);
-	// }
+	else if ( strcmp(type, "Date") == 0 ) {
+		return parse_date(value);
+	}
+	else if ( strcmp(type, "DateTime") == 0 ) {
+		return parse_date_time(value);
+	}
+	else if ( strcmp(type, "Time") == 0 ) {
+		return parse_time(value);
+	}
 	else {
 		return rb_tainted_str_new2(value);
 	}
@@ -374,7 +386,7 @@ VALUE cReader_next(VALUE self) {
 	}
 	
 	VALUE ruby_type;
-	char *type;
+	char *type = "";
 	
 	for ( i = 0; i < field_count; i++ ) {
 		ruby_type = RARRAY(field_types)->ptr[i];

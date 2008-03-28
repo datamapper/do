@@ -2,6 +2,18 @@ require 'rubygems'
 require 'data_objects'
 require 'do_postgres'
 
+# CREATE TABLE users
+# (
+#   id serial NOT NULL,
+#   "name" text,
+#   registered boolean DEFAULT false,
+#   money double precision DEFAULT 1908.56,
+#   created_on date DEFAULT ('now'::text)::date,
+#   created_at timestamp without time zone DEFAULT now(),
+#   born_at time without time zone DEFAULT now()
+# )
+# WITH (OIDS=FALSE);
+
 describe "DataObjects::Postgres::Connection" do
   it "should connect to the db" do
     connection = DataObjects::Connection.new("postgres://postgres@localhost:5432/do_test")
@@ -69,6 +81,10 @@ describe "DataObjects::Postgres::Reader" do
     @connection = DataObjects::Connection.new("postgres://localhost/do_test")
   end
   
+  after :all do
+    @connection.create_command("TRUNCATE TABLE users").execute_non_query
+  end
+  
   it "should raise errors on bad queries" do
     command = @connection.create_command("SELT * FROM users")
     lambda { command.execute_reader }.should raise_error
@@ -95,6 +111,35 @@ describe "DataObjects::Postgres::Reader" do
       reader.values[3].should == 1908.56
     end
     reader.close
+  end
+  
+  it "should handle a null value" do
+    @connection.create_command("INSERT INTO users (name) VALUES (NULL)").execute_non_query
+    command = @connection.create_command("SELECT name from users WHERE name is null")
+    reader = command.execute_reader
+    reader.next!
+    reader.values[0].should == nil
+  end
+  
+  it "should typecast a date field" do
+    command = @connection.create_command("SELECT created_on FROM users WHERE created_on is not null LIMIT 1")
+    reader = command.execute_reader
+    reader.next!
+    reader.values[0].should be_a_kind_of(Date)
+  end
+  
+  it "should typecast a timestamp field" do
+    command = @connection.create_command("SELECT created_at FROM users WHERE created_at is not null LIMIT 1")
+    reader = command.execute_reader
+    reader.next!
+    reader.values[0].should be_a_kind_of(DateTime)
+  end
+  
+  it "should typecast a time field" do
+    command = @connection.create_command("SELECT born_at FROM users LIMIT 1")
+    reader = command.execute_reader
+    reader.next!
+    reader.values[0].should be_a_kind_of(Time)
   end
 end
 
