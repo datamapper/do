@@ -1,8 +1,8 @@
-DROP DATABASE rbmysql_test;
+DROP DATABASE IF EXISTS do_mysql_test;
 
-CREATE DATABASE rbmysql_test;
+CREATE DATABASE do_mysql_test;
 
-USE rbmysql_test;
+USE do_mysql_test;
 
 CREATE TABLE `invoices` (
   `id` int(11) NOT NULL auto_increment,

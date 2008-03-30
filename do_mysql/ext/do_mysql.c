@@ -9,7 +9,7 @@
 #define RUBY_CLASS(name) rb_const_get(rb_cObject, rb_intern(name))
 #define RUBY_STRING(char_ptr) rb_str_new2(char_ptr)
 #define TAINTED_STRING(name) rb_tainted_str_new2(name)
-#define DRIVER_CLASS(klass, parent) (rb_define_class_under(mRbMysql, klass, parent))
+#define DRIVER_CLASS(klass, parent) (rb_define_class_under(mDOMysql, klass, parent))
 #define CONST_GET(scope, constant) (rb_funcall(scope, ID_CONST_GET, 1, rb_str_new2(constant)))
 #define CHECK_AND_RAISE(mysql_result_value) if (0 != mysql_result_value) { raise_mysql_error(db, mysql_result_value); }
 
@@ -44,7 +44,7 @@ VALUE rb_cURI;
 VALUE rb_cCGI;
 
 // Classes that we'll build in Init
-VALUE mRbMysql;
+VALUE mDOMysql;
 VALUE cConnection;
 VALUE cCommand;
 VALUE cTransaction;
@@ -685,13 +685,13 @@ VALUE cReader_fields(VALUE self) {
 	return rb_iv_get(self, "@fields");
 }
 
-void Init_rbmysql() {
+void Init_do_mysql() {
 	rb_require("rubygems");
 	rb_require("bigdecimal");
   rb_require("date");
   rb_require("cgi");
 
-  rb_funcall(rb_mKernel, rb_intern("require"), 1, rb_str_new2("data_objects"));
+  rb_funcall(rb_mKernel, rb_intern("gem"), 2, rb_str_new2("data_objects"), rb_str_new2(">= 0.9.0"));
 	
 	ID_TO_I = rb_intern("to_i");
 	ID_TO_F = rb_intern("to_f");
@@ -723,7 +723,7 @@ void Init_rbmysql() {
 	cDO_Reader = CONST_GET(mDO, "Reader");
 
 	// Top Level Module that all the classes live under
-	mRbMysql = rb_define_module_under(mDO, "Mysql");
+	mDOMysql = rb_define_module_under(mDO, "Mysql");
 	
 	eMysqlError = rb_define_class("MysqlError", rb_eStandardError);
 	

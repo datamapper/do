@@ -1,11 +1,14 @@
 require File.dirname(__FILE__) + '/spec_helper'
 
-# Run the rbmysql.sql script on your local Mysql install.  This will drop/create a
-# database called "rbmysql_test" and add a couple tables and a few records for
-# testing purposes
-`mysql -u root < #{File.dirname(__FILE__)}/rbmysql.sql`
+MYSQL_COMMAND = ENV['MYSQL'] || 'mysql'
+MYSQL_CONFIG_COMMAND = ENV['MYSQL_CONFIG'] || 'mysql_config'
 
-SOCKET_PATH = `mysql_config --socket`.strip
+# Run the do_mysql_spec_setup.sql script on your local Mysql install.  This will drop/create a
+# database called "do_mysql_test" and add a couple tables and a few records for
+# testing purposes
+`#{MYSQL_COMMAND} -u root < #{File.dirname(__FILE__)}/do_mysql_spec_setup.sql`
+
+SOCKET_PATH = `#{MYSQL_CONFIG_COMMAND} --socket`.strip
 
 describe DataObjects::Mysql do
   
@@ -17,12 +20,12 @@ describe DataObjects::Mysql do
   end
   
   it "should connect successfully via TCP" do
-    connection = DataObjects::Mysql::Connection.new("mysql://root@127.0.0.1:3306/rbmysql_test")
+    connection = DataObjects::Mysql::Connection.new("mysql://root@127.0.0.1:3306/do_mysql_test")
     connection.should_not be_using_socket
   end
 
   it "should connect successfully via the socket file" do
-    connection = DataObjects::Mysql::Connection.new("mysql://root@localhost:3306/rbmysql_test/?socket=#{SOCKET_PATH}")
+    connection = DataObjects::Mysql::Connection.new("mysql://root@localhost:3306/do_mysql_test/?socket=#{SOCKET_PATH}")
     connection.should be_using_socket
   end
   
@@ -47,7 +50,7 @@ describe DataObjects::Mysql do
     connecting_with("mysql://root@localhost:3306/bad_database").should raise_error(MysqlError)
     
     # Invalid Socket Path
-    connecting_with("mysql://root@localhost:3306/rbmysql_test/?socket=/invalid/path/mysql.sock").should raise_error(MysqlError)
+    connecting_with("mysql://root@localhost:3306/do_mysql_test/?socket=/invalid/path/mysql.sock").should raise_error(MysqlError)
   end
 end
 
@@ -55,7 +58,7 @@ describe DataObjects::Mysql::Connection do
 
   before(:each) do
     # Open a connection for the specs to work with
-    @connection = DataObjects::Mysql::Connection.new("mysql://root@localhost:3306/rbmysql_test/?socket=#{SOCKET_PATH}")
+    @connection = DataObjects::Mysql::Connection.new("mysql://root@localhost:3306/do_mysql_test/?socket=#{SOCKET_PATH}")
   end
 
   it "should be able to create a command" do
@@ -234,7 +237,7 @@ describe DataObjects::Mysql::Connection do
       same_connection_count = counter.call(@connection)
       
       # Open a new connection and get the invoice count
-      new_connection = DataObjects::Mysql::Connection.new("mysql://root@127.0.0.1:3306/rbmysql_test/?socket=#{SOCKET_PATH}")
+      new_connection = DataObjects::Mysql::Connection.new("mysql://root@127.0.0.1:3306/do_mysql_test/?socket=#{SOCKET_PATH}")
       other_connection_count = counter.call(new_connection)
       
       same_connection_count.should == (original_count + 1)      

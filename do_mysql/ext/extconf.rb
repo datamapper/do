@@ -48,4 +48,4 @@ have_func 'mysql_query' || exit(1)
 have_func 'mysql_ssl_set'
 
 $CFLAGS << ' -Wall '
-create_makefile("rbmysql")
+create_makefile("do_mysql")
