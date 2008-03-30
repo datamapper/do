@@ -310,26 +310,26 @@ VALUE cConnection_initialize(VALUE self, VALUE uri) {
 	rb_iv_set(self, "@using_socket", Qfalse);
 
 	VALUE r_host = rb_funcall(uri, rb_intern("host"), 0);
-	char * host = "localhost";
+	char *host = "localhost";
 	if (Qnil != r_host) {
 		host = StringValuePtr(r_host);
 	}
 	
 	VALUE r_user = rb_funcall(uri, rb_intern("user"), 0);
-	char * user = "root";
+	char *user = "root";
 	if (Qnil != r_user) {
 		user = StringValuePtr(r_user);
 	}
 
 	VALUE r_password = rb_funcall(uri, rb_intern("password"), 0);
-	char * password = "";
+	char *password = "";
 	if (Qnil != r_password) {
 		password = StringValuePtr(r_password);
 	}
 
 	VALUE r_path = rb_funcall(uri, rb_intern("path"), 0);
-	char * path = StringValuePtr(r_path);
-	char * database = "";
+	char *path = StringValuePtr(r_path);
+	char *database = "";
 	if (Qnil != r_path) {
 		database = strtok(path, "/");
 	}
@@ -341,7 +341,7 @@ VALUE cConnection_initialize(VALUE self, VALUE uri) {
 	// Pull the querystring off the URI
 	VALUE r_options = rb_funcall(uri, rb_intern("query"), 0);
 
-	char * socket = NULL;
+	char *socket = NULL;
 	// Check to see if we're on the db machine.  If so, try to use the socket
 	if (0 == strcmp(lc(host), "localhost")) {
 		// TODO: Read the socket path from my.conf [client]
@@ -361,6 +361,9 @@ VALUE cConnection_initialize(VALUE self, VALUE uri) {
 		port = NUM2INT(r_port);
 	}
 	
+	char *charset = NULL;
+	charset = get_uri_option(r_options, "charset");
+	
 	// If ssl? {
 	//   mysql_ssl_set(db, key, cert, ca, capath, cipher)
 	// }
@@ -368,7 +371,7 @@ VALUE cConnection_initialize(VALUE self, VALUE uri) {
 	unsigned long client_flags = 0;
 
 	MYSQL *result;
-	
+
 	result = (MYSQL *)mysql_real_connect(
 		db,
 		host,
@@ -379,15 +382,45 @@ VALUE cConnection_initialize(VALUE self, VALUE uri) {
 		socket,
 		client_flags
 	);
-	
+
 	if (NULL == result) {
 		raise_mysql_error(db, -1);
 	}
-	
+
+	if (NULL == charset) {
+		charset = (char*)calloc(4, sizeof(char));
+		strcpy(charset, "utf8");
+	}
+
+	// Set the connections character set
+	int charset_error = mysql_set_character_set(db, charset);
+	if (0 != charset_error) {
+		raise_mysql_error(db, charset_error);
+	}
+
 	rb_iv_set(self, "@uri", uri);
 	rb_iv_set(self, "@connection", Data_Wrap_Struct(rb_cObject, 0, 0, db));
- 
+
+	free(host);
+	free(user);
+	free(socket);
+	free(charset);
+
 	return Qtrue;
+}
+
+VALUE cConnection_character_set(VALUE self) {
+	VALUE connection_container = rb_iv_get(self, "@connection");
+	
+	if (Qnil == connection_container)
+		return Qfalse;
+		
+	MYSQL *db = DATA_PTR(connection_container);
+
+	const char * charset;
+	charset = mysql_character_set_name(db);
+	
+	return RUBY_STRING(charset);
 }
 
 VALUE cConnection_is_using_socket(VALUE self) {
@@ -730,6 +763,7 @@ void Init_do_mysql() {
 	cConnection = DRIVER_CLASS("Connection", cDO_Connection);
 	rb_define_method(cConnection, "initialize", cConnection_initialize, 1);
 	rb_define_method(cConnection, "using_socket?", cConnection_is_using_socket, 0);
+	rb_define_method(cConnection, "character_set", cConnection_character_set , 0);
 	rb_define_method(cConnection, "real_close", cConnection_real_close, 0);
 	rb_define_method(cConnection, "begin_transaction", cConnection_begin_transaction, 0);
 	

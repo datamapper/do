@@ -29,6 +29,19 @@ describe DataObjects::Mysql do
     connection.should be_using_socket
   end
   
+  it "should return the current character set" do
+    connection = DataObjects::Mysql::Connection.new("mysql://root@localhost:3306/do_mysql_test/?socket=#{SOCKET_PATH}")
+    connection.character_set.should == "utf8"
+  end
+  
+  it "should support changing the character set" do
+    connection = DataObjects::Mysql::Connection.new("mysql://root@localhost:3306/do_mysql_test/?socket=#{SOCKET_PATH}&charset=latin1")
+    connection.character_set.should == "latin1"
+
+    connection = DataObjects::Mysql::Connection.new("mysql://root@localhost:3306/do_mysql_test/?socket=#{SOCKET_PATH}&charset=utf8")
+    connection.character_set.should == "utf8"
+  end
+  
   it "should raise an error when opened with an invalid server uri" do
     def connecting_with(uri)
       lambda { DataObjects::Mysql::Connection.new(uri) }
