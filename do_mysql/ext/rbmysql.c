@@ -410,17 +410,10 @@ VALUE cConnection_real_close(VALUE self) {
 		return Qfalse;
  
 	mysql_close(db);
-	// free(db);
- 
 	rb_iv_set(self, "@connection", Qnil);
- 
+
 	return Qtrue;
 }
-
-// VALUE cCommand_set_types(VALUE self, VALUE array) {
-// 	rb_iv_set(self, "@field_types", array);
-// 	return array;
-// }
 
 VALUE cCommand_quote_time(VALUE self, VALUE value) {
  	// TIMESTAMP() used for both time and datetime columns
@@ -440,14 +433,7 @@ VALUE cCommand_quote_date(VALUE self, VALUE value) {
 // Accepts an array of Ruby types (Fixnum, Float, String, etc...) and turns them
 // into Ruby-strings so we can easily typecast later
 VALUE cCommand_set_types(VALUE self, VALUE array) {
-	// VALUE field_count = rb_iv_get(self, "@field_count");
-	// Check_Type(field_count, T_FIXNUM);
 	VALUE type_strings = rb_ary_new();
-	
-	// if (RARRAY(array)->len != NUM2INT(field_count)) {
-	// 	rb_raise(rb_do_eLengthMismatchError, "Result#set_type expected %d fields, but received %d", NUM2INT(field_count), RARRAY(array)->len);
-	// }
-
 	int i;
  
 	for (i = 0; i < RARRAY(array)->len; i++) {
@@ -457,6 +443,29 @@ VALUE cCommand_set_types(VALUE self, VALUE array) {
 	rb_iv_set(self, "@field_types", type_strings);
  
 	return array;
+}
+
+VALUE cCommand_quote_string(VALUE self, VALUE string) {
+	MYSQL *db = DATA_PTR(rb_iv_get(rb_iv_get(self, "@connection"), "@connection"));
+	const char *source = StringValuePtr(string);
+	char *escaped;
+	char *with_quotes;
+
+	// Allocate space for the escaped version of 'string'.  Use + 3 allocate space for null term.
+	// and the leading and trailing single-quotes.
+	// Thanks to http://www.browardphp.com/mysql_manual_en/manual_MySQL_APIs.html#mysql_real_escape_string	
+	escaped = (char *)calloc(strlen(source) * 2 + 3, sizeof(char));
+
+	// Escape 'source' using the current charset in use on the conection 'db'
+	mysql_real_escape_string(db, escaped, source, strlen(source));
+
+	// Allocate space for the final version of the quoted string.
+	with_quotes = (char *)calloc(strlen(escaped) + 2, sizeof(char));
+	// Wrap the escaped string in single-quotes, this is DO's convention
+	sprintf(with_quotes, "'%s'", escaped);
+
+	free(escaped);
+	return RUBY_STRING(with_quotes);
 }
 
 VALUE cCommand_execute_non_query(int argc, VALUE *argv, VALUE self) {
@@ -729,6 +738,7 @@ void Init_rbmysql() {
 	rb_define_method(cCommand, "set_types", cCommand_set_types, 1);
 	rb_define_method(cCommand, "execute_non_query", cCommand_execute_non_query, -1);
 	rb_define_method(cCommand, "execute_reader", cCommand_execute_reader, -1);
+	rb_define_method(cCommand, "quote_string", cCommand_quote_string, 1);
 
 	cTransaction = DRIVER_CLASS("Transaction", cDO_Transaction);
 	rb_define_method(cTransaction, "initialize", cTransaction_initialize, 1);

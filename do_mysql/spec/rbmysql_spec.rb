@@ -18,33 +18,46 @@ describe DataObjects::Mysql do
   
   it "should connect successfully via TCP" do
     connection = DataObjects::Mysql::Connection.new("mysql://root@127.0.0.1:3306/rbmysql_test")
-    connection.class.should == DataObjects::Mysql::Connection
     connection.should_not be_using_socket
   end
 
   it "should connect successfully via the socket file" do
     connection = DataObjects::Mysql::Connection.new("mysql://root@localhost:3306/rbmysql_test/?socket=#{SOCKET_PATH}")
-    connection.class.should == DataObjects::Mysql::Connection
     connection.should be_using_socket
   end
   
   it "should raise an error when opened with an invalid server uri" do
-    lambda { DataObjects::Mysql::Connection.new("mysql://root@localhost:3306/") }.should raise_error(MysqlError)
-    lambda { DataObjects::Mysql::Connection.new("mysql://root@localhost:666/") }.should raise_error(MysqlError)
-    lambda { DataObjects::Mysql::Connection.new("mysql://baduser@localhost:3306/") }.should raise_error(MysqlError)
-    lambda { DataObjects::Mysql::Connection.new("mysql://root:wrongpassword@localhost:3306/") }.should raise_error(MysqlError)
-    lambda { DataObjects::Mysql::Connection.new("mysql://root@localhost:3306/bad_database") }.should raise_error(MysqlError)
-    lambda { DataObjects::Mysql::Connection.new("mysql://root@localhost:3306/rbmysql_test/?socket=/invalid/path/mysql.sock") }.should raise_error(MysqlError)
+    def connecting_with(uri)
+      lambda { DataObjects::Mysql::Connection.new(uri) }
+    end
+    
+    # Missing database name
+    connecting_with("mysql://root@localhost:3306/").should raise_error(MysqlError)
+    
+    # Wrong port
+    connecting_with("mysql://root@localhost:666/").should raise_error(MysqlError)
+    
+    # Bad Username
+    connecting_with("mysql://baduser@localhost:3306/").should raise_error(MysqlError)
+    
+    # Bad Password
+    connecting_with("mysql://root:wrongpassword@localhost:3306/").should raise_error(MysqlError)
+    
+    # Bad Database Name
+    connecting_with("mysql://root@localhost:3306/bad_database").should raise_error(MysqlError)
+    
+    # Invalid Socket Path
+    connecting_with("mysql://root@localhost:3306/rbmysql_test/?socket=/invalid/path/mysql.sock").should raise_error(MysqlError)
   end
 end
 
 describe DataObjects::Mysql::Connection do
-  
+
   before(:each) do
     # Open a connection for the specs to work with
     @connection = DataObjects::Mysql::Connection.new("mysql://root@localhost:3306/rbmysql_test/?socket=#{SOCKET_PATH}")
   end
-  
+
   it "should be able to create a command" do
     command = @connection.create_command("SELECT * FROM widgets")
     command.should be_kind_of(DataObjects::Mysql::Command)
@@ -54,10 +67,21 @@ describe DataObjects::Mysql::Connection do
     lambda { @connection.create_command("INSERT INTO non_existant_table (tester) VALUES (1)").execute_non_query }.should raise_error(MysqlError)
     lambda { @connection.create_command("SELECT * FROM non_existant table").execute_reader }.should raise_error(MysqlError)
   end
-  
+
   describe "executing a query" do
     before(:each) do
       @command = @connection.create_command("SELECT * FROM widgets LIMIT 2")
+    end
+    
+    it "should escape strings properly" do
+      command = @connection.create_command("SELECT * FROM widgets WHERE name = ?")
+      command.quote_string("Willy O'Hare & Johnny O'Toole").should == "'Willy O\\'Hare & Johnny O\\'Toole'".dup
+      command.quote_string("The\\Backslasher\\Rises\\Again").should == "'The\\\\Backslasher\\\\Rises\\\\Again'"
+      command.quote_string("Scott \"The Rage\" Bauer").should == "'Scott \\\"The Rage\\\" Bauer'"
+    end
+    
+    it "should allow backslash string-escaping" do
+      reader = @connection.create_command("SELECT * FROM widgets WHERE name = ?").execute_reader("Willy O\'Hare")
     end
     
     describe "reading results" do
@@ -152,7 +176,7 @@ describe DataObjects::Mysql::Connection do
       result = command.execute_non_query
       result.should be_kind_of(DataObjects::Mysql::Result)
     end
-  
+    
     it "should be able to determine the affected_rows" do
       command = @connection.create_command("INSERT INTO invoices (invoice_number) VALUES ('1234')")
       result = command.execute_non_query
