@@ -724,7 +724,7 @@ void Init_do_mysql() {
   rb_require("date");
   rb_require("cgi");
 
-  rb_funcall(rb_mKernel, rb_intern("gem"), 2, rb_str_new2("data_objects"), rb_str_new2(">= 0.9.0"));
+  rb_funcall(rb_mKernel, rb_intern("require"), 1, rb_str_new2("data_objects"));
 	
 	ID_TO_I = rb_intern("to_i");
 	ID_TO_F = rb_intern("to_f");
