@@ -156,7 +156,7 @@ VALUE typecast(char *value, char *type) {
 	if ( strcmp(value, "") == 0 ) {
 		return Qnil;
 	}
-	else if ( strcmp(type, "Fixnum") == 0 || strcmp(type, "Bignum") == 0 ) {
+	else if ( strcmp(type, "Fixnum") == 0 || strcmp(type, "Integer") == 0 || strcmp(type, "Bignum") == 0 ) {
 		return rb_cstr2inum(value, 10);
 	}
 	else if ( strcmp(type, "Float") == 0 ) {
@@ -393,6 +393,9 @@ VALUE cReader_next(VALUE self) {
 		
 		if ( TYPE(ruby_type) == T_STRING ) {
 			type = RSTRING(ruby_type)->ptr;
+		}
+		else {
+			type = rb_class2name(ruby_type);
 		}
 		
 		value = typecast(PQgetvalue(reader, position, i), type);

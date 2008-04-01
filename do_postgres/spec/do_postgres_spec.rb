@@ -113,6 +113,16 @@ describe "DataObjects::Postgres::Reader" do
     reader.close
   end
   
+  it "should typecast from set_types" do
+    command = @connection.create_command("SELECT id, name FROM users ORDER BY id LIMIT 1")
+    command.set_types [Fixnum, String]
+    reader = command.execute_reader
+    reader.next!
+    reader.values[0].should be_a_kind_of(Fixnum)
+    reader.values[1].should be_a_kind_of(String)
+    reader.close
+  end
+  
   it "should handle a null value" do
     @connection.create_command("INSERT INTO users (name) VALUES (NULL)").execute_non_query
     command = @connection.create_command("SELECT name from users WHERE name is null")
