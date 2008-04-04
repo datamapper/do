@@ -401,10 +401,10 @@ VALUE cConnection_initialize(VALUE self, VALUE uri) {
 	rb_iv_set(self, "@uri", uri);
 	rb_iv_set(self, "@connection", Data_Wrap_Struct(rb_cObject, 0, 0, db));
 
-	free(host);
-	free(user);
-	free(socket);
-	free(charset);
+	// free(host);
+	// free(user);
+	// free(socket);
+	// free(charset);
 
 	return Qtrue;
 }
@@ -448,20 +448,21 @@ VALUE cConnection_real_close(VALUE self) {
 	return Qtrue;
 }
 
-VALUE cCommand_quote_time(VALUE self, VALUE value) {
- 	// TIMESTAMP() used for both time and datetime columns
-	return rb_funcall(value, ID_STRFTIME, 1, RUBY_STRING("TIMESTAMP(\"%Y-%m-%d %H:%M:%S\")"));
-}
-
-VALUE cCommand_quote_datetime(VALUE self, VALUE value) {
-  // "TIMESTAMP('#{value.strftime("%Y-%m-%d %H:%M:%S")}')"
-	return rb_funcall(value, ID_STRFTIME, 1, RUBY_STRING("TIMESTAMP(\"%Y-%m-%d %H:%M:%S\")"));
-}
-
-VALUE cCommand_quote_date(VALUE self, VALUE value) {
-  // "DATE('#{value.strftime("%Y-%m-%d")}')"
-	return rb_funcall(value, ID_STRFTIME, 1, RUBY_STRING("TIMESTAMP(\"%Y-%m-%d\")"));
-}
+// Spec me
+// VALUE cCommand_quote_time(VALUE self, VALUE value) {
+//  	// TIMESTAMP() used for both time and datetime columns
+// 	return rb_funcall(value, ID_STRFTIME, 1, RUBY_STRING("TIMESTAMP(\"%Y-%m-%d %H:%M:%S\")"));
+// }
+// 
+// VALUE cCommand_quote_datetime(VALUE self, VALUE value) {
+//   // "TIMESTAMP('#{value.strftime("%Y-%m-%d %H:%M:%S")}')"
+// 	return rb_funcall(value, ID_STRFTIME, 1, RUBY_STRING("TIMESTAMP(\"%Y-%m-%d %H:%M:%S\")"));
+// }
+// 
+// VALUE cCommand_quote_date(VALUE self, VALUE value) {
+//   // "DATE('#{value.strftime("%Y-%m-%d")}')"
+// 	return rb_funcall(value, ID_STRFTIME, 1, RUBY_STRING("TIMESTAMP(\"%Y-%m-%d\")"));
+// }
 
 // Accepts an array of Ruby types (Fixnum, Float, String, etc...) and turns them
 // into Ruby-strings so we can easily typecast later
@@ -483,21 +484,23 @@ VALUE cCommand_quote_string(VALUE self, VALUE string) {
 	const char *source = StringValuePtr(string);
 	char *escaped;
 	char *with_quotes;
+	
+	int quoted_length = 0;
 
 	// Allocate space for the escaped version of 'string'.  Use + 3 allocate space for null term.
 	// and the leading and trailing single-quotes.
 	// Thanks to http://www.browardphp.com/mysql_manual_en/manual_MySQL_APIs.html#mysql_real_escape_string	
-	escaped = (char *)calloc(strlen(source) * 2 + 3, sizeof(char));
+	escaped = (char *)calloc(strlen(source) * 3 + 1, sizeof(char));
 
 	// Escape 'source' using the current charset in use on the conection 'db'
-	mysql_real_escape_string(db, escaped, source, strlen(source));
+	quoted_length = mysql_real_escape_string(db, escaped, source, strlen(source));
 
 	// Allocate space for the final version of the quoted string.
-	with_quotes = (char *)calloc(strlen(escaped) + 2, sizeof(char));
+	with_quotes = (char *)calloc(quoted_length + 3, sizeof(char));
 	// Wrap the escaped string in single-quotes, this is DO's convention
 	sprintf(with_quotes, "'%s'", escaped);
 
-	free(escaped);
+	// free(escaped);
 	return RUBY_STRING(with_quotes);
 }
 
@@ -773,6 +776,10 @@ void Init_do_mysql() {
 	rb_define_method(cCommand, "execute_non_query", cCommand_execute_non_query, -1);
 	rb_define_method(cCommand, "execute_reader", cCommand_execute_reader, -1);
 	rb_define_method(cCommand, "quote_string", cCommand_quote_string, 1);
+	// These need to be specced
+	// rb_define_method(cCommand, "quote_time", cCommand_quote_time, 1);
+	// rb_define_method(cCommand, "quote_datetime", cCommand_quote_datetime, 1);
+	// rb_define_method(cCommand, "quote_date", cCommand_quote_date, 1);
 
 	cTransaction = DRIVER_CLASS("Transaction", cDO_Transaction);
 	rb_define_method(cTransaction, "initialize", cTransaction_initialize, 1);
