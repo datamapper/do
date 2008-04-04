@@ -7,3 +7,4 @@ pkg/*
 *.bundle
 Makefile
 **/*.db
+nbproject
