@@ -21,7 +21,7 @@ CREATE TABLE `widgets` (
   `ad_image` mediumblob NULL,
   `whitepaper_text` longtext NULL,
   `cad_drawing` longblob NULL,
-  `flags` tinyint(1) default "0",
+  `flags` tinyint(1) default 0,
   `number_in_stock` smallint default 500,
   `number_sold` mediumint default 0,
   `super_number` bigint default 9223372036854775807,
