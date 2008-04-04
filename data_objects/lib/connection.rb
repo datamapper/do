@@ -1,6 +1,11 @@
 require 'uri'
 require 'set'
-require 'fastthread'
+
+begin
+  require 'fastthread'
+rescue LoadError
+end
+
 require 'logger'
 
 module DataObjects
