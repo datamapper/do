@@ -33,6 +33,12 @@ public class DoJdbcAdapterService implements BasicLibraryService {
     public static RubyClass cDO_Result = (RubyClass) CONST_GET(doModule, "Result");
     public static RubyClass DO_Reader = (RubyClass) CONST_GET(doModule, "Reader");
     
+    private RubyClass connection;
+    private RubyClass command;
+    private RubyClass result;
+    private RubyClass reader;
+    private RubyClass transaction;
+    
     public static IRubyObject CONST_GET(Object scope, String constant) {
         return Ruby.getCurrentInstance().getClass(constant);
     }
@@ -50,14 +56,21 @@ public class DoJdbcAdapterService implements BasicLibraryService {
         return runtime.defineClassUnder(name, superClass, allocator, doModule);
     }
     
-    public boolean basicLoad(Ruby arg0) throws IOException {
+    public boolean basicLoad(final Ruby runtime) throws IOException {
         
         //rb_require("rubygems");
 	//rb_require("bigdecimal");
         //rb_require("date");
         //rb_require("cgi");
         
-        throw new UnsupportedOperationException("Not supported yet.");
+        // Initialize the Jdbc Module and create its classes.
+        connection = Connection.createConnectionClass(runtime);
+        command = Command.createCommandClass(runtime);
+        result = Result.createResultClass(runtime);
+        reader = Reader.createReaderClass(runtime);
+        transaction = Transaction.createTransactionClass(runtime);
+        
+        return true;
     }
     
 }
