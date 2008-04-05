@@ -15,6 +15,7 @@ public class Connection extends RubyObject {
                 "Connection",
                 DoJdbcAdapterService.cDO_Connection,
                 CONNECTION_ALLOCATOR);
+        connectionClass.defineAnnotatedMethods(Connection.class);
         return connectionClass;
     }
     

@@ -23,6 +23,7 @@ public class Command extends RubyObject {
                 "Ccommand",
                 DoJdbcAdapterService.cDO_Command,
                 COMMAND_ALLOCATOR);
+        commandClass.defineAnnotatedMethods(Command.class);
         return commandClass;
     }
     

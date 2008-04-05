@@ -19,11 +19,12 @@ import org.jruby.runtime.builtin.IRubyObject;
 class Transaction extends RubyObject {
 
     public static RubyClass createTransactionClass(Ruby runtime) {
-        RubyClass connectionClass = DoJdbcAdapterService.createDoJdbcClass(runtime,
+        RubyClass transactionClass = DoJdbcAdapterService.createDoJdbcClass(runtime,
                 "Transaction",
                 DoJdbcAdapterService.cDO_Connection,
                 TRANSACTION_ALLOCATOR);
-        return connectionClass;
+        transactionClass.defineAnnotatedMethods(Transaction.class);
+        return transactionClass;
     }
     
     private static ObjectAllocator TRANSACTION_ALLOCATOR = new ObjectAllocator() {

@@ -23,6 +23,7 @@ public class Result extends RubyObject {
                 "Result",
                 DoJdbcAdapterService.cDO_Result,
                 RESULT_ALLOCATOR);
+        //resultClass.defineAnnotatedMethods(Result.class);
         return resultClass;
     }
     
