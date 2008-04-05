@@ -1,0 +1,10 @@
+.DS_Store
+*.log
+./doc
+./cov
+lib/do_jdbc/*.jar
+nbproject/build-impl.xml
+nbproject/genfiles.properties
+nbproject/platform.properties
+nbproject/private
+pkg/*
