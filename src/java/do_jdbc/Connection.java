@@ -11,9 +11,9 @@ import org.jruby.runtime.builtin.IRubyObject;
 public class Connection extends RubyObject {
 
     public static RubyClass createConnectionClass(Ruby runtime) {
-        RubyClass connectionClass = DoJdbcAdapterService.createDoJdbcClass(runtime,
+        RubyClass connectionClass = DoJdbcInternalService.createDoJdbcClass(runtime,
                 "Connection",
-                DoJdbcAdapterService.cDO_Connection,
+                DoJdbcInternalService.cDO_Connection,
                 CONNECTION_ALLOCATOR);
         connectionClass.defineAnnotatedMethods(Connection.class);
         return connectionClass;

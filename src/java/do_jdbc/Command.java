@@ -19,9 +19,9 @@ import org.jruby.runtime.builtin.IRubyObject;
 public class Command extends RubyObject {
 
     public static RubyClass createCommandClass(Ruby runtime) {
-        RubyClass commandClass = DoJdbcAdapterService.createDoJdbcClass(runtime,
+        RubyClass commandClass = DoJdbcInternalService.createDoJdbcClass(runtime,
                 "Ccommand",
-                DoJdbcAdapterService.cDO_Command,
+                DoJdbcInternalService.cDO_Command,
                 COMMAND_ALLOCATOR);
         commandClass.defineAnnotatedMethods(Command.class);
         return commandClass;

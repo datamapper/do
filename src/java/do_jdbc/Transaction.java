@@ -19,9 +19,9 @@ import org.jruby.runtime.builtin.IRubyObject;
 class Transaction extends RubyObject {
 
     public static RubyClass createTransactionClass(Ruby runtime) {
-        RubyClass transactionClass = DoJdbcAdapterService.createDoJdbcClass(runtime,
+        RubyClass transactionClass = DoJdbcInternalService.createDoJdbcClass(runtime,
                 "Transaction",
-                DoJdbcAdapterService.cDO_Connection,
+                DoJdbcInternalService.cDO_Connection,
                 TRANSACTION_ALLOCATOR);
         transactionClass.defineAnnotatedMethods(Transaction.class);
         return transactionClass;

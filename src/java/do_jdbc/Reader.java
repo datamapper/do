@@ -19,10 +19,10 @@ import org.jruby.runtime.builtin.IRubyObject;
 public class Reader extends RubyObject {
 
     public static RubyClass createReaderClass(Ruby runtime) {
-        RubyClass readerClass = DoJdbcAdapterService.createDoJdbcClass(
+        RubyClass readerClass = DoJdbcInternalService.createDoJdbcClass(
                 runtime,
                 "Reader",
-                DoJdbcAdapterService.DO_Reader,
+                DoJdbcInternalService.DO_Reader,
                 READER_ALLOCATOR);
         readerClass.defineAnnotatedMethods(Reader.class);
         return readerClass;

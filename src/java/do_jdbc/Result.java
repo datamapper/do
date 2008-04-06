@@ -19,9 +19,9 @@ import org.jruby.runtime.builtin.IRubyObject;
 public class Result extends RubyObject {
 
     public static RubyClass createResultClass(Ruby runtime) {
-        RubyClass resultClass = DoJdbcAdapterService.createDoJdbcClass(runtime,
+        RubyClass resultClass = DoJdbcInternalService.createDoJdbcClass(runtime,
                 "Result",
-                DoJdbcAdapterService.cDO_Result,
+                DoJdbcInternalService.cDO_Result,
                 RESULT_ALLOCATOR);
         //resultClass.defineAnnotatedMethods(Result.class);
         return resultClass;
