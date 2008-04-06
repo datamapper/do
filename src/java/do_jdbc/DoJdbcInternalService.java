@@ -10,7 +10,7 @@ import org.jruby.runtime.ObjectAllocator;
 import org.jruby.runtime.builtin.IRubyObject;
 import org.jruby.runtime.load.BasicLibraryService;
 
-public class DoJdbcAdapterService implements BasicLibraryService {
+public class DoJdbcInternalService implements BasicLibraryService {
     private static RubyObjectAdapter rubyApi;
     private static Ruby runtime;
     
@@ -59,7 +59,7 @@ public class DoJdbcAdapterService implements BasicLibraryService {
     public boolean basicLoad(final Ruby runtime) throws IOException {
         
         //rb_require("rubygems");
-	//rb_require("bigdecimal");
+        //rb_require("bigdecimal");
         //rb_require("date");
         //rb_require("cgi");
         
@@ -69,6 +69,8 @@ public class DoJdbcAdapterService implements BasicLibraryService {
         result = Result.createResultClass(runtime);
         reader = Reader.createReaderClass(runtime);
         transaction = Transaction.createTransactionClass(runtime);
+        
+        System.out.println("FISHCAKES");
         
         return true;
     }
