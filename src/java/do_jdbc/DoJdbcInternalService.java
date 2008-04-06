@@ -10,9 +10,16 @@ import org.jruby.runtime.ObjectAllocator;
 import org.jruby.runtime.builtin.IRubyObject;
 import org.jruby.runtime.load.BasicLibraryService;
 
+
+/**
+ * 
+ * thanks to Ola Bini's 
+ * http://ola-bini.blogspot.com/2006/10/jruby-tutorial-4-writing-java.html
+ * 
+ * @author alexbcoles
+ */
 public class DoJdbcInternalService implements BasicLibraryService {
     private static RubyObjectAdapter rubyApi;
-    private static Ruby runtime;
     
     public static String rb_mKernel = "";
     
@@ -22,9 +29,8 @@ public class DoJdbcInternalService implements BasicLibraryService {
     public static IRubyObject rb_cTime = CONST_GET(rb_mKernel, "Time");
     public static IRubyObject rb_cRational = CONST_GET(rb_mKernel, "Rational");
 
-    public static RubyModule doModule = Ruby.getCurrentInstance().getModule("DataObjects");
-    public static RubyModule jdbcModule = Ruby.getCurrentInstance()
-            .defineModuleUnder("JDBC", doModule);
+    public static RubyModule doModule;
+    public static RubyModule jdbcModule;
     
     // Get references to the DataObjects module and its classes
     public static RubyClass cDO_Quoting = (RubyClass) CONST_GET(doModule, "Quoting");
@@ -58,6 +64,10 @@ public class DoJdbcInternalService implements BasicLibraryService {
     
     public boolean basicLoad(final Ruby runtime) throws IOException {
         
+        doModule = runtime.getModule("DataObjects");        
+        jdbcModule = (RubyModule) runtime.getModule("DataObjects").getConstant("JDBC");
+        //jdbcModule = runtime.defineModuleUnder("JDBC", doModule);
+        
         //rb_require("rubygems");
         //rb_require("bigdecimal");
         //rb_require("date");
@@ -69,8 +79,6 @@ public class DoJdbcInternalService implements BasicLibraryService {
         result = Result.createResultClass(runtime);
         reader = Reader.createReaderClass(runtime);
         transaction = Transaction.createTransactionClass(runtime);
-        
-        System.out.println("FISHCAKES");
         
         return true;
     }
