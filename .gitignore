@@ -2,6 +2,7 @@
 *.log
 ./doc
 ./cov
+lib/*.jar
 lib/do_jdbc/*.jar
 nbproject/build-impl.xml
 nbproject/genfiles.properties

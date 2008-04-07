@@ -2,6 +2,7 @@ require 'rubygems'
 require 'rake'
 require 'rake/rdoctask'
 require 'rake/gempackagetask'
+require 'spec/rake/spectask'
 
 PLUGIN = "do_jdbc"
 NAME = "do_jdbc"
@@ -32,7 +33,7 @@ Rake::GemPackageTask.new(spec) do |pkg|
   pkg.gem_spec = spec
 end
 
-task :default => [:java_compile, :test]
+task :default => [:java_compile, :spec]
 
 def java_classpath_arg # myriad of ways to discover JRuby classpath
   begin
@@ -49,12 +50,12 @@ end
 desc "Compile the native Java code."
 task :java_compile do
   pkg_classes = File.join(*%w(pkg classes))
-  jar_name = File.join(*%w(lib do_jdbc do_jdbc_internal.jar))
+  jar_name = File.join(*%w(lib do_jdbc_internal.jar))
   mkdir_p pkg_classes
   sh "javac -target 1.5 -source 1.5 -d pkg/classes #{java_classpath_arg} #{FileList['src/java/**/*.java'].join(' ')}"
   sh "jar cf #{jar_name} -C #{pkg_classes} ."
 end
-file "lib/do_jdbc/do_jdbc_internal.jar" => :java_compile
+file "lib/do_jdbc_internal.jar" => :java_compile
 
 task :more_clean do
   rm_rf FileList['derby*']
@@ -72,4 +73,14 @@ end
 
 task :install => [:package] do
   sh %{sudo gem install pkg/#{NAME}-#{VERSION}}, :verbose => false
+end
+
+desc "Run specifications"
+Spec::Rake::SpecTask.new('spec') do |t|
+  t.spec_opts = ["--format", "specdoc", "--colour"]
+  t.spec_files = Dir["spec/**/*_spec.rb"].sort
+  #unless ENV['NO_RCOV']
+  #  t.rcov = true
+  #  t.rcov_opts = ['--exclude', 'spec,environment.rb']
+  #end
 end

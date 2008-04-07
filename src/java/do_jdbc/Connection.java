@@ -2,6 +2,7 @@ package do_jdbc;
 
 import org.jruby.Ruby;
 import org.jruby.RubyClass;
+import org.jruby.RubyModule;
 import org.jruby.RubyObject;
 import org.jruby.anno.JRubyMethod;
 import org.jruby.runtime.ObjectAllocator;
@@ -10,11 +11,11 @@ import org.jruby.runtime.builtin.IRubyObject;
 // Connection Class
 public class Connection extends RubyObject {
 
-    public static RubyClass createConnectionClass(Ruby runtime) {
-        RubyClass connectionClass = DoJdbcInternalService.createDoJdbcClass(runtime,
-                "Connection",
-                DoJdbcInternalService.cDO_Connection,
-                CONNECTION_ALLOCATOR);
+    public final static String RUBY_CLASS_NAME = "Connection";
+    
+    public static RubyClass createConnectionClass(RubyModule module, RubyClass superClass) {
+        RubyClass connectionClass = module.defineClassUnder(RUBY_CLASS_NAME, 
+                superClass, CONNECTION_ALLOCATOR);
         connectionClass.defineAnnotatedMethods(Connection.class);
         return connectionClass;
     }

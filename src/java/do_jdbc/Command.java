@@ -7,6 +7,7 @@ package do_jdbc;
 
 import org.jruby.Ruby;
 import org.jruby.RubyClass;
+import org.jruby.RubyModule;
 import org.jruby.RubyObject;
 import org.jruby.anno.JRubyMethod;
 import org.jruby.runtime.ObjectAllocator;
@@ -17,12 +18,14 @@ import org.jruby.runtime.builtin.IRubyObject;
  * @author alexbcoles
  */
 public class Command extends RubyObject {
+    
+    public final static String RUBY_CLASS_NAME = "Command";
 
-    public static RubyClass createCommandClass(Ruby runtime) {
-        RubyClass commandClass = DoJdbcInternalService.createDoJdbcClass(runtime,
-                "Ccommand",
-                DoJdbcInternalService.cDO_Command,
-                COMMAND_ALLOCATOR);
+    public static RubyClass createCommandClass(Ruby runtime, RubyModule module) {
+        RubyModule doModule = runtime.getModule("DataObjects");
+        RubyClass superClass = doModule.getClass(RUBY_CLASS_NAME);
+        RubyClass commandClass = runtime.defineClassUnder("Command", 
+                superClass, COMMAND_ALLOCATOR, module);
         commandClass.defineAnnotatedMethods(Command.class);
         return commandClass;
     }

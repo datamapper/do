@@ -7,6 +7,7 @@ package do_jdbc;
 
 import org.jruby.Ruby;
 import org.jruby.RubyClass;
+import org.jruby.RubyModule;
 import org.jruby.RubyObject;
 import org.jruby.anno.JRubyMethod;
 import org.jruby.runtime.ObjectAllocator;
@@ -16,13 +17,14 @@ import org.jruby.runtime.builtin.IRubyObject;
  *
  * @author alexbcoles
  */
-class Transaction extends RubyObject {
+public class Transaction extends RubyObject {
+    
+    public final static String RUBY_CLASS_NAME = "Transaction";
 
-    public static RubyClass createTransactionClass(Ruby runtime) {
-        RubyClass transactionClass = DoJdbcInternalService.createDoJdbcClass(runtime,
-                "Transaction",
-                DoJdbcInternalService.cDO_Connection,
-                TRANSACTION_ALLOCATOR);
+    public static RubyClass createTransactionClass(Ruby runtime, RubyModule module) {
+        RubyClass superClass = runtime.getModule("DataObjects").getClass(RUBY_CLASS_NAME);
+        RubyClass transactionClass = runtime.defineClassUnder("Transaction", 
+                superClass, TRANSACTION_ALLOCATOR, module);
         transactionClass.defineAnnotatedMethods(Transaction.class);
         return transactionClass;
     }

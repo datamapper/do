@@ -7,6 +7,7 @@ package do_jdbc;
 
 import org.jruby.Ruby;
 import org.jruby.RubyClass;
+import org.jruby.RubyModule;
 import org.jruby.RubyObject;
 import org.jruby.anno.JRubyMethod;
 import org.jruby.runtime.ObjectAllocator;
@@ -17,13 +18,13 @@ import org.jruby.runtime.builtin.IRubyObject;
  * @author alexbcoles
  */
 public class Reader extends RubyObject {
+    
+    public final static String RUBY_CLASS_NAME = "Reader";
 
-    public static RubyClass createReaderClass(Ruby runtime) {
-        RubyClass readerClass = DoJdbcInternalService.createDoJdbcClass(
-                runtime,
-                "Reader",
-                DoJdbcInternalService.DO_Reader,
-                READER_ALLOCATOR);
+    public static RubyClass createReaderClass(Ruby runtime, RubyModule module) {
+        RubyClass superClass = runtime.getClass("DataObjects::Reader");
+        RubyClass readerClass = runtime.defineClassUnder("Reader", 
+                superClass, READER_ALLOCATOR, module);
         readerClass.defineAnnotatedMethods(Reader.class);
         return readerClass;
     }

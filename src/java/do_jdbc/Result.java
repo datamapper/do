@@ -6,6 +6,7 @@ package do_jdbc;
 
 import org.jruby.Ruby;
 import org.jruby.RubyClass;
+import org.jruby.RubyModule;
 import org.jruby.RubyObject;
 import org.jruby.runtime.ObjectAllocator;
 import org.jruby.runtime.builtin.IRubyObject;
@@ -17,12 +18,12 @@ import org.jruby.runtime.builtin.IRubyObject;
 
 // Result Class
 public class Result extends RubyObject {
+    
+    public final static String RUBY_CLASS_NAME = "Result";
 
-    public static RubyClass createResultClass(Ruby runtime) {
-        RubyClass resultClass = DoJdbcInternalService.createDoJdbcClass(runtime,
-                "Result",
-                DoJdbcInternalService.cDO_Result,
-                RESULT_ALLOCATOR);
+    public static RubyClass createResultClass(RubyModule module, RubyClass superClass) {
+        RubyClass resultClass = module.defineClassUnder(RUBY_CLASS_NAME, 
+                superClass, RESULT_ALLOCATOR);
         //resultClass.defineAnnotatedMethods(Result.class);
         return resultClass;
     }
