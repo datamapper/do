@@ -2,21 +2,21 @@
 mkdir -p pkg
 
 cd data_objects
-rake package
+rake gem
 cp pkg/*.gem ../pkg/
 cd ..
 
 cd do_mysql
-rake package
+rake gem
 cp pkg/*.gem ../pkg/
 cd ..
 
 cd do_sqlite3
-rake package
+rake gem
 cp pkg/*.gem ../pkg/
 cd ..
 
 cd do_postgres
-rake package
+rake gem
 cp pkg/*.gem ../pkg/
 cd ..
