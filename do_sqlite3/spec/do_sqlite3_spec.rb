@@ -29,9 +29,9 @@ describe "DataObjects::Sqlite3::Result" do
     lambda { command.execute_reader }.should raise_error("no such table: table_which_doesnt_exist")
   end
   
-  it "should return the affected rows and insert_id" do    
+  it "should return the affected rows and insert_id" do
     command = @connection.create_command("DROP TABLE users")
-    command.execute_non_query
+    command.execute_non_query rescue nil
     command = @connection.create_command("CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT, age INTEGER)")
     result = command.execute_non_query
     command = @connection.create_command("INSERT INTO users (name) VALUES ('test')")    
@@ -88,12 +88,12 @@ describe "DataObjects::Sqlite3::Result" do
     
     before do
       begin
-        @connection.create_command("CREATE TABLE sail_boats ( id INTEGER PRIMARY KEY, name VARCHAR(50), port VARCHAR(50), notes VARCHAR(50) )").execute_non_query
+        @connection.create_command("CREATE TABLE sail_boats ( id INTEGER PRIMARY KEY, name VARCHAR(50), port VARCHAR(50), notes VARCHAR(50), vintage BOOLEAN )").execute_non_query
       end
-      command = @connection.create_command("INSERT INTO sail_boats (id, name, port, name) VALUES (?, ?, ?, ?)")
-      command.execute_non_query(1, "A", "C", "Fortune Pig!")
-      command.execute_non_query(2, "B", "B", "Happy Cow!")
-      command.execute_non_query(3, "C", "A", "Spoon")
+      command = @connection.create_command("INSERT INTO sail_boats (id, name, port, name, vintage) VALUES (?, ?, ?, ?, ?)")
+      command.execute_non_query(1, "A", "C", "Fortune Pig!", false)
+      command.execute_non_query(2, "B", "B", "Happy Cow!", true)
+      command.execute_non_query(3, "C", "A", "Spoon", true)
     end
     
     it "should quote a String" do
@@ -106,6 +106,13 @@ describe "DataObjects::Sqlite3::Result" do
     it "should quote multiple values" do
       command = @connection.create_command("INSERT INTO users (name, age) VALUES (?, ?)")
       result = command.execute_non_query("Sam Smoot", 1)
+      result.to_i.should == 1
+    end
+    
+    
+    it "should handle boolean columns gracefully" do
+      command = @connection.create_command("INSERT INTO sail_boats (id, name, port, name, vintage) VALUES (?, ?, ?, ?, ?)")
+      result = command.execute_non_query(4, "Scooner", "Port au Prince", "This is one gangster boat!", true)
       result.to_i.should == 1
     end
     

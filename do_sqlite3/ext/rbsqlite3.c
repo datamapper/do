@@ -11,6 +11,8 @@
 #define CONST_GET(scope, constant) (rb_funcall(scope, ID_CONST_GET, 1, rb_str_new2(constant)))
 #define SQLITE3_CLASS(klass, parent) (rb_define_class_under(mSqlite3, klass, parent))
 
+#define TRUE_CLASS CONST_GET(rb_mKernel, "TrueClass")
+
 VALUE mDO;
 VALUE cDO_Quoting;
 VALUE cDO_Connection;
@@ -188,6 +190,10 @@ VALUE cCommand_set_types(VALUE self, VALUE array) {
 	return array;
 }
 
+VALUE cCommand_quote_boolean(VALUE self, VALUE value) {
+  return rb_str_new2(value == TRUE_CLASS ? "'t'" : "'f'");
+}
+  
 VALUE cCommand_execute_non_query(int argc, VALUE *argv[], VALUE self) {
 	sqlite3 *db;
 	char *error_message;
@@ -379,7 +385,7 @@ void Init_do_sqlite3() {
 	rb_define_method(cCommand, "set_types", cCommand_set_types, 1);
 	rb_define_method(cCommand, "execute_non_query", cCommand_execute_non_query, -1);
 	rb_define_method(cCommand, "execute_reader", cCommand_execute_reader, -1);
-	
+  rb_define_method(cCommand, "quote_boolean", cCommand_quote_boolean, 1);
 	cResult = SQLITE3_CLASS("Result", cDO_Result);
 	
 	cReader = SQLITE3_CLASS("Reader", cDO_Reader);
