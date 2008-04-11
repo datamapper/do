@@ -1,0 +1,43 @@
+require 'rubygems'
+require 'rake/gempackagetask'
+require 'spec/rake/spectask'
+
+PLUGIN = "do_mysql"
+NAME = "do_mysql"
+VERSION = "0.9.0"
+AUTHOR = "Scott Bauer"
+EMAIL = "bauer.mail@gmail.com"
+HOMEPAGE = "http://dataobjects.devjavu.com"
+SUMMARY = "A DataObject.rb driver for mysql"
+
+spec = Gem::Specification.new do |s|
+  s.name = NAME
+  s.version = VERSION
+  s.platform = Gem::Platform::RUBY
+  s.has_rdoc = true
+  s.extra_rdoc_files = ["README", "LICENSE", 'TODO']
+  s.summary = SUMMARY
+  s.description = s.summary
+  s.author = AUTHOR
+  s.email = EMAIL
+  s.homepage = HOMEPAGE
+  s.add_dependency('data_objects', '>= 0.9.0')
+  s.require_path = 'lib'
+  s.autorequire = PLUGIN
+  s.extensions = ["ext/extconf.rb"]
+  s.files = %w(LICENSE README Rakefile TODO) + Dir.glob("{lib,specs,ext}/**/*").reject {|x| x =~ /\.(o|bundle)$/ }
+end
+
+Rake::GemPackageTask.new(spec) do |pkg|
+  pkg.gem_spec = spec
+end
+
+task :install => [:package] do
+  sh %{sudo gem install pkg/#{NAME}-#{VERSION}}
+end
+
+desc "Run all specs in spec directory (excluding plugin specs)"
+Spec::Rake::SpecTask.new(:spec) do |t|
+  t.spec_opts = ['--options', "spec/spec.opts"] if File.exists?("spec/spec.opts")
+  t.spec_files = FileList['spec/*_spec.rb']
+end
