@@ -70,10 +70,33 @@ describe DataObjects::Jdbc::Connection do
         @reader.next!
 
         @types.each_with_index do |t, idx|
-          @reader.values[idx].class.should == @types[idx]
+          @reader.values[idx].class.should == t
         end
       end
+    end
+  end
 
+  describe "executing a non-query" do
+    it "should return a Result" do
+      command = @connection.create_command("INSERT INTO invoices (invoice_number) VALUES ('1234')")
+      result = command.execute_non_query
+      result.should be_kind_of(DataObjects::Jdbc::Result)
+    end
+
+    it "should be able to determine the affected_rows" do
+      command = @connection.create_command("INSERT INTO invoices (invoice_number) VALUES ('1234')")
+      result = command.execute_non_query
+      result.to_i.should == 1
+    end
+    
+    it "should yield the last inserted id" do
+      @connection.create_command("TRUNCATE TABLE invoices").execute_non_query
+  
+      result = @connection.create_command("INSERT INTO invoices (invoice_number) VALUES ('1234')").execute_non_query
+      result.insert_id.should == 1
+      
+      result = @connection.create_command("INSERT INTO invoices (invoice_number) VALUES ('3456')").execute_non_query
+      result.insert_id.should == 2
     end
   end
 end
