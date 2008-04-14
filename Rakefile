@@ -49,6 +49,7 @@ end
 
 desc "Compile the native Java code."
 task :java_compile do
+  puts "Fishcakes #{java_classpath_arg}"
   pkg_classes = File.join(*%w(pkg classes))
   jar_name = File.join(*%w(lib do_jdbc_internal.jar))
   mkdir_p pkg_classes

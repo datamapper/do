@@ -11,6 +11,8 @@ import org.jruby.RubyObject;
 import org.jruby.runtime.ObjectAllocator;
 import org.jruby.runtime.builtin.IRubyObject;
 
+import static do_jdbc.DataObjects.DATA_OBJECTS_MODULE_NAME;
+
 /**
  *
  * @author alexbcoles
@@ -21,20 +23,22 @@ public class Result extends RubyObject {
     
     public final static String RUBY_CLASS_NAME = "Result";
 
-    public static RubyClass createResultClass(RubyModule module, RubyClass superClass) {
-        RubyClass resultClass = module.defineClassUnder(RUBY_CLASS_NAME, 
-                superClass, RESULT_ALLOCATOR);
-        //resultClass.defineAnnotatedMethods(Result.class);
-        return resultClass;
-    }
-    
-    private static ObjectAllocator RESULT_ALLOCATOR = new ObjectAllocator() {
+    private final static ObjectAllocator RESULT_ALLOCATOR = new ObjectAllocator() {
         public IRubyObject allocate(Ruby runtime, RubyClass klass) {
             Result instance = new Result(runtime, klass);
             return instance;
         }
     };
 
+    public static RubyClass createResultClass(Ruby runtime, RubyModule jdbcModule) {
+        RubyModule doModule = runtime.getModule(DATA_OBJECTS_MODULE_NAME);
+        RubyClass superClass = doModule.getClass(RUBY_CLASS_NAME);
+        RubyClass resultClass = jdbcModule.defineClassUnder(RUBY_CLASS_NAME, 
+               superClass, RESULT_ALLOCATOR);
+        resultClass.defineAnnotatedMethods(Result.class);
+        return resultClass;
+    }
+    
     private Result(Ruby runtime, RubyClass klass) {
         super(runtime, klass);
     }

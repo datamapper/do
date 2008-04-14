@@ -9,11 +9,10 @@ import java.io.IOException;
 import org.jruby.Ruby;
 import org.jruby.RubyClass;
 import org.jruby.RubyModule;
-import org.jruby.RubyObjectAdapter;
-import org.jruby.anno.JRubyMethod;
-import org.jruby.runtime.ObjectAllocator;
-import org.jruby.runtime.builtin.IRubyObject;
 import org.jruby.runtime.load.BasicLibraryService;
+
+import static do_jdbc.DataObjects.DATA_OBJECTS_MODULE_NAME;
+import static do_jdbc.DataObjects.JDBC_MODULE_NAME;
 
 /**
  * 
@@ -54,30 +53,24 @@ public class DoJdbcInternalService implements BasicLibraryService {
     
     public boolean basicLoad(Ruby runtime) throws IOException {     
         
-        doModule = runtime.getModule("DataObjects");
+        doModule = runtime.getModule(DATA_OBJECTS_MODULE_NAME);
 
         //rb_require("rubygems");
         //rb_require("bigdecimal");
         //rb_require("date");
         //rb_require("cgi");
         
-        RubyClass connectionSuperClass = doModule.getClass(Connection.RUBY_CLASS_NAME);
-        RubyClass commandSuperClass = doModule.getClass(Command.RUBY_CLASS_NAME);
-        RubyClass resultSuperClass = doModule.getClass(Result.RUBY_CLASS_NAME);
-        RubyClass readerSuperClass = doModule.getClass(Reader.RUBY_CLASS_NAME);
-        RubyClass transactionSuperClass = doModule.getClass(Reader.RUBY_CLASS_NAME);
-        
         // Initialize the Jdbc Module and create its classes.
         //jdbcModule = (RubyModule) doModule.getConstant("JDBC");
-        jdbcModule = doModule.defineModuleUnder("JDBC");
+        jdbcModule = doModule.defineModuleUnder(JDBC_MODULE_NAME);
         
-        connection = Connection.createConnectionClass(jdbcModule, connectionSuperClass);
-        //command = Command.createCommandClass(jdbcModule);
-        result = Result.createResultClass(jdbcModule, resultSuperClass);
-        //reader = Reader.createReaderClass(jdbcModule);
-        //transaction = Transaction.createTransactionClass(jdbcModule);
+        command = Command.createCommandClass(runtime, jdbcModule);
+        connection = Connection.createConnectionClass(runtime, jdbcModule);
+        result = Result.createResultClass(runtime, jdbcModule);
+        reader = Reader.createReaderClass(runtime, jdbcModule);
+        transaction = Transaction.createTransactionClass(runtime, jdbcModule);
         
         return true;
     }
-    
+
 }

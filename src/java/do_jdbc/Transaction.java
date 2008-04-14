@@ -13,6 +13,8 @@ import org.jruby.anno.JRubyMethod;
 import org.jruby.runtime.ObjectAllocator;
 import org.jruby.runtime.builtin.IRubyObject;
 
+import static do_jdbc.DataObjects.DATA_OBJECTS_MODULE_NAME;
+
 /**
  *
  * @author alexbcoles
@@ -21,26 +23,28 @@ public class Transaction extends RubyObject {
     
     public final static String RUBY_CLASS_NAME = "Transaction";
 
-    public static RubyClass createTransactionClass(Ruby runtime, RubyModule module) {
-        RubyClass superClass = runtime.getModule("DataObjects").getClass(RUBY_CLASS_NAME);
-        RubyClass transactionClass = runtime.defineClassUnder("Transaction", 
-                superClass, TRANSACTION_ALLOCATOR, module);
-        transactionClass.defineAnnotatedMethods(Transaction.class);
-        return transactionClass;
-    }
-    
-    private static ObjectAllocator TRANSACTION_ALLOCATOR = new ObjectAllocator() {
+    private final static ObjectAllocator TRANSACTION_ALLOCATOR = new ObjectAllocator() {
         public IRubyObject allocate(Ruby runtime, RubyClass klass) {
             Transaction instance = new Transaction(runtime, klass);
             return instance;
         }
     };
     
+    public static RubyClass createTransactionClass(Ruby runtime, RubyModule jdbcModule) {
+        RubyModule doModule = runtime.getModule(DATA_OBJECTS_MODULE_NAME);
+        RubyClass superClass = doModule.getClass(RUBY_CLASS_NAME);
+        RubyClass transactionClass = runtime.defineClassUnder("Transaction",
+                superClass, TRANSACTION_ALLOCATOR, jdbcModule);
+
+        transactionClass.defineAnnotatedMethods(Transaction.class);
+        return transactionClass;
+    }
+    
     private Transaction(Ruby runtime, RubyClass klass) {
         super(runtime, klass);
     }
     
-        // Transaction Class
+    // Transaction Class
     @JRubyMethod(name = "initialize", required = 1)
     public static IRubyObject t_initialize_p(IRubyObject recv) {
         return recv.getRuntime().getFalse();
@@ -61,9 +65,9 @@ public class Transaction extends RubyObject {
         return recv.getRuntime().getFalse();
     }
 
-    @JRubyMethod(name = "create_command", required = -1)
-    public static IRubyObject create_command_p(IRubyObject recv) {
-        return recv.getRuntime().getFalse();
-    }
+    //@JRubyMethod(name = "create_command", required = -1)
+    //public static IRubyObject create_command_p(IRubyObject recv) {
+    //    return recv.getRuntime().getFalse();
+    //}
 
 }
