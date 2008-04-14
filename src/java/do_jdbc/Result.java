@@ -14,11 +14,10 @@ import org.jruby.runtime.builtin.IRubyObject;
 import static do_jdbc.DataObjects.DATA_OBJECTS_MODULE_NAME;
 
 /**
- *
+ * Result Class
+ * 
  * @author alexbcoles
  */
-
-// Result Class
 public class Result extends RubyObject {
     
     public final static String RUBY_CLASS_NAME = "Result";

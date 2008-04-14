@@ -16,7 +16,8 @@ import org.jruby.runtime.builtin.IRubyObject;
 import static do_jdbc.DataObjects.DATA_OBJECTS_MODULE_NAME;
 
 /**
- *
+ * Command Class
+ * 
  * @author alexbcoles
  */
 public class Command extends RubyObject {
@@ -36,7 +37,6 @@ public class Command extends RubyObject {
         RubyClass commandClass = runtime.defineClassUnder("Command",
                 superClass, COMMAND_ALLOCATOR, jdbcModule);
 
-        // Command Class
         // rb_include_module(cCommand, cDO_Quoting);
         commandClass.defineAnnotatedMethods(Command.class);
         return commandClass;
@@ -51,19 +51,19 @@ public class Command extends RubyObject {
         return recv.getRuntime().getFalse();
     }
 
-    //@JRubyMethod(name = "execute_non_query", required = -1)
-    //public static IRubyObject execute_non_query_p(IRubyObject recv) {
-    //    return recv.getRuntime().getFalse();
-    //}
+    @JRubyMethod(name = "execute_non_query")
+    public static IRubyObject execute_non_query_p(IRubyObject recv) {
+        return recv.getRuntime().getFalse();
+    }
 
-    //@JRubyMethod(name = "execute_reader", required = -1)
-    //public static IRubyObject execute_reader_p(IRubyObject recv) {
-    //    return recv.getRuntime().getFalse();
-    //}
+    @JRubyMethod(name = "execute_reader")
+    public static IRubyObject execute_reader_p(IRubyObject recv) {
+        return recv.getRuntime().getFalse();
+    }
 
-    //@JRubyMethod(name = "quote_string", required = -1)
-    //public static IRubyObject quote_string_p(IRubyObject recv) {
-    //    return recv.getRuntime().getFalse();
-   // }
-    
+    @JRubyMethod(name = "quote_string")
+    public static IRubyObject quote_string_p(IRubyObject recv) {
+        return recv.getRuntime().getFalse();
+    }
+
 }

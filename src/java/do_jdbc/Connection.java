@@ -10,7 +10,11 @@ import org.jruby.runtime.builtin.IRubyObject;
 
 import static do_jdbc.DataObjects.DATA_OBJECTS_MODULE_NAME;
 
-// Connection Class
+/**
+ * Connection Class
+ * 
+ * @author alexbcoles
+ */
 public class Connection extends RubyObject {
 
     public final static String RUBY_CLASS_NAME = "Connection";

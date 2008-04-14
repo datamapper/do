@@ -16,7 +16,8 @@ import org.jruby.runtime.builtin.IRubyObject;
 import static do_jdbc.DataObjects.DATA_OBJECTS_MODULE_NAME;
 
 /**
- *
+ * Transaction Class
+ * 
  * @author alexbcoles
  */
 public class Transaction extends RubyObject {
@@ -44,7 +45,6 @@ public class Transaction extends RubyObject {
         super(runtime, klass);
     }
     
-    // Transaction Class
     @JRubyMethod(name = "initialize", required = 1)
     public static IRubyObject t_initialize_p(IRubyObject recv) {
         return recv.getRuntime().getFalse();
@@ -65,9 +65,9 @@ public class Transaction extends RubyObject {
         return recv.getRuntime().getFalse();
     }
 
-    //@JRubyMethod(name = "create_command", required = -1)
-    //public static IRubyObject create_command_p(IRubyObject recv) {
-    //    return recv.getRuntime().getFalse();
-    //}
+    @JRubyMethod(name = "create_command")
+    public static IRubyObject create_command_p(IRubyObject recv) {
+        return recv.getRuntime().getFalse();
+    }
 
 }

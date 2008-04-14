@@ -5,13 +5,9 @@
 
 package do_jdbc;
 
-import org.jruby.Ruby;
-import org.jruby.RubyClass;
-import org.jruby.RubyModule;
-import org.jruby.runtime.ObjectAllocator;
-
 /**
- *
+ * Additional Utilities for DataObjects JDBC Drivers
+ * 
  * @author alexbcoles
  */
 public class DoJdbcUtils {

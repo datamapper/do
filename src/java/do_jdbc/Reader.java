@@ -16,7 +16,8 @@ import org.jruby.runtime.builtin.IRubyObject;
 import static do_jdbc.DataObjects.DATA_OBJECTS_MODULE_NAME;
 
 /**
- *
+ * Reader Class
+ * 
  * @author alexbcoles
  */
 public class Reader extends RubyObject {
@@ -43,7 +44,6 @@ public class Reader extends RubyObject {
         super(runtime, klass);
     }
     
-        // Reader Class
     @JRubyMethod(name = "close", required = 0)
     public static IRubyObject close_p(IRubyObject recv) {
         return recv.getRuntime().getFalse();
