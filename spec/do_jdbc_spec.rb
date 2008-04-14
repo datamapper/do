@@ -58,12 +58,12 @@ end
 describe "DataObjects::Jdbc::Connection" do
   
   it "should have initialize, using_socket?, character_set, real_close methods" do
-    #connection = DataObjects::JDBC::const_get('Connection').new("JDBC://test/")
-    #connection.respond_to?('using_socket?').should == true
-    #connection.respond_to?('character_set').should == true
-    #connection.respond_to?('real_close').should == true
-    #connection.respond_to?('begin_transaction').should == true
-    #connection.respond_to?('not_a_conn_method').should == true
+    connection = DataObjects::Jdbc::const_get('Connection').new("jdbc://test/")
+    connection.should respond_to(:using_socket?)
+    connection.should respond_to(:character_set)
+    connection.should respond_to(:real_close)
+    connection.should respond_to(:begin_transaction)
+    connection.should_not respond_to(:not_a_conn_method)
   end
   
 end
