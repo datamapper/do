@@ -275,16 +275,6 @@ void raise_mysql_error(MYSQL *db, int mysql_error_code) {
 	rb_raise(eMysqlError, error_message);
 }
 
-// Convert a string to lowercase
-char *lc(char *str) {
-	char *t;
-	for (t = str; *t; t++) {
-		(*t) = tolower(*t);
-	}
-	
-	return (str);
-}
-
 // Pull an option out of a querystring-formmated option list using CGI::parse
 char * get_uri_option(VALUE querystring, char * key) {
 	// Ensure that we're dealing with a string
@@ -343,7 +333,7 @@ VALUE cConnection_initialize(VALUE self, VALUE uri) {
 
 	char *socket = NULL;
 	// Check to see if we're on the db machine.  If so, try to use the socket
-	if (0 == strcmp(lc(host), "localhost")) {
+	if (0 == strcasecmp(host, "localhost")) {
 		// TODO: Read the socket path from my.conf [client]
 		// char *options = NULL;
 		// options = mysql_options(db, MYSQL_READ_DEFAULT_GROUP, "client");
