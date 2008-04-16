@@ -14,46 +14,46 @@
 #define CHECK_AND_RAISE(mysql_result_value) if (0 != mysql_result_value) { raise_mysql_error(db, mysql_result_value); }
 
 // To store rb_intern values
-ID ID_TO_I;
-ID ID_TO_F;
-ID ID_TO_S;
-ID ID_PARSE;
-ID ID_TO_TIME;
-ID ID_NEW;
-ID ID_NEW_BANG;
-ID ID_CONST_GET;
-ID ID_UTC;
-ID ID_ESCAPE_SQL;
-ID ID_STRFTIME;
+static ID ID_TO_I;
+static ID ID_TO_F;
+static ID ID_TO_S;
+static ID ID_PARSE;
+static ID ID_TO_TIME;
+static ID ID_NEW;
+static ID ID_NEW_BANG;
+static ID ID_CONST_GET;
+static ID ID_UTC;
+static ID ID_ESCAPE_SQL;
+static ID ID_STRFTIME;
 
 // References to DataObjects base classes
-VALUE mDO;
-VALUE cDO_Quoting;
-VALUE cDO_Connection;
-VALUE cDO_Command;
-VALUE cDO_Transaction;
-VALUE cDO_Result;
-VALUE cDO_Reader;
+static VALUE mDO;
+static VALUE cDO_Quoting;
+static VALUE cDO_Connection;
+static VALUE cDO_Command;
+static VALUE cDO_Transaction;
+static VALUE cDO_Result;
+static VALUE cDO_Reader;
 
 // References to Ruby classes that we'll need
-VALUE rb_cDate;
-VALUE rb_cDateTime;
-VALUE rb_cRational;
-VALUE rb_cBigDecimal;
-VALUE rb_cURI;
-VALUE rb_cCGI;
+static VALUE rb_cDate;
+static VALUE rb_cDateTime;
+static VALUE rb_cRational;
+static VALUE rb_cBigDecimal;
+static VALUE rb_cURI;
+static VALUE rb_cCGI;
 
 // Classes that we'll build in Init
-VALUE mDOMysql;
-VALUE cConnection;
-VALUE cCommand;
-VALUE cTransaction;
-VALUE cResult;
-VALUE cReader;
-VALUE eMysqlError;
+static VALUE mDOMysql;
+static VALUE cConnection;
+static VALUE cCommand;
+static VALUE cTransaction;
+static VALUE cResult;
+static VALUE cReader;
+static VALUE eMysqlError;
  
 // Figures out what we should cast a given mysql field type to
-char * ruby_type_from_mysql_type(MYSQL_FIELD *field) {
+static char * ruby_type_from_mysql_type(MYSQL_FIELD *field) {
  
 	char* ruby_type_name;
 	
@@ -106,7 +106,7 @@ char * ruby_type_from_mysql_type(MYSQL_FIELD *field) {
 
 // Find the greatest common denominator and reduce the provided numerator and denominator.
 // This replaces calles to Rational.reduce! which does the same thing, but really slowly.
-void reduce( unsigned long long int *numerator, unsigned long long int *denominator ) {
+static void reduce( unsigned long long int *numerator, unsigned long long int *denominator ) {
   unsigned long long int a, b, c;
   a = *numerator;
   b = *denominator;
@@ -118,7 +118,7 @@ void reduce( unsigned long long int *numerator, unsigned long long int *denomina
 }
  
 // Generate the date integer which Date.civil_to_jd returns
-int jd_from_date(int year, int month, int day) {
+static int jd_from_date(int year, int month, int day) {
   int a, b;
   if ( month <= 2 ) {
     year -= 1;
@@ -130,7 +130,7 @@ int jd_from_date(int year, int month, int day) {
 }
 
 // Convert C-string to a Ruby instance of type "ruby_class_name"
-VALUE cast_mysql_value_to_ruby_value(const char* data, char* ruby_class_name) {
+static VALUE cast_mysql_value_to_ruby_value(const char* data, char* ruby_class_name) {
   if (NULL == data)
 		return Qnil;
  
@@ -204,7 +204,7 @@ VALUE cast_mysql_value_to_ruby_value(const char* data, char* ruby_class_name) {
 	return ruby_value;
 }
 
-void raise_mysql_error(MYSQL *db, int mysql_error_code) {
+static void raise_mysql_error(MYSQL *db, int mysql_error_code) {
 	char *error_message = (char *)mysql_error(db);
 	// char *extra = "";
 
@@ -276,7 +276,7 @@ void raise_mysql_error(MYSQL *db, int mysql_error_code) {
 }
 
 // Pull an option out of a querystring-formmated option list using CGI::parse
-char * get_uri_option(VALUE querystring, char * key) {
+static char * get_uri_option(VALUE querystring, char * key) {
 	// Ensure that we're dealing with a string
 	querystring = rb_funcall(querystring, ID_TO_S, 0);
 	
@@ -293,7 +293,7 @@ char * get_uri_option(VALUE querystring, char * key) {
 	return value;
 }
 
-VALUE cConnection_initialize(VALUE self, VALUE uri) {
+static VALUE cConnection_initialize(VALUE self, VALUE uri) {
   MYSQL *db = 0 ;
   db = (MYSQL *)mysql_init(NULL);
 
@@ -399,7 +399,7 @@ VALUE cConnection_initialize(VALUE self, VALUE uri) {
 	return Qtrue;
 }
 
-VALUE cConnection_character_set(VALUE self) {
+static VALUE cConnection_character_set(VALUE self) {
 	VALUE connection_container = rb_iv_get(self, "@connection");
 	
 	if (Qnil == connection_container)
@@ -413,15 +413,15 @@ VALUE cConnection_character_set(VALUE self) {
 	return RUBY_STRING(charset);
 }
 
-VALUE cConnection_is_using_socket(VALUE self) {
+static VALUE cConnection_is_using_socket(VALUE self) {
 	return rb_iv_get(self, "@using_socket");
 }
 
-VALUE cConnection_begin_transaction(VALUE self) {
+static VALUE cConnection_begin_transaction(VALUE self) {
 	return rb_funcall(cTransaction, rb_intern("new"), 1, self);
 }
 
-VALUE cConnection_real_close(VALUE self) {
+static VALUE cConnection_real_close(VALUE self) {
 	VALUE connection_container = rb_iv_get(self, "@connection");
 	
 	if (Qnil == connection_container)
@@ -456,7 +456,7 @@ VALUE cConnection_real_close(VALUE self) {
 
 // Accepts an array of Ruby types (Fixnum, Float, String, etc...) and turns them
 // into Ruby-strings so we can easily typecast later
-VALUE cCommand_set_types(VALUE self, VALUE array) {
+static VALUE cCommand_set_types(VALUE self, VALUE array) {
 	VALUE type_strings = rb_ary_new();
 	int i;
  
@@ -469,7 +469,7 @@ VALUE cCommand_set_types(VALUE self, VALUE array) {
 	return array;
 }
 
-VALUE cCommand_quote_string(VALUE self, VALUE string) {
+static VALUE cCommand_quote_string(VALUE self, VALUE string) {
 	MYSQL *db = DATA_PTR(rb_iv_get(rb_iv_get(self, "@connection"), "@connection"));
 	const char *source = StringValuePtr(string);
 	char *escaped;
@@ -494,7 +494,7 @@ VALUE cCommand_quote_string(VALUE self, VALUE string) {
 	return RUBY_STRING(with_quotes);
 }
 
-VALUE cCommand_execute_non_query(int argc, VALUE *argv, VALUE self) {
+static VALUE cCommand_execute_non_query(int argc, VALUE *argv, VALUE self) {
 	MYSQL *db = DATA_PTR(rb_iv_get(rb_iv_get(self, "@connection"), "@connection"));
  
 	int query_result = 0;
@@ -524,7 +524,7 @@ VALUE cCommand_execute_non_query(int argc, VALUE *argv, VALUE self) {
 	return rb_funcall(cResult, ID_NEW, 3, self, INT2NUM(affected_rows), INT2NUM(mysql_insert_id(db)));
 }
 
-VALUE cCommand_execute_reader(int argc, VALUE *argv, VALUE self) {
+static VALUE cCommand_execute_reader(int argc, VALUE *argv, VALUE self) {
 	MYSQL *db = DATA_PTR(rb_iv_get(rb_iv_get(self, "@connection"), "@connection"));
  
 	int query_result = 0;
@@ -593,7 +593,7 @@ VALUE cCommand_execute_reader(int argc, VALUE *argv, VALUE self) {
 	return reader;
 }
 
-VALUE cTransaction_initialize(VALUE self, VALUE connection) {
+static VALUE cTransaction_initialize(VALUE self, VALUE connection) {
 	if (Qnil != rb_iv_get(connection, "@transaction")) {
 		rb_raise(rb_eException, "There is already a transaction active on this connection");
 	}
@@ -607,7 +607,7 @@ VALUE cTransaction_initialize(VALUE self, VALUE connection) {
 	return Qtrue;
 }
 
-VALUE cTransaction_commit(VALUE self) {
+static VALUE cTransaction_commit(VALUE self) {
 	VALUE connection = rb_iv_get(self, "@connection");
 	VALUE command = rb_funcall(connection, rb_intern("create_command"), 1, "COMMIT");
 	VALUE result = rb_funcall(command, rb_intern("execute_non_query"), 0);
@@ -617,7 +617,7 @@ VALUE cTransaction_commit(VALUE self) {
 	return result;
 }
 
-VALUE cTransaction_rollback(int argc, VALUE *argv, VALUE self) {
+static VALUE cTransaction_rollback(int argc, VALUE *argv, VALUE self) {
 	VALUE savepoint;
 	
 	// 1 Optional arg
@@ -635,17 +635,17 @@ VALUE cTransaction_rollback(int argc, VALUE *argv, VALUE self) {
 	return result;
 }
 
-VALUE cTransaction_save(VALUE self) {
+static VALUE cTransaction_save(VALUE self) {
 	rb_raise(rb_eException, "MySQL does not support savepoints");
 }
 
-VALUE cTransaction_create_command(int argc, VALUE *argv, VALUE self) {
+static VALUE cTransaction_create_command(int argc, VALUE *argv, VALUE self) {
 	VALUE connection = rb_iv_get(self, "@connection");
 	return rb_funcall2(connection, rb_intern("create_command"), argc, argv);
 }
 
 // This should be called to ensure that the internal result reader is freed
-VALUE cReader_close(VALUE self) {
+static VALUE cReader_close(VALUE self) {
 	// Get the reader from the instance variable, maybe refactor this?
 	VALUE reader_container = rb_iv_get(self, "@reader");
 	
@@ -665,7 +665,7 @@ VALUE cReader_close(VALUE self) {
 }
  
 // Retrieve a single row
-VALUE cReader_next(VALUE self) {
+static VALUE cReader_next(VALUE self) {
 	// Get the reader from the instance variable, maybe refactor this?
 	VALUE reader_container = rb_iv_get(self, "@reader");
 	
@@ -697,7 +697,7 @@ VALUE cReader_next(VALUE self) {
 	return Qtrue;
 }
 
-VALUE cReader_values(VALUE self) {
+static VALUE cReader_values(VALUE self) {
 	VALUE state = rb_iv_get(self, "@state");
 	if ( state == Qnil || state == Qfalse ) {
 		rb_raise(rb_eException, "Reader is not initialized");
@@ -707,7 +707,7 @@ VALUE cReader_values(VALUE self) {
 	}
 }
 
-VALUE cReader_fields(VALUE self) {
+static VALUE cReader_fields(VALUE self) {
 	return rb_iv_get(self, "@fields");
 }
 

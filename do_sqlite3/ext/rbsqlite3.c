@@ -13,29 +13,28 @@
 
 #define TRUE_CLASS CONST_GET(rb_mKernel, "TrueClass")
 
-VALUE mDO;
-VALUE cDO_Quoting;
-VALUE cDO_Connection;
-VALUE cDO_Command;
-VALUE cDO_Result;
-VALUE cDO_Reader;
+static VALUE mDO;
+static VALUE cDO_Quoting;
+static VALUE cDO_Connection;
+static VALUE cDO_Command;
+static VALUE cDO_Result;
+static VALUE cDO_Reader;
 
-VALUE rb_cDate;
-VALUE rb_cDateTime;
-VALUE rb_cTime;
-VALUE rb_cRational;
+static VALUE rb_cDate;
+static VALUE rb_cDateTime;
+static VALUE rb_cRational;
 
-VALUE mSqlite3;
-VALUE cConnection;
-VALUE cCommand;
-VALUE cResult;
-VALUE cReader;
+static VALUE mSqlite3;
+static VALUE cConnection;
+static VALUE cCommand;
+static VALUE cResult;
+static VALUE cReader;
 
-VALUE eSqlite3Error;
+static VALUE eSqlite3Error;
 
 
 /****** Typecasting ******/
-VALUE native_typecast(sqlite3_value *value, int type) {
+static VALUE native_typecast(sqlite3_value *value, int type) {
 	VALUE ruby_value = Qnil;
 	
 	switch(type) {
@@ -61,7 +60,7 @@ VALUE native_typecast(sqlite3_value *value, int type) {
 
 // Find the greatest common denominator and reduce the provided numerator and denominator.
 // This replaces calles to Rational.reduce! which does the same thing, but really slowly.
-void reduce( unsigned long long int *numerator, unsigned long long int *denominator ) {
+static void reduce( unsigned long long int *numerator, unsigned long long int *denominator ) {
 	unsigned long long int a, b, c;
 	a = *numerator;
 	b = *denominator;
@@ -73,7 +72,7 @@ void reduce( unsigned long long int *numerator, unsigned long long int *denomina
 }
 
 // Generate the date integer which Date.civil_to_jd returns
-int jd_from_date(int year, int month, int day) {
+static int jd_from_date(int year, int month, int day) {
 	int a, b;
 	if ( month <= 2 ) {
 		year -= 1;
@@ -84,7 +83,7 @@ int jd_from_date(int year, int month, int day) {
 	return floor(365.25 * (year + 4716)) + floor(30.6001 * (month + 1)) + day + b - 1524;
 }
 
-VALUE ruby_typecast(sqlite3_value *value, char *type, int original_type) {
+static VALUE ruby_typecast(sqlite3_value *value, char *type, int original_type) {
 	VALUE ruby_value = Qnil;
 	
 	if ( original_type == SQLITE_NULL ) {
@@ -160,7 +159,7 @@ VALUE ruby_typecast(sqlite3_value *value, char *type, int original_type) {
 
 /****** Public API ******/
 
-VALUE cConnection_initialize(VALUE self, VALUE uri) {
+static VALUE cConnection_initialize(VALUE self, VALUE uri) {
 	int ret;
 	VALUE path;
 	sqlite3 *db;
@@ -178,23 +177,23 @@ VALUE cConnection_initialize(VALUE self, VALUE uri) {
 	return Qtrue;
 }
 
-VALUE cConnection_real_close(VALUE self) {
+static VALUE cConnection_real_close(VALUE self) {
 	sqlite3 *db;
 	Data_Get_Struct(rb_iv_get(self, "@connection"), sqlite3, db);
 	sqlite3_close(db);
 	return Qtrue;
 }
 
-VALUE cCommand_set_types(VALUE self, VALUE array) {
+static VALUE cCommand_set_types(VALUE self, VALUE array) {
 	rb_iv_set(self, "@field_types", array);
 	return array;
 }
 
-VALUE cCommand_quote_boolean(VALUE self, VALUE value) {
+static VALUE cCommand_quote_boolean(VALUE self, VALUE value) {
   return rb_str_new2(value == TRUE_CLASS ? "'t'" : "'f'");
 }
   
-VALUE cCommand_execute_non_query(int argc, VALUE *argv[], VALUE self) {
+static VALUE cCommand_execute_non_query(int argc, VALUE *argv[], VALUE self) {
 	sqlite3 *db;
 	char *error_message;
 	int status;
@@ -228,7 +227,7 @@ VALUE cCommand_execute_non_query(int argc, VALUE *argv[], VALUE self) {
 	return rb_funcall(cResult, ID_NEW, 3, self, INT2NUM(affected_rows), INT2NUM(insert_id));
 }
 
-VALUE cCommand_execute_reader(int argc, VALUE *argv[], VALUE self) {
+static VALUE cCommand_execute_reader(int argc, VALUE *argv[], VALUE self) {
 	sqlite3 *db;
 	sqlite3_stmt *sqlite3_reader;
 	int status;
@@ -281,7 +280,7 @@ VALUE cCommand_execute_reader(int argc, VALUE *argv[], VALUE self) {
 	return reader;
 }
 
-VALUE cReader_close(VALUE self) {
+static VALUE cReader_close(VALUE self) {
 	VALUE reader_obj = rb_iv_get(self, "@reader");
 	
 	if ( reader_obj != Qnil ) {
@@ -296,7 +295,7 @@ VALUE cReader_close(VALUE self) {
 	}
 }
 
-VALUE cReader_next(VALUE self) {
+static VALUE cReader_next(VALUE self) {
 	sqlite3_stmt *reader;
 	int field_count;
 	int result;
@@ -311,7 +310,7 @@ VALUE cReader_next(VALUE self) {
 	
 	field_types = rb_iv_get(self, "@field_types");
 	ft_length = RARRAY(field_types)->len;
-	
+
 	result = sqlite3_step(reader);
 	
 	rb_iv_set(self, "@state", INT2NUM(result));
@@ -335,7 +334,7 @@ VALUE cReader_next(VALUE self) {
 	return Qtrue;
 }
 
-VALUE cReader_values(VALUE self) {
+static VALUE cReader_values(VALUE self) {
 	VALUE state = rb_iv_get(self, "@state");
 	if ( state == Qnil || NUM2INT(state) != SQLITE_ROW ) {
 		rb_raise(rb_eException, "Reader is not initialized");
@@ -345,7 +344,7 @@ VALUE cReader_values(VALUE self) {
 	}
 }
 
-VALUE cReader_fields(VALUE self) {
+static VALUE cReader_fields(VALUE self) {
 	return rb_iv_get(self, "@fields");
 }
 
