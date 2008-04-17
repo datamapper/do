@@ -3,6 +3,7 @@ require File.dirname(__FILE__) + '/spec_helper'
 describe DataObjects::Reader do
   
   it "should define a standard API" do
+    pending
     connection = DataObjects::Connection.new('mock://localhost')
     
     command = connection.create_command("SELECT * FROM example")
