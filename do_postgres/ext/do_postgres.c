@@ -191,13 +191,13 @@ static VALUE cConnection_initialize(VALUE self, VALUE uri) {
 	}
 	
 	VALUE r_user = rb_funcall(uri, rb_intern("user"), 0);
-	char * user = "postgres";
+	char * user = NULL;
 	if (Qnil != r_user) {
 		user = StringValuePtr(r_user);
 	}
 	
 	VALUE r_password = rb_funcall(uri, rb_intern("password"), 0);
-	char * password = "";
+	char * password = NULL;
 	if (Qnil != r_password) {
 		password = StringValuePtr(r_password);
 	}
