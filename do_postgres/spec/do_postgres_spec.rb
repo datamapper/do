@@ -10,7 +10,7 @@ require 'do_postgres'
 #
 
 def ensure_users_table_and_return_connection
-  connection = DataObjects::Connection.new("postgres:///do_test")
+  connection = DataObjects::Connection.new("postgres://localhost/do_test")
   connection.create_command("DROP TABLE users").execute_non_query rescue nil
   connection.create_command(<<EOF
  CREATE TABLE users
