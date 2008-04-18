@@ -5,7 +5,7 @@ require 'do_postgres'
 #
 #
 # Create a postgres db named do_test that accepts connections 
-# from a unix socket from your current user to enable this spec.
+# from localhost from your current user (without password) to enable this spec.
 #
 #
 
