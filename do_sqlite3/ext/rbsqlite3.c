@@ -86,10 +86,12 @@ int jd_from_date(int year, int month, int day) {
 
 VALUE ruby_typecast(sqlite3_value *value, char *type, int original_type) {
 	VALUE ruby_value = Qnil;
-	
 	if ( original_type == SQLITE_NULL ) {
 		return ruby_value;
 	}
+	else if ( strcmp(type, "Object") == 0 ) {
+    ruby_value = rb_marshal_load(rb_str_new2((char*)sqlite3_value_text(value)));
+	}	
 	else if ( strcmp(type, "Fixnum") == 0 ) {
 		ruby_value = INT2NUM(sqlite3_value_int(value));
 	}
@@ -215,6 +217,8 @@ VALUE cCommand_execute_non_query(int argc, VALUE *argv[], VALUE self) {
 	
 	conn_obj = rb_iv_get(self, "@connection");
 	Data_Get_Struct(rb_iv_get(conn_obj, "@connection"), sqlite3, db);
+	
+  printf("QUERY: %s\n", StringValuePtr(query));
 	
 	status = sqlite3_exec(db, StringValuePtr(query), 0, 0, &error_message);
 	
