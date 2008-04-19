@@ -2,27 +2,42 @@ require 'rubygems'
 require 'data_objects'
 require 'do_postgres'
 
-# CREATE TABLE users
-# (
-#   id serial NOT NULL,
-#   "name" text,
-#   registered boolean DEFAULT false,
-#   money double precision DEFAULT 1908.56,
-#   created_on date DEFAULT ('now'::text)::date,
-#   created_at timestamp without time zone DEFAULT now(),
-#   born_at time without time zone DEFAULT now()
-# )
-# WITH (OIDS=FALSE);
+#
+#
+# Create a postgres db named do_test that accepts connections 
+# from localhost from your current user (without password) to enable this spec.
+#
+#
+
+def ensure_users_table_and_return_connection
+  connection = DataObjects::Connection.new("postgres://localhost/do_test")
+  connection.create_command("DROP TABLE users").execute_non_query rescue nil
+  connection.create_command(<<EOF
+ CREATE TABLE users
+ (
+   id serial NOT NULL,
+   "name" text,
+   registered boolean DEFAULT false,
+   money double precision DEFAULT 1908.56,
+   created_on date DEFAULT ('now'::text)::date,
+   created_at timestamp without time zone DEFAULT now(),
+   born_at time without time zone DEFAULT now()
+ )
+ WITH (OIDS=FALSE);
+EOF
+).execute_non_query
+  return connection
+end
 
 describe "DataObjects::Postgres::Connection" do
   it "should connect to the db" do
-    connection = DataObjects::Connection.new("postgres://postgres@localhost:5432/do_test")
+    connection = DataObjects::Connection.new("postgres:///do_test")
   end
 end
 
 describe "DataObjects::Postgres::Command" do
   before :all do
-    @connection = DataObjects::Connection.new("postgres://localhost/do_test")
+    @connection = ensure_users_table_and_return_connection
   end
   
   it "should create a command" do
@@ -51,7 +66,7 @@ end
 
 describe "DataObjects::Postgres::Result" do
   before :all do
-    @connection = DataObjects::Connection.new("postgres://localhost/do_test")
+    @connection = ensure_users_table_and_return_connection
   end
 
   it "should raise errors on bad queries" do
@@ -78,11 +93,10 @@ end
 
 describe "DataObjects::Postgres::Reader" do
   before :all do
-    @connection = DataObjects::Connection.new("postgres://localhost/do_test")
-  end
-  
-  after :all do
-    @connection.create_command("TRUNCATE TABLE users").execute_non_query
+    @connection = ensure_users_table_and_return_connection
+    @connection.create_command("INSERT INTO users (name) VALUES ('Test')").execute_non_query
+    @connection.create_command("INSERT INTO users (name) VALUES ('Test')").execute_non_query
+    @connection.create_command("INSERT INTO users (name) VALUES ('Test')").execute_non_query
   end
   
   it "should raise errors on bad queries" do

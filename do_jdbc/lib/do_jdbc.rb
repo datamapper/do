@@ -36,15 +36,20 @@ module DataObjects
     end
 
     class Command < DataObjects::Command
+      include_class "java.sql.Statement"
       def set_types(types)
         @types = types
       end
       
-      def execute_non_query
-        
+      def execute_non_query(*args)
+	sql = @connection.jdbc_connection.create_statement
+	return nil if (updcount = sql.execute_update(@text)) < 0
+	key = "TODO"
+	Result.new(self, updcount, key)
+	# create a result object with the number of affected rows and the created id, if any
       end
       
-      def execute_reader(*parameters)
+      def execute_reader(*args)
 	# escape all parameters given and pass them to query
 	# execute the query
 	# if no response return nil
