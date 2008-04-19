@@ -89,8 +89,11 @@ static VALUE ruby_typecast(sqlite3_value *value, char *type, int original_type) 
 		return ruby_value;
 	}
 	else if ( strcmp(type, "Object") == 0 ) {
-    ruby_value = rb_marshal_load(rb_str_new2((char*)sqlite3_value_text(value)));
-	}	
+		ruby_value = rb_marshal_load(rb_str_new2((char*)sqlite3_value_text(value)));
+	}
+	else if ( strcmp(type, "TrueClass") == 0 ) {
+		ruby_value = strcmp((char*)sqlite3_value_text(value), "t") == 0 ? Qtrue : Qfalse;
+	}
 	else if ( strcmp(type, "Fixnum") == 0 ) {
 		ruby_value = INT2NUM(sqlite3_value_int(value));
 	}
@@ -192,9 +195,9 @@ static VALUE cCommand_set_types(VALUE self, VALUE array) {
 }
 
 static VALUE cCommand_quote_boolean(VALUE self, VALUE value) {
-  return rb_str_new2(value == TRUE_CLASS ? "'t'" : "'f'");
+	return rb_str_new2(value == Qtrue ? "'t'" : "'f'");
 }
-  
+	
 static VALUE cCommand_execute_non_query(int argc, VALUE *argv[], VALUE self) {
 	sqlite3 *db;
 	char *error_message;
@@ -216,9 +219,7 @@ static VALUE cCommand_execute_non_query(int argc, VALUE *argv[], VALUE self) {
 	
 	conn_obj = rb_iv_get(self, "@connection");
 	Data_Get_Struct(rb_iv_get(conn_obj, "@connection"), sqlite3, db);
-	
-  printf("QUERY: %s\n", StringValuePtr(query));
-	
+		
 	status = sqlite3_exec(db, StringValuePtr(query), 0, 0, &error_message);
 	
 	if ( status != SQLITE_OK ) {
@@ -364,7 +365,7 @@ void Init_do_sqlite3() {
 	rb_cRational = CONST_GET(rb_mKernel, "Rational");
 	
 	rb_funcall(rb_mKernel, rb_intern("require"), 1, rb_str_new2("data_objects"));
-     
+		 
 	// Get references to the DataObjects module and its classes
 	mDO = CONST_GET(rb_mKernel, "DataObjects");
 	cDO_Quoting = CONST_GET(mDO, "Quoting");
@@ -388,7 +389,7 @@ void Init_do_sqlite3() {
 	rb_define_method(cCommand, "set_types", cCommand_set_types, 1);
 	rb_define_method(cCommand, "execute_non_query", cCommand_execute_non_query, -1);
 	rb_define_method(cCommand, "execute_reader", cCommand_execute_reader, -1);
-  rb_define_method(cCommand, "quote_boolean", cCommand_quote_boolean, 1);
+	rb_define_method(cCommand, "quote_boolean", cCommand_quote_boolean, 1);
 	cResult = SQLITE3_CLASS("Result", cDO_Result);
 	
 	cReader = SQLITE3_CLASS("Reader", cDO_Reader);
