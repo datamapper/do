@@ -1,6 +1,4 @@
-require 'rubygems'
-require 'data_objects'
-require 'do_postgres'
+require File.dirname(__FILE__) + '/spec_helper'
 
 #
 #
