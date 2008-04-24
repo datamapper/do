@@ -3,11 +3,11 @@ require File.dirname(__FILE__) + '/spec_helper'
 def setup_test_environment
   @connection = DataObjects::Mysql::Connection.new("mysql://127.0.0.1/do_mysql_test")
   @connection.create_command(<<EOF
-DROP TABLE `invoices`
+DROP TABLE IF EXISTS `invoices`
 EOF
                              ).execute_non_query
   @connection.create_command(<<EOF
-DROP TABLE `widgets`
+DROP TABLE IF EXISTS `widgets` 
 EOF
                              ).execute_non_query
   @connection.create_command(<<EOF
