@@ -382,7 +382,6 @@ void Init_do_sqlite3() {
 	cConnection = SQLITE3_CLASS("Connection", cDO_Connection);
 	rb_define_method(cConnection, "initialize", cConnection_initialize, 1);
 	rb_define_method(cConnection, "real_close", cConnection_real_close, 0);
-	// rb_define_method(cConnection, "begin_transaction", cConnection_begin_transaction, 0);
 	
 	cCommand = SQLITE3_CLASS("Command", cDO_Command);
 	rb_include_module(cCommand, cDO_Quoting);

@@ -31,7 +31,6 @@ static VALUE mDO;
 static VALUE cDO_Quoting;
 static VALUE cDO_Connection;
 static VALUE cDO_Command;
-static VALUE cDO_Transaction;
 static VALUE cDO_Result;
 static VALUE cDO_Reader;
 
@@ -47,7 +46,6 @@ static VALUE rb_cCGI;
 static VALUE mDOMysql;
 static VALUE cConnection;
 static VALUE cCommand;
-static VALUE cTransaction;
 static VALUE cResult;
 static VALUE cReader;
 static VALUE eMysqlError;
@@ -416,10 +414,6 @@ static VALUE cConnection_is_using_socket(VALUE self) {
 	return rb_iv_get(self, "@using_socket");
 }
 
-static VALUE cConnection_begin_transaction(VALUE self) {
-	return rb_funcall(cTransaction, rb_intern("new"), 1, self);
-}
-
 static VALUE cConnection_real_close(VALUE self) {
 	VALUE connection_container = rb_iv_get(self, "@connection");
 	
@@ -592,57 +586,6 @@ static VALUE cCommand_execute_reader(int argc, VALUE *argv, VALUE self) {
 	return reader;
 }
 
-static VALUE cTransaction_initialize(VALUE self, VALUE connection) {
-	if (Qnil != rb_iv_get(connection, "@transaction")) {
-		rb_raise(rb_eException, "There is already a transaction active on this connection");
-	}
-	
-	rb_iv_set(self, "@connection", connection);
-	VALUE command = rb_funcall(connection, rb_intern("create_command"), 1, RUBY_STRING("BEGIN"));
-	rb_funcall(command, rb_intern("execute_non_query"), 0);
-	
-	rb_iv_set(connection, "@transaction", self);
-	
-	return Qtrue;
-}
-
-static VALUE cTransaction_commit(VALUE self) {
-	VALUE connection = rb_iv_get(self, "@connection");
-	VALUE command = rb_funcall(connection, rb_intern("create_command"), 1, "COMMIT");
-	VALUE result = rb_funcall(command, rb_intern("execute_non_query"), 0);
-
-	rb_iv_set(connection, "@transaction", Qnil);
-
-	return result;
-}
-
-static VALUE cTransaction_rollback(int argc, VALUE *argv, VALUE self) {
-	VALUE savepoint;
-	
-	// 1 Optional arg
-	rb_scan_args(argc, argv, "1", &savepoint);
-	if (Qnil != savepoint) {
-		rb_raise(rb_eException, "MySQL does not support savepoints");
-	}
-	
-	VALUE connection = rb_iv_get(self, "@connection");
-	VALUE command = rb_funcall(connection, rb_intern("create_command"), 1, "ROLLBACK");
-	VALUE result = rb_funcall(command, rb_intern("execute_non_query"), 0);
-
-	rb_iv_set(connection, "@transaction", Qnil);
-
-	return result;
-}
-
-static VALUE cTransaction_save(VALUE self) {
-	rb_raise(rb_eException, "MySQL does not support savepoints");
-}
-
-static VALUE cTransaction_create_command(int argc, VALUE *argv, VALUE self) {
-	VALUE connection = rb_iv_get(self, "@connection");
-	return rb_funcall2(connection, rb_intern("create_command"), argc, argv);
-}
-
 // This should be called to ensure that the internal result reader is freed
 static VALUE cReader_close(VALUE self) {
 	// Get the reader from the instance variable, maybe refactor this?
@@ -743,7 +686,6 @@ void Init_do_mysql() {
 	cDO_Quoting = CONST_GET(mDO, "Quoting");
 	cDO_Connection = CONST_GET(mDO, "Connection");
 	cDO_Command = CONST_GET(mDO, "Command");
-	cDO_Transaction = CONST_GET(mDO, "Transaction");
 	cDO_Result = CONST_GET(mDO, "Result");
 	cDO_Reader = CONST_GET(mDO, "Reader");
 
@@ -757,7 +699,6 @@ void Init_do_mysql() {
 	rb_define_method(cConnection, "using_socket?", cConnection_is_using_socket, 0);
 	rb_define_method(cConnection, "character_set", cConnection_character_set , 0);
 	rb_define_method(cConnection, "real_close", cConnection_real_close, 0);
-	rb_define_method(cConnection, "begin_transaction", cConnection_begin_transaction, 0);
 	
 	cCommand = DRIVER_CLASS("Command", cDO_Command);
 	rb_include_module(cCommand, cDO_Quoting);
@@ -770,13 +711,6 @@ void Init_do_mysql() {
 	// rb_define_method(cCommand, "quote_datetime", cCommand_quote_datetime, 1);
 	// rb_define_method(cCommand, "quote_date", cCommand_quote_date, 1);
 
-	cTransaction = DRIVER_CLASS("Transaction", cDO_Transaction);
-	rb_define_method(cTransaction, "initialize", cTransaction_initialize, 1);
-	rb_define_method(cTransaction, "commit", cTransaction_commit, 0);
-	rb_define_method(cTransaction, "rollback", cTransaction_rollback, 1);
-	rb_define_method(cTransaction, "save", cTransaction_save, 1);
-	rb_define_method(cTransaction, "create_command", cTransaction_create_command, -1);
-	
 	// Non-Query result
 	cResult = DRIVER_CLASS("Result", cDO_Result);
 	

@@ -280,35 +280,4 @@ describe DataObjects::Mysql::Connection do
   
   end
   
-  describe "executing a non-query during a transaction" do
-  
-    it "shouldn't effect results on other connections" do
-      counter = lambda { |connection|
-        command = connection.create_command("SELECT count(*) as invoice_count FROM invoices")
-        reader = command.execute_reader
-        reader.next!
-        count = reader.values[0]
-        reader.close
-        count
-      }
-      
-      # Get the number of invoices BEFORE we add one
-      original_count = counter.call(@connection)
-  
-      transaction = @connection.begin_transaction
-      result = transaction.create_command("INSERT INTO invoices (invoice_number) VALUES ('Superman')").execute_non_query
-      
-      # Get the number of invoices AFTER we add one, on the same connection
-      same_connection_count = counter.call(@connection)
-      
-      # Open a new connection and get the invoice count
-      new_connection = DataObjects::Mysql::Connection.new("mysql://127.0.0.1/do_mysql_test")
-      other_connection_count = counter.call(new_connection)
-      
-      same_connection_count.should == (original_count + 1)      
-      other_connection_count.should == original_count
-    end
-    
-  end
-  
 end

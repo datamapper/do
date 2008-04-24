@@ -450,7 +450,6 @@ void Init_do_postgres() {
 	cConnection = POSTGRES_CLASS("Connection", cDO_Connection);
 	rb_define_method(cConnection, "initialize", cConnection_initialize, 1);
 	rb_define_method(cConnection, "real_close", cConnection_real_close, 0);
-	// rb_define_method(cConnection, "begin_transaction", cConnection_begin_transaction, 0);
 	
 	cCommand = POSTGRES_CLASS("Command", cDO_Command);
 	rb_include_module(cCommand, cDO_Quoting);
