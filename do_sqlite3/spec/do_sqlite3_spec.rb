@@ -1,10 +1,4 @@
-# require File.dirname(__FILE__) + '/spec_helper'
-require 'rubygems'
-# require File.dirname(__FILE__) + "/../../data_objects/lib/data_objects"
-require 'data_objects'
-require 'date'
-require 'do_sqlite3'
-
+require File.dirname(__FILE__) + '/spec_helper'
 
 describe "DataObjects::Sqlite3" do
   it "should raise error on bad connection string" do

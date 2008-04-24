@@ -1,5 +1,8 @@
 require 'rubygems'
+require 'spec'
 require 'rake/gempackagetask'
+require 'pathname'
+require 'spec/rake/spectask'
 
 PLUGIN = "do_sqlite3"
 NAME = "do_sqlite3"
@@ -24,7 +27,7 @@ spec = Gem::Specification.new do |s|
   s.require_path = 'lib'
   s.autorequire = PLUGIN
   s.extensions = ["ext/extconf.rb"]
-  s.files = %w(LICENSE README Rakefile TODO) + Dir.glob("{lib,specs,ext}/**/*").reject {|x| x =~ /\.(o|bundle)$/ }
+  s.files = FileList['ext/*.rb', 'ext/*.c', 'ext/*.h', 'spec/**/*.rb', 'README', 'LICENSE', 'Rakefile', 'TODO']
 end
 
 Rake::GemPackageTask.new(spec) do |pkg|
@@ -33,4 +36,16 @@ end
 
 task :install => [:package] do
   sh %{sudo gem install pkg/#{NAME}-#{VERSION}}, :verbose => false
+end
+
+desc "Compile the extension"
+file 'Makefile' => FileList['ext/*.rb', 'ext/*.c', 'ext/*.h'] do
+  load File.join(File.dirname(__FILE__), "ext", "extconf.rb")
+  system("make all") || system("nmake all")
+end
+
+desc "Run specifications"
+Spec::Rake::SpecTask.new(:spec => 'Makefile') do |t|
+  t.spec_opts = ["--format", "specdoc", "--colour"]
+  t.spec_files = Pathname.glob(Pathname.new(__FILE__).parent.join("spec").join("**").join("*_spec.rb"))
 end
