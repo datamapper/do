@@ -4,6 +4,7 @@ require 'rake/gempackagetask'
 require 'pathname'
 require 'spec/rake/spectask'
 require 'ostruct'
+require File.dirname(__FILE__) + '/../ext_helper.rb'
 
 project = OpenStruct.new(
   :name       => 'do_sqlite3',
@@ -37,14 +38,10 @@ Rake::GemPackageTask.new(spec) do |pkg|
   pkg.gem_spec = spec
 end
 
+setup_extension project.name, spec
+
 task :install => [:package] do
   sh %{#{'sudo' unless ENV['sudoless']} gem install pkg/#{project.name}-#{project.version}}, :verbose => false
-end
-
-desc "Compile the extension"
-file 'Makefile' => FileList['ext/*.rb', 'ext/*.c', 'ext/*.h'] do
-  load File.join(File.dirname(__FILE__), "ext", "extconf.rb")
-  system("make all") || system("nmake all")
 end
 
 desc "Run specifications"
