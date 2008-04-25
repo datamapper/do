@@ -21,7 +21,8 @@ static ID ID_TO_S;
 static ID ID_PARSE;
 static ID ID_TO_TIME;
 static ID ID_NEW;
-static ID ID_NEW_BANG;
+static ID ID_NEW_RATIONAL;
+static ID ID_NEW_DATE;
 static ID ID_CONST_GET;
 static ID ID_UTC;
 static ID ID_ESCAPE_SQL;
@@ -158,8 +159,8 @@ static VALUE cast_mysql_value_to_ruby_value(const char* data, char* ruby_class_n
 
     // Math from Date.jd_to_ajd
     ajd = jd * 2 - 1;
-    rational = rb_funcall(rb_cRational, ID_NEW_BANG, 2, INT2NUM(ajd), INT2NUM(2));
-    ruby_value = rb_funcall(rb_cDate, ID_NEW_BANG, 3, rational, INT2NUM(0), INT2NUM(2299161));
+    rational = rb_funcall(rb_cRational, ID_NEW_RATIONAL, 2, INT2NUM(ajd), INT2NUM(2));
+    ruby_value = rb_funcall(rb_cDate, ID_NEW_DATE, 3, rational, INT2NUM(0), INT2NUM(2299161));
 	} else if (0 == strcmp("DateTime", ruby_class_name)) {
 	 int jd;
    int y, m, d, h, min, s;
@@ -188,8 +189,8 @@ static VALUE cast_mysql_value_to_ruby_value(const char* data, char* ruby_class_n
 
    reduce(&num, &den);
 
-   VALUE ajd = rb_funcall(rb_cRational, ID_NEW_BANG, 2, rb_ull2inum(num), rb_ull2inum(den));
-   ruby_value = rb_funcall(rb_cDateTime, ID_NEW_BANG, 3, ajd, INT2NUM(0), INT2NUM(2299161));
+   VALUE ajd = rb_funcall(rb_cRational, ID_NEW_RATIONAL, 2, rb_ull2inum(num), rb_ull2inum(den));
+   ruby_value = rb_funcall(rb_cDateTime, ID_NEW_DATE, 3, ajd, INT2NUM(0), INT2NUM(2299161));
 	} else if (0 == strcmp("Time", ruby_class_name)) {
 	  int y, m, d, h, min, s;
 	  sscanf(data, "%4d-%2d-%2d %2d:%2d:%2d", &y, &m, &d, &h, &min, &s);
@@ -668,7 +669,8 @@ void Init_do_mysql() {
 	ID_PARSE = rb_intern("parse");
 	ID_TO_TIME = rb_intern("to_time");
 	ID_NEW = rb_intern("new");
-	ID_NEW_BANG = RUBY_VERSION_CODE < 186 ? rb_intern("new0") : rb_intern("new!");
+	ID_NEW_RATIONAL = rb_intern("new!");
+	ID_NEW_DATE = RUBY_VERSION_CODE < 186 ? rb_intern("new0") : rb_intern("new!");
 	ID_CONST_GET = rb_intern("const_get");
 	ID_UTC = rb_intern("utc");
 	ID_ESCAPE_SQL = rb_intern("escape_sql");
