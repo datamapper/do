@@ -47,7 +47,7 @@ namespace :ci do
   task :define_tasks do
     gem_name = ENV['gem_name']
     
-    file "#{gem_name}/Makefile" => FileList["#{DIR}/#{gem_name}/ext/**/*.rb", "#{DIR}/#{gem_name}/ext/**/*.c", "#{DIR}/#{gem_name}/ext/**/*.h"] do
+    file "#{gem_name}/Makefile" => FileList["#{DIR}/#{gem_name}/ext/**/extconf.rb", "#{DIR}/#{gem_name}/ext/**/*.c", "#{DIR}/#{gem_name}/ext/**/*.h"] do
       system("cd #{gem_name} && ruby ext/extconf.rb")
       system("cd #{gem_name} && make all") || system("cd #{gem_name} && nmake all")
     end
