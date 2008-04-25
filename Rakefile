@@ -16,15 +16,13 @@ namespace :do do
 
   desc "Run specifications"
   Spec::Rake::SpecTask.new('spec') do |t|
-    t.spec_opts = ["--format", "specdoc", "--colour"]
-    t.spec_files = Pathname.glob(ENV['FILES'] || DIR + '/**/spec/**/*_spec.rb')    
-    unless ENV['NO_RCOV']
-      t.rcov = true
-      t.rcov_opts << '--exclude' << 'spec'
-      t.rcov_opts << '--text-summary'
-      t.rcov_opts << '--sort' << 'coverage' << '--sort-reverse'
-      t.rcov_opts << '--only-uncovered'
-    end
+    Dir.chdir("data_objects") && system("rake spec")
+    Dir.chdir("..")
+    Dir.chdir("do_mysql") && system("rake spec")
+    Dir.chdir("..")
+    Dir.chdir("do_sqlite3") && system("rake spec")
+    Dir.chdir("..")
+    Dir.chdir("do_postgres") && system("rake spec")
   end
 
 end
