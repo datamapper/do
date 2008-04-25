@@ -1,5 +1,8 @@
 require 'rubygems'
+require 'spec'
 require 'rake/gempackagetask'
+require 'spec/rake/spectask'
+
 
 GEM = "data_objects"
 VERSION = "0.9.0"
@@ -30,4 +33,10 @@ end
 
 task :install => [:package] do
   sh %{sudo gem install pkg/#{GEM}-#{VERSION}}
+end
+
+desc "Run all specs in spec directory (excluding plugin specs)"
+Spec::Rake::SpecTask.new(:spec) do |t|
+  t.spec_opts = ['--options', "spec/spec.opts"] if File.exists?("spec/spec.opts")
+  t.spec_files = FileList['spec/*_spec.rb']
 end
