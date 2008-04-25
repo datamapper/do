@@ -1,10 +1,16 @@
 require 'rubygems'
 require 'spec'
+require 'rake/clean'
 require 'rake/gempackagetask'
 require 'pathname'
 require 'spec/rake/spectask'
 require 'ostruct'
 require File.dirname(__FILE__) + '/../ext_helper.rb'
+
+# House-keeping
+CLEAN.include '**/*.o', '**/*.so', '**/*.bundle', '**/*.a', 
+    '**/*.log', "{ext,lib}/*.{bundle,so,obj,pdb,lib,def,exp}",
+    "ext/Makefile", 'lib', '**/*.db'
 
 project = OpenStruct.new(
   :name       => 'do_sqlite3',
