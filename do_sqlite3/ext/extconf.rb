@@ -16,12 +16,10 @@ require 'mkmf'
 # Give it a name
 extension_name = 'do_sqlite3'
 
-dir_config("sqlite3", "/usr")
+dir_config("sqlite3")
 
-$CFLAGS << ' -Wall '
-
-# The destination
-dir_config(extension_name)
+# NOTE: use GCC flags unless Visual C compiler is used
+$CFLAGS << ' -Wall ' unless RUBY_PLATFORM =~ /mswin/
 
 # Do the work
 # create_makefile(extension_name)
