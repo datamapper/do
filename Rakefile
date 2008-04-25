@@ -10,23 +10,6 @@ require Pathname('rake/rdoctask')
 
 DIR = Pathname(__FILE__).dirname.expand_path.to_s
 
-task :default => 'do:spec'
-
-namespace :do do
-
-  desc "Run specifications"
-  Spec::Rake::SpecTask.new('spec') do |t|
-    Dir.chdir("data_objects") && system("rake spec")
-    Dir.chdir("..")
-    Dir.chdir("do_mysql") && system("rake spec")
-    Dir.chdir("..")
-    Dir.chdir("do_sqlite3") && system("rake spec")
-    Dir.chdir("..")
-    Dir.chdir("do_postgres") && system("rake spec")
-  end
-
-end
-
 namespace :ci do
   
   %w[data_objects do_jdbc do_mysql do_postgres do_sqlite3].each do |gem_name|
@@ -37,11 +20,7 @@ namespace :ci do
     end
   end
   
-  task :run_all => [:prepare, :spec, :install, :doc, :publish]
-  
-  task :prepare do
-    sh %{cd #{ENV['gem_name']} && rake gem}
-  end
+  task :run_all => [:spec, :install, :doc, :publish]
   
   task :spec => :define_tasks do
     Rake::Task["#{ENV['gem_name']}:spec"].invoke
@@ -68,7 +47,11 @@ namespace :ci do
   task :define_tasks do
     gem_name = ENV['gem_name']
     
-    Spec::Rake::SpecTask.new("#{gem_name}:spec") do |t|
+    file "#{gem_name}/Makefile" => FileList["#{DIR}/#{gem_name}/ext/**/*.rb", "#{DIR}/#{gem_name}/ext/**/*.c", "#{DIR}/#{gem_name}/ext/**/*.h"] do
+      system("cd #{gem_name} && ruby ext/extconf.rb")
+      system("cd #{gem_name} && make all") || system("cd #{gem_name} && nmake all")
+    end
+        Spec::Rake::SpecTask.new("#{gem_name}:spec" => "#{gem_name}/Makefile") do |t|
       t.spec_opts = ["--format", "specdoc", "--format", "html:rspec_report.html", "--diff"]
       t.spec_files = Pathname.glob(ENV['FILES'] || DIR + "/#{gem_name}/spec/**/*_spec.rb")
       unless ENV['NO_RCOV']
