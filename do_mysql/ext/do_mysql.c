@@ -1,4 +1,5 @@
 #include <ruby.h>
+#include <version.h>
 #include <string.h>
 #include <math.h>
 #include <ctype.h>
@@ -667,7 +668,7 @@ void Init_do_mysql() {
 	ID_PARSE = rb_intern("parse");
 	ID_TO_TIME = rb_intern("to_time");
 	ID_NEW = rb_intern("new");
-	ID_NEW_BANG = rb_intern("new!");
+	ID_NEW_BANG = RUBY_VERSION_CODE < 186 ? rb_intern("new0") : rb_intern("new!");
 	ID_CONST_GET = rb_intern("const_get");
 	ID_UTC = rb_intern("utc");
 	ID_ESCAPE_SQL = rb_intern("escape_sql");
