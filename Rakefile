@@ -10,9 +10,11 @@ require Pathname('rake/rdoctask')
 
 DIR = Pathname(__FILE__).dirname.expand_path.to_s
 
+projects = %w[data_objects do_jdbc do_mysql do_postgres do_sqlite3]
+
 namespace :ci do
   
-  %w[data_objects do_jdbc do_mysql do_postgres do_sqlite3].each do |gem_name|
+  projects.each do |gem_name|
     task gem_name do
       ENV['gem_name'] = gem_name
       
@@ -53,13 +55,13 @@ namespace :ci do
         Spec::Rake::SpecTask.new("#{gem_name}:spec" => "#{gem_name}/Makefile") do |t|
       t.spec_opts = ["--format", "specdoc", "--format", "html:rspec_report.html", "--diff"]
       t.spec_files = Pathname.glob(ENV['FILES'] || DIR + "/#{gem_name}/spec/**/*_spec.rb")
-#      unless ENV['NO_RCOV']
+      unless ENV['NO_RCOV']
         t.rcov = true
-        t.rcov_opts << '--exclude' << 'spec,gems'
+        t.rcov_opts << '--exclude' << "spec,gems,#{(projects - [gem_name]).join(',')}"
         t.rcov_opts << '--text-summary'
         t.rcov_opts << '--sort' << 'coverage' << '--sort-reverse'
         t.rcov_opts << '--only-uncovered'
-#      end
+      end
     end
     
     Rake::RDocTask.new("#{gem_name}:doc") do |t|
