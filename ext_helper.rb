@@ -23,7 +23,7 @@ def setup_extension(extension_name, gem_spec = nil)
     desc "Compile the extension"
     task :compile => ["lib/#{ext_name}"]
 
-    file "ext/#{ext_name}" => "ext/Makefile" do
+    file "ext/#{ext_name}" => FileList["ext/*.c", "ext/*.h"] do
       # Visual C make utility is named 'nmake', MinGW conforms GCC 'make' standard.
       make_cmd = RUBY_PLATFORM =~ /mswin/ ? 'nmake' : 'make'
       Dir.chdir('ext') do
@@ -31,7 +31,6 @@ def setup_extension(extension_name, gem_spec = nil)
       end
     end
 
-    file "ext/extconf.rb" => FileList["ext/*.c", "ext/*.h"]
     file "ext/Makefile" => "ext/extconf.rb" do
       Dir.chdir('ext') do
         ruby 'extconf.rb'
