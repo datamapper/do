@@ -23,7 +23,13 @@ end
 
 # Allow overriding path to mysql_config on command line using:
 # ruby extconf.rb --with-mysql-config=/path/to/mysql_config
-if mc = with_config('mysql-config', default_mysql_config_path)
+if RUBY_PLATFORM =~ /mswin|mingw/
+  dir_config('mysql')
+  have_header 'mysql.h' || exit(1)
+  have_library 'libmysql' || exit(1)
+  have_func('mysql_query', 'mysql.h') || exit(1)
+  have_func('mysql_ssl_set', 'mysql.h')
+elsif mc = with_config('mysql-config', default_mysql_config_path)
   mc = default_mysql_config_path if mc == true
   cflags = `#{mc} --cflags`.chomp
   exit 1 if $? != 0
@@ -42,10 +48,12 @@ else
   find_header('mysql.h', *lib_dirs.flatten.map { |p| p.gsub('/lib', '/include') })
 end
 
-have_header 'mysql.h'
-have_library 'mysqlclient' || exit(1)
-have_func 'mysql_query' || exit(1)
-have_func 'mysql_ssl_set'
+unless RUBY_PLATFORM =~ /mswin|mingw/
+  have_header 'mysql.h'
+  have_library 'mysqlclient' || exit(1)
+  have_func 'mysql_query' || exit(1)
+  have_func 'mysql_ssl_set'
+end
 
-$CFLAGS << ' -Wall '
-create_makefile("do_mysql")
+$CFLAGS << ' -Wall ' unless RUBY_PLATFORM =~ /mswin/
+create_makefile('do_mysql')
