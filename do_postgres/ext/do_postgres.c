@@ -1,6 +1,7 @@
+#include <ruby.h>
+#include <version.h>
 #include <string.h>
 #include <math.h>
-#include <ruby.h>
 #include <libpq-fe.h>
 #include "type-oids.h"
 
@@ -17,6 +18,9 @@
 #else
 #define do_int64 unsigned long long int
 #endif
+
+// To store rb_intern values
+static ID ID_NEW_DATE;
 
 static VALUE mDO;
 static VALUE cDO_Quoting;
@@ -74,7 +78,7 @@ static VALUE parse_date(char *date) {
 	ajd = jd * 2 - 1;
 	rational = rb_funcall(rb_cRational, rb_intern("new!"), 2, INT2NUM(ajd), INT2NUM(2));
 	
-	return rb_funcall(rb_cDate, rb_intern("new!"), 3, rational, INT2NUM(0), INT2NUM(2299161));
+	return rb_funcall(rb_cDate, ID_NEW_DATE, 3, rational, INT2NUM(0), INT2NUM(2299161));
 }
 
 static VALUE parse_date_time(char *date) {
@@ -109,7 +113,7 @@ static VALUE parse_date_time(char *date) {
 	reduce(&num, &den);
 
 	ajd = rb_funcall(rb_cRational, rb_intern("new!"), 2, rb_ull2inum(num), rb_ull2inum(den));
-	return rb_funcall(rb_cDateTime, rb_intern("new!"), 3, ajd, INT2NUM(0), INT2NUM(2299161));
+	return rb_funcall(rb_cDateTime, ID_NEW_DATE, 3, ajd, INT2NUM(0), INT2NUM(2299161));
 }
 
 static VALUE parse_time(char *date) {	
@@ -444,6 +448,8 @@ void Init_do_postgres() {
 	
 	rb_funcall(rb_mKernel, rb_intern("require"), 1, rb_str_new2("data_objects"));
 	
+	ID_NEW_DATE = RUBY_VERSION_CODE < 186 ? rb_intern("new0") : rb_intern("new!");
+
 	// Get references to the DataObjects module and its classes
 	mDO = CONST_GET(rb_mKernel, "DataObjects");
 	cDO_Quoting = CONST_GET(mDO, "Quoting");
