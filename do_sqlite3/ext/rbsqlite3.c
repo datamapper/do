@@ -248,7 +248,8 @@ static VALUE cCommand_execute_reader(int argc, VALUE *argv, VALUE self) {
 	VALUE reader;
 	VALUE conn_obj;
 	VALUE query;
-	
+	VALUE field_names, field_types;
+
 	conn_obj = rb_iv_get(self, "@connection");
 	Data_Get_Struct(rb_iv_get(conn_obj, "@connection"), sqlite3, db);
 	
@@ -275,8 +276,8 @@ static VALUE cCommand_execute_reader(int argc, VALUE *argv, VALUE self) {
 	rb_iv_set(reader, "@reader", Data_Wrap_Struct(rb_cObject, 0, 0, sqlite3_reader));
 	rb_iv_set(reader, "@field_count", INT2NUM(field_count));
 	
-	VALUE field_names = rb_ary_new();
-	VALUE field_types = rb_iv_get(self, "@field_types");
+	field_names = rb_ary_new();
+	field_types = rb_iv_get(self, "@field_types");
 	
 	if ( field_types == Qnil ) {
 		field_types = rb_ary_new();
