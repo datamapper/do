@@ -35,7 +35,7 @@ Rake::GemPackageTask.new(spec) do |pkg|
 end
 
 task :install => [:package] do
-  sh %{#{'sudo' unless ENV['sudoless']} gem install pkg/#{NAME}-#{VERSION}}, :verbose => false
+  sh %{#{'sudo' unless ENV['SUDOLESS']} gem install pkg/#{NAME}-#{VERSION}}, :verbose => false
 end
 
 desc "Compile the extension"

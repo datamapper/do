@@ -31,7 +31,6 @@ namespace :ci do
   end
   
   task :install do
-    ENV['sudoless'] = 'true'
     sh %{cd #{ENV['gem_name']} && rake install}
   end
   
@@ -56,7 +55,7 @@ namespace :ci do
       t.spec_files = Pathname.glob(ENV['FILES'] || DIR + "/#{gem_name}/spec/**/*_spec.rb")
       unless ENV['NO_RCOV']
         t.rcov = true
-        t.rcov_opts << '--exclude' << 'spec'
+        t.rcov_opts << '--exclude' << 'spec,gems'
         t.rcov_opts << '--text-summary'
         t.rcov_opts << '--sort' << 'coverage' << '--sort-reverse'
         t.rcov_opts << '--only-uncovered'
