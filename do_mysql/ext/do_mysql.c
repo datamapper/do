@@ -607,52 +607,59 @@ static VALUE cCommand_execute_reader(int argc, VALUE *argv, VALUE self) {
 static VALUE cReader_close(VALUE self) {
 	// Get the reader from the instance variable, maybe refactor this?
 	VALUE reader_container = rb_iv_get(self, "@reader");
-	
+
+	MYSQL_RES *reader;
+
 	if (Qnil == reader_container)
 		return Qfalse;
 
-	MYSQL_RES *reader = DATA_PTR(reader_container);
+	reader = DATA_PTR(reader_container);
 
 	// The Meat
 	if (NULL == reader)
 		return Qfalse;
- 	
+
 	mysql_free_result(reader);		
 	rb_iv_set(self, "@reader", Qnil);
- 
+
 	return Qtrue;
 }
- 
+
 // Retrieve a single row
 static VALUE cReader_next(VALUE self) {
 	// Get the reader from the instance variable, maybe refactor this?
 	VALUE reader_container = rb_iv_get(self, "@reader");
-	
+	VALUE ruby_field_type_strings, row;
+
+	MYSQL_RES *reader;
+	MYSQL_ROW result;
+
+	int i;
+	char *field_type;
+
 	if (Qnil == reader_container)
 		return Qfalse;
-		
-	MYSQL_RES *reader = DATA_PTR(reader_container);
-	
+
+	reader = DATA_PTR(reader_container);
+
 	// The Meat
-	VALUE ruby_field_type_strings = rb_iv_get(self, "@field_types");
-  VALUE row = rb_ary_new();
-  MYSQL_ROW result = (MYSQL_ROW)mysql_fetch_row(reader);
+	ruby_field_type_strings = rb_iv_get(self, "@field_types");
+	row = rb_ary_new();
+	result = (MYSQL_ROW)mysql_fetch_row(reader);
 
 	rb_iv_set(self, "@state", result ? Qtrue : Qfalse);
 
 	if (!result)
 		return Qnil;
 
-  int i;
- 
 	for (i = 0; i < reader->field_count; i++) {
 		// The field_type data could be cached in a c-array
-		char* field_type = RSTRING(rb_ary_entry(ruby_field_type_strings, i))->ptr;
+		field_type = RSTRING(rb_ary_entry(ruby_field_type_strings, i))->ptr;
 		rb_ary_push(row, cast_mysql_value_to_ruby_value(result[i], field_type));
-  }
+	}
 
 	rb_iv_set(self, "@values", row);
-	
+
 	return Qtrue;
 }
 
