@@ -78,33 +78,36 @@ static VALUE parse_date(char *date) {
 }
 
 static VALUE parse_date_time(char *date) {
-	int y, m, d, h, min, s;
-	int jd;
 	VALUE ajd;
-	sscanf(date, "%4d-%2d-%2d %2d:%2d:%2d", &y, &m, &d, &h, &min, &s);
-	
-	jd = jd_from_date(y, m, d);
-	
+
+	int year, month, day, hour, min, sec;
+	int jd;
+
+	do_int64 num, den;
+
+	sscanf(date, "%4d-%2d-%2d %2d:%2d:%2d", &year, &month, &day, &hour, &min, &sec);
+
+	jd = jd_from_date(year, month, day);
+
 	// Generate ajd with fractional days for the time
 	// Extracted from Date#jd_to_ajd, Date#day_fraction_to_time, and Rational#+ and #-
-	do_int64 num, den;
-	
-	num = (h * 1440) + (min * 24);
+
+	num = (hour * 1440) + (min * 24);
 	den = (24 * 1440);
 	reduce(&num, &den);
-	
-	num = (num * 86400) + (s * den);
+
+	num = (num * 86400) + (sec * den);
 	den = den * 86400;
 	reduce(&num, &den);
-	
+
 	num = (jd * den) + num;
-	
+
 	num = num * 2;
 	num = num - den;
 	den = den * 2;
-	
+
 	reduce(&num, &den);
-	
+
 	ajd = rb_funcall(rb_cRational, rb_intern("new!"), 2, rb_ull2inum(num), rb_ull2inum(den));
 	return rb_funcall(rb_cDateTime, rb_intern("new!"), 3, ajd, INT2NUM(0), INT2NUM(2299161));
 }
@@ -187,45 +190,43 @@ static VALUE typecast(char *value, char *type) {
 /* ====== Public API ======= */
 
 static VALUE cConnection_initialize(VALUE self, VALUE uri) {
-	
+	VALUE r_host, r_user, r_password, r_path, r_port;
+	char *host = "localhost", *user = NULL, *password = NULL, *path;
+	char *database = "", *port = "5432";
+
 	PGconn *db;
-	
-	VALUE r_host = rb_funcall(uri, rb_intern("host"), 0);
-	char *host = "localhost";
+
+	r_host = rb_funcall(uri, rb_intern("host"), 0);
 	if ( Qnil != r_host ) {
 		host = StringValuePtr(r_host);
 	}
-	
-	VALUE r_user = rb_funcall(uri, rb_intern("user"), 0);
-	char * user = NULL;
+
+	r_user = rb_funcall(uri, rb_intern("user"), 0);
 	if (Qnil != r_user) {
 		user = StringValuePtr(r_user);
 	}
-	
-	VALUE r_password = rb_funcall(uri, rb_intern("password"), 0);
-	char * password = NULL;
+
+	r_password = rb_funcall(uri, rb_intern("password"), 0);
 	if (Qnil != r_password) {
 		password = StringValuePtr(r_password);
 	}
-	
-	VALUE r_path = rb_funcall(uri, rb_intern("path"), 0);
-	char * path = StringValuePtr(r_path);
-	char * database = "";
+
+	r_path = rb_funcall(uri, rb_intern("path"), 0);
+	path = StringValuePtr(r_path);
 	if (Qnil != r_path) {
 		database = strtok(path, "/");
 	}
-	
+
 	if (NULL == database || 0 == strlen(database)) {
 		rb_raise(ePostgresError, "Database must be specified");
 	}
-	
-	VALUE r_port = rb_funcall(uri, rb_intern("port"), 0);
-	char *port = "5432";
+
+	r_port = rb_funcall(uri, rb_intern("port"), 0);
 	if (Qnil != r_port) {
 		r_port = rb_funcall(r_port, rb_intern("to_s"), 0);
 		port = StringValuePtr(r_port);
 	}
-	
+
 	db = PQsetdbLogin(
 		host, 
 		port, 
@@ -235,15 +236,14 @@ static VALUE cConnection_initialize(VALUE self, VALUE uri) {
 		user, 
 		password
 	);
-	
-	
+
 	if ( PQstatus(db) == CONNECTION_BAD ) {
 		rb_raise(rb_eException, PQerrorMessage(db));
 	}
-	
+
 	rb_iv_set(self, "@uri", uri);
 	rb_iv_set(self, "@connection", Data_Wrap_Struct(rb_cObject, 0, 0, db));
-	
+
 	return Qtrue;
 }
 
@@ -305,50 +305,52 @@ static VALUE cCommand_execute_non_query(int argc, VALUE *argv[], VALUE self) {
 }
 
 static VALUE cCommand_execute_reader(int argc, VALUE *argv[], VALUE self) {
-	PGconn *db = DATA_PTR(rb_iv_get(rb_iv_get(self, "@connection"), "@connection"));
-	PGresult *response;
-	
+	VALUE reader, query;
+	VALUE field_names, field_types;
+
 	int i;
 	int field_count;
-	
-	VALUE reader;
-	VALUE query = build_query_from_args(self, argc, argv);
-	
+	int infer_types = 0;
+
+	PGconn *db = DATA_PTR(rb_iv_get(rb_iv_get(self, "@connection"), "@connection"));
+	PGresult *response;
+
+	query = build_query_from_args(self, argc, argv);
+
 	response = PQexec(db, StringValuePtr(query));
-	
+
 	if ( PQresultStatus(response) != PGRES_TUPLES_OK ) {
 		char *message = PQresultErrorMessage(response);
 		PQclear(response);
 		rb_raise(ePostgresError, message);
 	}
-	
+
 	field_count = PQnfields(response);
-	
+
 	reader = rb_funcall(cReader, ID_NEW, 0);
 	rb_iv_set(reader, "@reader", Data_Wrap_Struct(rb_cObject, 0, 0, response));
 	rb_iv_set(reader, "@field_count", INT2NUM(field_count));
 	rb_iv_set(reader, "@row_count", INT2NUM(PQntuples(response)));
-	
-	VALUE field_names = rb_ary_new();
-	VALUE field_types = rb_iv_get(self, "@field_types");
-	int infer_types = 0;
-	
+
+	field_names = rb_ary_new();
+	field_types = rb_iv_get(self, "@field_types");
+
 	if ( field_types == Qnil || RARRAY(field_types)->len == 0 ) {
 		field_types = rb_ary_new();
 		infer_types = 1;
 	}
-	
+
 	for ( i = 0; i < field_count; i++ ) {
 		rb_ary_push(field_names, rb_str_new2(PQfname(response, i)));
 		if ( infer_types == 1 ) {
 			rb_ary_push(field_types, infer_ruby_type(PQftype(response, i)));
 		}
 	}
-	
+
 	rb_iv_set(reader, "@position", INT2NUM(0));
 	rb_iv_set(reader, "@fields", field_names);
 	rb_iv_set(reader, "@field_types", field_types);
-	
+
 	return reader;
 }
 
