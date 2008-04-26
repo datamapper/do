@@ -205,7 +205,7 @@ static VALUE cCommand_quote_boolean(VALUE self, VALUE value) {
 	return rb_str_new2(value == Qtrue ? "'t'" : "'f'");
 }
 	
-static VALUE cCommand_execute_non_query(int argc, VALUE *argv[], VALUE self) {
+static VALUE cCommand_execute_non_query(int argc, VALUE *argv, VALUE self) {
 	sqlite3 *db;
 	char *error_message;
 	int status;
@@ -239,7 +239,7 @@ static VALUE cCommand_execute_non_query(int argc, VALUE *argv[], VALUE self) {
 	return rb_funcall(cResult, ID_NEW, 3, self, INT2NUM(affected_rows), INT2NUM(insert_id));
 }
 
-static VALUE cCommand_execute_reader(int argc, VALUE *argv[], VALUE self) {
+static VALUE cCommand_execute_reader(int argc, VALUE *argv, VALUE self) {
 	sqlite3 *db;
 	sqlite3_stmt *sqlite3_reader;
 	int status;
