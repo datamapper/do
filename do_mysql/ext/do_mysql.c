@@ -14,6 +14,12 @@
 #define CONST_GET(scope, constant) (rb_funcall(scope, ID_CONST_GET, 1, rb_str_new2(constant)))
 #define CHECK_AND_RAISE(mysql_result_value) if (0 != mysql_result_value) { raise_mysql_error(db, mysql_result_value); }
 
+#ifdef _WIN32
+#define do_int64 unsigned __int64
+#else
+#define do_int64 unsigned long long int
+#endif
+
 // To store rb_intern values
 static ID ID_TO_I;
 static ID ID_TO_F;
@@ -106,8 +112,8 @@ static char * ruby_type_from_mysql_type(MYSQL_FIELD *field) {
 
 // Find the greatest common denominator and reduce the provided numerator and denominator.
 // This replaces calles to Rational.reduce! which does the same thing, but really slowly.
-static void reduce( unsigned long long int *numerator, unsigned long long int *denominator ) {
-  unsigned long long int a, b, c;
+static void reduce( do_int64 *numerator, do_int64 *denominator ) {
+  do_int64 a, b, c;
   a = *numerator;
   b = *denominator;
   while ( a != 0 ) {
@@ -171,7 +177,7 @@ static VALUE cast_mysql_value_to_ruby_value(const char* data, char* ruby_class_n
 
    // Generate ajd with fractional days for the time
    // Extracted from Date#jd_to_ajd, Date#day_fraction_to_time, and Rational#+ and #-
-   unsigned long long int num, den;
+   do_int64 num, den;
 
    num = (h * 1440) + (min * 24);
    den = (24 * 1440);
