@@ -53,13 +53,13 @@ namespace :ci do
         Spec::Rake::SpecTask.new("#{gem_name}:spec" => "#{gem_name}/Makefile") do |t|
       t.spec_opts = ["--format", "specdoc", "--format", "html:rspec_report.html", "--diff"]
       t.spec_files = Pathname.glob(ENV['FILES'] || DIR + "/#{gem_name}/spec/**/*_spec.rb")
-      unless ENV['NO_RCOV']
+#      unless ENV['NO_RCOV']
         t.rcov = true
         t.rcov_opts << '--exclude' << 'spec,gems'
         t.rcov_opts << '--text-summary'
         t.rcov_opts << '--sort' << 'coverage' << '--sort-reverse'
         t.rcov_opts << '--only-uncovered'
-      end
+#      end
     end
     
     Rake::RDocTask.new("#{gem_name}:doc") do |t|
