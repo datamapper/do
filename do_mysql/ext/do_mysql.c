@@ -137,10 +137,17 @@ static int jd_from_date(int year, int month, int day) {
 
 // Convert C-string to a Ruby instance of type "ruby_class_name"
 static VALUE cast_mysql_value_to_ruby_value(const char* data, char* ruby_class_name) {
-  if (NULL == data)
-		return Qnil;
- 
 	VALUE ruby_value = Qnil;
+	VALUE rational, ajd_value;
+
+	int year, month, day, hour, min, sec;
+	int jd, ajd;
+
+	do_int64 num, den;
+
+	if (NULL == data)
+		return Qnil;
+
 	if (0 == strcmp("Fixnum", ruby_class_name)) {
 		ruby_value = (0 == strlen(data) ? Qnil : LL2NUM(atol(data)));
 	} else if (0 == strcmp("Bignum", ruby_class_name)) {
@@ -155,57 +162,47 @@ static VALUE cast_mysql_value_to_ruby_value(const char* data, char* ruby_class_n
 	} else if (0 == strcmp("TrueClass", ruby_class_name) || 0 == strcmp("FalseClass", ruby_class_name)) {
 		ruby_value = (NULL == data || 0 == data || 0 == strcmp("0", data)) ? Qfalse : Qtrue;
 	} else if (0 == strcmp("Date", ruby_class_name)) {
-		int year, month, day;
-    int jd, ajd;
-    VALUE rational;
+		sscanf(data, "%4d-%2d-%2d", &year, &month, &day);
 
-    sscanf(data, "%4d-%2d-%2d", &year, &month, &day);
+		jd = jd_from_date(year, month, day);
 
-    jd = jd_from_date(year, month, day);
-
-    // Math from Date.jd_to_ajd
-    ajd = jd * 2 - 1;
-    rational = rb_funcall(rb_cRational, ID_NEW_RATIONAL, 2, INT2NUM(ajd), INT2NUM(2));
-    ruby_value = rb_funcall(rb_cDate, ID_NEW_DATE, 3, rational, INT2NUM(0), INT2NUM(2299161));
+		// Math from Date.jd_to_ajd
+		ajd = jd * 2 - 1;
+		rational = rb_funcall(rb_cRational, ID_NEW_RATIONAL, 2, INT2NUM(ajd), INT2NUM(2));
+		ruby_value = rb_funcall(rb_cDate, ID_NEW_DATE, 3, rational, INT2NUM(0), INT2NUM(2299161));
 	} else if (0 == strcmp("DateTime", ruby_class_name)) {
-	 int jd;
-   int y, m, d, h, min, s;
+		sscanf(data, "%4d-%2d-%2d %2d:%2d:%2d", &year, &month, &day, &hour, &min, &sec);
 
-   sscanf(data, "%4d-%2d-%2d %2d:%2d:%2d", &y, &m, &d, &h, &min, &s);
+		jd = jd_from_date(year, month, day);
 
-   jd = jd_from_date(y, m, d);
+		// Generate ajd with fractional days for the time
+		// Extracted from Date#jd_to_ajd, Date#day_fraction_to_time, and Rational#+ and #-
+		num = (hour * 1440) + (min * 24);
+		den = (24 * 1440);
+		reduce(&num, &den);
 
-   // Generate ajd with fractional days for the time
-   // Extracted from Date#jd_to_ajd, Date#day_fraction_to_time, and Rational#+ and #-
-   do_int64 num, den;
+		num = (num * 86400) + (sec * den);
+		den = den * 86400;
+		reduce(&num, &den);
 
-   num = (h * 1440) + (min * 24);
-   den = (24 * 1440);
-   reduce(&num, &den);
+		num = (jd * den) + num;
 
-   num = (num * 86400) + (s * den);
-   den = den * 86400;
-   reduce(&num, &den);
+		num = num * 2;
+		num = num - den;
+		den = den * 2;
 
-   num = (jd * den) + num;
+		reduce(&num, &den);
 
-   num = num * 2;
-   num = num - den;
-   den = den * 2;
-
-   reduce(&num, &den);
-
-   VALUE ajd = rb_funcall(rb_cRational, ID_NEW_RATIONAL, 2, rb_ull2inum(num), rb_ull2inum(den));
-   ruby_value = rb_funcall(rb_cDateTime, ID_NEW_DATE, 3, ajd, INT2NUM(0), INT2NUM(2299161));
+		ajd_value = rb_funcall(rb_cRational, ID_NEW_RATIONAL, 2, rb_ull2inum(num), rb_ull2inum(den));
+		ruby_value = rb_funcall(rb_cDateTime, ID_NEW_DATE, 3, ajd_value, INT2NUM(0), INT2NUM(2299161));
 	} else if (0 == strcmp("Time", ruby_class_name)) {
-	  int y, m, d, h, min, s;
-	  sscanf(data, "%4d-%2d-%2d %2d:%2d:%2d", &y, &m, &d, &h, &min, &s);
+		sscanf(data, "%4d-%2d-%2d %2d:%2d:%2d", &year, &month, &day, &hour, &min, &sec);
 
-	  ruby_value = rb_funcall(rb_cTime, ID_UTC, 6, INT2NUM(y), INT2NUM(m), INT2NUM(d), INT2NUM(h), INT2NUM(min), INT2NUM(s));
+		ruby_value = rb_funcall(rb_cTime, ID_UTC, 6, INT2NUM(year), INT2NUM(month), INT2NUM(day), INT2NUM(hour), INT2NUM(min), INT2NUM(sec));
 	} else {
 		ruby_value = TAINTED_STRING(data);
 	}
- 
+
 	return ruby_value;
 }
 
