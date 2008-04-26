@@ -279,49 +279,58 @@ static void raise_mysql_error(MYSQL *db, int mysql_error_code) {
 
 // Pull an option out of a querystring-formmated option list using CGI::parse
 static char * get_uri_option(VALUE querystring, char * key) {
+	VALUE options_hash, option_value;
+
+	char * value = NULL;
+
 	// Ensure that we're dealing with a string
 	querystring = rb_funcall(querystring, ID_TO_S, 0);
-	
-	VALUE options_hash = rb_funcall(rb_cCGI, ID_PARSE, 1, querystring);
+
+	options_hash = rb_funcall(rb_cCGI, ID_PARSE, 1, querystring);
 
 	// TODO: rb_hash_aref always returns an array?
-	VALUE option_value = rb_ary_entry(rb_hash_aref(options_hash, RUBY_STRING(key)), 0);
-	char * value = NULL;
+	option_value = rb_ary_entry(rb_hash_aref(options_hash, RUBY_STRING(key)), 0);
 
 	if (Qnil != option_value) {
 		value = StringValuePtr(option_value);
 	}
-	
+
 	return value;
 }
 
 static VALUE cConnection_initialize(VALUE self, VALUE uri) {
-  MYSQL *db = 0 ;
-  db = (MYSQL *)mysql_init(NULL);
+	VALUE r_host, r_user, r_password, r_path, r_options, r_port;
+
+	char *host = "localhost", *user = NULL, *password = NULL, *path;
+	char *database = "", *socket = NULL;
+	char *charset = NULL;
+
+	int port = 3306;
+	unsigned long client_flags = 0;
+	int charset_error;
+
+	MYSQL *db = 0, *result;
+	db = (MYSQL *)mysql_init(NULL);
 
 	rb_iv_set(self, "@using_socket", Qfalse);
 
-	VALUE r_host = rb_funcall(uri, rb_intern("host"), 0);
-	char *host = "localhost";
+	r_host = rb_funcall(uri, rb_intern("host"), 0);
 	if (Qnil != r_host) {
 		host = StringValuePtr(r_host);
 	}
 	
-	VALUE r_user = rb_funcall(uri, rb_intern("user"), 0);
-	char *user = NULL;
+	r_user = rb_funcall(uri, rb_intern("user"), 0);
 	if (Qnil != r_user) {
 		user = StringValuePtr(r_user);
 	}
 
-	VALUE r_password = rb_funcall(uri, rb_intern("password"), 0);
-	char *password = NULL;
+	r_password = rb_funcall(uri, rb_intern("password"), 0);
 	if (Qnil != r_password) {
 		password = StringValuePtr(r_password);
 	}
 
-	VALUE r_path = rb_funcall(uri, rb_intern("path"), 0);
-	char *path = StringValuePtr(r_path);
-	char *database = "";
+	r_path = rb_funcall(uri, rb_intern("path"), 0);
+	path = StringValuePtr(r_path);
 	if (Qnil != r_path) {
 		database = strtok(path, "/");
 	}
@@ -329,11 +338,10 @@ static VALUE cConnection_initialize(VALUE self, VALUE uri) {
 	if (NULL == database || 0 == strlen(database)) {
 		rb_raise(eMysqlError, "Database must be specified");
 	}
-	
-	// Pull the querystring off the URI
-	VALUE r_options = rb_funcall(uri, rb_intern("query"), 0);
 
-	char *socket = NULL;
+	// Pull the querystring off the URI
+	r_options = rb_funcall(uri, rb_intern("query"), 0);
+
 	// Check to see if we're on the db machine.  If so, try to use the socket
 	if (0 == strcasecmp(host, "localhost")) {
 		// TODO: Read the socket path from my.conf [client]
@@ -347,22 +355,16 @@ static VALUE cConnection_initialize(VALUE self, VALUE uri) {
 		}
 	}
 
-	VALUE r_port = rb_funcall(uri, rb_intern("port"), 0);
-	int port = 3306;
+	r_port = rb_funcall(uri, rb_intern("port"), 0);
 	if (Qnil != r_port) {
 		port = NUM2INT(r_port);
 	}
-	
-	char *charset = NULL;
+
 	charset = get_uri_option(r_options, "charset");
-	
+
 	// If ssl? {
 	//   mysql_ssl_set(db, key, cert, ca, capath, cipher)
 	// }
- 
-	unsigned long client_flags = 0;
-
-	MYSQL *result;
 
 	result = (MYSQL *)mysql_real_connect(
 		db,
@@ -385,7 +387,7 @@ static VALUE cConnection_initialize(VALUE self, VALUE uri) {
 	}
 
 	// Set the connections character set
-	int charset_error = mysql_set_character_set(db, charset);
+	charset_error = mysql_set_character_set(db, charset);
 	if (0 != charset_error) {
 		raise_mysql_error(db, charset_error);
 	}
