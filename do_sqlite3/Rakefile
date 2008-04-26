@@ -44,6 +44,7 @@ Rake::GemPackageTask.new(spec) do |pkg|
   pkg.gem_spec = spec
 end
 
+# Use of ext_helper to properly setup compile tasks and native gem generation
 setup_extension project.name, spec
 
 task :install => [:package] do
@@ -51,7 +52,7 @@ task :install => [:package] do
 end
 
 desc "Run specifications"
-Spec::Rake::SpecTask.new(:spec => 'Makefile') do |t|
+Spec::Rake::SpecTask.new(:spec => [:compile]) do |t|
   t.spec_opts = ["--format", "specdoc", "--colour"]
   t.spec_files = Pathname.glob(Pathname.new(__FILE__).parent.join("spec").join("**").join("*_spec.rb"))
 end
