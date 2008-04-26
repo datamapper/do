@@ -47,7 +47,7 @@ end
 setup_extension project.name, spec
 
 task :install => [:package] do
-  sh %{#{'sudo' unless ENV['SUDOLESS']} gem install pkg/#{NAME}-#{VERSION}}
+  sh %{#{'sudo' unless ENV['SUDOLESS']} gem install pkg/#{project.name}-#{project.version}}
 end
 
 desc "Run specifications"
