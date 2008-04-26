@@ -405,15 +405,17 @@ static VALUE cConnection_initialize(VALUE self, VALUE uri) {
 
 static VALUE cConnection_character_set(VALUE self) {
 	VALUE connection_container = rb_iv_get(self, "@connection");
-	
+	MYSQL *db;
+
+	const char *charset;
+
 	if (Qnil == connection_container)
 		return Qfalse;
-		
-	MYSQL *db = DATA_PTR(connection_container);
 
-	const char * charset;
+	db = DATA_PTR(connection_container);
+
 	charset = mysql_character_set_name(db);
-	
+
 	return RUBY_STRING(charset);
 }
 
@@ -423,15 +425,17 @@ static VALUE cConnection_is_using_socket(VALUE self) {
 
 static VALUE cConnection_real_close(VALUE self) {
 	VALUE connection_container = rb_iv_get(self, "@connection");
-	
+
+	MYSQL *db;
+
 	if (Qnil == connection_container)
 		return Qfalse;
-		
-	MYSQL *db = DATA_PTR(connection_container);
- 
+
+	db = DATA_PTR(connection_container);
+
 	if (NULL == db)
 		return Qfalse;
- 
+
 	mysql_close(db);
 	rb_iv_set(self, "@connection", Qnil);
 
@@ -459,13 +463,13 @@ static VALUE cConnection_real_close(VALUE self) {
 static VALUE cCommand_set_types(VALUE self, VALUE array) {
 	VALUE type_strings = rb_ary_new();
 	int i;
- 
+
 	for (i = 0; i < RARRAY(array)->len; i++) {
 		rb_ary_push(type_strings, rb_str_new2(rb_class2name(rb_ary_entry(array, i))));
 	}
- 
+
 	rb_iv_set(self, "@field_types", type_strings);
- 
+
 	return array;
 }
 
