@@ -91,6 +91,15 @@ static int jd_from_date(int year, int month, int day) {
 
 static VALUE ruby_typecast(sqlite3_value *value, char *type, int original_type) {
 	VALUE ruby_value = Qnil;
+	VALUE rational, ajd_value;
+
+	int year, month, day, hour, min, sec;
+	int jd, ajd;
+
+	do_int64 num, den;
+
+	char *date;
+
 	if ( original_type == SQLITE_NULL ) {
 		return ruby_value;
 	}
@@ -110,10 +119,7 @@ static VALUE ruby_typecast(sqlite3_value *value, char *type, int original_type) 
 		ruby_value = rb_float_new(sqlite3_value_double(value));
 	}
 	else if ( strcmp(type, "Date") == 0 ) {
-		int year, month, day;
-		char *date = (char*)sqlite3_value_text(value);
-		int jd, ajd;
-		VALUE rational;
+		date = (char*)sqlite3_value_text(value);
 		
 		sscanf(date, "%4d-%2d-%2d", &year, &month, &day);
 		
@@ -125,23 +131,19 @@ static VALUE ruby_typecast(sqlite3_value *value, char *type, int original_type) 
 		ruby_value = rb_funcall(rb_cDate, rb_intern("new!"), 3, rational, INT2NUM(0), INT2NUM(2299161));
 	}
 	else if ( strcmp(type, "DateTime") == 0 ) {
-		int jd;
-		int y, m, d, h, min, s;
-		char *date = (char*)sqlite3_value_text(value);
+		date = (char*)sqlite3_value_text(value);
 		
-		sscanf(date, "%4d-%2d-%2d %2d:%2d:%2d", &y, &m, &d, &h, &min, &s);
+		sscanf(date, "%4d-%2d-%2d %2d:%2d:%2d", &year, &month, &day, &hour, &min, &sec);
 		
-		jd = jd_from_date(y, m, d);
+		jd = jd_from_date(year, month, day);
 		
 		// Generate ajd with fractional days for the time
 		// Extracted from Date#jd_to_ajd, Date#day_fraction_to_time, and Rational#+ and #-
-		do_int64 num, den;
-		
-		num = (h * 1440) + (min * 24);
+		num = (hour * 1440) + (min * 24);
 		den = (24 * 1440);
 		reduce(&num, &den);
 		
-		num = (num * 86400) + (s * den);
+		num = (num * 86400) + (sec * den);
 		den = den * 86400;
 		reduce(&num, &den);
 		
@@ -153,16 +155,15 @@ static VALUE ruby_typecast(sqlite3_value *value, char *type, int original_type) 
 		
 		reduce(&num, &den);
 		
-		VALUE ajd = rb_funcall(rb_cRational, rb_intern("new!"), 2, rb_ull2inum(num), rb_ull2inum(den));
-		ruby_value = rb_funcall(rb_cDateTime, rb_intern("new!"), 3, ajd, INT2NUM(0), INT2NUM(2299161));
+		ajd_value = rb_funcall(rb_cRational, rb_intern("new!"), 2, rb_ull2inum(num), rb_ull2inum(den));
+		ruby_value = rb_funcall(rb_cDateTime, rb_intern("new!"), 3, ajd_value, INT2NUM(0), INT2NUM(2299161));
 	}
 	else if ( strcmp(type, "Time") == 0 ) {
-		int y, m, d, h, min, s;
-		char *date = (char*)sqlite3_value_text(value);
+		date = (char*)sqlite3_value_text(value);
 		
-		sscanf(date, "%4d-%2d-%2d %2d:%2d:%2d", &y, &m, &d, &h, &min, &s);
+		sscanf(date, "%4d-%2d-%2d %2d:%2d:%2d", &year, &month, &day, &hour, &min, &sec);
 		
-		ruby_value = rb_funcall(rb_cTime, rb_intern("utc"), 6, INT2NUM(y), INT2NUM(m), INT2NUM(d), INT2NUM(h), INT2NUM(min), INT2NUM(s));
+		ruby_value = rb_funcall(rb_cTime, rb_intern("utc"), 6, INT2NUM(year), INT2NUM(month), INT2NUM(day), INT2NUM(hour), INT2NUM(min), INT2NUM(sec));
 	}
 	return ruby_value;
 }
