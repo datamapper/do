@@ -8,7 +8,7 @@ require File.dirname(__FILE__) + '/spec_helper'
 #
 
 def ensure_users_table_and_return_connection
-  connection = DataObjects::Connection.new("postgres://localhost/do_test")
+  connection = DataObjects::Connection.new("postgres://postgres@localhost/do_test")
   connection.create_command("DROP TABLE users").execute_non_query rescue nil
   connection.create_command(<<EOF
  CREATE TABLE users
@@ -29,7 +29,7 @@ end
 
 describe "DataObjects::Postgres::Connection" do
   it "should connect to the db" do
-    connection = DataObjects::Connection.new("postgres:///do_test")
+    connection = DataObjects::Connection.new("postgres://postgres@localhost/do_test")
   end
 end
 
