@@ -13,6 +13,12 @@
 
 #define TRUE_CLASS CONST_GET(rb_mKernel, "TrueClass")
 
+#ifdef _WIN32
+#define do_int64 unsigned __int64
+#else
+#define do_int64 unsigned long long int
+#endif
+
 static VALUE mDO;
 static VALUE cDO_Quoting;
 static VALUE cDO_Connection;
@@ -60,8 +66,8 @@ static VALUE native_typecast(sqlite3_value *value, int type) {
 
 // Find the greatest common denominator and reduce the provided numerator and denominator.
 // This replaces calles to Rational.reduce! which does the same thing, but really slowly.
-static void reduce( unsigned long long int *numerator, unsigned long long int *denominator ) {
-	unsigned long long int a, b, c;
+static void reduce( do_int64 *numerator, do_int64 *denominator ) {
+	do_int64 a, b, c;
 	a = *numerator;
 	b = *denominator;
 	while ( a != 0 ) {
@@ -129,7 +135,7 @@ static VALUE ruby_typecast(sqlite3_value *value, char *type, int original_type) 
 		
 		// Generate ajd with fractional days for the time
 		// Extracted from Date#jd_to_ajd, Date#day_fraction_to_time, and Rational#+ and #-
-		unsigned long long int num, den;
+		do_int64 num, den;
 		
 		num = (h * 1440) + (min * 24);
 		den = (24 * 1440);
