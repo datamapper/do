@@ -1,7 +1,7 @@
 require File.dirname(__FILE__) + '/spec_helper'
 
 def setup_test_environment
-  @connection = DataObjects::Mysql::Connection.new("mysql://127.0.0.1/do_mysql_test")
+  @connection = DataObjects::Mysql::Connection.new("mysql://root@127.0.0.1:3306/do_mysql_test")
   @connection.create_command(<<EOF
 DROP TABLE IF EXISTS `invoices`
 EOF
