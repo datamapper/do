@@ -355,17 +355,18 @@ static VALUE cCommand_execute_reader(int argc, VALUE *argv[], VALUE self) {
 }
 
 static VALUE cReader_close(VALUE self) {
-	
 	VALUE reader_container = rb_iv_get(self, "@reader");
-	
+
+	PGresult *reader;
+
 	if (Qnil == reader_container)
 		return Qfalse;
-		
-	PGresult *reader = DATA_PTR(reader_container);
-		
+
+	reader = DATA_PTR(reader_container);
+
 	if (NULL == reader)
 		return Qfalse;
-		
+
 	PQclear(reader);
 	rb_iv_set(self, "@reader", Qnil);
 	return Qtrue;
@@ -373,28 +374,27 @@ static VALUE cReader_close(VALUE self) {
 
 static VALUE cReader_next(VALUE self) {
 	PGresult *reader = DATA_PTR(rb_iv_get(self, "@reader"));
-	
+
 	int field_count;
 	int row_count;
 	int i;
 	int position;
-	
+
+	char *type = "";
+
 	VALUE array = rb_ary_new();
-	VALUE field_types;
+	VALUE field_types, ruby_type;
 	VALUE value;
-	
+
 	row_count = NUM2INT(rb_iv_get(self, "@row_count"));
 	field_count = NUM2INT(rb_iv_get(self, "@field_count"));
 	field_types = rb_iv_get(self, "@field_types");
 	position = NUM2INT(rb_iv_get(self, "@position"));
-	
+
 	if ( position > (row_count-1) ) {
 		return Qnil;
 	}
-	
-	VALUE ruby_type;
-	char *type = "";
-	
+
 	for ( i = 0; i < field_count; i++ ) {
 		ruby_type = RARRAY(field_types)->ptr[i];
 		
@@ -408,10 +408,10 @@ static VALUE cReader_next(VALUE self) {
 		value = typecast(PQgetvalue(reader, position, i), type);
 		rb_ary_push(array, value);
 	}
-	
+
 	rb_iv_set(self, "@values", array);
 	rb_iv_set(self, "@position", INT2NUM(position+1));
-	
+
 	return Qtrue;
 }
 
