@@ -1,6 +1,7 @@
 require 'rubygems'
 require 'rake/clean'
 require 'rake/gempackagetask'
+require 'pathname'
 require 'spec/rake/spectask'
 require 'ostruct'
 require File.dirname(__FILE__) + '/../ext_helper.rb'
@@ -49,8 +50,8 @@ task :install => [:package] do
   sh %{#{'sudo' unless ENV['SUDOLESS']} gem install pkg/#{NAME}-#{VERSION}}
 end
 
-desc "Run all specs in spec directory (excluding plugin specs)"
-Spec::Rake::SpecTask.new(:spec => "Makefile") do |t|
-  t.spec_opts = ['--options', "spec/spec.opts"] if File.exists?("spec/spec.opts")
-  t.spec_files = FileList['spec/*_spec.rb']
+desc "Run specifications"
+Spec::Rake::SpecTask.new(:spec => [:compile]) do |t|
+  t.spec_opts = ["--format", "specdoc", "--colour"]
+  t.spec_files = Pathname.glob(Pathname.new(__FILE__).parent.join("spec").join("**").join("*_spec.rb"))
 end
