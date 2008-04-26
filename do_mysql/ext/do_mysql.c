@@ -499,16 +499,20 @@ static VALUE cCommand_quote_string(VALUE self, VALUE string) {
 }
 
 static VALUE cCommand_execute_non_query(int argc, VALUE *argv, VALUE self) {
-	MYSQL *db = DATA_PTR(rb_iv_get(rb_iv_get(self, "@connection"), "@connection"));
- 
-	int query_result = 0;
+	VALUE query, array;
+
 	MYSQL_RES *response = 0;
-	
-	VALUE query = rb_iv_get(self, "@text");
-	
+	int query_result = 0;
+	int i;
+
+	my_ulonglong affected_rows;
+
+	MYSQL *db = DATA_PTR(rb_iv_get(rb_iv_get(self, "@connection"), "@connection"));
+
+	query = rb_iv_get(self, "@text");
+
 	if ( argc > 0 ) {
-		int i;
-		VALUE array = rb_ary_new();
+		array = rb_ary_new();
 		for ( i = 0; i < argc; i++ ) {
 			rb_ary_push(array, argv[i]);
 		}
@@ -517,66 +521,68 @@ static VALUE cCommand_execute_non_query(int argc, VALUE *argv, VALUE self) {
 
 	query_result = mysql_query(db, StringValuePtr(query));
 	CHECK_AND_RAISE(query_result);
-	
+
 	response = (MYSQL_RES *)mysql_store_result(db);
-	my_ulonglong affected_rows = mysql_affected_rows(db);
- 	mysql_free_result(response);
+	affected_rows = mysql_affected_rows(db);
+	mysql_free_result(response);
 
 	if (-1 == affected_rows)
 		return Qnil;
-	
+
 	return rb_funcall(cResult, ID_NEW, 3, self, INT2NUM(affected_rows), INT2NUM(mysql_insert_id(db)));
 }
 
 static VALUE cCommand_execute_reader(int argc, VALUE *argv, VALUE self) {
-	MYSQL *db = DATA_PTR(rb_iv_get(rb_iv_get(self, "@connection"), "@connection"));
- 
+	VALUE query, reader;
+	VALUE field_names, field_types;
+	VALUE array;
+
 	int query_result = 0;
+	int field_count;
+	int i;
+
+	char guess_default_field_types = 0;
+
+	MYSQL *db = DATA_PTR(rb_iv_get(rb_iv_get(self, "@connection"), "@connection"));
+
 	MYSQL_RES *response = 0;
-	VALUE query;
-	VALUE reader;
+	MYSQL_FIELD *field;
 
 	query = rb_iv_get(self, "@text");
-	
+
 	if ( argc > 0 ) {
-		int i;
-		VALUE array = rb_ary_new();
-		for ( i = 0; i < argc; i++ ) {
+		array = rb_ary_new();
+		for (i = 0; i < argc; i++ ) {
 			rb_ary_push(array, argv[i]);
 		}
 		query = rb_funcall(self, ID_ESCAPE_SQL, 1, array);
 	}
- 
+
 	query_result = mysql_query(db, StringValuePtr(query));
 	CHECK_AND_RAISE(query_result);
- 
+
 	response = (MYSQL_RES *)mysql_use_result(db);
- 
+
 	if (!response) {
 		return Qnil;
 	}
 	
-	int field_count = (int)mysql_field_count(db);
+	field_count = (int)mysql_field_count(db);
 	
 	reader = rb_funcall(cReader, ID_NEW, 0);
 	rb_iv_set(reader, "@reader", Data_Wrap_Struct(rb_cObject, 0, 0, response));
 	rb_iv_set(reader, "@opened", Qtrue);
 	rb_iv_set(reader, "@field_count", INT2NUM(field_count));
- 
-	VALUE field_names = rb_ary_new();
-	VALUE field_types = rb_iv_get(self, "@field_types");
 
-	char guess_default_field_types = 0;
+	field_names = rb_ary_new();
+	field_types = rb_iv_get(self, "@field_types");
 
 	if ( field_types == Qnil || 0 == RARRAY(field_types)->len ) {
 		field_types = rb_ary_new();
- 		guess_default_field_types = 1;
+		guess_default_field_types = 1;
 	}
 
-	MYSQL_FIELD *field;
-
-	int i;
-  for(i = 0; i < field_count; i++) {
+	for(i = 0; i < field_count; i++) {
 		field = mysql_fetch_field_direct(response, i);
 		rb_ary_push(field_names, rb_str_new2(field->name));
 		
@@ -584,11 +590,11 @@ static VALUE cCommand_execute_reader(int argc, VALUE *argv, VALUE self) {
 			VALUE field_ruby_type_name = RUBY_STRING(ruby_type_from_mysql_type(field));
 			rb_ary_push(field_types, field_ruby_type_name);
 		}
-  }
- 
+	}
+
 	rb_iv_set(reader, "@fields", field_names);
 	rb_iv_set(reader, "@field_types", field_types);
-	
+
 	if (rb_block_given_p()) {
 		rb_yield(reader);
 		rb_funcall(reader, rb_intern("close"), 0);
