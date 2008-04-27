@@ -47,12 +47,16 @@ namespace :ci do
 
   task :define_tasks do
     gem_name = ENV['gem_name']
-
-    file "#{gem_name}/Makefile" => FileList["#{DIR}/#{gem_name}/ext/**/extconf.rb", "#{DIR}/#{gem_name}/ext/**/*.c", "#{DIR}/#{gem_name}/ext/**/*.h"] do
-      system("cd #{gem_name} && ruby ext/extconf.rb")
-      system("cd #{gem_name} && make all") || system("cd #{gem_name} && nmake all")
+    
+    unless FileList["#{DIR}/#{gem_name}/ext/**/extconf.rb"].empty?
+      file "#{gem_name}/Makefile" => FileList["#{DIR}/#{gem_name}/ext/**/extconf.rb", "#{DIR}/#{gem_name}/ext/**/*.c", "#{DIR}/#{gem_name}/ext/**/*.h"] do
+        system("cd #{gem_name} && ruby ext/extconf.rb")
+        system("cd #{gem_name} && make all") || system("cd #{gem_name} && nmake all")
+      end
+      task "#{gem_name}:spec" => "#{gem_name}/Makefile"
     end
-        Spec::Rake::SpecTask.new("#{gem_name}:spec" => "#{gem_name}/Makefile") do |t|
+
+    Spec::Rake::SpecTask.new("#{gem_name}:spec") do |t|
       t.spec_opts = ["--format", "specdoc", "--format", "html:rspec_report.html", "--diff"]
       t.spec_files = Pathname.glob(ENV['FILES'] || DIR + "/#{gem_name}/spec/**/*_spec.rb")
       unless ENV['NO_RCOV']
