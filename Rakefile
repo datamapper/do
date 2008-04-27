@@ -13,29 +13,29 @@ DIR = Pathname(__FILE__).dirname.expand_path.to_s
 projects = %w[data_objects do_jdbc do_mysql do_postgres do_sqlite3]
 
 namespace :ci do
-  
+
   projects.each do |gem_name|
     task gem_name do
       ENV['gem_name'] = gem_name
-      
+
       Rake::Task["ci:run_all"].invoke
     end
   end
-  
+
   task :run_all => [:spec, :install, :doc, :publish]
-  
+
   task :spec => :define_tasks do
     Rake::Task["#{ENV['gem_name']}:spec"].invoke
   end
-  
+
   task :doc => :define_tasks do
     Rake::Task["#{ENV['gem_name']}:doc"].invoke
   end
-  
+
   task :install do
     sh %{cd #{ENV['gem_name']} && rake install}
   end
-  
+
   task :publish do
     out = ENV['CC_BUILD_ARTIFACTS'] || "out"
     mkdir_p out unless File.directory? out if out
@@ -44,10 +44,10 @@ namespace :ci do
     mv "coverage", "#{out}/coverage_report" if out && File.exists?("coverage")
     mv "rspec_report.html", "#{out}/rspec_report.html" if out
   end
-  
+
   task :define_tasks do
     gem_name = ENV['gem_name']
-    
+
     file "#{gem_name}/Makefile" => FileList["#{DIR}/#{gem_name}/ext/**/extconf.rb", "#{DIR}/#{gem_name}/ext/**/*.c", "#{DIR}/#{gem_name}/ext/**/*.h"] do
       system("cd #{gem_name} && ruby ext/extconf.rb")
       system("cd #{gem_name} && make all") || system("cd #{gem_name} && nmake all")
@@ -63,7 +63,7 @@ namespace :ci do
         t.rcov_opts << '--only-uncovered'
       end
     end
-    
+
     Rake::RDocTask.new("#{gem_name}:doc") do |t|
       t.rdoc_dir = 'rdoc'
       t.title    = gem_name

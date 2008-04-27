@@ -1,5 +1,3 @@
-require File.dirname(__FILE__) + '/../lib/data_objects'
-
 module DataObjects
   
   module Mock
