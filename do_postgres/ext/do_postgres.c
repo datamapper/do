@@ -195,13 +195,13 @@ static VALUE typecast(char *value, char *type) {
 
 static VALUE cConnection_initialize(VALUE self, VALUE uri) {
 	VALUE r_host, r_user, r_password, r_path, r_port;
-	char *host = "localhost", *user = NULL, *password = NULL, *path;
+	char *host = NULL, *user = NULL, *password = NULL, *path;
 	char *database = "", *port = "5432";
 
 	PGconn *db;
 
 	r_host = rb_funcall(uri, rb_intern("host"), 0);
-	if ( Qnil != r_host ) {
+	if ( Qnil != r_host && r_host != "localhost" ) {
 		host = StringValuePtr(r_host);
 	}
 
