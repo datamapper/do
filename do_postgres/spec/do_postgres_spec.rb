@@ -5,6 +5,14 @@ require File.expand_path(File.join(File.dirname(__FILE__), 'spec_helper'))
 # Create a postgres db named do_test that accepts connections 
 # from localhost from your current user (without password) to enable this spec.
 #
+# You also need to allow passwordless access from localhost-
+# locate the following line in your pg_hba.conf file:
+#
+#  # IPv4 local connections:
+#  host    all         all         127.0.0.1/32          md5
+#
+# and replace 'md5' with 'trust' for these specs to work
+#
 #
 
 def ensure_users_table_and_return_connection
