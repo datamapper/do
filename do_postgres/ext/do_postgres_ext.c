@@ -201,7 +201,7 @@ static VALUE cConnection_initialize(VALUE self, VALUE uri) {
 	PGconn *db;
 
 	r_host = rb_funcall(uri, rb_intern("host"), 0);
-	if ( Qnil != r_host && r_host != "localhost" ) {
+	if ( Qnil != r_host && "localhost" != StringValuePtr(r_host) ) {
 		host = StringValuePtr(r_host);
 	}
 
