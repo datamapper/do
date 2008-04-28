@@ -12,6 +12,14 @@ DIR = Pathname(__FILE__).dirname.expand_path.to_s
 
 projects = %w[data_objects do_jdbc do_mysql do_postgres do_sqlite3]
 
+namespace :do do
+desc 'Run specifications'
+  Spec::Rake::SpecTask.new(:spec) do |t|
+    t.spec_opts << '--options' << 'spec/spec.opts' if File.exists?('spec/spec.opts')
+    t.spec_files = Pathname.glob(Pathname.new(__FILE__).parent.join("**").join("spec").join("**").join("*_spec.rb").to_s)
+  end
+end
+
 namespace :ci do
 
   projects.each do |gem_name|
