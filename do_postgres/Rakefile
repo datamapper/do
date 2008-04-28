@@ -8,7 +8,7 @@ require Pathname(__FILE__).dirname.expand_path.parent + 'ext_helper'
 # House-keeping
 CLEAN.include '**/*.o', '**/*.so', '**/*.bundle', '**/*.a',
   '**/*.log', '{ext,lib}/*.{bundle,so,obj,pdb,lib,def,exp}',
-  'ext/Makefile', 'lib'
+  'ext/Makefile'
 
 spec = Gem::Specification.new do |s|
   s.name              = 'do_postgres'
@@ -22,10 +22,10 @@ spec = Gem::Specification.new do |s|
   s.email             = 'wycats@gmail.com'
   s.homepage          = 'http://rubyforge.org/projects/dorb'
   s.rubyforge_project = 'dorb'
-  s.add_dependency('data_objects', '>= 0.9.0')
+  s.add_dependency('data_objects', "= #{s.version}")
   s.require_path      = 'lib'
   s.extensions        = %w[ ext/extconf.rb ]
-  s.files             = FileList['lib/**/*.rb', 'ext/*.rb', 'ext/*.c', 'ext/*.h', 'spec/**/*.rb', 'Rakefile', *s.extra_rdoc_files ]
+  s.files             = FileList[ '{ext,lib,spec}/**/*.{c,h,rb}', 'Rakefile', *s.extra_rdoc_files ]
 end
 
 Rake::GemPackageTask.new(spec) do |pkg|
