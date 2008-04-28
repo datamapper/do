@@ -436,7 +436,7 @@ static VALUE cReader_fields(VALUE self) {
 	return rb_iv_get(self, "@fields");
 }
 
-void Init_do_postgres() {
+void Init_do_postgres_ext() {
 	rb_require("rubygems");
 	rb_require("date");
 	

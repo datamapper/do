@@ -14,7 +14,7 @@
 require 'mkmf'
 
 # Give it a name
-extension_name = 'do_sqlite3'
+extension_name = 'do_sqlite3_ext'
 
 dir_config("sqlite3")
 

@@ -56,4 +56,4 @@ unless RUBY_PLATFORM =~ /mswin|mingw/
 end
 
 $CFLAGS << ' -Wall ' unless RUBY_PLATFORM =~ /mswin/
-create_makefile('do_mysql')
+create_makefile('do_mysql_ext')

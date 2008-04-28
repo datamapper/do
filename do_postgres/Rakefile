@@ -25,7 +25,7 @@ spec = Gem::Specification.new do |s|
   s.add_dependency('data_objects', '>= 0.9.0')
   s.require_path      = 'lib'
   s.extensions        = %w[ ext/extconf.rb ]
-  s.files             = FileList[ 'ext/*.rb', 'ext/*.c', 'ext/*.h', 'spec/**/*.rb', 'Rakefile', *s.extra_rdoc_files ]
+  s.files             = FileList['lib/**/*.rb', 'ext/*.rb', 'ext/*.c', 'ext/*.h', 'spec/**/*.rb', 'Rakefile', *s.extra_rdoc_files ]
 end
 
 Rake::GemPackageTask.new(spec) do |pkg|
@@ -33,7 +33,7 @@ Rake::GemPackageTask.new(spec) do |pkg|
 end
 
 # Use of ext_helper to properly setup compile tasks and native gem generation
-setup_extension spec.name, spec
+setup_extension "#{spec.name}_ext", spec
 
 task :install => [ :package ] do
   sh %{#{'sudo' unless ENV['SUDOLESS']} gem install pkg/#{spec.name}-#{spec.version}}, :verbose => false

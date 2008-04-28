@@ -361,7 +361,7 @@ static VALUE cReader_fields(VALUE self) {
 	return rb_iv_get(self, "@fields");
 }
 
-void Init_do_sqlite3() {
+void Init_do_sqlite3_ext() {
 	
 	rb_require("rubygems");
 	rb_require("date");

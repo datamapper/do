@@ -65,10 +65,6 @@ module DataObjects
       raise NotImplementedError.new
     end
 
-    def begin_transaction
-      raise NotImplementedError.new
-    end
-    
     def real_close
       raise NotImplementedError.new
     end
