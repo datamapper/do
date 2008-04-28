@@ -494,7 +494,6 @@ static VALUE cCommand_quote_string(VALUE self, VALUE string) {
 	// Wrap the escaped string in single-quotes, this is DO's convention
 	sprintf(with_quotes, "'%s'", escaped);
 
-	// free(escaped);
 	return RUBY_STRING(with_quotes);
 }
 

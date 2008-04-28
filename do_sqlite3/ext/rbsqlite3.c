@@ -204,6 +204,17 @@ static VALUE cCommand_set_types(VALUE self, VALUE array) {
 static VALUE cCommand_quote_boolean(VALUE self, VALUE value) {
 	return rb_str_new2(value == Qtrue ? "'t'" : "'f'");
 }
+
+static VALUE cCommand_quote_string(VALUE self, VALUE string) {
+	const char *source = StringValuePtr(string);
+	char *escaped_with_quotes;
+	
+	// Wrap the escaped string in single-quotes, this is DO's convention
+	escaped_with_quotes = sqlite3_mprintf("%Q", source);
+
+	return rb_str_new2(escaped_with_quotes);
+}
+
 	
 static VALUE cCommand_execute_non_query(int argc, VALUE *argv, VALUE self) {
 	sqlite3 *db;
@@ -397,6 +408,8 @@ void Init_do_sqlite3_ext() {
 	rb_define_method(cCommand, "execute_non_query", cCommand_execute_non_query, -1);
 	rb_define_method(cCommand, "execute_reader", cCommand_execute_reader, -1);
 	rb_define_method(cCommand, "quote_boolean", cCommand_quote_boolean, 1);
+	rb_define_method(cCommand, "quote_string", cCommand_quote_string, 1);
+
 	cResult = SQLITE3_CLASS("Result", cDO_Result);
 	
 	cReader = SQLITE3_CLASS("Reader", cDO_Reader);

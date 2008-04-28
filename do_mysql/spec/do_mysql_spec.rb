@@ -136,13 +136,6 @@ describe DataObjects::Mysql::Connection do
 
   describe "executing a query" do
     
-    it "should escape strings properly" do
-      command = @connection.create_command("SELECT * FROM widgets WHERE name = ?")
-      command.quote_string("Willy O'Hare & Johnny O'Toole").should == "'Willy O\\'Hare & Johnny O\\'Toole'".dup
-      command.quote_string("The\\Backslasher\\Rises\\Again").should == "'The\\\\Backslasher\\\\Rises\\\\Again'"
-      command.quote_string("Scott \"The Rage\" Bauer").should == "'Scott \\\"The Rage\\\" Bauer'"
-    end
-    
     it "should allow backslash string-escaping" do
       reader = @connection.create_command("SELECT * FROM widgets WHERE name = ?").execute_reader("Willy O\'Hare")
     end

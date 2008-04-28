@@ -275,6 +275,32 @@ static VALUE build_query_from_args(VALUE klass, int count, VALUE *args[]) {
 	return query;
 }
 
+static VALUE cCommand_quote_string(VALUE self, VALUE string) {
+	PGconn *db = DATA_PTR(rb_iv_get(rb_iv_get(self, "@connection"), "@connection"));
+
+	size_t length;
+	const char *source = StringValuePtr(string);
+	char *escaped;
+	char *with_quotes;
+	int quoted_length = 0;
+	
+	length = strlen(source);
+
+	// Allocate space for the escaped version of 'string'
+	// http://www.postgresql.org/docs/8.3/static/libpq-exec.html#LIBPQ-EXEC-ESCAPE-STRING
+	escaped = (char *)calloc(strlen(source) * 2 + 1, sizeof(char));
+
+	// Escape 'source' using the current charset in use on the conection 'db'
+	quoted_length = PQescapeStringConn(db, escaped, source, length, NULL);
+
+	// Allocate space for the final version of the quoted string.
+	with_quotes = (char *)calloc(quoted_length + 3, sizeof(char));
+	// Wrap the escaped string in single-quotes, this is DO's convention
+	sprintf(with_quotes, "'%s'", escaped);
+
+	return rb_str_new2(with_quotes);
+}
+
 static VALUE cCommand_execute_non_query(int argc, VALUE *argv[], VALUE self) {
 	PGconn *db = DATA_PTR(rb_iv_get(rb_iv_get(self, "@connection"), "@connection"));
 	PGresult *response;
@@ -470,6 +496,7 @@ void Init_do_postgres_ext() {
 	rb_define_method(cCommand, "set_types", cCommand_set_types, 1);
 	rb_define_method(cCommand, "execute_non_query", cCommand_execute_non_query, -1);
 	rb_define_method(cCommand, "execute_reader", cCommand_execute_reader, -1);
+	rb_define_method(cCommand, "quote_string", cCommand_quote_string, 1);
 	
 	cResult = POSTGRES_CLASS("Result", cDO_Result);
 	
