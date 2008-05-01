@@ -26,7 +26,7 @@ describe "DataObjects::Sqlite3::Result" do
   it "should return the affected rows and insert_id" do
     command = @connection.create_command("DROP TABLE users")
     command.execute_non_query rescue nil
-    command = @connection.create_command("CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT, age INTEGER)")
+    command = @connection.create_command("CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT, type TEXT, age INTEGER)")
     result = command.execute_non_query
     command = @connection.create_command("INSERT INTO users (name) VALUES ('test')")    
     result = command.execute_non_query
