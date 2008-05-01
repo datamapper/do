@@ -208,7 +208,7 @@ static VALUE cast_mysql_value_to_ruby_value(const char* data, char* ruby_class_n
 	return ruby_value;
 }
 
-static void log_debug(VALUE string) {
+static void data_objects_debug(VALUE string) {
 	VALUE logger = rb_funcall(mDOMysql, ID_LOGGER, 0);
 	int log_level = NUM2INT(rb_funcall(logger, ID_LEVEL, 0));
 
@@ -533,7 +533,7 @@ static VALUE cCommand_execute_non_query(int argc, VALUE *argv, VALUE self) {
 	MYSQL *db = DATA_PTR(rb_iv_get(rb_iv_get(self, "@connection"), "@connection"));
 	query = build_query_from_args(self, argc, argv);
 
-	log_debug(query);
+	// data_objects_debug(query);
 
 	query_result = mysql_query(db, StringValuePtr(query));
 	CHECK_AND_RAISE(query_result);
@@ -564,7 +564,7 @@ static VALUE cCommand_execute_reader(int argc, VALUE *argv, VALUE self) {
 	MYSQL_FIELD *field;
 
 	query = build_query_from_args(self, argc, argv);
-	log_debug(query);
+	// data_objects_debug(query);
 
 	query_result = mysql_query(db, StringValuePtr(query));
 	CHECK_AND_RAISE(query_result);
