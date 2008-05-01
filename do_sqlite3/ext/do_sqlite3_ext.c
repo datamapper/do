@@ -95,19 +95,18 @@ static int jd_from_date(int year, int month, int day) {
 	return floor(365.25 * (year + 4716)) + floor(30.6001 * (month + 1)) + day + b - 1524;
 }
 
-static void log_debug(VALUE string) {
+static void data_objects_debug(VALUE string) {
 	VALUE logger = rb_funcall(mSqlite3, ID_LOGGER, 0);
 	int log_level = NUM2INT(rb_funcall(logger, ID_LEVEL, 0));
 
-	// Make 
 	if (0 == log_level) {
-		char *tag = "[Sqlite3]";
-		char *raw_message = StringValuePtr(string);
-		char *log_message = (char*)calloc(strlen(raw_message) + strlen(tag), sizeof(char));
-		sprintf(log_message, "%s %s", tag, raw_message);
-		rb_funcall(logger, ID_DEBUG, 1, RUBY_STRING(log_message));
+		// char *tag = "[Sqlite3]";
+		// char *raw_message = StringValuePtr(string);
+		// char *log_message = (char*)calloc(strlen(raw_message) + strlen(tag), sizeof(char));
+		// sprintf(log_message, "%s %s", tag, raw_message);
+		rb_funcall(logger, ID_DEBUG, 1, string);
 
-		free(log_message);
+		// free(log_message);
 	}
 }
 
@@ -260,7 +259,7 @@ static VALUE cCommand_execute_non_query(int argc, VALUE *argv, VALUE self) {
 	VALUE query;
 	
 	query = build_query_from_args(self, argc, argv);
-	// log_debug(query);
+	data_objects_debug(query);
 	
 	conn_obj = rb_iv_get(self, "@connection");
 	Data_Get_Struct(rb_iv_get(conn_obj, "@connection"), sqlite3, db);
@@ -292,7 +291,7 @@ static VALUE cCommand_execute_reader(int argc, VALUE *argv, VALUE self) {
 	Data_Get_Struct(rb_iv_get(conn_obj, "@connection"), sqlite3, db);
 	
 	query = build_query_from_args(self, argc, argv);
-	// log_debug(query);
+	data_objects_debug(query);
 	
 	status = sqlite3_prepare_v2(db, StringValuePtr(query), -1, &sqlite3_reader, 0);
 	

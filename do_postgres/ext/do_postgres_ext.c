@@ -130,19 +130,19 @@ static VALUE parse_time(char *date) {
 	return rb_funcall(rb_cTime, rb_intern("at"), 1, INT2NUM(seconds));
 }
 
-static void log_debug(VALUE string) {
+static void data_objects_debug(VALUE string) {
 	VALUE logger = rb_funcall(mPostgres, ID_LOGGER, 0);
 	int log_level = NUM2INT(rb_funcall(logger, ID_LEVEL, 0));
 
-	// Make 
 	if (0 == log_level) {
-		char *tag = "[Postgres]";
-		char *raw_message = StringValuePtr(string);
-		char *log_message = (char*)calloc(strlen(raw_message) + strlen(tag), sizeof(char));
-		sprintf(log_message, "%s %s", tag, raw_message);
-		rb_funcall(logger, ID_DEBUG, 1, RUBY_STRING(log_message));
+		// char *tag = "[Postgres]";
+		// char *raw_message = StringValuePtr(string);
+		// char *log_message = (char*)calloc(strlen(raw_message) + strlen(tag), sizeof(char));
+		// sprintf(log_message, "%s %s", tag, raw_message);
+		// rb_funcall(logger, ID_DEBUG, 1, RUBY_STRING(log_message));
+		rb_funcall(logger, ID_DEBUG, 1, string);
 
-		free(log_message);
+		// free(log_message);
 	}
 }
 
@@ -330,7 +330,7 @@ static VALUE cCommand_execute_non_query(int argc, VALUE *argv[], VALUE self) {
 	int insert_id;
 	
 	VALUE query = build_query_from_args(self, argc, argv);
-	// log_debug(query);
+	data_objects_debug(query);
 	
 	response = PQexec(db, StringValuePtr(query));
 	
@@ -367,7 +367,7 @@ static VALUE cCommand_execute_reader(int argc, VALUE *argv[], VALUE self) {
 	PGresult *response;
 
 	query = build_query_from_args(self, argc, argv);
-	// log_debug(query);
+	data_objects_debug(query);
 
 	response = PQexec(db, StringValuePtr(query));
 

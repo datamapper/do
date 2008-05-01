@@ -208,17 +208,16 @@ static VALUE cast_mysql_value_to_ruby_value(const char* data, char* ruby_class_n
 	return ruby_value;
 }
 
-static void log_debug(VALUE string) {
+static void data_objects_debug(VALUE string) {
 	VALUE logger = rb_funcall(mDOMysql, ID_LOGGER, 0);
 	int log_level = NUM2INT(rb_funcall(logger, ID_LEVEL, 0));
 
-	// Make 
 	if (0 == log_level) {
-		char *tag = "[Mysql]";
-		char *raw_message = StringValuePtr(string);
-		char *log_message = (char*)calloc(strlen(raw_message) + strlen(tag), sizeof(char));
-		sprintf(log_message, "%s %s", tag, raw_message);
-		rb_funcall(logger, ID_DEBUG, 1, RUBY_STRING(log_message));
+		// char *tag = "[Mysql]";
+		// char *raw_message = StringValuePtr(string);
+		// char *log_message = (char*)calloc(strlen(raw_message) + strlen(tag), sizeof(char));
+		// sprintf(log_message, "%s %s", tag, raw_message);
+		rb_funcall(logger, ID_DEBUG, 1, string);
 
 		// free(log_message);
 	}
@@ -319,7 +318,7 @@ static char * get_uri_option(VALUE querystring, char * key) {
 static VALUE cConnection_initialize(VALUE self, VALUE uri) {
 	VALUE r_host, r_user, r_password, r_path, r_options, r_port;
 
-	char *host = "localhost", *user = NULL, *password = NULL, *path;
+	char *host = "localhost", *user = "root", *password = NULL, *path;
 	char *database = "", *socket = NULL;
 	char *charset = NULL;
 
@@ -533,7 +532,7 @@ static VALUE cCommand_execute_non_query(int argc, VALUE *argv, VALUE self) {
 	MYSQL *db = DATA_PTR(rb_iv_get(rb_iv_get(self, "@connection"), "@connection"));
 	query = build_query_from_args(self, argc, argv);
 
-	// log_debug(query);
+	data_objects_debug(query);
 
 	query_result = mysql_query(db, StringValuePtr(query));
 	CHECK_AND_RAISE(query_result);
@@ -564,7 +563,7 @@ static VALUE cCommand_execute_reader(int argc, VALUE *argv, VALUE self) {
 	MYSQL_FIELD *field;
 
 	query = build_query_from_args(self, argc, argv);
-	// log_debug(query);
+	data_objects_debug(query);
 
 	query_result = mysql_query(db, StringValuePtr(query));
 	CHECK_AND_RAISE(query_result);
