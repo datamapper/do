@@ -10,6 +10,7 @@
 #define ID_NEW rb_intern("new")
 #define ID_ESCAPE rb_intern("escape_sql")
 
+#define RUBY_STRING(char_ptr) rb_str_new2(char_ptr)
 #define CONST_GET(scope, constant) (rb_funcall(scope, ID_CONST_GET, 1, rb_str_new2(constant)))
 #define POSTGRES_CLASS(klass, parent) (rb_define_class_under(mPostgres, klass, parent))
 
@@ -21,6 +22,9 @@
 
 // To store rb_intern values
 static ID ID_NEW_DATE;
+static ID ID_LOGGER;
+static ID ID_DEBUG;
+static ID ID_LEVEL;
 
 static VALUE mDO;
 static VALUE cDO_Quoting;
@@ -124,6 +128,22 @@ static VALUE parse_time(char *date) {
 	seconds += 6 * 3600; // Epoch begins at 6pm, so this gets our times fixed up
 	
 	return rb_funcall(rb_cTime, rb_intern("at"), 1, INT2NUM(seconds));
+}
+
+static void log_debug(VALUE string) {
+	VALUE logger = rb_funcall(mPostgres, ID_LOGGER, 0);
+	int log_level = NUM2INT(rb_funcall(logger, ID_LEVEL, 0));
+
+	// Make 
+	if (0 == log_level) {
+		char *tag = "[Postgres]";
+		char *raw_message = StringValuePtr(string);
+		char *log_message = (char*)calloc(strlen(raw_message) + strlen(tag), sizeof(char));
+		sprintf(log_message, "%s %s", tag, raw_message);
+		rb_funcall(logger, ID_DEBUG, 1, RUBY_STRING(log_message));
+
+		free(log_message);
+	}
 }
 
 /* ===== Typecasting Functions ===== */
@@ -310,6 +330,7 @@ static VALUE cCommand_execute_non_query(int argc, VALUE *argv[], VALUE self) {
 	int insert_id;
 	
 	VALUE query = build_query_from_args(self, argc, argv);
+	log_debug(query);
 	
 	response = PQexec(db, StringValuePtr(query));
 	
@@ -346,6 +367,7 @@ static VALUE cCommand_execute_reader(int argc, VALUE *argv[], VALUE self) {
 	PGresult *response;
 
 	query = build_query_from_args(self, argc, argv);
+	log_debug(query);
 
 	response = PQexec(db, StringValuePtr(query));
 
@@ -475,6 +497,9 @@ void Init_do_postgres_ext() {
 	rb_funcall(rb_mKernel, rb_intern("require"), 1, rb_str_new2("data_objects"));
 	
 	ID_NEW_DATE = RUBY_VERSION_CODE < 186 ? rb_intern("new0") : rb_intern("new!");
+	ID_LOGGER = rb_intern("logger");
+	ID_DEBUG = rb_intern("debug");
+	ID_LEVEL = rb_intern("level");
 
 	// Get references to the DataObjects module and its classes
 	mDO = CONST_GET(rb_mKernel, "DataObjects");

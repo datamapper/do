@@ -19,6 +19,8 @@ spec = Gem::Specification.new do |s|
   s.files            = FileList[ 'lib/**', 'spec/**/*.rb', 'Rakefile', *s.extra_rdoc_files ]
 end
 
+spec.add_dependency 'addressable', ">= 1.0.3"
+
 Rake::GemPackageTask.new(spec) do |pkg|
   pkg.gem_spec = spec
 end

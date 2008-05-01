@@ -46,18 +46,18 @@ describe DataObjects::Connection do
       # relying on the fact that mock connection sets @uri
       uri = c.instance_variable_get("@uri")
 
-      uri.should be_kind_of(URI)
+      uri.should be_kind_of(Addressable::URI)
       uri.scheme.should == 'mock'
       uri.host.should == 'localhost'
       uri.path.should == '/database'
     end
 
-    it "should accept a conneciton uri as a URI" do
-      c = DataObjects::Connection.new(URI.parse('mock://localhost/database'))
+    it "should accept a conneciton uri as a Addressable::URI" do
+      c = DataObjects::Connection.new(Addressable::URI::parse('mock://localhost/database'))
       # relying on the fact that mock connection sets @uri
       uri = c.instance_variable_get("@uri")
 
-      uri.should be_kind_of(URI)
+      uri.should be_kind_of(Addressable::URI)
       uri.to_s.should == 'mock://localhost/database'
     end
 
@@ -67,21 +67,21 @@ describe DataObjects::Connection do
     end
 
     it "should aquire a connection" do
-      uri = URI.parse('mock://localhost/database')
+      uri = Addressable::URI.parse('mock://localhost/database')
       DataObjects::Mock::Connection.should_receive(:acquire).with(uri)
 
       DataObjects::Connection.new(uri)
     end
 
     it "should return the Connection specified by the scheme" do
-      c = DataObjects::Connection.new(URI.parse('mock://localhost/database'))
+      c = DataObjects::Connection.new(Addressable::URI.parse('mock://localhost/database'))
       c.should be_kind_of(DataObjects::Mock::Connection)
     end
   end
 
   describe 'connection pooling' do
     before do
-      @uri = URI.parse('mock://localhost/database')
+      @uri = Addressable::URI.parse('mock://localhost/database')
 
       clear_connections!
 

@@ -1,3 +1,4 @@
+require File.expand_path(File.join(File.dirname(__FILE__), 'logger'))
 require File.expand_path(File.join(File.dirname(__FILE__), 'connection'))
 require File.expand_path(File.join(File.dirname(__FILE__), 'transaction'))
 require File.expand_path(File.join(File.dirname(__FILE__), 'command'))
