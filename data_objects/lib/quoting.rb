@@ -66,7 +66,7 @@ module DataObjects
     end
     
     def quote_class(value)
-      "'#{value.name}'"
+      quote_string(value.name)
     end
     
     def quote_time(value)
