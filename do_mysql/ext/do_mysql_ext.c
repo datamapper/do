@@ -220,7 +220,7 @@ static void data_objects_debug(VALUE string) {
 		sprintf(log_message, "%s %s", tag, raw_message);
 		rb_funcall(logger, ID_DEBUG, 1, RUBY_STRING(log_message));
 
-		free(log_message);
+		// free(log_message);
 	}
 }
 
