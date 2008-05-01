@@ -33,6 +33,9 @@ static ID ID_CONST_GET;
 static ID ID_UTC;
 static ID ID_ESCAPE_SQL;
 static ID ID_STRFTIME;
+static ID ID_LOGGER;
+static ID ID_DEBUG;
+static ID ID_LEVEL;
 
 // References to DataObjects base classes
 static VALUE mDO;
@@ -47,7 +50,6 @@ static VALUE rb_cDate;
 static VALUE rb_cDateTime;
 static VALUE rb_cRational;
 static VALUE rb_cBigDecimal;
-static VALUE rb_cURI;
 static VALUE rb_cCGI;
 
 // Classes that we'll build in Init
@@ -206,6 +208,22 @@ static VALUE cast_mysql_value_to_ruby_value(const char* data, char* ruby_class_n
 	return ruby_value;
 }
 
+static void log_debug(VALUE string) {
+	VALUE logger = rb_funcall(mDOMysql, ID_LOGGER, 0);
+	int log_level = NUM2INT(rb_funcall(logger, ID_LEVEL, 0));
+
+	// Make 
+	if (0 == log_level) {
+		char *tag = "[Mysql]";
+		char *raw_message = StringValuePtr(string);
+		char *log_message = (char*)calloc(strlen(raw_message) + strlen(tag), sizeof(char));
+		sprintf(log_message, "%s %s", tag, raw_message);
+		rb_funcall(logger, ID_DEBUG, 1, RUBY_STRING(log_message));
+
+		free(log_message);
+	}
+}
+
 static void raise_mysql_error(MYSQL *db, int mysql_error_code) {
 	char *error_message = (char *)mysql_error(db);
 	// char *extra = "";
@@ -344,11 +362,6 @@ static VALUE cConnection_initialize(VALUE self, VALUE uri) {
 
 	// Check to see if we're on the db machine.  If so, try to use the socket
 	if (0 == strcasecmp(host, "localhost")) {
-		// TODO: Read the socket path from my.conf [client]
-		// char *options = NULL;
-		// options = mysql_options(db, MYSQL_READ_DEFAULT_GROUP, "client");
-		// parse the socket=<path> line here.
-
 		socket = get_uri_option(r_options, "socket");
 		if (NULL != socket) {
 			rb_iv_set(self, "@using_socket", Qtrue);
@@ -497,26 +510,30 @@ static VALUE cCommand_quote_string(VALUE self, VALUE string) {
 	return RUBY_STRING(with_quotes);
 }
 
+static VALUE build_query_from_args(VALUE klass, int count, VALUE *args) {
+	VALUE query = rb_iv_get(klass, "@text");
+	if ( count > 0 ) {
+		int i;
+		VALUE array = rb_ary_new();
+		for ( i = 0; i < count; i++) {
+			rb_ary_push(array, (VALUE)args[i]);
+		}
+		query = rb_funcall(klass, ID_ESCAPE_SQL, 1, array);
+	}
+	return query;
+}
+
 static VALUE cCommand_execute_non_query(int argc, VALUE *argv, VALUE self) {
-	VALUE query, array;
+	VALUE query;
 
 	MYSQL_RES *response = 0;
 	int query_result = 0;
-	int i;
 
 	my_ulonglong affected_rows;
-
 	MYSQL *db = DATA_PTR(rb_iv_get(rb_iv_get(self, "@connection"), "@connection"));
+	query = build_query_from_args(self, argc, argv);
 
-	query = rb_iv_get(self, "@text");
-
-	if ( argc > 0 ) {
-		array = rb_ary_new();
-		for ( i = 0; i < argc; i++ ) {
-			rb_ary_push(array, argv[i]);
-		}
-		query = rb_funcall(self, ID_ESCAPE_SQL, 1, array);
-	}
+	log_debug(query);
 
 	query_result = mysql_query(db, StringValuePtr(query));
 	CHECK_AND_RAISE(query_result);
@@ -534,7 +551,6 @@ static VALUE cCommand_execute_non_query(int argc, VALUE *argv, VALUE self) {
 static VALUE cCommand_execute_reader(int argc, VALUE *argv, VALUE self) {
 	VALUE query, reader;
 	VALUE field_names, field_types;
-	VALUE array;
 
 	int query_result = 0;
 	int field_count;
@@ -547,15 +563,8 @@ static VALUE cCommand_execute_reader(int argc, VALUE *argv, VALUE self) {
 	MYSQL_RES *response = 0;
 	MYSQL_FIELD *field;
 
-	query = rb_iv_get(self, "@text");
-
-	if ( argc > 0 ) {
-		array = rb_ary_new();
-		for (i = 0; i < argc; i++ ) {
-			rb_ary_push(array, argv[i]);
-		}
-		query = rb_funcall(self, ID_ESCAPE_SQL, 1, array);
-	}
+	query = build_query_from_args(self, argc, argv);
+	log_debug(query);
 
 	query_result = mysql_query(db, StringValuePtr(query));
 	CHECK_AND_RAISE(query_result);
@@ -683,7 +692,7 @@ void Init_do_mysql_ext() {
   rb_require("cgi");
 
   rb_funcall(rb_mKernel, rb_intern("require"), 1, rb_str_new2("data_objects"));
-	
+
 	ID_TO_I = rb_intern("to_i");
 	ID_TO_F = rb_intern("to_f");
 	ID_TO_S = rb_intern("to_s");
@@ -696,13 +705,15 @@ void Init_do_mysql_ext() {
 	ID_UTC = rb_intern("utc");
 	ID_ESCAPE_SQL = rb_intern("escape_sql");
 	ID_STRFTIME = rb_intern("strftime");
+	ID_LOGGER = rb_intern("logger");
+	ID_DEBUG = rb_intern("debug");
+	ID_LEVEL = rb_intern("level");
 	
 	// Store references to a few helpful clases that aren't in Ruby Core
 	rb_cDate = RUBY_CLASS("Date");
 	rb_cDateTime = RUBY_CLASS("DateTime");
 	rb_cRational = RUBY_CLASS("Rational");
 	rb_cBigDecimal = RUBY_CLASS("BigDecimal");
-	rb_cURI = RUBY_CLASS("URI");
 	rb_cCGI = RUBY_CLASS("CGI");
 	
 	// Get references to the DataObjects module and its classes

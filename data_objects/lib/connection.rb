@@ -1,4 +1,4 @@
-require 'uri'
+require 'addressable/uri'
 require 'set'
 
 begin
@@ -10,15 +10,28 @@ require 'logger'
 
 module DataObjects
   class Connection
-    
+
     def self.inherited(base)
       base.instance_variable_set('@connection_lock', Mutex.new)
       base.instance_variable_set('@available_connections', Hash.new { |h,k| h[k] = [] })
       base.instance_variable_set('@reserved_connections', Set.new)
+      
+      driver_module = DataObjects::const_get(base.name.split('::')[-2])
+      driver_module.class_eval <<-EOS
+        def self.logger
+          @logger
+        end
+
+        def self.logger=(logger)
+          @logger = logger
+        end
+      EOS
+      
+      driver_module.logger = DataObjects::DeadLogger
     end
     
     def self.new(uri)
-      uri = uri.is_a?(String) ? URI::parse(uri) : uri
+      uri = uri.is_a?(String) ? Addressable::URI::parse(uri) : uri
       DataObjects.const_get(uri.scheme.capitalize)::Connection.acquire(uri)
     end
     

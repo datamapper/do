@@ -8,6 +8,7 @@
 #define ID_NEW rb_intern("new")
 #define ID_ESCAPE rb_intern("escape_sql")
 
+#define RUBY_STRING(char_ptr) rb_str_new2(char_ptr)
 #define CONST_GET(scope, constant) (rb_funcall(scope, ID_CONST_GET, 1, rb_str_new2(constant)))
 #define SQLITE3_CLASS(klass, parent) (rb_define_class_under(mSqlite3, klass, parent))
 
@@ -18,6 +19,11 @@
 #else
 #define do_int64 unsigned long long int
 #endif
+
+// To store rb_intern values
+static ID ID_LOGGER;
+static ID ID_DEBUG;
+static ID ID_LEVEL;
 
 static VALUE mDO;
 static VALUE cDO_Quoting;
@@ -87,6 +93,22 @@ static int jd_from_date(int year, int month, int day) {
 	a = year / 100;
 	b = 2 - a + (a / 4);
 	return floor(365.25 * (year + 4716)) + floor(30.6001 * (month + 1)) + day + b - 1524;
+}
+
+static void log_debug(VALUE string) {
+	VALUE logger = rb_funcall(mSqlite3, ID_LOGGER, 0);
+	int log_level = NUM2INT(rb_funcall(logger, ID_LEVEL, 0));
+
+	// Make 
+	if (0 == log_level) {
+		char *tag = "[Sqlite3]";
+		char *raw_message = StringValuePtr(string);
+		char *log_message = (char*)calloc(strlen(raw_message) + strlen(tag), sizeof(char));
+		sprintf(log_message, "%s %s", tag, raw_message);
+		rb_funcall(logger, ID_DEBUG, 1, RUBY_STRING(log_message));
+
+		free(log_message);
+	}
 }
 
 static VALUE ruby_typecast(sqlite3_value *value, char *type, int original_type) {
@@ -215,6 +237,18 @@ static VALUE cCommand_quote_string(VALUE self, VALUE string) {
 	return rb_str_new2(escaped_with_quotes);
 }
 
+static VALUE build_query_from_args(VALUE klass, int count, VALUE *args) {
+	VALUE query = rb_iv_get(klass, "@text");
+	if ( count > 0 ) {
+		int i;
+		VALUE array = rb_ary_new();
+		for ( i = 0; i < count; i++) {
+			rb_ary_push(array, (VALUE)args[i]);
+		}
+		query = rb_funcall(klass, ID_ESCAPE, 1, array);
+	}
+	return query;
+}
 	
 static VALUE cCommand_execute_non_query(int argc, VALUE *argv, VALUE self) {
 	sqlite3 *db;
@@ -223,17 +257,10 @@ static VALUE cCommand_execute_non_query(int argc, VALUE *argv, VALUE self) {
 	int affected_rows;
 	int insert_id;
 	VALUE conn_obj;
+	VALUE query;
 	
-	VALUE query = rb_iv_get(self, "@text");
-	
-	if ( argc > 0 ) {
-		int i;
-		VALUE array = rb_ary_new();
-		for ( i = 0; i < argc; i++ ) {
-			rb_ary_push(array, argv[i]);
-		}
-		query = rb_funcall(self, ID_ESCAPE, 1, array);
-	}
+	query = build_query_from_args(self, argc, argv);
+	log_debug(query);
 	
 	conn_obj = rb_iv_get(self, "@connection");
 	Data_Get_Struct(rb_iv_get(conn_obj, "@connection"), sqlite3, db);
@@ -264,16 +291,8 @@ static VALUE cCommand_execute_reader(int argc, VALUE *argv, VALUE self) {
 	conn_obj = rb_iv_get(self, "@connection");
 	Data_Get_Struct(rb_iv_get(conn_obj, "@connection"), sqlite3, db);
 	
-	query = rb_iv_get(self, "@text");
-	
-	if ( argc > 0 ) {
-		int i;
-		VALUE array = rb_ary_new();
-		for ( i = 0; i < argc; i++ ) {
-			rb_ary_push(array, argv[i]);
-		}
-		query = rb_funcall(self, ID_ESCAPE, 1, array);
-	}
+	query = build_query_from_args(self, argc, argv);
+	log_debug(query);
 	
 	status = sqlite3_prepare_v2(db, StringValuePtr(query), -1, &sqlite3_reader, 0);
 	
@@ -384,7 +403,11 @@ void Init_do_sqlite3_ext() {
 	rb_cRational = CONST_GET(rb_mKernel, "Rational");
 	
 	rb_funcall(rb_mKernel, rb_intern("require"), 1, rb_str_new2("data_objects"));
-		 
+
+	ID_LOGGER = rb_intern("logger");
+	ID_DEBUG = rb_intern("debug");
+	ID_LEVEL = rb_intern("level");
+
 	// Get references to the DataObjects module and its classes
 	mDO = CONST_GET(rb_mKernel, "DataObjects");
 	cDO_Quoting = CONST_GET(mDO, "Quoting");
