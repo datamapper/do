@@ -260,7 +260,7 @@ static VALUE cCommand_execute_non_query(int argc, VALUE *argv, VALUE self) {
 	VALUE query;
 	
 	query = build_query_from_args(self, argc, argv);
-	log_debug(query);
+	// log_debug(query);
 	
 	conn_obj = rb_iv_get(self, "@connection");
 	Data_Get_Struct(rb_iv_get(conn_obj, "@connection"), sqlite3, db);
@@ -292,7 +292,7 @@ static VALUE cCommand_execute_reader(int argc, VALUE *argv, VALUE self) {
 	Data_Get_Struct(rb_iv_get(conn_obj, "@connection"), sqlite3, db);
 	
 	query = build_query_from_args(self, argc, argv);
-	log_debug(query);
+	// log_debug(query);
 	
 	status = sqlite3_prepare_v2(db, StringValuePtr(query), -1, &sqlite3_reader, 0);
 	

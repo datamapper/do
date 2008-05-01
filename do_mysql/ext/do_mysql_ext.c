@@ -220,7 +220,7 @@ static void log_debug(VALUE string) {
 		sprintf(log_message, "%s %s", tag, raw_message);
 		rb_funcall(logger, ID_DEBUG, 1, RUBY_STRING(log_message));
 
-		free(log_message);
+		// free(log_message);
 	}
 }
 
@@ -533,7 +533,7 @@ static VALUE cCommand_execute_non_query(int argc, VALUE *argv, VALUE self) {
 	MYSQL *db = DATA_PTR(rb_iv_get(rb_iv_get(self, "@connection"), "@connection"));
 	query = build_query_from_args(self, argc, argv);
 
-	log_debug(query);
+	// log_debug(query);
 
 	query_result = mysql_query(db, StringValuePtr(query));
 	CHECK_AND_RAISE(query_result);
@@ -564,7 +564,7 @@ static VALUE cCommand_execute_reader(int argc, VALUE *argv, VALUE self) {
 	MYSQL_FIELD *field;
 
 	query = build_query_from_args(self, argc, argv);
-	log_debug(query);
+	// log_debug(query);
 
 	query_result = mysql_query(db, StringValuePtr(query));
 	CHECK_AND_RAISE(query_result);

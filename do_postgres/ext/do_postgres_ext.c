@@ -330,7 +330,7 @@ static VALUE cCommand_execute_non_query(int argc, VALUE *argv[], VALUE self) {
 	int insert_id;
 	
 	VALUE query = build_query_from_args(self, argc, argv);
-	log_debug(query);
+	// log_debug(query);
 	
 	response = PQexec(db, StringValuePtr(query));
 	
@@ -367,7 +367,7 @@ static VALUE cCommand_execute_reader(int argc, VALUE *argv[], VALUE self) {
 	PGresult *response;
 
 	query = build_query_from_args(self, argc, argv);
-	log_debug(query);
+	// log_debug(query);
 
 	response = PQexec(db, StringValuePtr(query));
 
