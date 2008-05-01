@@ -78,6 +78,26 @@ describe "DataObjects::Sqlite3::Result" do
     
   end
   
+  it "should do a custom typecast reader with Class" do
+    
+    class Person; end
+    
+    id = @connection.create_command("INSERT INTO users (name, age, type) VALUES (?, ?, ?)").execute_non_query('Sam', 30, Person).insert_id
+    
+    command = @connection.create_command("SELECT name, age, type FROM users WHERE id = ?")
+    command.set_types [String, Fixnum, Class]
+    reader = command.execute_reader(id)
+    
+    if ( reader.next! )
+      reader.fields.should == ["name", "age", "type"]
+      reader.values.should == ["Sam", 30, Person]
+    end
+    
+    reader.close
+    
+    @connection.create_command("DELETE FROM users WHERE id = ?").execute_non_query(id)
+  end
+  
   describe "quoting" do
     
     before do

@@ -124,9 +124,10 @@ static VALUE ruby_typecast(sqlite3_value *value, char *type, int original_type) 
 	if ( original_type == SQLITE_NULL ) {
 		return ruby_value;
 	}
-	else if ( strcmp(type, "Class") == 0) {
-    ruby_value = rb_eval(rb_str_new2((char*)sqlite3_value_text(value)));
-	}
+  else if ( strcmp(type, "Class") == 0) {
+    // HACK!
+    ruby_value = rb_funcall(mDO, rb_intern("find_const"), 1, rb_str_new2((char*)sqlite3_value_text(value)));
+  }
 	else if ( strcmp(type, "Object") == 0 ) {
 		ruby_value = rb_marshal_load(rb_str_new2((char*)sqlite3_value_text(value)));
 	}
@@ -294,11 +295,7 @@ static VALUE cCommand_execute_reader(int argc, VALUE *argv, VALUE self) {
 	Data_Get_Struct(rb_iv_get(conn_obj, "@connection"), sqlite3, db);
 	
 	query = build_query_from_args(self, argc, argv);
-<<<<<<< HEAD:do_sqlite3/ext/do_sqlite3_ext.c
 	data_objects_debug(query);
-=======
-	// data_objects_debug(query);
->>>>>>> 6c7a8adfbfedc8ebcb59e23e4248c233bd3beae1:do_sqlite3/ext/do_sqlite3_ext.c
 	
 	status = sqlite3_prepare_v2(db, StringValuePtr(query), -1, &sqlite3_reader, 0);
 	
