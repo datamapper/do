@@ -152,6 +152,9 @@ static VALUE cast_mysql_value_to_ruby_value(const char* data, char* ruby_class_n
 
 	if (0 == strcmp("Fixnum", ruby_class_name)) {
 		ruby_value = (0 == strlen(data) ? Qnil : LL2NUM(atol(data)));
+	}	else if ( 0 == strcmp("Class", ruby_class_name)) {
+    // HACK!
+    ruby_value = rb_funcall(mDO, rb_intern("find_const"), 1, rb_str_new2(data));
 	} else if (0 == strcmp("Bignum", ruby_class_name)) {
 		ruby_value = (0 == strlen(data) ? Qnil : rb_int2big(atol(data)));
 	} else if (0 == strcmp("String", ruby_class_name)) {

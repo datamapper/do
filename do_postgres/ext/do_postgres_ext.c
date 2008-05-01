@@ -188,6 +188,9 @@ static VALUE typecast(char *value, char *type) {
 	if ( strcmp(value, "") == 0 ) {
 		return Qnil;
 	}
+	else if ( strcmp(type, "Class") == 0) {
+	  return rb_funcall(mDO, rb_intern("find_const"), 1, rb_str_new2(value));
+	}
 	else if ( strcmp(type, "Fixnum") == 0 || strcmp(type, "Integer") == 0 || strcmp(type, "Bignum") == 0 ) {
 		return rb_cstr2inum(value, 10);
 	}
