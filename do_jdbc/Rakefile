@@ -2,28 +2,20 @@ require 'rubygems'
 require 'rake/gempackagetask'
 require 'spec/rake/spectask'
 
-PLUGIN = "do_mysql"
-NAME = "do_mysql"
-VERSION = "0.9.0"
-AUTHOR = "Scott Bauer"
-EMAIL = "bauer.mail@gmail.com"
-HOMEPAGE = "http://dataobjects.devjavu.com"
-SUMMARY = "A DataObject.rb driver for mysql"
-
 spec = Gem::Specification.new do |s|
-  s.name = NAME
-  s.version = VERSION
+  s.name = "do_jdbc"
+  s.version = "0.9.0"
   s.platform = Gem::Platform::RUBY
   s.has_rdoc = true
   s.extra_rdoc_files = ["README", "LICENSE", 'TODO']
-  s.summary = SUMMARY
+  s.summary = "A DataObject.rb driver for JDBC"
   s.description = s.summary
-  s.author = AUTHOR
-  s.email = EMAIL
-  s.homepage = HOMEPAGE
+  s.author = "Scott Bauer"
+  s.email = "bauer.mail@gmail.com"
+  s.homepage = "http://dataobjects.devjavu.com"
   s.add_dependency('data_objects', '>= 0.9.0')
   s.require_path = 'lib'
-  s.autorequire = PLUGIN
+  s.autorequire = "do_jdbc"
   s.extensions = ["ext/extconf.rb"]
   s.files = %w(LICENSE README Rakefile TODO) + Dir.glob("{lib,specs,ext}/**/*").reject {|x| x =~ /\.(o|bundle)$/ }
 end
@@ -33,7 +25,7 @@ Rake::GemPackageTask.new(spec) do |pkg|
 end
 
 task :install => [:package] do
-  sh %{#{'sudo' unless ENV['SUDOLESS']} gem install pkg/#{NAME}-#{VERSION}}
+  sh %{#{'sudo' unless ENV['SUDOLESS']} gem install pkg/#{spec.name}-#{spec.version}}
 end
 
 desc "Run all specs in spec directory (excluding plugin specs)"

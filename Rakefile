@@ -10,7 +10,9 @@ require Pathname('rake/rdoctask')
 
 DIR = Pathname(__FILE__).dirname.expand_path.to_s
 
-projects = %w[data_objects do_jdbc do_mysql do_postgres do_sqlite3]
+# projects = %w[data_objects do_jdbc do_mysql do_postgres do_sqlite3]
+# Took out do_jdbc since it doesn't build yet.
+projects = %w[data_objects do_mysql do_postgres do_sqlite3]
 
 namespace :do do
 desc 'Run specifications'
@@ -27,6 +29,13 @@ namespace :ci do
       ENV['gem_name'] = gem_name
 
       Rake::Task["ci:run_all"].invoke
+    end
+  end
+  
+  task :install_all do
+    projects.each do |gem_name|
+      cd(File.join(File.dirname(__FILE__), gem_name))
+      sh("rake install")
     end
   end
 
