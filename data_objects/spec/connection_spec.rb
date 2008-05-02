@@ -22,21 +22,24 @@ describe DataObjects::Connection do
   end
 
   describe "getting inherited" do
-    class MyConnection < DataObjects::Connection; end
+    # HACK: Connections needs to exist under the DataObjects namespace?
+    module DataObjects
+      class MyConnection < DataObjects::Connection; end
+    end
 
     it "should set the @connection_lock ivar to a Mutex" do
-      MyConnection.instance_variable_get("@connection_lock").should_not be_nil
-      MyConnection.instance_variable_get("@connection_lock").should be_kind_of(Mutex)
+      DataObjects::MyConnection.instance_variable_get("@connection_lock").should_not be_nil
+      DataObjects::MyConnection.instance_variable_get("@connection_lock").should be_kind_of(Mutex)
     end
 
     it "should set the @available_connections ivar to a Hash" do
-      MyConnection.instance_variable_get("@available_connections").should_not be_nil
-      MyConnection.instance_variable_get("@available_connections").should be_kind_of(Hash)
+      DataObjects::MyConnection.instance_variable_get("@available_connections").should_not be_nil
+      DataObjects::MyConnection.instance_variable_get("@available_connections").should be_kind_of(Hash)
     end
 
     it "should set the @reserved_connections ivar to a Set" do
-      MyConnection.instance_variable_get("@reserved_connections").should_not be_nil
-      MyConnection.instance_variable_get("@reserved_connections").should be_kind_of(Set)
+      DataObjects::MyConnection.instance_variable_get("@reserved_connections").should_not be_nil
+      DataObjects::MyConnection.instance_variable_get("@reserved_connections").should be_kind_of(Set)
     end
   end
 

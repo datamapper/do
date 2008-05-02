@@ -211,14 +211,14 @@ static VALUE cast_mysql_value_to_ruby_value(const char* data, char* ruby_class_n
 static void data_objects_debug(VALUE string) {
 	VALUE logger = rb_funcall(mDOMysql, ID_LOGGER, 0);
 	int log_level = NUM2INT(rb_funcall(logger, ID_LEVEL, 0));
-
+	
 	if (0 == log_level) {
 		// char *tag = "[Mysql]";
 		// char *raw_message = StringValuePtr(string);
 		// char *log_message = (char*)calloc(strlen(raw_message) + strlen(tag), sizeof(char));
 		// sprintf(log_message, "%s %s", tag, raw_message);
 		rb_funcall(logger, ID_DEBUG, 1, string);
-
+	
 		// free(log_message);
 	}
 }
@@ -563,11 +563,7 @@ static VALUE cCommand_execute_reader(int argc, VALUE *argv, VALUE self) {
 	MYSQL_FIELD *field;
 
 	query = build_query_from_args(self, argc, argv);
-<<<<<<< HEAD:do_mysql/ext/do_mysql_ext.c
 	data_objects_debug(query);
-=======
-	// data_objects_debug(query);
->>>>>>> 6c7a8adfbfedc8ebcb59e23e4248c233bd3beae1:do_mysql/ext/do_mysql_ext.c
 
 	query_result = mysql_query(db, StringValuePtr(query));
 	CHECK_AND_RAISE(query_result);

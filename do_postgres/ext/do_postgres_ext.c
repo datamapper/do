@@ -133,7 +133,7 @@ static VALUE parse_time(char *date) {
 static void data_objects_debug(VALUE string) {
 	VALUE logger = rb_funcall(mPostgres, ID_LOGGER, 0);
 	int log_level = NUM2INT(rb_funcall(logger, ID_LEVEL, 0));
-
+	
 	if (0 == log_level) {
 		// char *tag = "[Postgres]";
 		// char *raw_message = StringValuePtr(string);
@@ -141,7 +141,7 @@ static void data_objects_debug(VALUE string) {
 		// sprintf(log_message, "%s %s", tag, raw_message);
 		// rb_funcall(logger, ID_DEBUG, 1, RUBY_STRING(log_message));
 		rb_funcall(logger, ID_DEBUG, 1, string);
-
+	
 		// free(log_message);
 	}
 }
@@ -367,11 +367,7 @@ static VALUE cCommand_execute_reader(int argc, VALUE *argv[], VALUE self) {
 	PGresult *response;
 
 	query = build_query_from_args(self, argc, argv);
-<<<<<<< HEAD:do_postgres/ext/do_postgres_ext.c
 	data_objects_debug(query);
-=======
-	// data_objects_debug(query);
->>>>>>> 6c7a8adfbfedc8ebcb59e23e4248c233bd3beae1:do_postgres/ext/do_postgres_ext.c
 
 	response = PQexec(db, StringValuePtr(query));
 

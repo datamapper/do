@@ -1,11 +1,11 @@
-require File.expand_path(File.join(File.dirname(__FILE__), 'logger'))
-require File.expand_path(File.join(File.dirname(__FILE__), 'connection'))
-require File.expand_path(File.join(File.dirname(__FILE__), 'transaction'))
-require File.expand_path(File.join(File.dirname(__FILE__), 'command'))
-require File.expand_path(File.join(File.dirname(__FILE__), 'result'))
-require File.expand_path(File.join(File.dirname(__FILE__), 'reader'))
-require File.expand_path(File.join(File.dirname(__FILE__), 'field'))
-require File.expand_path(File.join(File.dirname(__FILE__), 'quoting'))
+require File.expand_path(File.join(File.dirname(__FILE__), 'data_objects', 'logger'))
+require File.expand_path(File.join(File.dirname(__FILE__), 'data_objects', 'connection'))
+require File.expand_path(File.join(File.dirname(__FILE__), 'data_objects', 'transaction'))
+require File.expand_path(File.join(File.dirname(__FILE__), 'data_objects', 'command'))
+require File.expand_path(File.join(File.dirname(__FILE__), 'data_objects', 'result'))
+require File.expand_path(File.join(File.dirname(__FILE__), 'data_objects', 'reader'))
+require File.expand_path(File.join(File.dirname(__FILE__), 'data_objects', 'field'))
+require File.expand_path(File.join(File.dirname(__FILE__), 'data_objects', 'quoting'))
 
 
 module DataObjects
