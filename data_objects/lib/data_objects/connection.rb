@@ -16,18 +16,20 @@ module DataObjects
       base.instance_variable_set('@available_connections', Hash.new { |h,k| h[k] = [] })
       base.instance_variable_set('@reserved_connections', Set.new)
       
-      driver_module = DataObjects::const_get(base.name.split('::')[-2])
-      driver_module.class_eval <<-EOS
-        def self.logger
-          @logger
-        end
+      if driver_module_name = base.name.split('::')[-2]
+        driver_module = DataObjects::const_get(driver_module_name)
+        driver_module.class_eval <<-EOS
+          def self.logger
+            @logger
+          end
 
-        def self.logger=(logger)
-          @logger = logger
-        end
-      EOS
+          def self.logger=(logger)
+            @logger = logger
+          end
+        EOS
       
-      driver_module.logger = DataObjects::DeadLogger
+        driver_module.logger = DataObjects::DeadLogger
+      end
     end
     
     def self.new(uri)

@@ -26,7 +26,7 @@ describe "DataObjects::Sqlite3::Result" do
   it "should return the affected rows and insert_id" do
     command = @connection.create_command("DROP TABLE users")
     command.execute_non_query rescue nil
-    command = @connection.create_command("CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT, age INTEGER)")
+    command = @connection.create_command("CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT, type TEXT, age INTEGER)")
     result = command.execute_non_query
     command = @connection.create_command("INSERT INTO users (name) VALUES ('test')")    
     result = command.execute_non_query
@@ -76,6 +76,26 @@ describe "DataObjects::Sqlite3::Result" do
     
     reader.close
     
+  end
+  
+  it "should do a custom typecast reader with Class" do
+    
+    class Person; end
+    
+    id = @connection.create_command("INSERT INTO users (name, age, type) VALUES (?, ?, ?)").execute_non_query('Sam', 30, Person).insert_id
+    
+    command = @connection.create_command("SELECT name, age, type FROM users WHERE id = ?")
+    command.set_types [String, Fixnum, Class]
+    reader = command.execute_reader(id)
+    
+    if ( reader.next! )
+      reader.fields.should == ["name", "age", "type"]
+      reader.values.should == ["Sam", 30, Person]
+    end
+    
+    reader.close
+    
+    @connection.create_command("DELETE FROM users WHERE id = ?").execute_non_query(id)
   end
   
   describe "quoting" do

@@ -124,6 +124,10 @@ static VALUE ruby_typecast(sqlite3_value *value, char *type, int original_type) 
 	if ( original_type == SQLITE_NULL ) {
 		return ruby_value;
 	}
+  else if ( strcmp(type, "Class") == 0) {
+    // HACK!
+    ruby_value = rb_funcall(mDO, rb_intern("find_const"), 1, rb_str_new2((char*)sqlite3_value_text(value)));
+  }
 	else if ( strcmp(type, "Object") == 0 ) {
 		ruby_value = rb_marshal_load(rb_str_new2((char*)sqlite3_value_text(value)));
 	}

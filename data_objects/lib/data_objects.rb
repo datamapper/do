@@ -10,6 +10,14 @@ require File.expand_path(File.join(File.dirname(__FILE__), 'data_objects', 'quot
 
 module DataObjects
   class LengthMismatchError < StandardError; end
+  
+  def self.find_const(name)
+    klass = Object
+    name.to_s.split('::').each do |part|
+      klass = klass.const_get(part)
+    end
+    klass
+  end
 end
 
 # class ConnectionFailed < StandardError; end
