@@ -54,7 +54,7 @@ namespace :ci do
   end
 
   task :uninstall do
-    sh %{#{'sudo' unless ENV['SUDOLESS']} gem uninstall #{ENV['gem_name']} -I}
+    sh %{#{'sudo' unless ENV['SUDOLESS']} gem uninstall #{ENV['gem_name']} --ignore-dependencies}
   end
 
   task :publish do
