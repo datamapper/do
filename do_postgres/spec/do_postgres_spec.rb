@@ -162,6 +162,8 @@ describe "DataObjects::Postgres::Reader" do
     command = @connection.create_command("SELECT created_at FROM users WHERE created_at is not null LIMIT 1")
     reader = command.execute_reader
     reader.next!
+    dt = reader.values[0]
+    p [dt, dt.year]
     reader.values[0].should be_a_kind_of(DateTime)
   end
   

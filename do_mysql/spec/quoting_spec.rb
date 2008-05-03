@@ -18,13 +18,13 @@ describe DataObjects::Mysql::Command do
   it "should quote DateTime's properly" do
     command = @connection.create_command("SELECT * FROM widgets WHERE release_datetime >= ?")
     dt = DateTime.now
-    command.quote_datetime(dt).should == "'#{dt.strftime('%Y-%m-%d %H:%M:%S')}'"
+    command.quote_datetime(dt).should =~ /#{dt.strftime('%Y-%m-%d %H:%M:%S')}/
   end
 
   it "should quote Time's properly" do
     command = @connection.create_command("SELECT * FROM widgets WHERE release_timestamp >= ?")
     dt = Time.now
-    command.quote_time(dt).should == "'#{dt.strftime('%Y-%m-%d %H:%M:%S')}'"
+    command.quote_time(dt).should =~ /#{dt.strftime('%Y-%m-%d %H:%M:%S')}/
   end
   
   it "should quote Date's properly" do
