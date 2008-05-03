@@ -49,8 +49,12 @@ namespace :ci do
     Rake::Task["#{ENV['gem_name']}:doc"].invoke
   end
 
-  task :install do
+  task :install => :uninstall do
     sh %{cd #{ENV['gem_name']} && rake install}
+  end
+
+  task :uninstall do
+    sh %{#{'sudo' unless ENV['SUDOLESS']} gem uninstall #{ENV['gem_name']} -I}
   end
 
   task :publish do
