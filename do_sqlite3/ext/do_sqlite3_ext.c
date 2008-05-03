@@ -114,12 +114,12 @@ static VALUE ruby_typecast(sqlite3_value *value, char *type, int original_type) 
 	VALUE ruby_value = Qnil;
 	VALUE rational, ajd_value;
 
-	int year, month, day, hour, min, sec, sign, hour_offset, minute_offset;
+	int year, month, day, hour, min, sec, hour_offset, minute_offset;
 	int jd, ajd;
 
 	do_int64 num, den;
 
-	char *date;
+	char *date, sign;
 
 	if ( original_type == SQLITE_NULL ) {
 		return ruby_value;
