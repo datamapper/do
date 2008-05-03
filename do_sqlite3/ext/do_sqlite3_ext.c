@@ -114,12 +114,12 @@ static VALUE ruby_typecast(sqlite3_value *value, char *type, int original_type) 
 	VALUE ruby_value = Qnil;
 	VALUE rational, ajd_value;
 
-	int year, month, day, hour, min, sec;
+	int year, month, day, hour, min, sec, hour_offset, minute_offset;
 	int jd, ajd;
 
 	do_int64 num, den;
 
-	char *date;
+	char *date, sign;
 
 	if ( original_type == SQLITE_NULL ) {
 		return ruby_value;
@@ -158,7 +158,8 @@ static VALUE ruby_typecast(sqlite3_value *value, char *type, int original_type) 
 	else if ( strcmp(type, "DateTime") == 0 ) {
 		date = (char*)sqlite3_value_text(value);
 		
-		sscanf(date, "%4d-%2d-%2d %2d:%2d:%2d", &year, &month, &day, &hour, &min, &sec);
+		// Sqlite3 date format: 2008-05-03T14:43:00-05:00
+		sscanf(date, "%4d-%2d-%2dT%2d:%2d:%2d%1s%2d:%2d", &year, &month, &day, &hour, &min, &sec, &sign, &hour_offset, &minute_offset);
 		
 		jd = jd_from_date(year, month, day);
 		
@@ -181,7 +182,9 @@ static VALUE ruby_typecast(sqlite3_value *value, char *type, int original_type) 
 		reduce(&num, &den);
 		
 		ajd_value = rb_funcall(rb_cRational, rb_intern("new!"), 2, rb_ull2inum(num), rb_ull2inum(den));
-		ruby_value = rb_funcall(rb_cDateTime, rb_intern("new!"), 3, ajd_value, INT2NUM(0), INT2NUM(2299161));
+		// ruby_value = rb_funcall(rb_cDateTime, rb_intern("new!"), 3, ajd_value, INT2NUM(0), INT2NUM(2299161));
+		// TODO: This be broke!
+		ruby_value = rb_funcall(rb_cDateTime, rb_intern("new!"), 3, ajd_value, rb_ull2inum(hour_offset), INT2NUM(2299161));
 	}
 	else if ( strcmp(type, "Time") == 0 ) {
 		date = (char*)sqlite3_value_text(value);
