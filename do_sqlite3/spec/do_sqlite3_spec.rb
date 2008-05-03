@@ -26,7 +26,7 @@ describe "DataObjects::Sqlite3::Result" do
   it "should return the affected rows and insert_id" do
     command = @connection.create_command("DROP TABLE users")
     command.execute_non_query rescue nil
-    command = @connection.create_command("CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT, type TEXT, age INTEGER)")
+    command = @connection.create_command("CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT, type TEXT, age INTEGER, created_at DATETIME)")
     result = command.execute_non_query
     command = @connection.create_command("INSERT INTO users (name) VALUES ('test')")    
     result = command.execute_non_query
@@ -78,19 +78,20 @@ describe "DataObjects::Sqlite3::Result" do
     
   end
   
-  it "should do a custom typecast reader with Class" do
-    
+  it "should do a custom typecast reader with Class and DateTime" do
+    pending("DateTimes are BROKEN! CAN HAS DRAMATIC FAILURE!")
     class Person; end
     
-    id = @connection.create_command("INSERT INTO users (name, age, type) VALUES (?, ?, ?)").execute_non_query('Sam', 30, Person).insert_id
+    now = DateTime.now
+    id = @connection.create_command("INSERT INTO users (name, age, type, created_at) VALUES (?, ?, ?, ?)").execute_non_query('Sam', 30, Person, now).insert_id
     
-    command = @connection.create_command("SELECT name, age, type FROM users WHERE id = ?")
-    command.set_types [String, Fixnum, Class]
+    command = @connection.create_command("SELECT name, age, type, created_at FROM users WHERE id = ?")
+    command.set_types [String, Fixnum, Class, DateTime]
     reader = command.execute_reader(id)
     
     if ( reader.next! )
-      reader.fields.should == ["name", "age", "type"]
-      reader.values.should == ["Sam", 30, Person]
+      reader.fields.should == ["name", "age", "type", "created_at"]
+      reader.values.should == ["Sam", 30, Person, now]
     end
     
     reader.close
