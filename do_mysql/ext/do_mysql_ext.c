@@ -13,6 +13,7 @@
 #define DRIVER_CLASS(klass, parent) (rb_define_class_under(mDOMysql, klass, parent))
 #define CONST_GET(scope, constant) (rb_funcall(scope, ID_CONST_GET, 1, rb_str_new2(constant)))
 #define CHECK_AND_RAISE(mysql_result_value) if (0 != mysql_result_value) { raise_mysql_error(db, mysql_result_value); }
+#define PUTS(string) rb_funcall(rb_mKernel, rb_intern("puts"), 1, RUBY_STRING(string))
 
 #ifdef _WIN32
 #define do_int64 unsigned __int64
@@ -457,22 +458,6 @@ static VALUE cConnection_real_close(VALUE self) {
 	return Qtrue;
 }
 
-// Spec me
-// VALUE cCommand_quote_time(VALUE self, VALUE value) {
-//  	// TIMESTAMP() used for both time and datetime columns
-// 	return rb_funcall(value, ID_STRFTIME, 1, RUBY_STRING("TIMESTAMP(\"%Y-%m-%d %H:%M:%S\")"));
-// }
-// 
-// VALUE cCommand_quote_datetime(VALUE self, VALUE value) {
-//   // "TIMESTAMP('#{value.strftime("%Y-%m-%d %H:%M:%S")}')"
-// 	return rb_funcall(value, ID_STRFTIME, 1, RUBY_STRING("TIMESTAMP(\"%Y-%m-%d %H:%M:%S\")"));
-// }
-// 
-// VALUE cCommand_quote_date(VALUE self, VALUE value) {
-//   // "DATE('#{value.strftime("%Y-%m-%d")}')"
-// 	return rb_funcall(value, ID_STRFTIME, 1, RUBY_STRING("TIMESTAMP(\"%Y-%m-%d\")"));
-// }
-
 // Accepts an array of Ruby types (Fixnum, Float, String, etc...) and turns them
 // into Ruby-strings so we can easily typecast later
 static VALUE cCommand_set_types(VALUE self, VALUE array) {
@@ -488,6 +473,13 @@ static VALUE cCommand_set_types(VALUE self, VALUE array) {
 	return array;
 }
 
+VALUE cCommand_quote_time(VALUE self, VALUE value) {
+	return rb_funcall(value, ID_STRFTIME, 1, RUBY_STRING("'%Y-%m-%d %H:%M:%S'"));
+}
+
+VALUE cCommand_quote_date(VALUE self, VALUE value) {
+	return rb_funcall(value, ID_STRFTIME, 1, RUBY_STRING("'%Y-%m-%d'"));
+}
 static VALUE cCommand_quote_string(VALUE self, VALUE string) {
 	MYSQL *db = DATA_PTR(rb_iv_get(rb_iv_get(self, "@connection"), "@connection"));
 	const char *source = StringValuePtr(string);
@@ -743,10 +735,11 @@ void Init_do_mysql_ext() {
 	rb_define_method(cCommand, "execute_non_query", cCommand_execute_non_query, -1);
 	rb_define_method(cCommand, "execute_reader", cCommand_execute_reader, -1);
 	rb_define_method(cCommand, "quote_string", cCommand_quote_string, 1);
-	// These need to be specced
-	// rb_define_method(cCommand, "quote_time", cCommand_quote_time, 1);
-	// rb_define_method(cCommand, "quote_datetime", cCommand_quote_datetime, 1);
-	// rb_define_method(cCommand, "quote_date", cCommand_quote_date, 1);
+
+	// Both Command#quote_time and Command#quote_time use cCommand_qote_time
+	rb_define_method(cCommand, "quote_time", cCommand_quote_time, 1);
+	rb_define_method(cCommand, "quote_datetime", cCommand_quote_time, 1);
+	rb_define_method(cCommand, "quote_date", cCommand_quote_date, 1);
 
 	// Non-Query result
 	cResult = DRIVER_CLASS("Result", cDO_Result);
