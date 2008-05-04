@@ -1,6 +1,7 @@
+#include <ruby.h>
+#include <version.h>
 #include <string.h>
 #include <math.h>
-#include <ruby.h>
 #include <sqlite3.h>
 
 #define ID_CONST_GET rb_intern("const_get")
@@ -21,6 +22,7 @@
 #endif
 
 // To store rb_intern values
+static ID ID_NEW_DATE;
 static ID ID_LOGGER;
 static ID ID_DEBUG;
 static ID ID_LEVEL;
@@ -153,7 +155,7 @@ static VALUE ruby_typecast(sqlite3_value *value, char *type, int original_type) 
 		// Math from Date.jd_to_ajd
 		ajd = jd * 2 - 1;
 		rational = rb_funcall(rb_cRational, rb_intern("new!"), 2, INT2NUM(ajd), INT2NUM(2));
-		ruby_value = rb_funcall(rb_cDate, rb_intern("new!"), 3, rational, INT2NUM(0), INT2NUM(2299161));
+		ruby_value = rb_funcall(rb_cDate, ID_NEW_DATE, 3, rational, INT2NUM(0), INT2NUM(2299161));
 	}
 	else if ( strcmp(type, "DateTime") == 0 ) {
 		date = (char*)sqlite3_value_text(value);
@@ -182,9 +184,9 @@ static VALUE ruby_typecast(sqlite3_value *value, char *type, int original_type) 
 		reduce(&num, &den);
 		
 		ajd_value = rb_funcall(rb_cRational, rb_intern("new!"), 2, rb_ull2inum(num), rb_ull2inum(den));
-		// ruby_value = rb_funcall(rb_cDateTime, rb_intern("new!"), 3, ajd_value, INT2NUM(0), INT2NUM(2299161));
+		// ruby_value = rb_funcall(rb_cDateTime, ID_NEW_DATE, 3, ajd_value, INT2NUM(0), INT2NUM(2299161));
 		// TODO: This be broke!
-		ruby_value = rb_funcall(rb_cDateTime, rb_intern("new!"), 3, ajd_value, rb_ull2inum(hour_offset), INT2NUM(2299161));
+		ruby_value = rb_funcall(rb_cDateTime, ID_NEW_DATE, 3, ajd_value, rb_ull2inum(hour_offset), INT2NUM(2299161));
 	}
 	else if ( strcmp(type, "Time") == 0 ) {
 		date = (char*)sqlite3_value_text(value);
@@ -410,6 +412,7 @@ void Init_do_sqlite3_ext() {
 	
 	rb_funcall(rb_mKernel, rb_intern("require"), 1, rb_str_new2("data_objects"));
 
+	ID_NEW_DATE = RUBY_VERSION_CODE < 186 ? rb_intern("new0") : rb_intern("new!");
 	ID_LOGGER = rb_intern("logger");
 	ID_DEBUG = rb_intern("debug");
 	ID_LEVEL = rb_intern("level");
