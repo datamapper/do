@@ -1,3 +1,4 @@
+require File.expand_path(File.join(File.dirname(__FILE__), 'data_objects', 'support', 'pooling'))
 require File.expand_path(File.join(File.dirname(__FILE__), 'data_objects', 'logger'))
 require File.expand_path(File.join(File.dirname(__FILE__), 'data_objects', 'connection'))
 require File.expand_path(File.join(File.dirname(__FILE__), 'data_objects', 'transaction'))
