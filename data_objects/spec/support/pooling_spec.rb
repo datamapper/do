@@ -67,9 +67,7 @@ describe "Object::Pooling" do
     fred.release
   end
   
-  it "should allow you to flush all pools, or an individual pool" do
-    pending
-    
+  it "should allow you to flush all pools, or an individual pool" do  
     Thing::pools.flush!
     
     Thing.new('fred')
