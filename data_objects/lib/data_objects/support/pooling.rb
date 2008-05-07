@@ -2,6 +2,9 @@ class Object
   
   module Pooling
     
+    class MustImplementDisposeError < StandardError
+    end
+    
     @size = 4
     
     def self.size
@@ -65,6 +68,13 @@ class Object
     end
     
     module ClassMethods
+      
+      def new(*args)
+        unless instance_methods.include?("dispose")
+          raise MustImplementDisposeError.new("#{self.name} must implement a `dispose' instance-method.")
+        end
+      end
+      
       def pools
         @pools ||= Pools.new(self)
       end

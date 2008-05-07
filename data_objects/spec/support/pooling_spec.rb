@@ -1,6 +1,6 @@
 require File.join(File.dirname(__FILE__), '..', '..', 'lib', 'data_objects', 'support', 'pooling')
 
-describe Object::Pooling do
+describe "Object::Pooling" do
   
   before(:all) do
     class Thing
@@ -22,6 +22,14 @@ describe Object::Pooling do
   
   it "should have a max pool-size" do
     Object::Pooling::size.should == 4
+  end
+  
+  it "should raise an error if the target object doesn't implement a `dispose' method" do
+    lambda do
+      class Durian
+        include Object::Pooling
+      end.new
+    end.should raise_error(Object::Pooling::MustImplementDisposeError)
   end
   
   it "should be able to aquire an object" do
