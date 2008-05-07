@@ -1,4 +1,4 @@
-do_sqlite3
+data_objects
 =================
 
 A plugin for the Merb framework that provides ....
