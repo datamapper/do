@@ -24,6 +24,11 @@ describe "Object::Pooling" do
     Object::Pooling::size.should == 4
   end
   
+  it "should respond to ::new and #release" do
+    Thing.should respond_to(:new)
+    Thing.instance_methods.should include("release")
+  end
+  
   it "should raise an error if the target object doesn't implement a `dispose' method" do
     lambda do
       class Durian
@@ -64,8 +69,6 @@ describe "Object::Pooling" do
     fred.release
   end
   
-  it "should dispose idle available objects"
-  
   it "should allow you to flush all pools, or an individual pool" do
     pending
     
@@ -83,4 +86,6 @@ describe "Object::Pooling" do
     
     Thing::pools['bob'].flush!
   end
+  
+  it "should dispose idle available objects"
 end

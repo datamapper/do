@@ -19,6 +19,10 @@ class Object
       target.extend(ClassMethods)
     end
     
+    def release
+      self.class.release(self)
+    end      
+    
     class Pools
       
       attr_reader :type
@@ -47,6 +51,7 @@ class Object
       
         def initialize(type)
           @type = type
+          @mutex = Mutex.new
           @available = []
           @reserved = []
         end
@@ -63,7 +68,38 @@ class Object
           @available = []
           @reserved = []
         end
-    
+        
+        def self.acquire(connection_uri)
+          conn = nil
+          connection_string = connection_uri.to_s
+
+          @connection_lock.synchronize do          
+            unless @available_connections[connection_string].empty?
+              conn = @available_connections[connection_string].pop
+            else
+              conn = allocate
+              conn.send(:initialize, connection_uri)
+              at_exit { conn.real_close }
+            end
+
+            @reserved_connections << conn
+          end
+
+          return conn
+        end
+
+        def self.release(connection)
+          @connection_lock.synchronize do
+            if @reserved_connections.delete?(connection)
+              @available_connections[connection.to_s] << connection
+            end
+          end
+          return nil
+        end
+        
+        private
+        def synchronize
+        end
       end
     end
     
@@ -73,6 +109,9 @@ class Object
         unless instance_methods.include?("dispose")
           raise MustImplementDisposeError.new("#{self.name} must implement a `dispose' instance-method.")
         end
+        
+        # uri = uri.is_a?(String) ? Addressable::URI::parse(uri) : uri
+        # DataObjects.const_get(uri.scheme.capitalize)::Connection.acquire(uri)
       end
       
       def pools
