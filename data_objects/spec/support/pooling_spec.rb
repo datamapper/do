@@ -37,9 +37,7 @@ describe "Object::Pooling" do
     end.should raise_error(Object::Pooling::MustImplementDisposeError)
   end
   
-  it "should be able to aquire an object" do
-    pending
-    
+  it "should be able to aquire an object" do    
     bob = Thing.new("bob")
     bob.name.should == 'bob'
     

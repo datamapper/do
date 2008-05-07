@@ -1,3 +1,5 @@
+require 'set'
+
 class Object
   
   module Pooling
@@ -20,8 +22,8 @@ class Object
     end
     
     def release
-      self.class.release(self)
-    end      
+      @__pool.release(self)
+    end 
     
     class Pools
       
@@ -29,7 +31,7 @@ class Object
       
       def initialize(type)
         @type = type
-        @pools = Hash.new { |h,k| h[k] = Pool.new(@type) }
+        @pools = Hash.new { |h,k| h[k] = Pool.new(@type, k) }
       end
       
       def flush!
@@ -49,11 +51,12 @@ class Object
       
         attr_reader :type, :available, :reserved
       
-        def initialize(type)
+        def initialize(type, initializer)
           @type = type
-          @mutex = Mutex.new
+          @initializer = initializer
+          @lock = Mutex.new
           @available = []
-          @reserved = []
+          @reserved = Set.new
         end
       
         def flush!
@@ -66,32 +69,32 @@ class Object
           end
           
           @available = []
-          @reserved = []
+          @reserved = Set.new
         end
         
-        def self.acquire(connection_uri)
-          conn = nil
-          connection_string = connection_uri.to_s
+        def new
+          instance = nil
 
-          @connection_lock.synchronize do          
-            unless @available_connections[connection_string].empty?
-              conn = @available_connections[connection_string].pop
+          @lock.synchronize do          
+            unless @available.empty?
+              instance = @available.pop
             else
-              conn = allocate
-              conn.send(:initialize, connection_uri)
-              at_exit { conn.real_close }
+              instance = @type.allocate
+              instance.send(:initialize, *@initializer)
+              at_exit { instance.dispose }
+              instance.instance_variable_set("@__pool", self)
             end
 
-            @reserved_connections << conn
+            @reserved << instance
           end
 
-          return conn
+          return instance
         end
 
-        def self.release(connection)
-          @connection_lock.synchronize do
-            if @reserved_connections.delete?(connection)
-              @available_connections[connection.to_s] << connection
+        def release(instance)
+          @lock.synchronize do
+            if @reserved.delete?(instance)
+              @available << instance
             end
           end
           return nil
@@ -110,6 +113,7 @@ class Object
           raise MustImplementDisposeError.new("#{self.name} must implement a `dispose' instance-method.")
         end
         
+        pools[*args].new
         # uri = uri.is_a?(String) ? Addressable::URI::parse(uri) : uri
         # DataObjects.const_get(uri.scheme.capitalize)::Connection.acquire(uri)
       end
