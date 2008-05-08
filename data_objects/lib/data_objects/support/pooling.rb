@@ -168,7 +168,7 @@ class Object
 
           @lock.synchronize do
             instance = @available.pop
-            raise StandardError.new("Concurrency Error!") unless instance
+            raise StandardError.new("Syncronization error on instance aquire: #{self.inspect}") unless instance
             @reserved << instance
           end
 
@@ -187,6 +187,12 @@ class Object
         pools[*args].new
       end
 
+      # ==== Notes
+      # Returns pools collection,
+      # does initialization of it when necessary.
+      #
+      # ==== Returns
+      # <Pools>:: Pool collection.
       def pools
         @pools ||= Pools.new(self)
       end
