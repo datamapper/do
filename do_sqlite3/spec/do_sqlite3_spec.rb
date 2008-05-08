@@ -82,6 +82,24 @@ describe "DataObjects::Sqlite3::Result" do
     
   end
   
+  it "should handle a null value" do
+    id = insert("INSERT INTO users (name) VALUES (NULL)")
+    select("SELECT name from users WHERE name is null") do |reader|
+      reader.values[0].should == nil
+    end
+  end
+  
+  it "should not convert empty strings to null" do
+    id = insert("INSERT INTO users (name) VALUES ('')")  
+    select("SELECT name FROM users WHERE id = ?", [String], id) do |reader|
+      reader.values.first.should == ''
+    end
+  end
+  
+  it "should raise an error when you pass too many or too few types for the expected result set" do
+    lambda { select("SELECT name, id FROM users", [String, Fixnum, String]) }.should raise_error(Sqlite3Error)
+  end
+  
   it "should do a custom typecast reader with Class" do
     class Person; end
     
@@ -90,6 +108,20 @@ describe "DataObjects::Sqlite3::Result" do
     select("SELECT name, age, type FROM users WHERE id = ?", [String, Fixnum, Class], id) do |reader|
       reader.fields.should == ["name", "age", "type"]
       reader.values.should == ["Sam", 30, Person]
+    end
+  
+    exec("DELETE FROM users WHERE id = ?", id)
+  end
+  
+  it "should return DateTimes using the LOCAL timezone if no timezone data is available in the stored date" do
+    now = DateTime.now
+    
+    # Insert a timezone-less DateTime into the DB
+    id = insert("INSERT INTO users (name, age, type, created_at) VALUES (?, ?, ?, ?)", 'Sam', 30, Person, now.strftime('%Y-%m-%dT%H:%M:%S'))
+
+    select("SELECT created_at FROM users WHERE id = ?", [DateTime], id) do |reader|
+      # puts "THE RAW DATE FROM THE DB IS: #{reader.values.last}"
+      reader.values.last.to_s.should == now.to_s
     end
   
     exec("DELETE FROM users WHERE id = ?", id)
@@ -108,7 +140,7 @@ describe "DataObjects::Sqlite3::Result" do
     dates.each do |date|
       id = insert("INSERT INTO users (name, age, type, created_at) VALUES (?, ?, ?, ?)", 'Sam', 30, Person, date)
   
-      select("SELECT created_at FROM users WHERE id = ?", [String, Fixnum, Class, DateTime], id) do |reader|
+      select("SELECT created_at FROM users WHERE id = ?", [DateTime], id) do |reader|
         reader.fields.should == ["created_at"]
         reader.values.last.to_s.should == date.to_s
       end
@@ -131,7 +163,6 @@ describe "DataObjects::Sqlite3::Result" do
     it "should quote a String" do
       command = @connection.create_command("INSERT INTO users (name) VALUES (?)")
       result = command.execute_non_query("John Doe")
-      result.insert_id.should == 2
       result.to_i.should == 1
     end
     
@@ -162,7 +193,7 @@ describe "DataObjects::Sqlite3::Result" do
     it "should quote an Array with NULL values returned" do      
       command = @connection.create_command("SELECT id, NULL AS notes FROM sail_boats WHERE (id IN ?)")
       reader = command.execute_reader([1, 2, 3])
-    
+
       i = 1
       while(reader.next!)
         reader.values[0].should == i

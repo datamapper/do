@@ -2,6 +2,7 @@
 #include <version.h>
 #include <string.h>
 #include <math.h>
+#include <time.h>
 #include <libpq-fe.h>
 #include "type-oids.h"
 
@@ -11,6 +12,7 @@
 #define ID_ESCAPE rb_intern("escape_sql")
 
 #define RUBY_STRING(char_ptr) rb_str_new2(char_ptr)
+#define TAINTED_STRING(name) rb_tainted_str_new2(name)
 #define CONST_GET(scope, constant) (rb_funcall(scope, ID_CONST_GET, 1, rb_str_new2(constant)))
 #define POSTGRES_CLASS(klass, parent) (rb_define_class_under(mPostgres, klass, parent))
 #define DEBUG(value) data_objects_debug(value)
@@ -37,6 +39,7 @@ static VALUE cDO_Reader;
 static VALUE rb_cDate;
 static VALUE rb_cDateTime;
 static VALUE rb_cRational;
+static VALUE rb_cBigDecimal;
 
 static VALUE mPostgres;
 static VALUE cConnection;
@@ -115,14 +118,16 @@ static VALUE timezone_to_offset(const char sign, int hour_offset, int minute_off
 	return seconds_to_offset(seconds);
 }
 
-static VALUE parse_date_time(char *date) {
+static VALUE parse_date_time(const char *date) {
 	VALUE ajd, offset;
 
 	int year, month, day, hour, min, sec, usec, hour_offset, minute_offset;
 	int jd;
 	char sign;
-
 	do_int64 num, den;
+	
+	time_t rawtime;
+	struct tm * timeinfo;
 
 	int tokens_read, max_tokens;
 	
@@ -142,13 +147,20 @@ static VALUE parse_date_time(char *date) {
 		// We read the Date and Time, but no Minute Offset
 		minute_offset = 0;
 	} else if (tokens_read >= (max_tokens - 3)) {
-		// We read the Date and Time, maybe the Sign
-		sign = '+';
-		hour_offset = 0;
-		minute_offset = 0;
+		// We read the Date and Time, maybe the Sign, default to the current locale's offset
+
+		// Get localtime
+		time(&rawtime);
+		timeinfo = localtime(&rawtime);
+			
+		// TODO: Refactor the following few lines to do the calculation with the *seconds*
+		// value instead of having to do the hour/minute math
+		hour_offset = abs(timeinfo->tm_gmtoff) / 3600;
+		minute_offset = abs(timeinfo->tm_gmtoff) % 3600 / 60;
+		sign = timeinfo->tm_gmtoff < 0 ? '-' : '+';
 	} else {
 		// Something went terribly wrong
-		rb_raise(ePostgresError, "Coulnd't parse date: %s", date);
+		rb_raise(ePostgresError, "Couldn't parse date: %s", date);
 	}
 
 	jd = jd_from_date(year, month, day);
@@ -236,33 +248,27 @@ static VALUE infer_ruby_type(Oid type) {
 }
 
 static VALUE typecast(char *value, char *type) {
-	if ( strcmp(value, "") == 0 ) {
-		return Qnil;
-	}
-	else if ( strcmp(type, "Class") == 0) {
-	  return rb_funcall(mDO, rb_intern("find_const"), 1, rb_str_new2(value));
-	}
-	else if ( strcmp(type, "Fixnum") == 0 || strcmp(type, "Integer") == 0 || strcmp(type, "Bignum") == 0 ) {
+	
+	if ( strcmp(type, "Class") == 0) {
+	  return rb_funcall(mDO, rb_intern("find_const"), 1, TAINTED_STRING(value));
+	} else if ( strcmp(type, "Fixnum") == 0 || strcmp(type, "Integer") == 0 || strcmp(type, "Bignum") == 0 ) {
 		return rb_cstr2inum(value, 10);
-	}
-	else if ( strcmp(type, "Float") == 0 ) {
+	} else if ( strcmp(type, "Float") == 0 ) {
 		return rb_float_new(rb_cstr_to_dbl(value, Qfalse));
-	}
-	else if ( strcmp(type, "TrueClass") == 0 ) {
+	} else if (0 == strcmp("BigDecimal", type) ) {
+		return rb_funcall(rb_cBigDecimal, ID_NEW, 1, TAINTED_STRING(value));
+	} else if ( strcmp(type, "TrueClass") == 0 ) {
 		return *value == 't' ? Qtrue : Qfalse;
-	}
-	else if ( strcmp(type, "Date") == 0 ) {
+	} else if ( strcmp(type, "Date") == 0 ) {
 		return parse_date(value);
-	}
-	else if ( strcmp(type, "DateTime") == 0 ) {
+	} else if ( strcmp(type, "DateTime") == 0 ) {
 		return parse_date_time(value);
-	}
-	else if ( strcmp(type, "Time") == 0 ) {
+	} else if ( strcmp(type, "Time") == 0 ) {
 		return parse_time(value);
+	} else {
+		return TAINTED_STRING(value);
 	}
-	else {
-		return rb_tainted_str_new2(value);
-	}
+
 }
 
 /* ====== Public API ======= */
@@ -511,7 +517,13 @@ static VALUE cReader_next(VALUE self) {
 			type = rb_class2name(ruby_type);
 		}
 		
-		value = typecast(PQgetvalue(reader, position, i), type);
+		// Always return nil if the value returned from Postgres is null
+		if (!PQgetisnull(reader, position, i)) {
+			value = typecast(PQgetvalue(reader, position, i), type);
+		} else {
+			value = Qnil;
+		}
+
 		rb_ary_push(array, value);
 	}
 
@@ -547,6 +559,7 @@ void Init_do_postgres_ext() {
 	rb_cDateTime = CONST_GET(rb_mKernel, "DateTime");
 	rb_cTime = CONST_GET(rb_mKernel, "Time");
 	rb_cRational = CONST_GET(rb_mKernel, "Rational");
+	rb_cBigDecimal = CONST_GET(rb_mKernel, "BigDecimal");
 	
 	rb_funcall(rb_mKernel, rb_intern("require"), 1, rb_str_new2("data_objects"));
 	

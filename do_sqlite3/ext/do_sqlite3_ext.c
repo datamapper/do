@@ -2,6 +2,7 @@
 #include <version.h>
 #include <string.h>
 #include <math.h>
+#include <time.h>
 #include <sqlite3.h>
 
 #define ID_CONST_GET rb_intern("const_get")
@@ -10,6 +11,7 @@
 #define ID_ESCAPE rb_intern("escape_sql")
 
 #define RUBY_STRING(char_ptr) rb_str_new2(char_ptr)
+#define TAINTED_STRING(name) rb_tainted_str_new2(name)
 #define CONST_GET(scope, constant) (rb_funcall(scope, ID_CONST_GET, 1, rb_str_new2(constant)))
 #define SQLITE3_CLASS(klass, parent) (rb_define_class_under(mSqlite3, klass, parent))
 
@@ -37,6 +39,7 @@ static VALUE cDO_Reader;
 static VALUE rb_cDate;
 static VALUE rb_cDateTime;
 static VALUE rb_cRational;
+static VALUE rb_cBigDecimal;
 
 static VALUE mSqlite3;
 static VALUE cConnection;
@@ -144,13 +147,47 @@ static VALUE timezone_to_offset(const char sign, int hour_offset, int minute_off
 static VALUE parse_date_time(const char *date) {
 	VALUE ajd, offset;
 
-	int year, month, day, hour, min, sec, hour_offset, minute_offset;
+	int year, month, day, hour, min, sec, usec, hour_offset, minute_offset;
 	int jd;
-	char sign;
+	char sign, seperator;
 	do_int64 num, den;
 
-	// Sqlite3 date format: 2008-05-03T14:43:00-05:00
-	sscanf(date, "%4d-%2d-%2dT%2d:%2d:%2d%1s%2d:%2d", &year, &month, &day, &hour, &min, &sec, &sign, &hour_offset, &minute_offset);
+	time_t rawtime;
+	struct tm * timeinfo;
+
+	int tokens_read, max_tokens;
+	
+	if (0 != strchr(date, '.')) {
+		// This is a datetime with sub-second precision
+		tokens_read = sscanf(date, "%4d-%2d-%2d%1s%2d:%2d:%2d.%d%1s%2d:%2d", &year, &month, &day, &seperator, &hour, &min, &sec, &usec, &sign, &hour_offset, &minute_offset);
+		max_tokens = 11;
+	} else {
+		// This is a datetime second precision
+		tokens_read = sscanf(date, "%4d-%2d-%2d%1s%2d:%2d:%2d%1s%2d:%2d", &year, &month, &day, &seperator, &hour, &min, &sec, &sign, &hour_offset, &minute_offset);
+		max_tokens = 10;
+	}
+
+	if (max_tokens == tokens_read) {
+		// We read the Date, Time, and Timezone info
+	} else if ((max_tokens - 1) == tokens_read) {
+		// We read the Date and Time, but no Minute Offset
+		minute_offset = 0;
+	} else if (tokens_read >= (max_tokens - 3)) {
+		// We read the Date and Time, maybe the Sign, default to the current locale's offset
+		
+		// Get localtime
+		time(&rawtime);
+		timeinfo = localtime(&rawtime);
+	
+		// TODO: Refactor the following few lines to do the calculation with the *seconds*
+		// value instead of having to do the hour/minute math
+		hour_offset = abs(timeinfo->tm_gmtoff) / 3600;
+		minute_offset = abs(timeinfo->tm_gmtoff) % 3600 / 60;
+		sign = timeinfo->tm_gmtoff < 0 ? '-' : '+';
+	} else {
+		// Something went terribly wrong
+		rb_raise(eSqlite3Error, "Couldn't parse date: %s", date);
+	}	
 	
 	jd = jd_from_date(year, month, day);
 	
@@ -200,35 +237,29 @@ static VALUE ruby_typecast(sqlite3_value *value, char *type, int original_type) 
 
 	if ( original_type == SQLITE_NULL ) {
 		return ruby_value;
-	}
-  else if ( strcmp(type, "Class") == 0) {
+	} else if ( strcmp(type, "Class") == 0) {
     // HACK!
-    ruby_value = rb_funcall(mDO, rb_intern("find_const"), 1, rb_str_new2((char*)sqlite3_value_text(value)));
-  }
-	else if ( strcmp(type, "Object") == 0 ) {
+    ruby_value = rb_funcall(mDO, rb_intern("find_const"), 1, TAINTED_STRING((char*)sqlite3_value_text(value)));
+  } else if ( strcmp(type, "Object") == 0 ) {
 		ruby_value = rb_marshal_load(rb_str_new2((char*)sqlite3_value_text(value)));
-	}
-	else if ( strcmp(type, "TrueClass") == 0 ) {
+	} else if ( strcmp(type, "TrueClass") == 0 ) {
 		ruby_value = strcmp((char*)sqlite3_value_text(value), "t") == 0 ? Qtrue : Qfalse;
-	}
-	else if ( strcmp(type, "Fixnum") == 0 ) {
+	} else if ( strcmp(type, "Fixnum") == 0 ) {
 		ruby_value = INT2NUM(sqlite3_value_int(value));
-	}
-	else if ( strcmp(type, "String") == 0 ) {
-		ruby_value = rb_str_new2((char*)sqlite3_value_text(value));
-	}
-	else if ( strcmp(type, "Float") == 0 ) {
+	} else if ( strcmp(type, "BigDecimal") == 0 ) {
+		ruby_value = rb_funcall(rb_cBigDecimal, ID_NEW, 1, TAINTED_STRING(value));
+	} else if ( strcmp(type, "String") == 0 ) {
+		ruby_value = TAINTED_STRING((char*)sqlite3_value_text(value));
+	} else if ( strcmp(type, "Float") == 0 ) {
 		ruby_value = rb_float_new(sqlite3_value_double(value));
-	}
-	else if ( strcmp(type, "Date") == 0 ) {
+	} else if ( strcmp(type, "Date") == 0 ) {
 		ruby_value = parse_date((char*)sqlite3_value_text(value));
-	}
-	else if ( strcmp(type, "DateTime") == 0 ) {
+	} else if ( strcmp(type, "DateTime") == 0 ) {
 		ruby_value = parse_date_time((char*)sqlite3_value_text(value));
-	}
-	else if ( strcmp(type, "Time") == 0 ) {
+	} else if ( strcmp(type, "Time") == 0 ) {
 		ruby_value = parse_time((char*)sqlite3_value_text(value));
 	}
+	
 	return ruby_value;
 }
 
@@ -266,7 +297,7 @@ static VALUE cCommand_set_types(VALUE self, VALUE array) {
 }
 
 static VALUE cCommand_quote_boolean(VALUE self, VALUE value) {
-	return rb_str_new2(value == Qtrue ? "'t'" : "'f'");
+	return TAINTED_STRING(value == Qtrue ? "'t'" : "'f'");
 }
 
 static VALUE cCommand_quote_string(VALUE self, VALUE string) {
@@ -276,7 +307,7 @@ static VALUE cCommand_quote_string(VALUE self, VALUE string) {
 	// Wrap the escaped string in single-quotes, this is DO's convention
 	escaped_with_quotes = sqlite3_mprintf("%Q", source);
 
-	return rb_str_new2(escaped_with_quotes);
+	return TAINTED_STRING(escaped_with_quotes);
 }
 
 static VALUE build_query_from_args(VALUE klass, int count, VALUE *args) {
@@ -351,9 +382,20 @@ static VALUE cCommand_execute_reader(int argc, VALUE *argv, VALUE self) {
 	field_names = rb_ary_new();
 	field_types = rb_iv_get(self, "@field_types");
 	
-	if ( field_types == Qnil ) {
+	// if ( field_types == Qnil ) {
+	// 	field_types = rb_ary_new();
+	// }
+	
+	if ( field_types == Qnil || 0 == RARRAY(field_types)->len ) {
 		field_types = rb_ary_new();
+	} else if (RARRAY(field_types)->len != field_count) {
+		// Whoops...  wrong number of types passed to set_types.  Close the reader and raise
+		// and error
+		rb_funcall(reader, rb_intern("close"), 0);
+		rb_raise(eSqlite3Error, "Field-count mismatch. Expected %d fields, but the query yielded %d", RARRAY(field_types)->len, field_count);
 	}
+
+	
 	
 	for ( i = 0; i < field_count; i++ ) {
 		rb_ary_push(field_names, rb_str_new2((char *)sqlite3_column_name(sqlite3_reader, i)));
@@ -436,6 +478,7 @@ static VALUE cReader_fields(VALUE self) {
 void Init_do_sqlite3_ext() {
 	
 	rb_require("rubygems");
+	rb_require("bigdecimal");
 	rb_require("date");
 	
 	// Get references classes needed for Date/Time parsing 
@@ -443,6 +486,7 @@ void Init_do_sqlite3_ext() {
 	rb_cDateTime = CONST_GET(rb_mKernel, "DateTime");
 	rb_cTime = CONST_GET(rb_mKernel, "Time");
 	rb_cRational = CONST_GET(rb_mKernel, "Rational");
+	rb_cBigDecimal = CONST_GET(rb_mKernel, "BigDecimal");
 	
 	rb_funcall(rb_mKernel, rb_intern("require"), 1, rb_str_new2("data_objects"));
 

@@ -226,39 +226,32 @@ static VALUE parse_date_time(const char *date_time) {
 	return rb_funcall(rb_cDateTime, ID_NEW_DATE, 3, ajd, offset, INT2NUM(2299161));
 }
 
-// Convert C-string to a Ruby instance of type "ruby_class_name"
-static VALUE cast_mysql_value_to_ruby_value(const char* data, char* ruby_class_name) {
-	VALUE ruby_value = Qnil;
-
-	if (NULL == data)
+// Convert C-string to a Ruby instance of Ruby type "type"
+static VALUE typecast(const char* value, char* type) {
+	if (NULL == value)
 		return Qnil;
 
-	if (0 == strcmp("Fixnum", ruby_class_name)) {
-		ruby_value = (0 == strlen(data) ? Qnil : LL2NUM(atol(data)));
-	}	else if ( 0 == strcmp("Class", ruby_class_name)) {
-    // HACK!
-    ruby_value = rb_funcall(mDO, rb_intern("find_const"), 1, rb_str_new2(data));
-	} else if (0 == strcmp("Bignum", ruby_class_name)) {
-		ruby_value = (0 == strlen(data) ? Qnil : rb_int2big(atol(data)));
-	} else if (0 == strcmp("String", ruby_class_name)) {
-		ruby_value = TAINTED_STRING(data);
-	} else if (0 == strcmp("Float", ruby_class_name) ) {
-		ruby_value = rb_float_new(strtod(data, NULL));
-	} else if (0 == strcmp("BigDecimal", ruby_class_name) ) {
-		ruby_value = rb_funcall(rb_cBigDecimal, ID_NEW, 1, TAINTED_STRING(data));
-	} else if (0 == strcmp("TrueClass", ruby_class_name) || 0 == strcmp("FalseClass", ruby_class_name)) {
-		ruby_value = (NULL == data || 0 == data || 0 == strcmp("0", data)) ? Qfalse : Qtrue;
-	} else if (0 == strcmp("Date", ruby_class_name)) {
-		ruby_value = parse_date(data);
-	} else if (0 == strcmp("DateTime", ruby_class_name)) {
-		ruby_value = parse_date_time(data);
-	} else if (0 == strcmp("Time", ruby_class_name)) {
-		ruby_value = parse_time(data);
+	if ( strcmp(type, "Class") == 0) {
+	  return rb_funcall(mDO, rb_intern("find_const"), 1, TAINTED_STRING(value));
+	} else if ( strcmp(type, "Fixnum") == 0 || strcmp(type, "Integer") == 0 || strcmp(type, "Bignum") == 0 ) {
+		return rb_cstr2inum(value, 10);
+	} else if (0 == strcmp("String", type)) {
+		return TAINTED_STRING(value);
+	} else if (0 == strcmp("Float", type) ) {
+		return rb_float_new(rb_cstr_to_dbl(value, Qfalse));
+	} else if (0 == strcmp("BigDecimal", type) ) {
+		return rb_funcall(rb_cBigDecimal, ID_NEW, 1, TAINTED_STRING(value));
+	} else if (0 == strcmp("TrueClass", type) || 0 == strcmp("FalseClass", type)) {
+		return (0 == value || 0 == strcmp("0", value)) ? Qfalse : Qtrue;
+	} else if (0 == strcmp("Date", type)) {
+		return parse_date(value);
+	} else if (0 == strcmp("DateTime", type)) {
+		return parse_date_time(value);
+	} else if (0 == strcmp("Time", type)) {
+		return parse_time(value);
 	} else {
-		ruby_value = TAINTED_STRING(data);
+		return TAINTED_STRING(value);
 	}
-
-	return ruby_value;
 }
 
 static void data_objects_debug(VALUE string) {
@@ -510,7 +503,7 @@ static VALUE cCommand_set_types(VALUE self, VALUE array) {
 	int i;
 
 	for (i = 0; i < RARRAY(array)->len; i++) {
-		rb_ary_push(type_strings, rb_str_new2(rb_class2name(rb_ary_entry(array, i))));
+		rb_ary_push(type_strings, RUBY_STRING(rb_class2name(rb_ary_entry(array, i))));
 	}
 
 	rb_iv_set(self, "@field_types", type_strings);
@@ -644,7 +637,7 @@ static VALUE cCommand_execute_reader(int argc, VALUE *argv, VALUE self) {
 
 	for(i = 0; i < field_count; i++) {
 		field = mysql_fetch_field_direct(response, i);
-		rb_ary_push(field_names, rb_str_new2(field->name));
+		rb_ary_push(field_names, RUBY_STRING(field->name));
 		
 		if (1 == guess_default_field_types) {
 			VALUE field_ruby_type_name = RUBY_STRING(ruby_type_from_mysql_type(field));
@@ -715,7 +708,7 @@ static VALUE cReader_next(VALUE self) {
 	for (i = 0; i < reader->field_count; i++) {
 		// The field_type data could be cached in a c-array
 		field_type = RSTRING(rb_ary_entry(ruby_field_type_strings, i))->ptr;
-		rb_ary_push(row, cast_mysql_value_to_ruby_value(result[i], field_type));
+		rb_ary_push(row, typecast(result[i], field_type));
 	}
 
 	rb_iv_set(self, "@values", row);
@@ -743,7 +736,7 @@ void Init_do_mysql_ext() {
   rb_require("date");
   rb_require("cgi");
 
-  rb_funcall(rb_mKernel, rb_intern("require"), 1, rb_str_new2("data_objects"));
+  rb_funcall(rb_mKernel, rb_intern("require"), 1, RUBY_STRING("data_objects"));
 
 	ID_TO_I = rb_intern("to_i");
 	ID_TO_F = rb_intern("to_f");

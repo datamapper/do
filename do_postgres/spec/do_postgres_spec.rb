@@ -130,20 +130,35 @@ describe "DataObjects::Postgres::Reader" do
     reader.values[1].should be_a_kind_of(String)
     reader.close
   end
-  
+
   it "should handle a null value" do
-    @connection.create_command("INSERT INTO users (name) VALUES (NULL)").execute_non_query
-    command = @connection.create_command("SELECT name from users WHERE name is null")
-    reader = command.execute_reader
-    reader.next!
-    reader.values[0].should == nil
+    id = insert("INSERT INTO users (name) VALUES (NULL)")
+    select("SELECT name from users WHERE name is null") do |reader|
+      reader.values[0].should == nil
+    end
   end
-  
+
+  it "should not convert empty strings to null" do
+    id = insert("INSERT INTO users (name) VALUES ('')")  
+    select("SELECT name FROM users WHERE id = ?", [String], id) do |reader|
+      reader.values.first.should == ''
+    end
+  end
+
   it "should typecast a date field" do
     command = @connection.create_command("SELECT created_on FROM users WHERE created_on is not null LIMIT 1")
     reader = command.execute_reader
     reader.next!
     reader.values[0].should be_a_kind_of(Date)
+  end
+
+  it "should typecast a BigDecimal field" do
+    money_in_the_bank = BigDecimal.new('1.29')
+
+    id = insert("INSERT INTO users (name, money) VALUES (?, ?)", "MC Hammer", money_in_the_bank)
+    select("SELECT money FROM users WHERE id = ?", [BigDecimal], id) do |reader|
+      reader.values.first.should == money_in_the_bank
+    end
   end
   
   it "should typecast a timestamp field" do
@@ -153,8 +168,17 @@ describe "DataObjects::Postgres::Reader" do
     dt = reader.values[0]
     reader.values[0].should be_a_kind_of(DateTime)
   end
+
+  it "should return DateTimes using the current locale's Time Zone for TIMESTAMP WITHOUT TIME ZONE fields" do
+    date = DateTime.now
+    id = insert("INSERT INTO users (name, created_at) VALUES (?, ?)", 'Sam', date)
+    select("SELECT created_at FROM users WHERE id = ?", [DateTime], id) do |reader|
+      reader.values.last.to_s.should == date.to_s
+    end
+    exec("DELETE FROM users WHERE id = ?", id)
+  end
   
-  it "should return DateTimes using the current locale's Time Zone" do
+  it "should return DateTimes using the current locale's Time Zone TIMESTAMP WITH TIME ZONE fields" do
     date = DateTime.now
     id = insert("INSERT INTO users (name, fired_at) VALUES (?, ?)", 'Sam', date)
     select("SELECT fired_at FROM users WHERE id = ?", [DateTime], id) do |reader|

@@ -2,8 +2,11 @@ require File.expand_path(File.join(File.dirname(__FILE__), 'spec_helper'))
 
 
 describe DataObjects::Mysql do
-  
   include MysqlSpecHelpers
+
+  before :all do
+    setup_test_environment
+  end
 
   it "should expose the proper DataObjects classes" do
     DataObjects::Mysql.const_get('Connection').should_not be_nil
@@ -75,17 +78,116 @@ describe DataObjects::Mysql::Connection do
     setup_test_environment
   end
   
-  it "should be able to create a command" do
-    command = @connection.create_command("SELECT * FROM widgets")
-    command.should be_kind_of(DataObjects::Mysql::Command)
-  end
-  
   it "should raise an error when attempting to execute a bad query" do
     lambda { @connection.create_command("INSERT INTO non_existant_table (tester) VALUES (1)").execute_non_query }.should raise_error(MysqlError)
     lambda { @connection.create_command("SELECT * FROM non_existant table").execute_reader }.should raise_error(MysqlError)
   end
 
-  describe "executing a query" do
+end
+
+describe "Quoting" do
+  include MysqlSpecHelpers
+
+  before :all do
+    setup_test_environment
+  end
+
+  it "should escape strings properly" do
+    command = @connection.create_command("SELECT * FROM widgets WHERE name = ?")
+    command.quote_string("Willy O'Hare & Johnny O'Toole").should == "'Willy O\\'Hare & Johnny O\\'Toole'".dup
+    command.quote_string("The\\Backslasher\\Rises\\Again").should == "'The\\\\Backslasher\\\\Rises\\\\Again'"
+    command.quote_string("Scott \"The Rage\" Bauer").should == "'Scott \\\"The Rage\\\" Bauer'"
+  end
+  
+  it "should quote DateTime's properly" do
+    command = @connection.create_command("SELECT * FROM widgets WHERE release_datetime >= ?")
+    dt = DateTime.now
+    command.quote_datetime(dt).should == "'#{dt.strftime('%Y-%m-%d %H:%M:%S')}'"
+  end
+
+  it "should quote Time's properly" do
+    command = @connection.create_command("SELECT * FROM widgets WHERE release_timestamp >= ?")
+    dt = Time.now
+    command.quote_time(dt).should == "'#{dt.strftime('%Y-%m-%d %H:%M:%S')}'"
+  end
+  
+  it "should quote Date's properly" do
+    command = @connection.create_command("SELECT * FROM widgets WHERE release_date >= ?")
+    dt = Date.today
+    command.quote_date(dt).should == "'#{dt.strftime('%Y-%m-%d')}'"
+  end
+
+end
+
+describe DataObjects::Mysql::Reader do
+  include MysqlSpecHelpers
+
+  before :all do
+    setup_test_environment
+  end
+
+  it "should raise an error when you pass too many or too few types for the expected result set" do
+    lambda { select("SELECT name, fired_at FROM users", [String, DateTime, Fixnum]) }.should raise_error(MysqlError)
+  end
+  
+  it "shouldn't raise an error when you pass NO types for the expected result set" do
+    lambda { select("SELECT name, fired_at FROM users", nil) }.should_not raise_error(MysqlError)
+  end
+
+  it "should return the proper number of fields" do
+    id = insert("INSERT INTO users (name) VALUES ('Billy Bob')")
+    select("SELECT id, name, fired_at FROM users WHERE id = ?", nil, id) do |reader|
+      reader.fields.size.should == 3
+    end
+  end
+  
+  it "should raise an exception if .values is called after reading all available rows" do
+    select("SELECT * FROM widgets LIMIT 2") do |reader|
+      # select already calls next once for us
+      reader.next!
+      reader.next!
+
+      lambda { reader.values }.should raise_error(MysqlError)
+    end
+  end
+  
+  it "should fetch the proper number of rows" do
+    ids = [
+      insert("INSERT INTO users (name) VALUES ('Slappy Wilson')"),
+      insert("INSERT INTO users (name) VALUES ('Jumpy Jones')")
+    ]
+      
+    select("SELECT * FROM users WHERE id IN ?", nil, ids) do |reader|
+      # select already calls next once for us
+      reader.next!.should == true
+      reader.next!.should be_nil
+    end
+  end
+  
+  it "should contain tainted strings" do
+    id = insert("INSERT INTO users (name) VALUES ('Cuppy Canes')")
+    
+    select("SELECT name FROM users WHERE id = ?", nil, id) do |reader|
+      reader.values.first.should be_tainted
+    end
+
+  end
+  
+  it "should return DB nulls as nil" do
+    id = insert("INSERT INTO users (name) VALUES (NULL)")
+    select("SELECT name from users WHERE name is null") do |reader|
+      reader.values[0].should == nil
+    end
+  end
+
+  it "should not convert empty strings to null" do
+    id = insert("INSERT INTO users (name) VALUES ('')")  
+    select("SELECT name FROM users WHERE id = ?", [String], id) do |reader|
+      reader.values.first.should == ''
+    end
+  end
+  
+  describe "Date, Time, and DateTime" do
     
     it "should return DateTimes using the current locale's Time Zone" do
       date = DateTime.now
@@ -95,105 +197,33 @@ describe DataObjects::Mysql::Connection do
       end
       exec("DELETE FROM users WHERE id = ?", id)
     end
-
-    it "should return DateTimes using the current locale's Time Zone if they were inserted using a different timezone" do
-      pending "We don't support non-local date input yet"
-      now = DateTime.now
-      dates = [
-        now.new_offset( (-11 * 3600).to_r / 86400), # GMT -11:00
-        now.new_offset( (-9 * 3600 + 10 * 60).to_r / 86400), # GMT -9:10, contrived
-        now.new_offset( (-8 * 3600).to_r / 86400), # GMT -08:00
-        now.new_offset( (+3 * 3600).to_r / 86400), # GMT +03:00
-        now.new_offset( (+5 * 3600 + 30 * 60).to_r / 86400)  # GMT +05:30 (New Delhi)
-      ]
-
-      dates.each do |date|
-        id = insert("INSERT INTO users (name, fired_at) VALUES (?, ?)", 'Sam', date)
     
-        select("SELECT fired_at FROM users WHERE id = ?", [DateTime], id) do |reader|
-          reader.values.last.to_s.should == now.to_s
-        end
+    now = DateTime.now
+
+    dates = [
+      now.new_offset( (-11 * 3600).to_r / 86400), # GMT -11:00
+      now.new_offset( (-9 * 3600 + 10 * 60).to_r / 86400), # GMT -9:10, contrived
+      now.new_offset( (-8 * 3600).to_r / 86400), # GMT -08:00
+      now.new_offset( (+3 * 3600).to_r / 86400), # GMT +03:00
+      now.new_offset( (+5 * 3600 + 30 * 60).to_r / 86400)  # GMT +05:30 (New Delhi)
+    ]
     
-        exec("DELETE FROM users WHERE id = ?", id)
-      end
-    end
+    dates.each do |date|
+      it "should return #{date.to_s} offset to the current locale's Time Zone if they were inserted using a different timezone" do
+        pending "We don't support non-local date input yet"
 
-    describe "reading results" do
-            
-      it "should return the proper number of fields" do
-        select("SELECT * FROM widgets LIMIT 2") do |reader|
-          reader.fields.size.should == 21
-        end
-      end
-      
-      it "should raise an exception if .values is called after reading all available rows" do
-        select("SELECT * FROM widgets LIMIT 2") do |reader|
-          # select already calls next once for us
-          reader.next!
-          reader.next!
-
-          lambda { reader.values }.should raise_error(MysqlError)
-        end
-      end
-      
-      it "should fetch 2 rows" do
-        select("SELECT * FROM widgets LIMIT 2") do |reader|
-          # select already calls next once for us
-          reader.next!.should == true
-          reader.next!.should be_nil
-        end
-      end
-      
-      it "should contain tainted strings" do
-        select("SELECT * FROM widgets LIMIT 2") do |reader|
-          reader.values.each do |value|
-            (value.should be_tainted) if value.is_a?(String)
+        dates.each do |date|
+          id = insert("INSERT INTO users (name, fired_at) VALUES (?, ?)", 'Sam', date)
+    
+          select("SELECT fired_at FROM users WHERE id = ?", [DateTime], id) do |reader|
+            reader.values.last.to_s.should == now.to_s
           end
+    
+          exec("DELETE FROM users WHERE id = ?", id)
         end
       end
-    
     end
     
-    describe "executing a query w/ set_types" do      
-      before(:all) do
-        @types = [
-          Fixnum, String, String, String, String, String,
-          String, String, String, String, FalseClass, Fixnum, Fixnum, 
-          Bignum, BigDecimal, BigDecimal, BigDecimal, Date, DateTime, DateTime, String
-        ]
-      end
-    
-      # HACK: This seems like a weak test
-      it "should typecast all fields to the proper Ruby type" do
-        select("SELECT * FROM widgets LIMIT 2", @types) do |reader|
-          @types.each_with_index do |t, idx|
-            reader.values[idx].class.should == @types[idx]
-          end
-        end
-      end
-      
-      it "should raise an error when you pass too many or too few types for the expected result set" do
-        lambda { select("SELECT name, fired_at FROM users", [String, DateTime, Fixnum]) }.should raise_error(MysqlError)
-      end
-    
-    end
-
-  end
-  
-  # An awful lot of setup here just to get a typecast value back...
-  def type_test(value, type_string, ruby_type = nil)
-    test_table = "test_table_#{rand(10000)}"
-    value = 'null' if value.nil?
-    @connection.create_command("DROP TABLE IF EXISTS #{test_table}").execute_non_query
-    @connection.create_command("CREATE TABLE `#{test_table}` ( `test_field` #{type_string} )").execute_non_query
-    @connection.create_command("INSERT INTO #{test_table} (test_field) VALUES (#{value})").execute_non_query
-    @cmd = @connection.create_command("SELECT test_field FROM #{test_table}")
-    @cmd.set_types [ruby_type || value.class]
-    @reader = @cmd.execute_reader
-    @reader.next!
-    value = @reader.values[0]
-    @reader.close
-    value
   end
   
   describe "executing a non-query" do

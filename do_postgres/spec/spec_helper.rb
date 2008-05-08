@@ -8,6 +8,7 @@ require 'spec'
 require 'date'
 require 'pathname'
 require 'fileutils'
+require 'bigdecimal'
 
 # put data_objects from repository in the load path
 # DO NOT USE installed gem of data_objects!

@@ -33,7 +33,7 @@ module Sqlite3SpecHelpers
       reader.next!
       yield reader
     ensure
-      reader.close
+      reader.close if reader
     end
   end
 
