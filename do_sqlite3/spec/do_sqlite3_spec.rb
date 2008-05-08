@@ -78,25 +78,39 @@ describe "DataObjects::Sqlite3::Result" do
     
   end
   
-  it "should do a custom typecast reader with Class and DateTime" do
-    pending("DateTimes are BROKEN! CAN HAS DRAMATIC FAILURE!")
+  it "should do a custom typecast reader with Class" do
     class Person; end
     
-    now = DateTime.now
-    id = @connection.create_command("INSERT INTO users (name, age, type, created_at) VALUES (?, ?, ?, ?)").execute_non_query('Sam', 30, Person, now).insert_id
-    
-    command = @connection.create_command("SELECT name, age, type, created_at FROM users WHERE id = ?")
-    command.set_types [String, Fixnum, Class, DateTime]
-    reader = command.execute_reader(id)
-    
-    if ( reader.next! )
-      reader.fields.should == ["name", "age", "type", "created_at"]
-      reader.values.should == ["Sam", 30, Person, now]
+    id = insert("INSERT INTO users (name, age, type) VALUES (?, ?, ?)", 'Sam', 30, Person)
+  
+    select("SELECT name, age, type FROM users WHERE id = ?", [String, Fixnum, Class], id) do |reader|
+      reader.fields.should == ["name", "age", "type"]
+      reader.values.should == ["Sam", 30, Person]
     end
+  
+    exec("DELETE FROM users WHERE id = ?", id)
+  end
+  
+  it "should return DateTimes using the same timezone that was used to insert it" do
+    dates = [
+      DateTime.now,
+      DateTime.now.new_offset( (-11 * 3600).to_r / 86400), # GMT -11:00
+      DateTime.now.new_offset( (-9 * 3600 + 10 * 60).to_r / 86400), # GMT -9:10
+      DateTime.now.new_offset( (-8 * 3600).to_r / 86400), # GMT -08:00
+      DateTime.now.new_offset( (+3 * 3600).to_r / 86400), # GMT +03:00
+      DateTime.now.new_offset( (+5 * 3600 + 30 * 60).to_r / 86400)  # GMT +05:30 (New Delhi)
+    ]
+
+    dates.each do |date|
+      id = insert("INSERT INTO users (name, age, type, created_at) VALUES (?, ?, ?, ?)", 'Sam', 30, Person, date)
+  
+      select("SELECT created_at FROM users WHERE id = ?", [String, Fixnum, Class, DateTime], id) do |reader|
+        reader.fields.should == ["created_at"]
+        reader.values.last.to_s.should == date.to_s
+      end
     
-    reader.close
-    
-    @connection.create_command("DELETE FROM users WHERE id = ?").execute_non_query(id)
+      exec("DELETE FROM users WHERE id = ?", id)
+    end
   end
   
   describe "quoting" do
@@ -170,4 +184,25 @@ describe "DataObjects::Sqlite3::Result" do
     end
     
   end # describe "quoting"
+end
+
+def insert(query, *args)
+  result = @connection.create_command(query).execute_non_query(*args)
+  result.insert_id
+end
+
+def exec(query, *args)
+  @connection.create_command(query).execute_non_query(*args)
+end
+
+def select(query, types = nil, *args)
+  begin
+    command = @connection.create_command(query)
+    command.set_types types unless types.nil?
+    reader = command.execute_reader(*args)
+    reader.next!
+    yield reader
+  ensure
+    reader.close
+  end
 end

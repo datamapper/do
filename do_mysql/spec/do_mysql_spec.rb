@@ -2,54 +2,68 @@ require File.expand_path(File.join(File.dirname(__FILE__), 'spec_helper'))
 
 def setup_test_environment
   @connection = DataObjects::Mysql::Connection.new("mysql://root@127.0.0.1:3306/do_mysql_test")
-  @connection.create_command(<<EOF
-DROP TABLE IF EXISTS `invoices`
-EOF
-                             ).execute_non_query
-  @connection.create_command(<<EOF
-DROP TABLE IF EXISTS `widgets` 
-EOF
-                             ).execute_non_query
-  @connection.create_command(<<EOF
-CREATE TABLE `invoices` (
-  `id` int(11) NOT NULL auto_increment,
-  `invoice_number` varchar(50) NOT NULL,
-  PRIMARY KEY  (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-EOF
-                             ).execute_non_query
-  @connection.create_command(<<EOF
-CREATE TABLE `widgets` (
-  `id` int(11) NOT NULL auto_increment,
-  `code` char(8) default 'A14' NULL,
-  `name` varchar(200) default 'Super Widget' NULL,
-  `shelf_location` tinytext NULL,
-  `description` text NULL,
-  `image_data` blob NULL,
-  `ad_description` mediumtext NULL,
-  `ad_image` mediumblob NULL,
-  `whitepaper_text` longtext NULL,
-  `cad_drawing` longblob NULL,
-  `flags` tinyint(1) default 0,
-  `number_in_stock` smallint default 500,
-  `number_sold` mediumint default 0,
-  `super_number` bigint default 9223372036854775807,
-  `weight` float default 1.23,
-  `cost1` double(8,2) default 10.23,
-  `cost2` decimal(8,2) default 50.23,
-  `release_date` date default '2008-02-14',
-  `release_datetime` datetime default '2008-02-14 00:31:12',
-  `release_timestamp` timestamp default '2008-02-14 00:31:31',
-  `status` enum('active','out of stock') NOT NULL default 'active',
-  PRIMARY KEY  (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-EOF
-                             ).execute_non_query
+  @secondary_connection = DataObjects::Mysql::Connection.new("mysql://root@127.0.0.1:3306/do_mysql_test")
+
+  @connection.create_command(<<-EOF).execute_non_query
+    DROP TABLE IF EXISTS `invoices`
+  EOF
+
+  @connection.create_command(<<-EOF).execute_non_query
+    DROP TABLE IF EXISTS `users`
+  EOF
+
+  @connection.create_command(<<-EOF).execute_non_query
+    DROP TABLE IF EXISTS `widgets` 
+  EOF
+
+  @connection.create_command(<<-EOF).execute_non_query
+    CREATE TABLE `users` (
+      `id` int(11) NOT NULL auto_increment,
+      `name` varchar(200) default 'Billy' NULL,
+      `fired_at` timestamp,
+      PRIMARY KEY  (`id`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+  EOF
+  
+  @connection.create_command(<<-EOF).execute_non_query
+    CREATE TABLE `invoices` (
+      `id` int(11) NOT NULL auto_increment,
+      `invoice_number` varchar(50) NOT NULL,
+      PRIMARY KEY  (`id`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+  EOF
+
+  @connection.create_command(<<-EOF).execute_non_query
+    CREATE TABLE `widgets` (
+      `id` int(11) NOT NULL auto_increment,
+      `code` char(8) default 'A14' NULL,
+      `name` varchar(200) default 'Super Widget' NULL,
+      `shelf_location` tinytext NULL,
+      `description` text NULL,
+      `image_data` blob NULL,
+      `ad_description` mediumtext NULL,
+      `ad_image` mediumblob NULL,
+      `whitepaper_text` longtext NULL,
+      `cad_drawing` longblob NULL,
+      `flags` tinyint(1) default 0,
+      `number_in_stock` smallint default 500,
+      `number_sold` mediumint default 0,
+      `super_number` bigint default 9223372036854775807,
+      `weight` float default 1.23,
+      `cost1` double(8,2) default 10.23,
+      `cost2` decimal(8,2) default 50.23,
+      `release_date` date default '2008-02-14',
+      `release_datetime` datetime default '2008-02-14 00:31:12',
+      `release_timestamp` timestamp default '2008-02-14 00:31:31',
+      `status` enum('active','out of stock') NOT NULL default 'active',
+      PRIMARY KEY  (`id`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+  EOF
+
   1.upto(16) do |n|
-    @connection.create_command(<<EOF
-insert into widgets(code, name, shelf_location, description, image_data, ad_description, ad_image, whitepaper_text, cad_drawing, super_number) VALUES ('W#{n.to_s.rjust(7,"0")}', 'Widget #{n}', 'A14', 'This is a description', 'IMAGE DATA', 'Buy this product now!', 'AD IMAGE DATA', 'Utilizing blah blah blah', 'CAD DRAWING', 1234);
-EOF
-                               ).execute_non_query
+    @connection.create_command(<<-EOF).execute_non_query
+      insert into widgets(code, name, shelf_location, description, image_data, ad_description, ad_image, whitepaper_text, cad_drawing, super_number) VALUES ('W#{n.to_s.rjust(7,"0")}', 'Widget #{n}', 'A14', 'This is a description', 'IMAGE DATA', 'Buy this product now!', 'AD IMAGE DATA', 'Utilizing blah blah blah', 'CAD DRAWING', 1234);
+    EOF
   end
 end
 
@@ -128,7 +142,7 @@ describe DataObjects::Mysql::Connection do
     command = @connection.create_command("SELECT * FROM widgets")
     command.should be_kind_of(DataObjects::Mysql::Command)
   end
-
+  
   it "should raise an error when attempting to execute a bad query" do
     lambda { @connection.create_command("INSERT INTO non_existant_table (tester) VALUES (1)").execute_non_query }.should raise_error(MysqlError)
     lambda { @connection.create_command("SELECT * FROM non_existant table").execute_reader }.should raise_error(MysqlError)
@@ -136,55 +150,71 @@ describe DataObjects::Mysql::Connection do
 
   describe "executing a query" do
     
-    it "should allow backslash string-escaping" do
-      reader = @connection.create_command("SELECT * FROM widgets WHERE name = ?").execute_reader("Willy O\'Hare")
-    end
-    
-    describe "reading results" do
-      before(:each) do
-        @command = @connection.create_command("SELECT * FROM widgets LIMIT 2")
-        @reader = @command.execute_reader
+    it "should return DateTimes using the current locale's Time Zone" do
+      date = DateTime.now
+      id = insert("INSERT INTO users (name, fired_at) VALUES (?, ?)", 'Sam', date)
+      select("SELECT fired_at FROM users WHERE id = ?", [DateTime], id) do |reader|
+        reader.values.last.to_s.should == date.to_s        
       end
-  
-      after(:each) do
-        @reader.close
+      exec("DELETE FROM users WHERE id = ?", id)
+    end
+
+    it "should return DateTimes using the current locale's Time Zone if they were inserted using a different timezone" do
+      pending "We don't support non-local date input yet"
+      now = DateTime.now
+      dates = [
+        now.new_offset( (-11 * 3600).to_r / 86400), # GMT -11:00
+        now.new_offset( (-9 * 3600 + 10 * 60).to_r / 86400), # GMT -9:10, contrived
+        now.new_offset( (-8 * 3600).to_r / 86400), # GMT -08:00
+        now.new_offset( (+3 * 3600).to_r / 86400), # GMT +03:00
+        now.new_offset( (+5 * 3600 + 30 * 60).to_r / 86400)  # GMT +05:30 (New Delhi)
+      ]
+
+      dates.each do |date|
+        id = insert("INSERT INTO users (name, fired_at) VALUES (?, ?)", 'Sam', date)
+    
+        select("SELECT fired_at FROM users WHERE id = ?", [DateTime], id) do |reader|
+          reader.values.last.to_s.should == now.to_s
+        end
+    
+        exec("DELETE FROM users WHERE id = ?", id)
+      end
+    end
+
+    describe "reading results" do
+            
+      it "should return the proper number of fields" do
+        select("SELECT * FROM widgets LIMIT 2") do |reader|
+          reader.fields.size.should == 21
+        end
       end
       
-      it "should return the proper number of fields" do
-        @reader.fields.size.should == 21
+      it "should raise an exception if .values is called after reading all available rows" do
+        select("SELECT * FROM widgets LIMIT 2") do |reader|
+          # select already calls next once for us
+          reader.next!
+          reader.next!
+
+          lambda { reader.values }.should raise_error(MysqlError)
+        end
       end
-  
-      it "should return raise an exception if .values is called after reading all available rows" do
-        3.times { @reader.next! }
-        lambda { @reader.values }.should raise_error(Exception)
-      end
-  
+      
       it "should fetch 2 rows" do
-        @reader.next!.should == true
-        @reader.values.should be_kind_of(Array)
-        
-        @reader.next!.should == true
-        @reader.values.should be_kind_of(Array)
-        
-        @reader.next!.should be_nil
+        select("SELECT * FROM widgets LIMIT 2") do |reader|
+          # select already calls next once for us
+          reader.next!.should == true
+          reader.next!.should be_nil
+        end
       end
       
       it "should contain tainted strings" do
-        @reader.next!
-  
-        @reader.values.each do |value|
-          (value.should be_tainted) if value.is_a?(String)
+        select("SELECT * FROM widgets LIMIT 2") do |reader|
+          reader.values.each do |value|
+            (value.should be_tainted) if value.is_a?(String)
+          end
         end
       end
     
-      # it "should NOT be closed after fetching all rows" do
-      #   2.times { @result.fetch_row }
-      #   @result.should_not be_closed
-      # end
-      # 
-      # it "should be closeable before fetching all rows" do
-      #   @result.close.should == true
-      # end
     end
     
     describe "executing a query w/ set_types" do      
@@ -195,22 +225,20 @@ describe DataObjects::Mysql::Connection do
           Bignum, BigDecimal, BigDecimal, BigDecimal, Date, DateTime, DateTime, String
         ]
       end
-
-      before(:each) do
-        @command = @connection.create_command("SELECT * FROM widgets LIMIT 2")
-        @command.set_types @types
-        @reader = @command.execute_reader
-      end
-
+    
       # HACK: This seems like a weak test
       it "should typecast all fields to the proper Ruby type" do
-        @reader.next!
-        
-        @types.each_with_index do |t, idx|
-          @reader.values[idx].class.should == @types[idx]
+        select("SELECT * FROM widgets LIMIT 2", @types) do |reader|
+          @types.each_with_index do |t, idx|
+            reader.values[idx].class.should == @types[idx]
+          end
         end
       end
-
+      
+      it "should raise an error when you pass too many or too few types for the expected result set" do
+        lambda { select("SELECT name, fired_at FROM users", [String, DateTime, Fixnum]) }.should raise_error(MysqlError)
+      end
+    
     end
 
   end
@@ -273,4 +301,25 @@ describe DataObjects::Mysql::Connection do
   
   end
   
+end
+
+def insert(query, *args)
+  result = @secondary_connection.create_command(query).execute_non_query(*args)
+  result.insert_id
+end
+
+def exec(query, *args)
+  @secondary_connection.create_command(query).execute_non_query(*args)
+end
+
+def select(query, types = nil, *args)
+  begin
+    command = @connection.create_command(query)
+    command.set_types types unless types.nil?
+    reader = command.execute_reader(*args)
+    reader.next!
+    yield reader if block_given?
+  ensure
+    reader.close if reader
+  end
 end

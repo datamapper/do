@@ -11,6 +11,10 @@ require File.expand_path(File.join(File.dirname(__FILE__), 'data_objects', 'quot
 module DataObjects
   class LengthMismatchError < StandardError; end
   
+  def self.root
+    @root ||= Pathname(__FILE__).dirname.parent.expand_path
+  end
+  
   def self.find_const(name)
     klass = Object
     name.to_s.split('::').each do |part|

@@ -13,11 +13,12 @@
 #define RUBY_STRING(char_ptr) rb_str_new2(char_ptr)
 #define CONST_GET(scope, constant) (rb_funcall(scope, ID_CONST_GET, 1, rb_str_new2(constant)))
 #define POSTGRES_CLASS(klass, parent) (rb_define_class_under(mPostgres, klass, parent))
+#define DEBUG(value) data_objects_debug(value)
 
 #ifdef _WIN32
-#define do_int64 unsigned __int64
+#define do_int64 signed __int64
 #else
-#define do_int64 unsigned long long int
+#define do_int64 signed long long int
 #endif
 
 // To store rb_intern values
@@ -44,6 +45,15 @@ static VALUE cResult;
 static VALUE cReader;
 
 static VALUE ePostgresError;
+
+static void data_objects_debug(VALUE string) {
+	VALUE logger = rb_funcall(mPostgres, ID_LOGGER, 0);
+	int log_level = NUM2INT(rb_funcall(logger, ID_LEVEL, 0));
+	
+	if (0 == log_level) {
+		rb_funcall(logger, ID_DEBUG, 1, string);
+	}
+}
 
 /* ====== Time/Date Parsing Helper Functions ====== */
 static void reduce( do_int64 *numerator, do_int64 *denominator ) {
@@ -85,22 +95,77 @@ static VALUE parse_date(char *date) {
 	return rb_funcall(rb_cDate, ID_NEW_DATE, 3, rational, INT2NUM(0), INT2NUM(2299161));
 }
 
-static VALUE parse_date_time(char *date) {
-	VALUE ajd;
+// Creates a Rational for use as a Timezone offset to be passed to DateTime.new!
+static VALUE seconds_to_offset(do_int64 num) {
+	do_int64 den = 86400;	
+	reduce(&num, &den);
+	return rb_funcall(rb_cRational, rb_intern("new!"), 2, rb_ll2inum(num), rb_ll2inum(den));	
+}
 
-	int year, month, day, hour, min, sec;
+static VALUE timezone_to_offset(const char sign, int hour_offset, int minute_offset) {
+	do_int64 seconds = 0;
+
+	seconds += hour_offset * 3600;
+	seconds += minute_offset * 60;
+
+	if ('-' == sign) {
+		seconds *= -1;
+	}
+
+	return seconds_to_offset(seconds);
+}
+
+static VALUE parse_date_time(char *date) {
+	VALUE ajd, offset;
+
+	int year, month, day, hour, min, sec, usec, hour_offset, minute_offset;
 	int jd;
+	char sign;
 
 	do_int64 num, den;
 
-	sscanf(date, "%4d-%2d-%2d %2d:%2d:%2d", &year, &month, &day, &hour, &min, &sec);
+	int tokens_read, max_tokens;
+	
+	if (0 != strchr(date, '.')) {
+		// This is a datetime with sub-second precision
+		tokens_read = sscanf(date, "%4d-%2d-%2d %2d:%2d:%2d.%d%1s%2d:%2d", &year, &month, &day, &hour, &min, &sec, &usec, &sign, &hour_offset, &minute_offset);
+		max_tokens = 10;
+	} else {
+		// This is a datetime second precision
+		tokens_read = sscanf(date, "%4d-%2d-%2d %2d:%2d:%2d%1s%2d:%2d", &year, &month, &day, &hour, &min, &sec, &sign, &hour_offset, &minute_offset);
+		max_tokens = 9;
+	}
+	
+	if (max_tokens == tokens_read) {
+		// We read the Date, Time, and Timezone info
+	} else if ((max_tokens - 1) == tokens_read) {
+		// We read the Date and Time, but no Minute Offset
+		minute_offset = 0;
+	} else if (tokens_read >= (max_tokens - 3)) {
+		// We read the Date and Time, maybe the Sign
+		sign = '+';
+		hour_offset = 0;
+		minute_offset = 0;
+	} else {
+		// Something went terribly wrong
+		rb_raise(ePostgresError, "Coulnd't parse date: %s", date);
+	}
 
 	jd = jd_from_date(year, month, day);
 
 	// Generate ajd with fractional days for the time
 	// Extracted from Date#jd_to_ajd, Date#day_fraction_to_time, and Rational#+ and #-
-
 	num = (hour * 1440) + (min * 24);
+
+	// Modify the numerator so when we apply the timezone everything works out
+	if ('-' == sign) {
+		// If the Timezone is behind UTC, we need to add the time offset
+		num += (hour_offset * 1440) + (minute_offset * 24);
+	} else {
+		// If the Timezone is ahead of UTC, we need to subtract the time offset
+		num -= (hour_offset * 1440) + (minute_offset * 24);
+	}
+	
 	den = (24 * 1440);
 	reduce(&num, &den);
 
@@ -117,7 +182,9 @@ static VALUE parse_date_time(char *date) {
 	reduce(&num, &den);
 
 	ajd = rb_funcall(rb_cRational, rb_intern("new!"), 2, rb_ull2inum(num), rb_ull2inum(den));
-	return rb_funcall(rb_cDateTime, ID_NEW_DATE, 3, ajd, INT2NUM(0), INT2NUM(2299161));
+	offset = timezone_to_offset(sign, hour_offset, minute_offset);
+	
+	return rb_funcall(rb_cDateTime, ID_NEW_DATE, 3, ajd, offset, INT2NUM(2299161));
 }
 
 static VALUE parse_time(char *date) {	
@@ -128,22 +195,6 @@ static VALUE parse_time(char *date) {
 	seconds += 6 * 3600; // Epoch begins at 6pm, so this gets our times fixed up
 	
 	return rb_funcall(rb_cTime, rb_intern("at"), 1, INT2NUM(seconds));
-}
-
-static void data_objects_debug(VALUE string) {
-	VALUE logger = rb_funcall(mPostgres, ID_LOGGER, 0);
-	int log_level = NUM2INT(rb_funcall(logger, ID_LEVEL, 0));
-	
-	if (0 == log_level) {
-		// char *tag = "[Postgres]";
-		// char *raw_message = StringValuePtr(string);
-		// char *log_message = (char*)calloc(strlen(raw_message) + strlen(tag), sizeof(char));
-		// sprintf(log_message, "%s %s", tag, raw_message);
-		// rb_funcall(logger, ID_DEBUG, 1, RUBY_STRING(log_message));
-		rb_funcall(logger, ID_DEBUG, 1, string);
-	
-		// free(log_message);
-	}
 }
 
 /* ===== Typecasting Functions ===== */
@@ -171,7 +222,7 @@ static VALUE infer_ruby_type(Oid type) {
 			break;
 		}
 		// case TIMESTAMPTZOID
-		// case TIMETXOID
+		// case TIMETZOID
 		case TIMEOID: {
 			ruby_type = "Time";
 			break;
@@ -265,7 +316,7 @@ static VALUE cConnection_initialize(VALUE self, VALUE uri) {
 	);
 
 	if ( PQstatus(db) == CONNECTION_BAD ) {
-		rb_raise(rb_eException, PQerrorMessage(db));
+		rb_raise(ePostgresError, PQerrorMessage(db));
 	}
 
 	rb_iv_set(self, "@uri", uri);

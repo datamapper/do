@@ -27,7 +27,8 @@ def ensure_users_table_and_return_connection
    money double precision DEFAULT 1908.56,
    created_on date DEFAULT ('now'::text)::date,
    created_at timestamp without time zone DEFAULT now(),
-   born_at time without time zone DEFAULT now()
+   born_at time without time zone DEFAULT now(),
+   fired_at timestamp with time zone DEFAULT now()
  )
  WITH (OIDS=FALSE);
 EOF
@@ -163,8 +164,39 @@ describe "DataObjects::Postgres::Reader" do
     reader = command.execute_reader
     reader.next!
     dt = reader.values[0]
-    p [dt, dt.year]
     reader.values[0].should be_a_kind_of(DateTime)
+  end
+  
+  it "should return DateTimes using the current locale's Time Zone" do
+    date = DateTime.now
+    id = insert("INSERT INTO users (name, fired_at) VALUES (?, ?)", 'Sam', date)
+    select("SELECT fired_at FROM users WHERE id = ?", [DateTime], id) do |reader|
+      reader.values.last.to_s.should == date.to_s
+    end
+    exec("DELETE FROM users WHERE id = ?", id)
+  end
+
+  it "should return DateTimes using the current locale's Time Zone if they were inserted using a different timezone" do
+    now = DateTime.now
+    dates = [
+      now,
+      now.new_offset( (-11 * 3600).to_r / 86400), # GMT -11:00
+      now.new_offset( (-9 * 3600 + 10 * 60).to_r / 86400), # GMT -9:10
+      now.new_offset( (-8 * 3600).to_r / 86400), # GMT -08:00
+      now.new_offset( (+3 * 3600).to_r / 86400), # GMT +03:00
+      now.new_offset( (+5 * 3600 + 30 * 60).to_r / 86400)  # GMT +05:30 (New Delhi)
+    ]
+
+    dates.each do |date|
+      id = insert("INSERT INTO users (name, fired_at) VALUES (?, ?)", 'Sam', date)
+
+      select("SELECT name, fired_at FROM users WHERE id = ?", [String, DateTime], id) do |reader|
+        reader.fields.should == ["name", "fired_at"]
+        reader.values.last.to_s.should == now.to_s
+      end
+
+      exec("DELETE FROM users WHERE id = ?", id)
+    end
   end
   
   it "should typecast a time field" do
@@ -175,23 +207,24 @@ describe "DataObjects::Postgres::Reader" do
   end
 end
 
+def insert(query, *args)
+  result = @connection.create_command(query[/\) RETURNING.*/i] ? query : "#{query} RETURNING id").execute_non_query(*args)
+  result.insert_id
+end
 
 
+def exec(query, *args)
+  @connection.create_command(query).execute_non_query(*args)
+end
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+def select(query, types = nil, *args)
+  begin
+    command = @connection.create_command(query)
+    command.set_types types unless types.nil?
+    reader = command.execute_reader(*args)
+    reader.next!
+    yield reader
+  ensure
+    reader.close
+  end
+end

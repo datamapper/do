@@ -16,9 +16,9 @@
 #define PUTS(string) rb_funcall(rb_mKernel, rb_intern("puts"), 1, RUBY_STRING(string))
 
 #ifdef _WIN32
-#define do_int64 unsigned __int64
+#define do_int64 signed __int64
 #else
-#define do_int64 unsigned long long int
+#define do_int64 signed long long int
 #endif
 
 // To store rb_intern values
@@ -138,15 +138,96 @@ static int jd_from_date(int year, int month, int day) {
   return floor(365.25 * (year + 4716)) + floor(30.6001 * (month + 1)) + day + b - 1524;
 }
 
+static VALUE seconds_to_offset(long seconds_offset) {
+	do_int64 num = seconds_offset, den = 86400;
+	reduce(&num, &den);
+	return rb_funcall(rb_cRational, rb_intern("new!"), 2, rb_ll2inum(num), rb_ll2inum(den));
+}
+
+static VALUE parse_date(const char *date) {
+	int year, month, day;
+	int jd, ajd;
+	VALUE rational;
+	
+	sscanf(date, "%4d-%2d-%2d", &year, &month, &day);
+
+	jd = jd_from_date(year, month, day);
+
+	// Math from Date.jd_to_ajd
+	ajd = jd * 2 - 1;
+	rational = rb_funcall(rb_cRational, ID_NEW_RATIONAL, 2, INT2NUM(ajd), INT2NUM(2));
+	return rb_funcall(rb_cDate, ID_NEW_DATE, 3, rational, INT2NUM(0), INT2NUM(2299161));
+}
+
+static VALUE parse_time(const char *time) {
+	int year, month, day, hour, min, sec;
+	
+	sscanf(time, "%4d-%2d-%2d %2d:%2d:%2d", &year, &month, &day, &hour, &min, &sec);
+
+	return rb_funcall(rb_cTime, ID_UTC, 6, INT2NUM(year), INT2NUM(month), INT2NUM(day), INT2NUM(hour), INT2NUM(min), INT2NUM(sec));
+}
+
+static VALUE parse_date_time(const char *date_time) {
+	VALUE ajd, offset;
+
+	int year, month, day, hour, min, sec;
+	int jd;
+	do_int64 num, den;
+	
+	time_t rawtime;
+	struct tm * timeinfo;
+
+	// Mysql date format: 2008-05-03 14:43:00
+	sscanf(date_time, "%4d-%2d-%2d %2d:%2d:%2d", &year, &month, &day, &hour, &min, &sec);
+		
+	jd = jd_from_date(year, month, day);
+	
+	// Generate ajd with fractional days for the time
+	// Extracted from Date#jd_to_ajd, Date#day_fraction_to_time, and Rational#+ and #-
+	num = ((hour) * 1440) + ((min) * 24); // (Hour * Minutes in a day) + (minutes * 24)
+
+	// Get localtime
+	time(&rawtime);
+	timeinfo = localtime(&rawtime);
+	
+	// TODO: Refactor the following few lines to do the calculation with the *seconds*
+	// value instead of having to do the hour/minute math
+	int hour_offset = abs(timeinfo->tm_gmtoff) / 3600;
+	int minute_offset = abs(timeinfo->tm_gmtoff) % 3600 / 60;
+
+	// Modify the numerator so when we apply the timezone everything works out
+	if (timeinfo->tm_gmtoff < 0) {
+		// If the Timezone is behind UTC, we need to add the time offset
+		num += (hour_offset * 1440) + (minute_offset * 24);
+	} else {
+		// If the Timezone is ahead of UTC, we need to subtract the time offset
+		num -= (hour_offset * 1440) + (minute_offset * 24);
+	}
+	
+	den = (24 * 1440);
+	reduce(&num, &den);
+	
+	num = (num * 86400) + (sec * den);
+	den = den * 86400;
+	reduce(&num, &den);
+	
+	num = (jd * den) + num;
+	
+	num = num * 2 - den;
+	den = den * 2;
+	reduce(&num, &den);
+	
+	ajd = rb_funcall(rb_cRational, rb_intern("new!"), 2, rb_ull2inum(num), rb_ull2inum(den));
+	
+	// Calculate the offset using the seconds from GMT
+	offset = seconds_to_offset(timeinfo->tm_gmtoff);
+
+	return rb_funcall(rb_cDateTime, ID_NEW_DATE, 3, ajd, offset, INT2NUM(2299161));
+}
+
 // Convert C-string to a Ruby instance of type "ruby_class_name"
 static VALUE cast_mysql_value_to_ruby_value(const char* data, char* ruby_class_name) {
 	VALUE ruby_value = Qnil;
-	VALUE rational, ajd_value;
-
-	int year, month, day, hour, min, sec;
-	int jd, ajd;
-
-	do_int64 num, den;
 
 	if (NULL == data)
 		return Qnil;
@@ -163,48 +244,15 @@ static VALUE cast_mysql_value_to_ruby_value(const char* data, char* ruby_class_n
 	} else if (0 == strcmp("Float", ruby_class_name) ) {
 		ruby_value = rb_float_new(strtod(data, NULL));
 	} else if (0 == strcmp("BigDecimal", ruby_class_name) ) {
-		// There's a much faster way to do this I'm sure...
 		ruby_value = rb_funcall(rb_cBigDecimal, ID_NEW, 1, TAINTED_STRING(data));
 	} else if (0 == strcmp("TrueClass", ruby_class_name) || 0 == strcmp("FalseClass", ruby_class_name)) {
 		ruby_value = (NULL == data || 0 == data || 0 == strcmp("0", data)) ? Qfalse : Qtrue;
 	} else if (0 == strcmp("Date", ruby_class_name)) {
-		sscanf(data, "%4d-%2d-%2d", &year, &month, &day);
-
-		jd = jd_from_date(year, month, day);
-
-		// Math from Date.jd_to_ajd
-		ajd = jd * 2 - 1;
-		rational = rb_funcall(rb_cRational, ID_NEW_RATIONAL, 2, INT2NUM(ajd), INT2NUM(2));
-		ruby_value = rb_funcall(rb_cDate, ID_NEW_DATE, 3, rational, INT2NUM(0), INT2NUM(2299161));
+		ruby_value = parse_date(data);
 	} else if (0 == strcmp("DateTime", ruby_class_name)) {
-		sscanf(data, "%4d-%2d-%2d %2d:%2d:%2d", &year, &month, &day, &hour, &min, &sec);
-
-		jd = jd_from_date(year, month, day);
-
-		// Generate ajd with fractional days for the time
-		// Extracted from Date#jd_to_ajd, Date#day_fraction_to_time, and Rational#+ and #-
-		num = (hour * 1440) + (min * 24);
-		den = (24 * 1440);
-		reduce(&num, &den);
-
-		num = (num * 86400) + (sec * den);
-		den = den * 86400;
-		reduce(&num, &den);
-
-		num = (jd * den) + num;
-
-		num = num * 2;
-		num = num - den;
-		den = den * 2;
-
-		reduce(&num, &den);
-
-		ajd_value = rb_funcall(rb_cRational, ID_NEW_RATIONAL, 2, rb_ull2inum(num), rb_ull2inum(den));
-		ruby_value = rb_funcall(rb_cDateTime, ID_NEW_DATE, 3, ajd_value, INT2NUM(0), INT2NUM(2299161));
+		ruby_value = parse_date_time(data);
 	} else if (0 == strcmp("Time", ruby_class_name)) {
-		sscanf(data, "%4d-%2d-%2d %2d:%2d:%2d", &year, &month, &day, &hour, &min, &sec);
-
-		ruby_value = rb_funcall(rb_cTime, ID_UTC, 6, INT2NUM(year), INT2NUM(month), INT2NUM(day), INT2NUM(hour), INT2NUM(min), INT2NUM(sec));
+		ruby_value = parse_time(data);
 	} else {
 		ruby_value = TAINTED_STRING(data);
 	}
@@ -217,13 +265,7 @@ static void data_objects_debug(VALUE string) {
 	int log_level = NUM2INT(rb_funcall(logger, ID_LEVEL, 0));
 	
 	if (0 == log_level) {
-		// char *tag = "[Mysql]";
-		// char *raw_message = StringValuePtr(string);
-		// char *log_message = (char*)calloc(strlen(raw_message) + strlen(tag), sizeof(char));
-		// sprintf(log_message, "%s %s", tag, raw_message);
 		rb_funcall(logger, ID_DEBUG, 1, string);
-	
-		// free(log_message);
 	}
 }
 
@@ -458,8 +500,10 @@ static VALUE cConnection_real_close(VALUE self) {
 	return Qtrue;
 }
 
-// Accepts an array of Ruby types (Fixnum, Float, String, etc...) and turns them
-// into Ruby-strings so we can easily typecast later
+/*
+Accepts an array of Ruby types (Fixnum, Float, String, etc...) and turns them
+into Ruby-strings so we can easily typecast later
+*/
 static VALUE cCommand_set_types(VALUE self, VALUE array) {
 	VALUE type_strings = rb_ary_new();
 	int i;
@@ -477,9 +521,17 @@ VALUE cCommand_quote_time(VALUE self, VALUE value) {
 	return rb_funcall(value, ID_STRFTIME, 1, RUBY_STRING("'%Y-%m-%d %H:%M:%S'"));
 }
 
+
+VALUE cCommand_quote_date_time(VALUE self, VALUE value) {
+	// TODO: Support non-local dates. we need to call #new_offset on the date to be
+	// quoted and pass in the current locale's date offset (self.new_offset((hours * 3600).to_r / 86400)
+	return rb_funcall(value, ID_STRFTIME, 1, RUBY_STRING("'%Y-%m-%d %H:%M:%S'"));
+}
+
 VALUE cCommand_quote_date(VALUE self, VALUE value) {
 	return rb_funcall(value, ID_STRFTIME, 1, RUBY_STRING("'%Y-%m-%d'"));
 }
+
 static VALUE cCommand_quote_string(VALUE self, VALUE string) {
 	MYSQL *db = DATA_PTR(rb_iv_get(rb_iv_get(self, "@connection"), "@connection"));
 	const char *source = StringValuePtr(string);
@@ -582,6 +634,11 @@ static VALUE cCommand_execute_reader(int argc, VALUE *argv, VALUE self) {
 	if ( field_types == Qnil || 0 == RARRAY(field_types)->len ) {
 		field_types = rb_ary_new();
 		guess_default_field_types = 1;
+	} else if (RARRAY(field_types)->len != field_count) {
+		// Whoops...  wrong number of types passed to set_types.  Close the reader and raise
+		// and error
+		rb_funcall(reader, rb_intern("close"), 0);
+		rb_raise(eMysqlError, "Field-count mismatch. Expected %d fields, but the query yielded %d", RARRAY(field_types)->len, field_count);
 	}
 
 	for(i = 0; i < field_count; i++) {
@@ -668,7 +725,7 @@ static VALUE cReader_next(VALUE self) {
 static VALUE cReader_values(VALUE self) {
 	VALUE state = rb_iv_get(self, "@state");
 	if ( state == Qnil || state == Qfalse ) {
-		rb_raise(rb_eException, "Reader is not initialized");
+		rb_raise(eMysqlError, "Reader is not initialized");
 	}
 	else {
 		return rb_iv_get(self, "@values");
@@ -735,11 +792,9 @@ void Init_do_mysql_ext() {
 	rb_define_method(cCommand, "execute_non_query", cCommand_execute_non_query, -1);
 	rb_define_method(cCommand, "execute_reader", cCommand_execute_reader, -1);
 	rb_define_method(cCommand, "quote_string", cCommand_quote_string, 1);
-
-	// Both Command#quote_time and Command#quote_time use cCommand_qote_time
-	rb_define_method(cCommand, "quote_time", cCommand_quote_time, 1);
-	rb_define_method(cCommand, "quote_datetime", cCommand_quote_time, 1);
 	rb_define_method(cCommand, "quote_date", cCommand_quote_date, 1);
+	rb_define_method(cCommand, "quote_time", cCommand_quote_time, 1);
+	rb_define_method(cCommand, "quote_datetime", cCommand_quote_date_time, 1);
 
 	// Non-Query result
 	cResult = DRIVER_CLASS("Result", cDO_Result);

@@ -16,9 +16,9 @@
 #define TRUE_CLASS CONST_GET(rb_mKernel, "TrueClass")
 
 #ifdef _WIN32
-#define do_int64 unsigned __int64
+#define do_int64 signed __int64
 #else
-#define do_int64 unsigned long long int
+#define do_int64 signed long long int
 #endif
 
 // To store rb_intern values
@@ -75,12 +75,12 @@ static VALUE native_typecast(sqlite3_value *value, int type) {
 // Find the greatest common denominator and reduce the provided numerator and denominator.
 // This replaces calles to Rational.reduce! which does the same thing, but really slowly.
 static void reduce( do_int64 *numerator, do_int64 *denominator ) {
-	do_int64 a, b, c;
+	do_int64 a, b, c = 0;
 	a = *numerator;
 	b = *denominator;
 	while ( a != 0 ) {
 		c = a; a = b % a; b = c;
-	}
+	}	
 	*numerator = *numerator / b;
 	*denominator = *denominator / b;
 }
@@ -102,26 +102,101 @@ static void data_objects_debug(VALUE string) {
 	int log_level = NUM2INT(rb_funcall(logger, ID_LEVEL, 0));
 	
 	if (0 == log_level) {
-		// char *tag = "[Sqlite3]";
-		// char *raw_message = StringValuePtr(string);
-		// char *log_message = (char*)calloc(strlen(raw_message) + strlen(tag), sizeof(char));
-		// sprintf(log_message, "%s %s", tag, raw_message);
 		rb_funcall(logger, ID_DEBUG, 1, string);
-	
-		// free(log_message);
 	}
+}
+
+static VALUE parse_date(char *date) {
+	int year, month, day;
+	int jd, ajd;
+	VALUE rational;
+
+	sscanf(date, "%4d-%2d-%2d", &year, &month, &day);
+	
+	jd = jd_from_date(year, month, day);
+	
+	// Math from Date.jd_to_ajd
+	ajd = jd * 2 - 1;
+	rational = rb_funcall(rb_cRational, rb_intern("new!"), 2, INT2NUM(ajd), INT2NUM(2));
+	return rb_funcall(rb_cDate, ID_NEW_DATE, 3, rational, INT2NUM(0), INT2NUM(2299161));	
+}
+
+// Creates a Rational for use as a Timezone offset to be passed to DateTime.new!
+static VALUE seconds_to_offset(do_int64 num) {
+	do_int64 den = 86400;	
+	reduce(&num, &den);
+	return rb_funcall(rb_cRational, rb_intern("new!"), 2, rb_ll2inum(num), rb_ll2inum(den));	
+}
+
+static VALUE timezone_to_offset(const char sign, int hour_offset, int minute_offset) {
+	do_int64 seconds = 0;
+
+	seconds += hour_offset * 3600;
+	seconds += minute_offset * 60;
+
+	if ('-' == sign) {
+		seconds *= -1;
+	}
+
+	return seconds_to_offset(seconds);
+}
+
+static VALUE parse_date_time(const char *date) {
+	VALUE ajd, offset;
+
+	int year, month, day, hour, min, sec, hour_offset, minute_offset;
+	int jd;
+	char sign;
+	do_int64 num, den;
+
+	// Sqlite3 date format: 2008-05-03T14:43:00-05:00
+	sscanf(date, "%4d-%2d-%2dT%2d:%2d:%2d%1s%2d:%2d", &year, &month, &day, &hour, &min, &sec, &sign, &hour_offset, &minute_offset);
+	
+	jd = jd_from_date(year, month, day);
+	
+	// Generate ajd with fractional days for the time
+	// Extracted from Date#jd_to_ajd, Date#day_fraction_to_time, and Rational#+ and #-
+	num = ((hour) * 1440) + ((min) * 24); // (Hour * Minutes in a day) + (minutes * 24)
+	
+	// Modify the numerator so when we apply the timezone everything works out
+	if ('-' == sign) {
+		// If the Timezone is behind UTC, we need to add the time offset
+		num += (hour_offset * 1440) + (minute_offset * 24);
+	} else {
+		// If the Timezone is ahead of UTC, we need to subtract the time offset
+		num -= (hour_offset * 1440) + (minute_offset * 24);
+	}
+	
+	den = (24 * 1440);
+	reduce(&num, &den);
+	
+	num = (num * 86400) + (sec * den);
+	den = den * 86400;
+	reduce(&num, &den);
+	
+	num = (jd * den) + num;
+	
+	num = num * 2 - den;
+	den = den * 2;
+	reduce(&num, &den);
+	
+	ajd = rb_funcall(rb_cRational, rb_intern("new!"), 2, rb_ull2inum(num), rb_ull2inum(den));
+	offset = timezone_to_offset(sign, hour_offset, minute_offset);
+	
+	return rb_funcall(rb_cDateTime, ID_NEW_DATE, 3, ajd, offset, INT2NUM(2299161));
+}
+
+static VALUE parse_time(char *date) {
+
+	int year, month, day, hour, min, sec;
+
+	sscanf(date, "%4d-%2d-%2d %2d:%2d:%2d", &year, &month, &day, &hour, &min, &sec);
+	
+	return rb_funcall(rb_cTime, rb_intern("utc"), 6, INT2NUM(year), INT2NUM(month), INT2NUM(day), INT2NUM(hour), INT2NUM(min), INT2NUM(sec));
 }
 
 static VALUE ruby_typecast(sqlite3_value *value, char *type, int original_type) {
 	VALUE ruby_value = Qnil;
-	VALUE rational, ajd_value;
-
-	int year, month, day, hour, min, sec, hour_offset, minute_offset;
-	int jd, ajd;
-
-	do_int64 num, den;
-
-	char *date, sign;
 
 	if ( original_type == SQLITE_NULL ) {
 		return ruby_value;
@@ -146,54 +221,13 @@ static VALUE ruby_typecast(sqlite3_value *value, char *type, int original_type) 
 		ruby_value = rb_float_new(sqlite3_value_double(value));
 	}
 	else if ( strcmp(type, "Date") == 0 ) {
-		date = (char*)sqlite3_value_text(value);
-		
-		sscanf(date, "%4d-%2d-%2d", &year, &month, &day);
-		
-		jd = jd_from_date(year, month, day);
-		
-		// Math from Date.jd_to_ajd
-		ajd = jd * 2 - 1;
-		rational = rb_funcall(rb_cRational, rb_intern("new!"), 2, INT2NUM(ajd), INT2NUM(2));
-		ruby_value = rb_funcall(rb_cDate, ID_NEW_DATE, 3, rational, INT2NUM(0), INT2NUM(2299161));
+		ruby_value = parse_date((char*)sqlite3_value_text(value));
 	}
 	else if ( strcmp(type, "DateTime") == 0 ) {
-		date = (char*)sqlite3_value_text(value);
-		
-		// Sqlite3 date format: 2008-05-03T14:43:00-05:00
-		sscanf(date, "%4d-%2d-%2dT%2d:%2d:%2d%1s%2d:%2d", &year, &month, &day, &hour, &min, &sec, &sign, &hour_offset, &minute_offset);
-		
-		jd = jd_from_date(year, month, day);
-		
-		// Generate ajd with fractional days for the time
-		// Extracted from Date#jd_to_ajd, Date#day_fraction_to_time, and Rational#+ and #-
-		num = (hour * 1440) + (min * 24);
-		den = (24 * 1440);
-		reduce(&num, &den);
-		
-		num = (num * 86400) + (sec * den);
-		den = den * 86400;
-		reduce(&num, &den);
-		
-		num = (jd * den) + num;
-		
-		num = num * 2;
-		num = num - den;
-		den = den * 2;
-		
-		reduce(&num, &den);
-		
-		ajd_value = rb_funcall(rb_cRational, rb_intern("new!"), 2, rb_ull2inum(num), rb_ull2inum(den));
-		// ruby_value = rb_funcall(rb_cDateTime, ID_NEW_DATE, 3, ajd_value, INT2NUM(0), INT2NUM(2299161));
-		// TODO: This be broke!
-		ruby_value = rb_funcall(rb_cDateTime, ID_NEW_DATE, 3, ajd_value, rb_ull2inum(hour_offset), INT2NUM(2299161));
+		ruby_value = parse_date_time((char*)sqlite3_value_text(value));
 	}
 	else if ( strcmp(type, "Time") == 0 ) {
-		date = (char*)sqlite3_value_text(value);
-		
-		sscanf(date, "%4d-%2d-%2d %2d:%2d:%2d", &year, &month, &day, &hour, &min, &sec);
-		
-		ruby_value = rb_funcall(rb_cTime, rb_intern("utc"), 6, INT2NUM(year), INT2NUM(month), INT2NUM(day), INT2NUM(hour), INT2NUM(min), INT2NUM(sec));
+		ruby_value = parse_time((char*)sqlite3_value_text(value));
 	}
 	return ruby_value;
 }
@@ -388,7 +422,7 @@ static VALUE cReader_next(VALUE self) {
 static VALUE cReader_values(VALUE self) {
 	VALUE state = rb_iv_get(self, "@state");
 	if ( state == Qnil || NUM2INT(state) != SQLITE_ROW ) {
-		rb_raise(rb_eException, "Reader is not initialized");
+		rb_raise(eSqlite3Error, "Reader is not initialized");
 	}
 	else {
 		return rb_iv_get(self, "@values");
