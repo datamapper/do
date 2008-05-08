@@ -7,16 +7,6 @@ class Object
     class MustImplementDisposeError < StandardError
     end
     
-    @size = 4
-    
-    def self.size
-      @size
-    end
-    
-    def self.size=(value)
-      @size = size
-    end
-    
     def self.included(target)
       target.extend(ClassMethods)
     end
@@ -28,10 +18,12 @@ class Object
     class Pools
       
       attr_reader :type
+      attr_accessor :size
       
-      def initialize(type)
+      def initialize(type, size = 4)
         @type = type
-        @pools = Hash.new { |h,k| h[k] = Pool.new(@type, k) }
+        @size = size
+        @pools = Hash.new { |h,k| h[k] = Pool.new(@size, @type, k) }
       end
       
       def flush!
@@ -51,7 +43,8 @@ class Object
       
         attr_reader :type, :available, :reserved
       
-        def initialize(type, initializer)
+        def initialize(size, type, initializer)
+          @size = size
           @type = type
           @initializer = initializer
           @lock = Mutex.new
@@ -60,35 +53,54 @@ class Object
         end
       
         def flush!
-          reserved.each do |entry|
-            entry.release
-          end
+          @lock.synchronize do
+            reserved.each do |instance|
+              if @reserved.delete?(instance)
+                @available << instance
+              end
+            end
         
-          available.each do |entry|
-            entry.dispose
-          end
+            available.each do |instance|
+              instance.dispose
+            end
           
-          @available = []
-          @reserved = Set.new
+            @available = []
+            @reserved = Set.new
+          end
         end
         
         def new
-          instance = nil
-
-          @lock.synchronize do          
-            unless @available.empty?
-              instance = @available.pop
-            else
-              instance = @type.allocate
-              instance.send(:initialize, *@initializer)
-              at_exit { instance.dispose }
-              instance.instance_variable_set("@__pool", self)
+          if @available.empty?
+            @lock.synchronize do
+              instance = nil
+              
+              if @available.empty?
+                if @reserved.size < @size
+                  instance = @type.allocate
+                  instance.send(:initialize, *@initializer)
+                  at_exit { instance.dispose }
+                  instance.instance_variable_set("@__pool", self)
+                else
+                  # until(instance) do
+                    # TODO: Need to wait for an instance to become available,
+                    # but to do that we need to not use a synchronization block.
+                  # end
+                  
+                  instance = @type.allocate
+                  instance.send(:initialize, *@initializer)
+                  at_exit { instance.dispose }
+                  instance.instance_variable_set("@__pool", self)
+                end
+              else
+                instance = @available.pop
+              end
+              
+              @reserved << instance
+              instance
             end
-
-            @reserved << instance
+          else
+            aquire_instance!
           end
-
-          return instance
         end
 
         def release(instance)
@@ -101,7 +113,16 @@ class Object
         end
         
         private
-        def synchronize
+        def aquire_instance!
+          instance = nil
+          
+          @lock.synchronize do
+            instance = @available.pop
+            raise StandardError.new("Concurrency Error!") unless instance
+            @reserved << instance
+          end
+          
+          instance
         end
       end
     end

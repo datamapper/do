@@ -1,4 +1,5 @@
 require File.join(File.dirname(__FILE__), '..', '..', 'lib', 'data_objects', 'support', 'pooling')
+require 'timeout'
 
 describe "Object::Pooling" do
   
@@ -21,7 +22,22 @@ describe "Object::Pooling" do
   end
   
   it "should have a max pool-size" do
-    Object::Pooling::size.should == 4
+    pending
+    
+    Thing::pools.size.should == 4
+    
+    Thing.new('Grumpy')
+    Thing.new('Grumpy')
+    Thing.new('Grumpy')
+    Thing.new('Grumpy')
+    
+    thread = Thread.new { Thing.new('Grumpy') }
+    
+    lambda do
+      Timeout::timeout(1) { thread.join }
+    end.should raise_error(Timeout::Error)
+    
+    Thing::pools.flush!
   end
   
   it "should respond to ::new and #release" do
@@ -83,5 +99,7 @@ describe "Object::Pooling" do
     Thing::pools['bob'].flush!
   end
   
-  it "should dispose idle available objects"
+  it "should dispose idle available objects" do
+    pending
+  end
 end
