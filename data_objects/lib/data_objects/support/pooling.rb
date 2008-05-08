@@ -185,8 +185,6 @@ class Object
         end
 
         pools[*args].new
-        # uri = uri.is_a?(String) ? Addressable::URI::parse(uri) : uri
-        # DataObjects.const_get(uri.scheme.capitalize)::Connection.acquire(uri)
       end
 
       def pools
