@@ -15,34 +15,17 @@ require File.expand_path(File.join(File.dirname(__FILE__), 'spec_helper'))
 #
 #
 
-def ensure_users_table_and_return_connection
-  connection = DataObjects::Connection.new("postgres://localhost/do_test")
-  connection.create_command("DROP TABLE users").execute_non_query rescue nil
-  connection.create_command(<<EOF
- CREATE TABLE users
- (
-   id serial NOT NULL,
-   "name" text,
-   registered boolean DEFAULT false,
-   money double precision DEFAULT 1908.56,
-   created_on date DEFAULT ('now'::text)::date,
-   created_at timestamp without time zone DEFAULT now(),
-   born_at time without time zone DEFAULT now(),
-   fired_at timestamp with time zone DEFAULT now()
- )
- WITH (OIDS=FALSE);
-EOF
-).execute_non_query
-  return connection
-end
-
 describe "DataObjects::Postgres::Connection" do
+  include PostgresSpecHelpers
+  
   it "should connect to the db" do
     connection = DataObjects::Connection.new("postgres://localhost/do_test")
   end
 end
 
 describe "DataObjects::Postgres::Command" do
+  include PostgresSpecHelpers
+
   before :all do
     @connection = ensure_users_table_and_return_connection
   end
@@ -72,6 +55,8 @@ describe "DataObjects::Postgres::Command" do
 end
 
 describe "DataObjects::Postgres::Result" do
+  include PostgresSpecHelpers
+  
   before :all do
     @connection = ensure_users_table_and_return_connection
   end
@@ -99,6 +84,8 @@ describe "DataObjects::Postgres::Result" do
 end
 
 describe "DataObjects::Postgres::Reader" do
+  include PostgresSpecHelpers
+
   before :all do
     @connection = ensure_users_table_and_return_connection
     @connection.create_command("INSERT INTO users (name) VALUES ('Test')").execute_non_query
@@ -204,27 +191,5 @@ describe "DataObjects::Postgres::Reader" do
     reader = command.execute_reader
     reader.next!
     reader.values[0].should be_a_kind_of(Time)
-  end
-end
-
-def insert(query, *args)
-  result = @connection.create_command(query[/\) RETURNING.*/i] ? query : "#{query} RETURNING id").execute_non_query(*args)
-  result.insert_id
-end
-
-
-def exec(query, *args)
-  @connection.create_command(query).execute_non_query(*args)
-end
-
-def select(query, types = nil, *args)
-  begin
-    command = @connection.create_command(query)
-    command.set_types types unless types.nil?
-    reader = command.execute_reader(*args)
-    reader.next!
-    yield reader
-  ensure
-    reader.close
   end
 end

@@ -1,6 +1,8 @@
 require File.expand_path(File.join(File.dirname(__FILE__), 'spec_helper'))
 
 describe "DataObjects::Sqlite3" do
+  include Sqlite3SpecHelpers
+  
   it "should raise error on bad connection string" do
     lambda { DataObjects::Connection.new("sqlite3:///ac0d9iopalmsdcasd/asdc9pomasd/test.db") }.should raise_error("unable to open database file")
   end
@@ -8,6 +10,8 @@ end
 
 
 describe "DataObjects::Sqlite3::Result" do
+  include Sqlite3SpecHelpers
+  
   before(:all) do
     @connection = DataObjects::Connection.new("sqlite3://#{File.expand_path(File.dirname(__FILE__))}/test.db")
   end
@@ -184,25 +188,4 @@ describe "DataObjects::Sqlite3::Result" do
     end
     
   end # describe "quoting"
-end
-
-def insert(query, *args)
-  result = @connection.create_command(query).execute_non_query(*args)
-  result.insert_id
-end
-
-def exec(query, *args)
-  @connection.create_command(query).execute_non_query(*args)
-end
-
-def select(query, types = nil, *args)
-  begin
-    command = @connection.create_command(query)
-    command.set_types types unless types.nil?
-    reader = command.execute_reader(*args)
-    reader.next!
-    yield reader
-  ensure
-    reader.close
-  end
 end

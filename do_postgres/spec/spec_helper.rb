@@ -22,3 +22,47 @@ log_path = File.expand_path(File.join(File.dirname(__FILE__), '..', 'log', 'do.l
 FileUtils.mkdir_p(File.dirname(log_path))
 
 DataObjects::Postgres.logger = DataObjects::Logger.new(log_path, 0)
+
+module PostgresSpecHelpers
+
+  def ensure_users_table_and_return_connection
+    connection = DataObjects::Connection.new("postgres://localhost/do_test")
+    connection.create_command("DROP TABLE users").execute_non_query rescue nil
+    connection.create_command(<<-EOF).execute_non_query
+      CREATE TABLE users (
+        id serial NOT NULL,
+        "name" text,
+        registered boolean DEFAULT false,
+        money double precision DEFAULT 1908.56,
+        created_on date DEFAULT ('now'::text)::date,
+        created_at timestamp without time zone DEFAULT now(),
+        born_at time without time zone DEFAULT now(),
+        fired_at timestamp with time zone DEFAULT now()
+      )
+      WITH (OIDS=FALSE);
+    EOF
+
+    return connection
+  end
+
+  def insert(query, *args)
+    result = @connection.create_command(query[/\) RETURNING.*/i] ? query : "#{query} RETURNING id").execute_non_query(*args)
+    result.insert_id
+  end
+
+  def exec(query, *args)
+    @connection.create_command(query).execute_non_query(*args)
+  end
+
+  def select(query, types = nil, *args)
+    begin
+      command = @connection.create_command(query)
+      command.set_types types unless types.nil?
+      reader = command.execute_reader(*args)
+      reader.next!
+      yield reader
+    ensure
+      reader.close
+    end
+  end
+end
