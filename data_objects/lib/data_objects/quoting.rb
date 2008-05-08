@@ -43,6 +43,7 @@ module DataObjects
         when Date then quote_date(value)
         when TrueClass, FalseClass then quote_boolean(value)
         when Array then quote_array(value)
+        when Range then quote_range(value)
         when Symbol then quote_symbol(value)
         else 
           if value.respond_to?(:to_sql)
@@ -87,6 +88,10 @@ module DataObjects
     
     def quote_array(value)
       "(#{value.map { |entry| quote_value(entry) }.join(', ')})"
+    end
+    
+    def quote_range(value)
+      "#{quote_value(value.first)} AND #{quote_value(value.last)}"      
     end
   end
   

@@ -15,6 +15,10 @@ module DataObjects
       def execute_non_query(*args)
         Result.new(self, 0, nil)
       end
+      
+      def execute_reader(*args)
+        Reader.new
+      end
     end
     
     class Result < DataObjects::Result
