@@ -16,6 +16,9 @@ class Object
 
     # ==== Notes
     # Releases pool collection.
+    #
+    # ----
+    # @public
     def release
       @__pool.release(self)
     end
@@ -39,6 +42,9 @@ class Object
       # ==== Parameters
       # type<Class>:: Type of objects in pool.
       # size<Integer>:: size of pool, is optional, default is 4.
+      #
+      # ----
+      # @public
       def initialize(type, size = 4)
         @type = type
         @size = size
@@ -50,6 +56,9 @@ class Object
       #
       # ==== Returns
       # <Pools>:: self is returned so calls can be chained.
+      #
+      # ----
+      # @public
       def flush!
         @pools.each_pair do |args,pool|
           pool.flush!
@@ -65,6 +74,9 @@ class Object
       #
       # ==== Returns
       # <Array>:: Pools with given names.
+      #
+      # ----
+      # @public
       def [](*args)
         @pools[*args]
       end
@@ -90,6 +102,9 @@ class Object
         # type<Class>:: class of instances in this pool.
         # initializer<~to_a>:: arguments passed to pool object
         #                      class on instantiation of new object.
+        #
+        # ----
+        # @public
         def initialize(size, type, initializer)
           @size = size
           @type = type
@@ -105,6 +120,9 @@ class Object
         # all objects in the pool and clears it.
         #
         # This method is thread safe.
+        #
+        # ----
+        # @public
         def flush!
           @lock.synchronize do
             reserved.each do |instance|
@@ -148,8 +166,8 @@ class Object
                   instance.instance_variable_set("@__pool", self)
                 else
                   # until(instance) do
-                    # TODO: Need to wait for an instance to become available,
-                    # but to do that we need to not use a synchronization block.
+                  # TODO: Need to wait for an instance to become available,
+                  # but to do that we need to not use a synchronization block.
                   # end
 
                   instance = @type.allocate
@@ -198,6 +216,9 @@ class Object
         #
         # ==== Returns
         # <Pool>:: new instance aquired from pool.
+        #
+        # ----
+        # @public
         def aquire_instance!
           instance = nil
 
@@ -218,6 +239,9 @@ class Object
       #
       # ==== Parameters
       # <*args>:: name(s) of pools in this pool collection.
+      #
+      # ----
+      # @public
       def new(*args)
         unless instance_methods.include?("dispose")
           raise MustImplementDisposeError.new("#{self.name} must implement a `dispose' instance-method.")
