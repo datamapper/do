@@ -3,6 +3,7 @@ $TESTING=true
 require 'rubygems'
 require 'spec'
 require 'date'
+require 'pathname'
 
 # put data_objects from repository in the load path
 # DO NOT USE installed gem of data_objects!
@@ -13,6 +14,12 @@ require 'data_objects'
 $:.unshift File.expand_path(File.join(File.dirname(__FILE__), '..', 'lib'))
 require 'do_sqlite3'
 
+log_path = File.expand_path(File.join(File.dirname(__FILE__), '..', 'log', 'do.log'))
+FileUtils.mkdir_p(File.dirname(log_path))
+
+DataObjects::Sqlite3.logger = DataObjects::Logger.new(log_path, 0)
+
+at_exit { DataObjects.logger.flush }
 
 module Sqlite3SpecHelpers
   

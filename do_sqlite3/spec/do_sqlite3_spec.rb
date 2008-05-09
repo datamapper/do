@@ -8,6 +8,7 @@ describe "DataObjects::Sqlite3" do
   end
 end
 
+NOW = DateTime.now
 
 describe "DataObjects::Sqlite3::Result" do
   include Sqlite3SpecHelpers
@@ -30,7 +31,7 @@ describe "DataObjects::Sqlite3::Result" do
   it "should return the affected rows and insert_id" do
     command = @connection.create_command("DROP TABLE users")
     command.execute_non_query rescue nil
-    command = @connection.create_command("CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT, type TEXT, age INTEGER, created_at DATETIME)")
+    command = @connection.create_command("CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT, type TEXT, age INTEGER, created_at DATETIME, balance DECIMAL default '0.00')")
     result = command.execute_non_query
     command = @connection.create_command("INSERT INTO users (name) VALUES ('test')")    
     result = command.execute_non_query
@@ -113,39 +114,51 @@ describe "DataObjects::Sqlite3::Result" do
     exec("DELETE FROM users WHERE id = ?", id)
   end
   
-  it "should return DateTimes using the LOCAL timezone if no timezone data is available in the stored date" do
-    now = DateTime.now
-    
-    # Insert a timezone-less DateTime into the DB
-    id = insert("INSERT INTO users (name, age, type, created_at) VALUES (?, ?, ?, ?)", 'Sam', 30, Person, now.strftime('%Y-%m-%dT%H:%M:%S'))
+  [
+    NOW.strftime('%Y-%m-%dT%H:%M:%S'),
+    NOW.strftime('%Y-%m-%d %H:%M:%S')
+  ].each do |raw_value|
+    it "should return #{NOW.to_s} using the LOCAL timezone when typecasting '#{raw_value}'" do
 
-    select("SELECT created_at FROM users WHERE id = ?", [DateTime], id) do |reader|
-      # puts "THE RAW DATE FROM THE DB IS: #{reader.values.last}"
-      reader.values.last.to_s.should == now.to_s
+      # Insert a timezone-less DateTime into the DB
+      id = insert("INSERT INTO users (name, age, type, created_at) VALUES (?, ?, ?, ?)", 'Sam', 30, Person, raw_value)
+
+      select("SELECT created_at FROM users WHERE id = ?", [DateTime], id) do |reader|
+        reader.values.last.to_s.should == NOW.to_s
+      end
+
+      exec("DELETE FROM users WHERE id = ?", id)
     end
-  
-    exec("DELETE FROM users WHERE id = ?", id)
   end
   
   it "should return DateTimes using the same timezone that was used to insert it" do
     dates = [
-      DateTime.now,
-      DateTime.now.new_offset( (-11 * 3600).to_r / 86400), # GMT -11:00
-      DateTime.now.new_offset( (-9 * 3600 + 10 * 60).to_r / 86400), # GMT -9:10
-      DateTime.now.new_offset( (-8 * 3600).to_r / 86400), # GMT -08:00
-      DateTime.now.new_offset( (+3 * 3600).to_r / 86400), # GMT +03:00
-      DateTime.now.new_offset( (+5 * 3600 + 30 * 60).to_r / 86400)  # GMT +05:30 (New Delhi)
+      NOW,
+      NOW.new_offset( (-11 * 3600).to_r / 86400), # GMT -11:00
+      NOW.new_offset( (-9 * 3600 + 10 * 60).to_r / 86400), # GMT -9:10
+      NOW.new_offset( (-8 * 3600).to_r / 86400), # GMT -08:00
+      NOW.new_offset( (+3 * 3600).to_r / 86400), # GMT +03:00
+      NOW.new_offset( (+5 * 3600 + 30 * 60).to_r / 86400)  # GMT +05:30 (New Delhi)
     ]
 
     dates.each do |date|
       id = insert("INSERT INTO users (name, age, type, created_at) VALUES (?, ?, ?, ?)", 'Sam', 30, Person, date)
   
       select("SELECT created_at FROM users WHERE id = ?", [DateTime], id) do |reader|
-        reader.fields.should == ["created_at"]
         reader.values.last.to_s.should == date.to_s
       end
     
       exec("DELETE FROM users WHERE id = ?", id)
+    end
+  end
+  
+  it "should return a BigDecimal" do
+    balance = BigDecimal.new('10000000000.00')
+
+    id = insert("INSERT INTO users (name, age, type, created_at, balance) VALUES (?, ?, ?, ?, ?)", 'Scott', 27, Person, DateTime.now, balance)
+
+    select("SELECT balance FROM users WHERE id = ?", [BigDecimal], id) do |reader|
+      reader.values.last.should == balance
     end
   end
   

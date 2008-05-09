@@ -144,7 +144,7 @@ static VALUE timezone_to_offset(const char sign, int hour_offset, int minute_off
 	return seconds_to_offset(seconds);
 }
 
-static VALUE parse_date_time(const char *date) {
+static VALUE parse_date_time(char *date) {
 	VALUE ajd, offset;
 
 	int year, month, day, hour, min, sec, usec, hour_offset, minute_offset;
@@ -158,12 +158,12 @@ static VALUE parse_date_time(const char *date) {
 	int tokens_read, max_tokens;
 	
 	if (0 != strchr(date, '.')) {
-		// This is a datetime with sub-second precision
-		tokens_read = sscanf(date, "%4d-%2d-%2d%1s%2d:%2d:%2d.%d%1s%2d:%2d", &year, &month, &day, &seperator, &hour, &min, &sec, &usec, &sign, &hour_offset, &minute_offset);
+		// This is a datetime with sub-second precision: 2008-05-30 03:45:22.4355-05:00
+		tokens_read = sscanf(date, "%4d-%2d-%2d%1c%2d:%2d:%2d.%d%1c%2d:%2d", &year, &month, &day, &seperator, &hour, &min, &sec, &usec, &sign, &hour_offset, &minute_offset);
 		max_tokens = 11;
 	} else {
-		// This is a datetime second precision
-		tokens_read = sscanf(date, "%4d-%2d-%2d%1s%2d:%2d:%2d%1s%2d:%2d", &year, &month, &day, &seperator, &hour, &min, &sec, &sign, &hour_offset, &minute_offset);
+		// This is a datetime with second precision: 2008-05-30 03:45:22-05:00
+		tokens_read = sscanf(date, "%4d-%2d-%2d%1c%2d:%2d:%2d%1c%2d:%2d", &year, &month, &day, &seperator, &hour, &min, &sec, &sign, &hour_offset, &minute_offset);
 		max_tokens = 10;
 	}
 
@@ -174,7 +174,7 @@ static VALUE parse_date_time(const char *date) {
 		minute_offset = 0;
 	} else if (tokens_read >= (max_tokens - 3)) {
 		// We read the Date and Time, maybe the Sign, default to the current locale's offset
-		
+
 		// Get localtime
 		time(&rawtime);
 		timeinfo = localtime(&rawtime);
@@ -187,7 +187,7 @@ static VALUE parse_date_time(const char *date) {
 	} else {
 		// Something went terribly wrong
 		rb_raise(eSqlite3Error, "Couldn't parse date: %s", date);
-	}	
+	}
 	
 	jd = jd_from_date(year, month, day);
 	
@@ -238,7 +238,6 @@ static VALUE ruby_typecast(sqlite3_value *value, char *type, int original_type) 
 	if ( original_type == SQLITE_NULL ) {
 		return ruby_value;
 	} else if ( strcmp(type, "Class") == 0) {
-    // HACK!
     ruby_value = rb_funcall(mDO, rb_intern("find_const"), 1, TAINTED_STRING((char*)sqlite3_value_text(value)));
   } else if ( strcmp(type, "Object") == 0 ) {
 		ruby_value = rb_marshal_load(rb_str_new2((char*)sqlite3_value_text(value)));
@@ -247,7 +246,7 @@ static VALUE ruby_typecast(sqlite3_value *value, char *type, int original_type) 
 	} else if ( strcmp(type, "Fixnum") == 0 ) {
 		ruby_value = INT2NUM(sqlite3_value_int(value));
 	} else if ( strcmp(type, "BigDecimal") == 0 ) {
-		ruby_value = rb_funcall(rb_cBigDecimal, ID_NEW, 1, TAINTED_STRING(value));
+		ruby_value = rb_funcall(rb_cBigDecimal, ID_NEW, 1, TAINTED_STRING((char*)sqlite3_value_text(value)));
 	} else if ( strcmp(type, "String") == 0 ) {
 		ruby_value = TAINTED_STRING((char*)sqlite3_value_text(value));
 	} else if ( strcmp(type, "Float") == 0 ) {
