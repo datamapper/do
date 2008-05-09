@@ -1,7 +1,23 @@
 require 'set'
 
 class Object
-
+  # ==== Notes
+  # Provides pooling support to class it got included in.
+  #
+  # Pooling of objects is a faster way of aquiring instances
+  # of objects compared to regular allocation and initialization
+  # because it happens once on pool initialization and then
+  # objects are just reset on releasing, so getting an instance
+  # of pooled object is as performance efficient as getting
+  # and object from hash.
+  #
+  # In Data Objects connections are pooled so that it is
+  # unnecessary to allocate and initialize connection object
+  # each time connection is needed, like per request in a
+  # web application.
+  #
+  # Pool obviously has to be thread safe because state of
+  # object is reset when it is released.
   module Pooling
     # Raised when pool does not implement disposal method.
     #
@@ -23,21 +39,21 @@ class Object
       @__pool.release(self)
     end
 
-    # Pools collection hosts named pools with
+    # Pools collection hosts named Pool instances with
     # similar attributes: namely type of objects
-    # pooled.
+    # pooled and max size of the pool.
     #
     # Each pool must implement dispose instance
-    # method so that itstances are safely released
+    # method so that instances are safely released
     # and disposed.
     class Pools
-      # Type of pools in the collection
+      # Type of objects in pools in the collection.
       attr_reader :type
       # Maximum number of items allowed in pools in the collection.
       attr_accessor :size
 
       # ==== Notes
-      # Initializes pools. Pools are stored in a Hash,
+      # Initializes pools. Pools are named and stored in a Hash.
       #
       # ==== Parameters
       # type<Class>:: Type of objects in pool.
@@ -57,6 +73,10 @@ class Object
       # ==== Returns
       # <Pools>:: self is returned so calls can be chained.
       #
+      # ==== Examples
+      # Thing::pools.flush!
+      #
+      # Flushes all pools at once.
       # ----
       # @public
       def flush!
@@ -87,7 +107,7 @@ class Object
       # exits, pool is disposed.
       #
       class Pool
-        # type<?>:: ?
+        # type<Class>:: type of objectes in this pool.
         # available<Array>:: pooled objects that are free to be aquired.
         # reserved<Set>:: pooled objects that are already in use.
         attr_reader :type, :available, :reserved
@@ -95,7 +115,7 @@ class Object
         # ==== Notes
         # Initializes the pool by clearing available and reserved sets,
         # initializing a mutex that provides thread safe pool operations
-        # and stores pool size and type.
+        # and stores pool size and pooled objects type.
         #
         # ==== Parameters
         # size<Integer>:: maximum number of objects pool can store.
@@ -110,6 +130,7 @@ class Object
           @type = type
           @initializer = initializer
           @lock = Mutex.new
+          # FIXME: use Set for consistency.
           @available = []
           @reserved = Set.new
         end
@@ -143,7 +164,7 @@ class Object
         end
 
         # ==== Notes
-        # Initializes new pool.
+        # Initializes new pool for the class Pooling module included in.
         #
         # ==== Returns
         # New initialized pool.
@@ -235,11 +256,16 @@ class Object
 
     module ClassMethods
       # ==== Notes
-      # Creates new pools in the pools collection.
+      # Creates new pooled object in the pool by name.
       #
       # ==== Parameters
       # <*args>:: name(s) of pools in this pool collection.
       #
+      # ==== Examples
+      # bob = Thing.new("bob")
+      # bob.name.should == 'bob'
+      #
+      # This aquires one object in pool with name "bob".
       # ----
       # @public
       def new(*args)
@@ -263,7 +289,5 @@ class Object
         @pools ||= Pools.new(self)
       end
     end
-
   end
-
 end
