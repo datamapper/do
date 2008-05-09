@@ -436,7 +436,7 @@ static VALUE cConnection_initialize(VALUE self, VALUE uri) {
 	}
 
 	if (NULL == charset) {
-		charset = (char*)calloc(4, sizeof(char));
+		charset = (char*)calloc(5, sizeof(char));
 		strcpy(charset, "utf8");
 	}
 
@@ -448,11 +448,6 @@ static VALUE cConnection_initialize(VALUE self, VALUE uri) {
 
 	rb_iv_set(self, "@uri", uri);
 	rb_iv_set(self, "@connection", Data_Wrap_Struct(rb_cObject, 0, 0, db));
-
-	// free(host);
-	// free(user);
-	// free(socket);
-	// free(charset);
 
 	return Qtrue;
 }
