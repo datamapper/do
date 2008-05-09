@@ -110,7 +110,7 @@ class Object
         # type<Class>:: type of objectes in this pool.
         # available<Array>:: pooled objects that are free to be aquired.
         # reserved<Set>:: pooled objects that are already in use.
-        attr_reader :type, :available, :reserved
+        attr_reader :type, :available, :reserved, :size
 
         # ==== Notes
         # Initializes the pool by clearing available and reserved sets,
@@ -245,7 +245,7 @@ class Object
 
           @lock.synchronize do
             instance = @available.pop
-            raise StandardError.new("Syncronization error on instance aquire: #{self.inspect}") unless instance
+            raise StandardError.new("Synchronization error on instance aquire: #{self.inspect}.") unless instance
             @reserved << instance
           end
 
