@@ -117,6 +117,8 @@ class Object
               instance.dispose
             end
 
+            # FIXME: highly recommended to use Set for both
+            # so that people are never get confused.
             @available = []
             @reserved = Set.new
           end
