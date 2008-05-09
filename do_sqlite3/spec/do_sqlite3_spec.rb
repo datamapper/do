@@ -142,7 +142,13 @@ describe "DataObjects::Sqlite3::Result" do
   
       select("SELECT created_at FROM users WHERE id = ?", [DateTime], id) do |reader|
         reader.fields.should == ["created_at"]
-        reader.values.last.to_s.should == date.to_s
+        reader.values.last.year.should == date.year
+        reader.values.last.month.should == date.month
+        reader.values.last.day.should == date.day
+        reader.values.last.hour.should == date.hour
+        reader.values.last.min.should == date.min
+        reader.values.last.sec.should == date.sec
+        reader.values.last.zone.should == date.zone
       end
     
       exec("DELETE FROM users WHERE id = ?", id)
