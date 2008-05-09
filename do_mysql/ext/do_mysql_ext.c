@@ -7,7 +7,7 @@
 #include <mysql.h>
 #include <errmsg.h>
 #include <mysqld_error.h>
- 
+
 #define RUBY_CLASS(name) rb_const_get(rb_cObject, rb_intern(name))
 #define RUBY_STRING(char_ptr) rb_str_new2(char_ptr)
 #define TAINTED_STRING(name) rb_tainted_str_new2(name)
@@ -76,7 +76,6 @@ static char * ruby_type_from_mysql_type(MYSQL_FIELD *field) {
 			ruby_type_name = "TrueClass";
 			break;
 		}
-		case MYSQL_TYPE_BIT:
 		case MYSQL_TYPE_SHORT:
 		case MYSQL_TYPE_LONG:
 		case MYSQL_TYPE_INT24:
@@ -86,7 +85,6 @@ static char * ruby_type_from_mysql_type(MYSQL_FIELD *field) {
 			break;
 		}
 		case MYSQL_TYPE_DECIMAL:
-		case MYSQL_TYPE_NEWDECIMAL:
 		case MYSQL_TYPE_FLOAT:
 		case MYSQL_TYPE_DOUBLE: {
 			ruby_type_name = "BigDecimal";
@@ -263,9 +261,10 @@ static void data_objects_debug(VALUE string) {
 	}
 }
 
+// We can add custom information to error messages using this function
+// if we think it matters
 static void raise_mysql_error(MYSQL *db, int mysql_error_code) {
 	char *error_message = (char *)mysql_error(db);
-	// char *extra = "";
 
 	switch(mysql_error_code) {
 		case CR_UNKNOWN_ERROR: 
@@ -321,8 +320,11 @@ static void raise_mysql_error(MYSQL *db, int mysql_error_code) {
 		case CR_FETCH_CANCELED: 
 		case CR_NO_DATA: 
 		case CR_NO_STMT_METADATA: 
+#if MYSQL_VERSION_ID >= 50000
 		case CR_NO_RESULT_SET: 
-		case CR_NOT_IMPLEMENTED: {
+		case CR_NOT_IMPLEMENTED:
+#endif
+		{
 			break;
 		}
 		default: {
