@@ -14,19 +14,30 @@ class Object
       target.extend(ClassMethods)
     end
 
+    # ==== Notes
+    # Releases pool collection.
     def release
       @__pool.release(self)
     end
 
+    # Pools collection hosts named pools with
+    # similar attributes: namely type of objects
+    # pooled.
+    #
+    # Each pool must implement dispose instance
+    # method so that itstances are safely released
+    # and disposed.
     class Pools
+      # Type of pools in the collection
       attr_reader :type
+      # Maximum number of items allowed in pools in the collection.
       attr_accessor :size
 
       # ==== Notes
       # Initializes pools. Pools are stored in a Hash,
       #
       # ==== Parameters
-      # type<?>:: Type of pool.
+      # type<Class>:: Type of objects in pool.
       # size<Integer>:: size of pool, is optional, default is 4.
       def initialize(type, size = 4)
         @type = type
@@ -116,6 +127,9 @@ class Object
         #
         # ==== Returns
         # New initialized pool.
+        #
+        # ----
+        # @public
         def new
           if @available.empty?
             @lock.synchronize do
@@ -153,6 +167,18 @@ class Object
           end
         end
 
+        # ==== Notes
+        # Releases the pool and makes all slots in it available in a
+        # thread safe manner.
+        #
+        # ==== Parameters
+        # instance<Pool>:: pool to release.
+        #
+        # ==== Returns
+        # nil
+        #
+        # ----
+        # @public
         def release(instance)
           @lock.synchronize do
             if @reserved.delete?(instance)
@@ -163,6 +189,13 @@ class Object
         end
 
         private
+
+        # ==== Notes
+        # Aquires instance from pool in a thread safe manner,
+        # places it into reserved instances set then returns it.
+        #
+        # ==== Returns
+        # <Pool>:: new instance aquired from pool.
         def aquire_instance!
           instance = nil
 
@@ -178,7 +211,11 @@ class Object
     end
 
     module ClassMethods
-
+      # ==== Notes
+      # Creates new pools in the pools collection.
+      #
+      # ==== Parameters
+      # <*args>:: name(s) of pools in this pool collection.
       def new(*args)
         unless instance_methods.include?("dispose")
           raise MustImplementDisposeError.new("#{self.name} must implement a `dispose' instance-method.")
@@ -193,6 +230,9 @@ class Object
       #
       # ==== Returns
       # <Pools>:: Pool collection.
+      #
+      # --
+      # @public
       def pools
         @pools ||= Pools.new(self)
       end
