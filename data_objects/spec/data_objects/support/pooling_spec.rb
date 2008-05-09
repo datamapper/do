@@ -1,4 +1,4 @@
-require File.join(File.dirname(__FILE__), '..', '..', 'lib', 'data_objects', 'support', 'pooling')
+require File.join(File.dirname(__FILE__), '..', '..', '..', 'lib', 'data_objects', 'support', 'pooling')
 require 'timeout'
 
 
@@ -24,7 +24,13 @@ end
 
 
 describe Object::Pooling::ResourcePool do
-  it "responds to aquire"
+  before :each do
+    @pool = Object::Pooling::ResourcePool.new
+  end
+
+  it "responds to aquire" do
+    @pool.should respond_to(:aquire)
+  end
 
   it "has a size limit"
 
