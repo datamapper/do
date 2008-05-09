@@ -6,7 +6,7 @@ class SomeResource
   include Object::Pooling
   attr_reader :name
 
-  def initialize(name)
+  def initialize(name = "")
     @name = name
   end
 
@@ -20,16 +20,51 @@ end
 
 
 
-describe Object::Pooling do
+describe "Aquire from contant size pool" do
   before :each do
-    @air = SomeResource.new("air")
+    SomeResource.initialize_pool(2)
   end
 
-  it "provides instance method for flushing the pool" do
-    SomeResource.should respond_to(:flush!)
+  it "places initialized instances to the pool" do
+    @time = SomeResource.pool.aquire
+    SomeResource.pool.size.should == 1
   end
 
-  it "provides access to the pool"
+  it "places initialized instance in the reserved set" do
+    @time = SomeResource.pool.aquire
+    SomeResource.pool.reserved.size.should == 1
+  end
+
+  it "raises an exception when pool size limit is hit" do
+    @t1 = SomeResource.pool.aquire
+    @t2 = SomeResource.pool.aquire
+
+    lambda { SomeResource.pool.aquire }.should raise_error(RuntimeError)
+  end
+end
+
+
+
+describe "Releasing from contant size pool" do
+  before :each do
+    SomeResource.initialize_pool(2)
+  end
+
+  it "places initialized instances to the pool" do
+    @t1 = SomeResource.pool.aquire
+    @t2 = SomeResource.pool.aquire
+    SomeResource.pool.release(@t1)
+
+    SomeResource.pool.size.should == 1
+  end
+
+  it "raises an exception on attempt to releases object not in pool" do
+    @t1 = SomeResource.pool.aquire
+    @t2 = SomeResource.new
+
+    SomeResource.pool.release(@t1)
+    lambda { SomeResource.pool.release(@t2) }.should raise_error(RuntimeError)
+  end
 end
 
 
@@ -37,6 +72,10 @@ end
 describe Object::Pooling::ResourcePool do
   before :each do
     @pool = Object::Pooling::ResourcePool.new(7, SomeResource)
+  end
+
+  it "responds to flush!" do
+    @pool.should respond_to(:flush!)
   end
 
   it "responds to aquire" do
@@ -60,7 +99,7 @@ describe Object::Pooling::ResourcePool do
   end
 
   it "knows whether it has available resources left" do
-    @pool.should respond_to(:size_limit_hit?)
+    @pool.should respond_to(:available?)
   end
 
   it "knows class of resources (objects) it works with" do

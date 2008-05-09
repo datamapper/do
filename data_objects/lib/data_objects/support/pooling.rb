@@ -24,7 +24,12 @@ class Object
     end
 
     module ClassMethods
-      def flush!
+      def initialize_pool(size_limit)
+        @__pool = ResourcePool.new(size_limit, self)
+      end
+
+      def pool
+        @__pool
       end
     end
 
@@ -46,16 +51,43 @@ class Object
 
         @reserved  = Set.new
         @available = Set.new
+
+        @lock = Mutex.new
       end
 
       def size
-        0
+        reserved.size
       end
 
-      def size_limit_hit?
+      def available?
+        reserved.size < size_limit
       end
 
       def aquire
+        if available?
+          instance = nil
+          @lock.synchronize do
+            instance = class_of_resources.allocate
+            instance.send(:initialize)
+
+            reserved << instance
+          end
+
+          instance
+        else
+          raise RuntimeError
+        end
+      end
+
+      def release(instance)
+        if reserved.include?(instance)
+          reserved.delete(instance)
+        else
+          raise RuntimeError
+        end
+      end
+
+      def flush!
       end
     end # ResourcePool
 
