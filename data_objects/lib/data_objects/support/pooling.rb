@@ -50,9 +50,19 @@ class Object
         @class_of_resources = class_of_resources
 
         @reserved  = Set.new
-        @available = Set.new
+        # how come Set has no pop method? Purists!
+        @available = []
 
         @lock = Mutex.new
+
+        @lock.synchronize do
+          @size_limit.times do |n|
+            instance = class_of_resources.allocate
+            instance.send(:initialize)
+
+            @available << instance
+          end
+        end
       end
 
       def size
@@ -67,8 +77,7 @@ class Object
         if available?
           instance = nil
           @lock.synchronize do
-            instance = class_of_resources.allocate
-            instance.send(:initialize)
+            instance = @available.pop
 
             reserved << instance
           end
@@ -82,12 +91,19 @@ class Object
       def release(instance)
         if reserved.include?(instance)
           reserved.delete(instance)
+          instance.dispose
+          available << instance
         else
           raise RuntimeError
         end
       end
 
       def flush!
+        @lock.synchronize do
+          reserved.each do |instance|
+            self.release(instance)
+          end
+        end
       end
     end # ResourcePool
 
