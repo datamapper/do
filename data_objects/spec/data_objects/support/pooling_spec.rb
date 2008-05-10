@@ -107,6 +107,10 @@ describe "Aquire from contant size pool" do
     DisposableResource.initialize_pool(2)
   end
 
+  after :each do
+    DisposableResource.instance_variable_set("@__pool", nil)
+  end
+
   it "increased size of the pool" do
     @time = DisposableResource.pool.aquire
     DisposableResource.pool.size.should == 1
@@ -157,6 +161,10 @@ end
 describe "Releasing from contant size pool" do
   before :each do
     DisposableResource.initialize_pool(2)
+  end
+
+  after :each do
+    DisposableResource.instance_variable_set("@__pool", nil)
   end
 
   it "decreases size of the pool" do
@@ -223,6 +231,10 @@ describe Object::Pooling::ResourcePool, "#available?" do
     DisposableResource.new
   end
 
+  after :each do
+    DisposableResource.instance_variable_set("@__pool", nil)
+  end
+
   it "returns true when pool has available instances" do
     DisposableResource.pool.should be_available
   end
@@ -245,6 +257,10 @@ describe "Flushing of contant size pool" do
 
     # sanity check
     DisposableResource.pool.instance_variable_get("@reserved").should_not be_empty
+  end
+
+  after :each do
+    DisposableResource.instance_variable_set("@__pool", nil)
   end
 
   it "disposes all pooled objects" do
@@ -273,6 +289,10 @@ describe "Poolable resource class" do
     DisposableResource.initialize_pool(3, :initialization_args => ["paper"])
   end
 
+  after :each do
+    DisposableResource.instance_variable_set("@__pool", nil)
+  end
+
   it "aquires new instances from pool" do
     @instance_one = DisposableResource.new
 
@@ -296,9 +316,34 @@ end
 
 
 
+describe "Pooled object", "on initialization" do
+  after :each do
+    DisposableResource.instance_variable_set("@__pool", nil)
+  end
+
+  it "does not flush pool" do
+    # using pool here initializes the pool first
+    # so we use instance variable directly
+    DisposableResource.instance_variable_get("@__pool").should_not_receive(:flush!)
+    DisposableResource.initialize_pool(23)
+  end
+
+  it "flushes pool first when re-initialized" do
+    DisposableResource.initialize_pool(5)
+    DisposableResource.pool.should_receive(:flush!)
+    DisposableResource.initialize_pool(23)
+  end
+end
+
+
+
 describe Object::Pooling::ResourcePool, "#time_to_dispose?" do
   before :each do
     DisposableResource.initialize_pool(7, :expiration_period => 2)
+  end
+
+  after :each do
+    DisposableResource.instance_variable_set("@__pool", nil)
   end
 
   it "returns true when object's last aquisition time is greater than limit" do
@@ -315,6 +360,10 @@ end
 describe Object::Pooling::ResourcePool, "#dispose_outdated" do
   before :each do
     DisposableResource.initialize_pool(7, :expiration_period => 2)
+  end
+
+  after :each do
+    DisposableResource.instance_variable_set("@__pool", nil)
   end
 
   it "releases and thus disposes outdated instances" do
