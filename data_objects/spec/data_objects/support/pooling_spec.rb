@@ -67,11 +67,20 @@ describe Object::Pooling::ResourcePool do
   end
 
   it "raises exception when given anything but class for resources class" do
-    lambda { @pool = Object::Pooling::ResourcePool.new(7, "Hooray!") }.should raise_error(ArgumentError, /class/)
+    lambda {
+      @pool = Object::Pooling::ResourcePool.new(7, "Hooray!")
+    }.should raise_error(ArgumentError, /class/)
   end
 
   it "requires class of resources (objects) it works with to have a dispose instance method" do
-    lambda { @pool = Object::Pooling::ResourcePool.new(3, UndisposableResource) }.should raise_error(ArgumentError, /dispose/)
+    lambda {
+      @pool = Object::Pooling::ResourcePool.new(3, UndisposableResource)
+    }.should raise_error(ArgumentError, /dispose/)
+  end
+
+  it "may take initialization arguments" do
+    @pool = Object::Pooling::ResourcePool.new(7, DisposableResource, "paper")
+    @pool.instance_variable_get("@initialization_args").should == ["paper"]
   end
 end
 
@@ -225,7 +234,7 @@ end
 
 describe "Poolable resource" do
   before :each do
-    DisposableResource.initialize_pool(3)
+    DisposableResource.initialize_pool(3, "paper")
   end
 
   it "aquires new instances from pool" do
@@ -242,5 +251,9 @@ describe "Poolable resource" do
   it "replaces pool on re-initialization" do
     DisposableResource.initialize_pool(5)
     DisposableResource.pool.size_limit.should == 5
+  end
+
+  it "passes initialization parameters to newly created resource instances" do
+    DisposableResource.new.name.should == "paper"
   end
 end
