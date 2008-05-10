@@ -278,3 +278,13 @@ describe "Poolable resource class" do
     DisposableResource.new.name.should == "paper"
   end
 end
+
+
+
+describe "Pool resource instances expiration" do
+  before :each do
+    DisposableResource.initialize_pool(7)
+  end
+
+  it "disposes is outdated instances"
+end
