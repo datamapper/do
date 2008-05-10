@@ -53,6 +53,13 @@ class Object
         pool.aquire
       end
 
+      # ==== Notes
+      # Returns pool for this resource class.
+      # Initialization is done when necessary.
+      # Default size limit of the pool is 10.
+      #
+      # ==== Returns
+      # <Object::Pooling::ResourcePool>:: pool for this resource class.
       def pool
         @__pool ||= ResourcePool.new(10, self)
       end
