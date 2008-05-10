@@ -74,7 +74,7 @@ describe "Aquire from contant size pool" do
     DisposableResource.initialize_pool(2)
   end
 
-  it "places initialized instances to the pool" do
+  it "increased size of the pool" do
     @time = DisposableResource.pool.aquire
     DisposableResource.pool.size.should == 1
   end
@@ -109,7 +109,7 @@ describe "Aquire from contant size pool" do
     @t3 = DisposableResource.pool.aquire
     DisposableResource.pool.release(@t3)
 
-    DisposableResource.pool.aquire.should == 1
+    DisposableResource.pool.aquire.should == @t1
     @t1.should == @t3
   end
 end
