@@ -6,10 +6,10 @@ class Object
   #
   # Pooling of objects is a faster way of aquiring instances
   # of objects compared to regular allocation and initialization
-  # because it happens once on pool initialization and then
-  # objects are just reset on releasing, so getting an instance
-  # of pooled object is as performance efficient as getting
-  # and object from hash.
+  # because instances are keeped in memory reused.
+  #
+  # Classes that include Pooling module have re-defined new
+  # method that returns instances aquired from pool.
   #
   # In Data Objects connections are pooled so that it is
   # unnecessary to allocate and initialize connection object
@@ -37,8 +37,18 @@ class Object
         @__pool = ResourcePool.new(size_limit, self)
       end
 
+      # ==== Notes
+      # Instances of poolable resource are aquired from
+      # pool. This quires a new instance from pool and
+      # returns it.
+      #
+      # ==== Returns
+      # Resource instance aquired from the pool.
+      #
+      # ==== Raises
+      # ArgumentError:: when pool is exhausted and no instance
+      #                 can be aquired.
       def new
-        "Pooling overrides this new!"
         pool.aquire
       end
 
@@ -140,6 +150,12 @@ class Object
         end
       end
 
+      # ==== Notes
+      # Check if instance has been aquired from the pool.
+      #
+      # ==== Returns
+      # <Boolean>:: true if given resource instance has been aquired from pool,
+      #             false otherwise.
       def aquired?(instance)
         @reserved.include?(instance)
       end
