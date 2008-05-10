@@ -90,7 +90,12 @@ describe Object::Pooling::ResourcePool do
 
   it "has default expiration period of one minute" do
     @pool = Object::Pooling::ResourcePool.new(7, DisposableResource, {})
-    @pool.expiration_period.should == 60 * 1000
+    @pool.expiration_period.should == 60
+  end
+
+  it "spawns a thread to dispose objects haven't been used for a while" do
+    @pool = Object::Pooling::ResourcePool.new(7, DisposableResource, {})
+    @pool.instance_variable_get("@pool_expiration_thread").should be_an_instance_of(Thread)
   end
 end
 
@@ -291,10 +296,33 @@ end
 
 
 
-describe "Pool resource instances expiration" do
+describe Object::Pooling::ResourcePool, "#time_to_dispose?" do
   before :each do
-    DisposableResource.initialize_pool(7)
+    DisposableResource.initialize_pool(7, :expiration_period => 2)
   end
 
-  it "disposes is outdated instances"
+  it "returns true when object's last aquisition time is greater than limit" do
+    @t1 = DisposableResource.new
+    DisposableResource.pool.time_to_dispose?(@t1).should be(false)
+
+    sleep 3
+    DisposableResource.pool.time_to_dispose?(@t1).should be(true)
+  end
+end
+
+
+
+describe Object::Pooling::ResourcePool, "#dispose_outdated" do
+  before :each do
+    DisposableResource.initialize_pool(7, :expiration_period => 2)
+  end
+
+  it "disposes is outdated instances" do
+    @t1 = DisposableResource.new
+    DisposableResource.pool.time_to_dispose?(@t1).should be(false)
+
+    sleep 3
+    @t1.should_receive(:dispose)
+    DisposableResource.pool.dispose_outdated
+  end
 end

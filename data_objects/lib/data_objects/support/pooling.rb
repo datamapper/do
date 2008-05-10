@@ -87,8 +87,16 @@ class Object
 
         initialization_args  = options.delete(:initialization_args) || []
 
-        @expiration_period   = options.delete(:expiration_period) || 60 * 1000
+        @expiration_period   = options.delete(:expiration_period) || 60
         @initialization_args = [*initialization_args]
+
+        @pool_expiration_thread = Thread.new do
+          while true
+            dispose_outdated
+
+            sleep (@expiration_period + 1)
+          end
+        end
       end
 
       # ==== Notes
@@ -164,6 +172,18 @@ class Object
       #             false otherwise.
       def aquired?(instance)
         @reserved.include?(instance)
+      end
+
+      def dispose_outdated
+        @lock.synchronize do
+          @reserved.each do |instance|
+            instance.dispose if time_to_dispose?(instance)
+          end
+        end
+      end
+
+      def time_to_dispose?(instance)
+        (Time.now - instance.instance_variable_get("@__pool_aquire_timestamp")) > @expiration_period
       end
 
       protected
