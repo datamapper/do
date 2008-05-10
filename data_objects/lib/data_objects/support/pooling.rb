@@ -11,6 +11,10 @@ class Object
   # Classes that include Pooling module have re-defined new
   # method that returns instances aquired from pool.
   #
+  # Term resource is used for any type of poolable objects
+  # and should NOT be thought as DataMapper Resource or
+  # ActiveResource resource and such.
+  #
   # In Data Objects connections are pooled so that it is
   # unnecessary to allocate and initialize connection object
   # each time connection is needed, like per request in a
