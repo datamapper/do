@@ -184,7 +184,7 @@ class Object
       # nil
       def dispose_outdated
         @reserved.each do |instance|
-          release(instance) if time_to_dispose?(instance)
+          release(instance) if time_to_release?(instance)
         end
 
         nil
@@ -196,7 +196,7 @@ class Object
       #
       # ==== Returns
       # <Boolean>:: true if instance should be released, false otherwise.
-      def time_to_dispose?(instance)
+      def time_to_release?(instance)
         (Time.now - instance.instance_variable_get("@__pool_aquire_timestamp")) > @expiration_period
       end
 

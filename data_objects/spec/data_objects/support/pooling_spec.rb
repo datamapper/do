@@ -303,10 +303,10 @@ describe Object::Pooling::ResourcePool, "#time_to_dispose?" do
 
   it "returns true when object's last aquisition time is greater than limit" do
     @t1 = DisposableResource.new
-    DisposableResource.pool.time_to_dispose?(@t1).should be(false)
+    DisposableResource.pool.time_to_release?(@t1).should be(false)
 
     sleep 3
-    DisposableResource.pool.time_to_dispose?(@t1).should be(true)
+    DisposableResource.pool.time_to_release?(@t1).should be(true)
   end
 end
 
@@ -319,7 +319,7 @@ describe Object::Pooling::ResourcePool, "#dispose_outdated" do
 
   it "releases and thus disposes outdated instances" do
     @t1 = DisposableResource.new
-    DisposableResource.pool.should_receive(:time_to_dispose?).with(@t1).and_return(true)
+    DisposableResource.pool.should_receive(:time_to_release?).with(@t1).and_return(true)
     DisposableResource.pool.should_receive(:release).with(@t1)
 
     DisposableResource.pool.dispose_outdated
