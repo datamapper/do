@@ -162,6 +162,8 @@ class Object
         @reserved.each do |instance|
           self.release(instance)
         end
+
+        nil
       end
 
       # ==== Notes
@@ -174,12 +176,26 @@ class Object
         @reserved.include?(instance)
       end
 
+      # ==== Notes
+      # Releases instances that haven't been in use and
+      # hit the expiration period.
+      #
+      # ==== Returns
+      # nil
       def dispose_outdated
         @reserved.each do |instance|
           release(instance) if time_to_dispose?(instance)
         end
+
+        nil
       end
 
+      # ==== Notes
+      # Checks if pooled resource instance is outdated and
+      # should be released.
+      #
+      # ==== Returns
+      # <Boolean>:: true if instance should be released, false otherwise.
       def time_to_dispose?(instance)
         (Time.now - instance.instance_variable_get("@__pool_aquire_timestamp")) > @expiration_period
       end
