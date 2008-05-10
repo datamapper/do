@@ -170,10 +170,14 @@ class Object
       # the pool.
       def prepair_available_resource
         if @available.size > 0
-          @available.pop
+          res = @available.pop
+          res.instance_variable_set("@__pool_aquire_timestamp", Time.now)
+
+          res
         else
           res = @class_of_resources.allocate
           res.send(:initialize, *@initialization_args)
+          res.instance_variable_set("@__pool_aquire_timestamp", Time.now)
 
           res
         end

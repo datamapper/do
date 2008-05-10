@@ -130,6 +130,11 @@ describe "Aquire from contant size pool" do
     DisposableResource.pool.aquire.should == @t1
     @t1.should == @t3
   end
+
+  it "sets allocation timestamp on resource instance" do
+    @t1 = DisposableResource.new
+    @t1.instance_variable_get("@__pool_aquire_timestamp").should be_close(Time.now, 2)
+  end
 end
 
 
@@ -176,6 +181,22 @@ describe "Releasing from contant size pool" do
     lambda {
       DisposableResource.pool.release(@t1)
     }.should change(DisposableResource.pool.instance_variable_get("@available"), :size).by(1)
+  end
+
+  it "updates aquire timestamp on already allocated resource instance" do
+    # aquire it once
+    @t1 = DisposableResource.new
+    # wait a bit
+    sleep 3
+
+    # check old timestamp
+    @t1.instance_variable_get("@__pool_aquire_timestamp").should be_close(Time.now, 4)
+
+    # re-aquire
+    DisposableResource.pool.release(@t1)
+    @t1 = DisposableResource.new
+    # see timestamp is updated
+    @t1.instance_variable_get("@__pool_aquire_timestamp").should be_close(Time.now, 2)
   end
 end
 
@@ -232,7 +253,7 @@ end
 
 
 
-describe "Poolable resource" do
+describe "Poolable resource class" do
   before :each do
     DisposableResource.initialize_pool(3, "paper")
   end
