@@ -322,6 +322,6 @@ describe Object::Pooling::ResourcePool, "#dispose_outdated" do
     DisposableResource.pool.should_receive(:time_to_release?).with(@t1).and_return(true)
     DisposableResource.pool.should_receive(:release).with(@t1)
 
-    DisposableResource.pool.dispose_outdated
+    DisposableResource.pool.release_outdated
   end
 end

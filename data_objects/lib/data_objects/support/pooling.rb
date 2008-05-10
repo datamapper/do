@@ -92,7 +92,7 @@ class Object
 
         @pool_expiration_thread = Thread.new do
           while true
-            dispose_outdated
+            release_outdated
 
             sleep (@expiration_period + 1)
           end
@@ -182,7 +182,7 @@ class Object
       #
       # ==== Returns
       # nil
-      def dispose_outdated
+      def release_outdated
         @reserved.each do |instance|
           release(instance) if time_to_release?(instance)
         end
