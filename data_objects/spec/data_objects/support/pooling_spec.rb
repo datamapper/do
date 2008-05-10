@@ -27,7 +27,7 @@ end
 
 describe Object::Pooling::ResourcePool do
   before :each do
-    @pool = Object::Pooling::ResourcePool.new(7, DisposableResource)
+    @pool = Object::Pooling::ResourcePool.new(7, DisposableResource, :expiration_period => 50)
   end
 
   it "responds to flush!" do
@@ -68,19 +68,29 @@ describe Object::Pooling::ResourcePool do
 
   it "raises exception when given anything but class for resources class" do
     lambda {
-      @pool = Object::Pooling::ResourcePool.new(7, "Hooray!")
+      @pool = Object::Pooling::ResourcePool.new(7, "Hooray!", {})
     }.should raise_error(ArgumentError, /class/)
   end
 
   it "requires class of resources (objects) it works with to have a dispose instance method" do
     lambda {
-      @pool = Object::Pooling::ResourcePool.new(3, UndisposableResource)
+      @pool = Object::Pooling::ResourcePool.new(3, UndisposableResource, {})
     }.should raise_error(ArgumentError, /dispose/)
   end
 
   it "may take initialization arguments" do
-    @pool = Object::Pooling::ResourcePool.new(7, DisposableResource, "paper")
+    @pool = Object::Pooling::ResourcePool.new(7, DisposableResource, { :initialization_args => ["paper"] })
     @pool.instance_variable_get("@initialization_args").should == ["paper"]
+  end
+
+  it "may take expiration period option" do
+    @pool = Object::Pooling::ResourcePool.new(7, DisposableResource, { :expiration_period => 100 })
+    @pool.expiration_period.should == 100
+  end
+
+  it "has default expiration period of one minute" do
+    @pool = Object::Pooling::ResourcePool.new(7, DisposableResource, {})
+    @pool.expiration_period.should == 60 * 1000
   end
 end
 
@@ -255,7 +265,7 @@ end
 
 describe "Poolable resource class" do
   before :each do
-    DisposableResource.initialize_pool(3, "paper")
+    DisposableResource.initialize_pool(3, :initialization_args => ["paper"])
   end
 
   it "aquires new instances from pool" do

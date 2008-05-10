@@ -32,9 +32,10 @@ class Object
       #
       # ==== Returns
       # <ResourcePool>:: initialized pool
-      def initialize_pool(size_limit, *args)
+      def initialize_pool(size_limit, options = {})
         @__pool.flush! if @__pool
-        @__pool = ResourcePool.new(size_limit, self, *args)
+
+        @__pool = ResourcePool.new(size_limit, self, options)
       end
 
       # ==== Notes
@@ -61,7 +62,7 @@ class Object
     # Pool
     #
     class ResourcePool
-      attr_reader :size_limit, :size, :class_of_resources
+      attr_reader :size_limit, :class_of_resources, :expiration_period
 
       # ==== Notes
       # Initializes resource pool.
@@ -73,7 +74,7 @@ class Object
       # ==== Raises
       # ArgumentError:: when class of resource does not implement
       #                 dispose instance method or is not a Class.
-      def initialize(size_limit, class_of_resources, *initialization_args)
+      def initialize(size_limit, class_of_resources, options)
         raise ArgumentError.new("Expected class of resources to be instance of Class, got: #{class_of_resources.class}") unless class_of_resources.is_a?(Class)
         raise ArgumentError.new("Class #{class_of_resources} must implement dispose instance method to be poolable.") unless class_of_resources.instance_methods.include?("dispose")
 
@@ -84,6 +85,9 @@ class Object
         @available = []
         @lock      = Mutex.new
 
+        initialization_args  = options.delete(:initialization_args) || []
+
+        @expiration_period   = options.delete(:expiration_period) || 60 * 1000
         @initialization_args = [*initialization_args]
       end
 
