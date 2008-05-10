@@ -42,11 +42,11 @@ describe Object::Pooling::ResourcePool do
   end
 
   it "has a readable set of reserved resources" do
-    @pool.reserved.should be_empty
+    @pool.instance_variable_get("@reserved").should be_empty
   end
 
   it "has a readable set of available resources" do
-    @pool.available.should be_empty
+    @pool.instance_variable_get("@available").should be_empty
   end
 
   it "knows whether it has available resources left" do
@@ -81,7 +81,7 @@ describe "Aquire from contant size pool" do
 
   it "places initialized instance in the reserved set" do
     @time = DisposableResource.pool.aquire
-    DisposableResource.pool.reserved.size.should == 1
+    DisposableResource.pool.instance_variable_get("@reserved").size.should == 1
   end
 
   it "raises an exception when pool size limit is hit" do
@@ -130,8 +130,8 @@ describe "Releasing from contant size pool" do
   end
 
   it "raises an exception on attempt to releases object not in pool" do
-    @t1 = DisposableResource.pool.aquire
-    @t2 = DisposableResource.new
+    @t1 = DisposableResource.new
+    @t2 = Set.new
 
     DisposableResource.pool.release(@t1)
     lambda { DisposableResource.pool.release(@t2) }.should raise_error(RuntimeError)
@@ -147,13 +147,13 @@ describe "Releasing from contant size pool" do
   it "removes released object from reserved set" do
     @t1 = DisposableResource.pool.aquire
 
-    lambda { DisposableResource.pool.release(@t1) }.should change(DisposableResource.pool.reserved, :size).by(-1)
+    lambda { DisposableResource.pool.release(@t1) }.should change(DisposableResource.pool.instance_variable_get("@reserved"), :size).by(-1)
   end
 
   it "returns released object back to available set" do
     @t1 = DisposableResource.pool.aquire
 
-    lambda { DisposableResource.pool.release(@t1) }.should change(DisposableResource.pool.available, :size).by(1)
+    lambda { DisposableResource.pool.release(@t1) }.should change(DisposableResource.pool.instance_variable_get("@available"), :size).by(1)
   end
 end
 
@@ -167,7 +167,7 @@ describe "Flushing of contant size pool" do
     @t2 = DisposableResource.pool.aquire
 
     # sanity check
-    DisposableResource.pool.reserved.should_not be_empty
+    DisposableResource.pool.instance_variable_get("@reserved").should_not be_empty
   end
 
   it "disposes all pooled objects" do
@@ -179,12 +179,26 @@ describe "Flushing of contant size pool" do
   it "empties reserved set" do
     DisposableResource.pool.flush!
 
-    DisposableResource.pool.reserved.should be_empty
+    DisposableResource.pool.instance_variable_get("@reserved").should be_empty
   end
 
   it "returns all instances to available set" do
     DisposableResource.pool.flush!
 
-    DisposableResource.pool.available.size.should == 2
+    DisposableResource.pool.instance_variable_get("@available").size.should == 2
+  end
+end
+
+
+
+describe "Poolable resource" do
+  before :each do
+    DisposableResource.initialize_pool(3)
+  end
+
+  it "aquires new instances from pool" do
+    @instance_one = DisposableResource.new
+
+    DisposableResource.pool.aquired?(@instance_one).should be(true)
   end
 end

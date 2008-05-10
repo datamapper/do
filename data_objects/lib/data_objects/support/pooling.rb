@@ -33,20 +33,17 @@ class Object
       # ==== Returns
       # <ResourcePool>:: initialized pool
       def initialize_pool(size_limit)
+        @__pool.flush! if @__pool
         @__pool = ResourcePool.new(size_limit, self)
       end
 
-      def pool
-        @__pool
+      def new
+        "Pooling overrides this new!"
+        pool.aquire
       end
-    end
 
-    # ==== Notes
-    # Raised when pooled resource class does not
-    # implement +dispose+ instance method.
-    class DoesNotRespondToDispose < ArgumentError
-      def initialize(klass)
-        super "Class #{klass.inspect} must implement dispose instance method to be poolable."
+      def pool
+        @__pool ||= ResourcePool.new(10, self)
       end
     end
 
@@ -54,7 +51,7 @@ class Object
     # Pool
     #
     class ResourcePool
-      attr_reader :size_limit, :size, :reserved, :available, :class_of_resources
+      attr_reader :size_limit, :size, :class_of_resources
 
       # ==== Notes
       # Initializes resource pool.
@@ -67,7 +64,7 @@ class Object
       # ArgumentError:: when class of resource does not implement
       #                 dispose instance method or is not a Class.
       def initialize(size_limit, class_of_resources)
-        raise ArgumentError.new("Expected class of resources to be instance of Class") unless class_of_resources.is_a?(Class)
+        raise ArgumentError.new("Expected class of resources to be instance of Class, got: #{class_of_resources.class}") unless class_of_resources.is_a?(Class)
         raise ArgumentError.new("Class #{class_of_resources} must implement dispose instance method to be poolable.") unless class_of_resources.instance_methods.include?("dispose")
 
         @size_limit         = size_limit
@@ -82,7 +79,7 @@ class Object
       # Current size of pool: number of already reserved
       # resources.
       def size
-        reserved.size
+        @reserved.size
       end
 
       # ==== Notes
@@ -92,7 +89,7 @@ class Object
       # <Boolean>:: true if pool has resources can be aquired,
       #             false otherwise.
       def available?
-        reserved.size < size_limit
+        @reserved.size < size_limit
       end
 
       # ==== Notes
@@ -103,7 +100,7 @@ class Object
         @lock.synchronize do
           if available?
             instance = prepair_available_resource
-            reserved << instance
+            @reserved << instance
 
             instance
           else
@@ -122,10 +119,10 @@ class Object
       # RuntimeError:: when given not pooled instance.
       def release(instance)
         @lock.synchronize do
-          if reserved.include?(instance)
-            reserved.delete(instance)
+          if @reserved.include?(instance)
+            @reserved.delete(instance)
             instance.dispose
-            available << instance
+            @available << instance
           else
             raise RuntimeError
           end
@@ -138,9 +135,13 @@ class Object
       # ==== Returns
       # nil
       def flush!
-        reserved.each do |instance|
+        @reserved.each do |instance|
           self.release(instance)
         end
+      end
+
+      def aquired?(instance)
+        @reserved.include?(instance)
       end
 
       protected
