@@ -1,7 +1,9 @@
 require File.join(File.dirname(__FILE__), '..', '..', '..', 'lib', 'data_objects', 'support', 'pooling')
 require 'timeout'
 
-
+# This implements dispose
+# and works perfectly with
+# pooling.
 class DisposableResource
   include Object::Pooling
   attr_reader :name
@@ -15,6 +17,9 @@ class DisposableResource
   end
 end
 
+# This baby causes exceptions
+# to be raised when you use
+# it with pooling.
 class UndisposableResource
 end
 
@@ -33,6 +38,14 @@ describe Object::Pooling::ResourcePool do
     @pool.should respond_to(:aquire)
   end
 
+  it "responds to release" do
+    @pool.should respond_to(:release)
+  end
+
+  it "responds to :available?" do
+    @pool.should respond_to(:available?)
+  end
+
   it "has a size limit" do
     @pool.size_limit.should == 7
   end
@@ -41,16 +54,12 @@ describe Object::Pooling::ResourcePool do
     @pool.size.should == 0
   end
 
-  it "has a readable set of reserved resources" do
+  it "has a set of reserved resources" do
     @pool.instance_variable_get("@reserved").should be_empty
   end
 
-  it "has a readable set of available resources" do
+  it "has a set of available resources" do
     @pool.instance_variable_get("@available").should be_empty
-  end
-
-  it "knows whether it has available resources left" do
-    @pool.should respond_to(:available?)
   end
 
   it "knows class of resources (objects) it works with" do
@@ -147,13 +156,36 @@ describe "Releasing from contant size pool" do
   it "removes released object from reserved set" do
     @t1 = DisposableResource.pool.aquire
 
-    lambda { DisposableResource.pool.release(@t1) }.should change(DisposableResource.pool.instance_variable_get("@reserved"), :size).by(-1)
+    lambda {
+      DisposableResource.pool.release(@t1)
+    }.should change(DisposableResource.pool.instance_variable_get("@reserved"), :size).by(-1)
   end
 
   it "returns released object back to available set" do
     @t1 = DisposableResource.pool.aquire
 
-    lambda { DisposableResource.pool.release(@t1) }.should change(DisposableResource.pool.instance_variable_get("@available"), :size).by(1)
+    lambda {
+      DisposableResource.pool.release(@t1)
+    }.should change(DisposableResource.pool.instance_variable_get("@available"), :size).by(1)
+  end
+end
+
+
+
+describe Object::Pooling::ResourcePool, "#available?" do
+  before :each do
+    DisposableResource.initialize_pool(2)
+    DisposableResource.new
+  end
+
+  it "returns true when pool has available instances" do
+    DisposableResource.pool.should be_available
+  end
+
+  it "returns false when pool is exhausted" do
+    # aquires the last available resource
+    DisposableResource.new
+    DisposableResource.pool.should_not be_available
   end
 end
 
@@ -163,8 +195,8 @@ describe "Flushing of contant size pool" do
   before :each do
     DisposableResource.initialize_pool(2)
 
-    @t1 = DisposableResource.pool.aquire
-    @t2 = DisposableResource.pool.aquire
+    @t1 = DisposableResource.new
+    @t2 = DisposableResource.new
 
     # sanity check
     DisposableResource.pool.instance_variable_get("@reserved").should_not be_empty
@@ -200,5 +232,15 @@ describe "Poolable resource" do
     @instance_one = DisposableResource.new
 
     DisposableResource.pool.aquired?(@instance_one).should be(true)
+  end
+
+  it "flushed existing pool on re-initialization" do
+    DisposableResource.pool.should_receive(:flush!)
+    DisposableResource.initialize_pool(5)
+  end
+
+  it "replaces pool on re-initialization" do
+    DisposableResource.initialize_pool(5)
+    DisposableResource.pool.size_limit.should == 5
   end
 end
