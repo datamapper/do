@@ -527,24 +527,23 @@ static VALUE cCommand_quote_string(VALUE self, VALUE string) {
 	MYSQL *db = DATA_PTR(rb_iv_get(rb_iv_get(self, "@connection"), "@connection"));
 	const char *source = StringValuePtr(string);
 	char *escaped;
-	char *with_quotes;
+	VALUE result;
 	
 	int quoted_length = 0;
 
 	// Allocate space for the escaped version of 'string'.  Use + 3 allocate space for null term.
 	// and the leading and trailing single-quotes.
 	// Thanks to http://www.browardphp.com/mysql_manual_en/manual_MySQL_APIs.html#mysql_real_escape_string	
-	escaped = (char *)calloc(strlen(source) * 3 + 1, sizeof(char));
+	escaped = (char *)calloc(strlen(source) * 3 + 3, sizeof(char));
 
 	// Escape 'source' using the current charset in use on the conection 'db'
-	quoted_length = mysql_real_escape_string(db, escaped, source, strlen(source));
+	quoted_length = mysql_real_escape_string(db, escaped + 1, source, strlen(source));
 
-	// Allocate space for the final version of the quoted string.
-	with_quotes = (char *)calloc(quoted_length + 3, sizeof(char));
 	// Wrap the escaped string in single-quotes, this is DO's convention
-	sprintf(with_quotes, "'%s'", escaped);
-
-	return RUBY_STRING(with_quotes);
+	escaped[0] = escaped[quoted_length + 1] = '\'';
+	result = rb_str_new(escaped, quoted_length + 2);
+	free(escaped);
+	return result;
 }
 
 static VALUE build_query_from_args(VALUE klass, int count, VALUE *args) {
