@@ -317,12 +317,11 @@ describe Object::Pooling::ResourcePool, "#dispose_outdated" do
     DisposableResource.initialize_pool(7, :expiration_period => 2)
   end
 
-  it "disposes is outdated instances" do
+  it "releases and thus disposes outdated instances" do
     @t1 = DisposableResource.new
-    DisposableResource.pool.time_to_dispose?(@t1).should be(false)
+    DisposableResource.pool.should_receive(:time_to_dispose?).with(@t1).and_return(true)
+    DisposableResource.pool.should_receive(:release).with(@t1)
 
-    sleep 3
-    @t1.should_receive(:dispose)
     DisposableResource.pool.dispose_outdated
   end
 end

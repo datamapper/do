@@ -175,10 +175,8 @@ class Object
       end
 
       def dispose_outdated
-        @lock.synchronize do
-          @reserved.each do |instance|
-            instance.dispose if time_to_dispose?(instance)
-          end
+        @reserved.each do |instance|
+          release(instance) if time_to_dispose?(instance)
         end
       end
 
