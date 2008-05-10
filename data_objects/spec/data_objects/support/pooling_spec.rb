@@ -46,7 +46,7 @@ describe Object::Pooling::ResourcePool do
   end
 
   it "has a readable set of available resources" do
-    @pool.available.size.should == 7
+    @pool.available.should be_empty
   end
 
   it "knows whether it has available resources left" do
@@ -89,6 +89,28 @@ describe "Aquire from contant size pool" do
     @t2 = SomeResource.pool.aquire
 
     lambda { SomeResource.pool.aquire }.should raise_error(RuntimeError)
+  end
+
+  it "returns last released resource" do
+    @t1 = SomeResource.pool.aquire
+    @t2 = SomeResource.pool.aquire
+    SomeResource.pool.release(@t1)
+
+    SomeResource.pool.aquire.should == @t1
+  end
+
+  it "really truly returns last released resource" do
+    @t1 = SomeResource.pool.aquire
+    SomeResource.pool.release(@t1)
+
+    @t2 = SomeResource.pool.aquire
+    SomeResource.pool.release(@t2)
+
+    @t3 = SomeResource.pool.aquire
+    SomeResource.pool.release(@t3)
+
+    SomeResource.pool.aquire.should == 1
+    @t1.should == @t3
   end
 end
 
@@ -164,50 +186,5 @@ describe "Flushing of contant size pool" do
     SomeResource.pool.flush!
 
     SomeResource.pool.available.size.should == 2
-  end
-end
-
-
-
-class Water
-  include Object::Pooling
-
-  def dispose
-  end
-end
-
-class PlanetEarthEnvironment
-  def aquire
-  end
-
-  def release
-  end
-end
-
-class EnvironmentWithoutAquire
-  def release
-  end
-end
-
-class EnvironmentWithoutRelease
-  def aquire
-  end
-end
-
-describe Object::Pooling::ResourcePoolWithEnvironment do
-  before :each do
-    @pool         = Object::Pooling::ResourcePoolWithEnvironment.new(3, Water, PlanetEarthEnvironment)
-  end
-
-  it "has a resource environment" do
-    @pool.class_of_environment.should == PlanetEarthEnvironment
-  end
-
-  it "assumes resource environment responds to aquire" do
-    lambda { @pool = Object::Pooling::ResourcePoolWithEnvironment.new(3, Water, EnvironmentWithoutAquire) }.should raise_error(ArgumentError, /aquire/)
-  end
-
-  it "assumes resource environment responds to release" do
-    lambda { @pool = Object::Pooling::ResourcePoolWithEnvironment.new(3, Water, EnvironmentWithoutRelease) }.should raise_error(ArgumentError, /release/)
   end
 end

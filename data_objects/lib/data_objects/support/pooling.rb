@@ -24,6 +24,14 @@ class Object
     end
 
     module ClassMethods
+      # ==== Notes
+      # Initializes the pool and returns it.
+      #
+      # ==== Parameters
+      # size_limit<Fixnum>:: maximum size of the pool.
+      #
+      # ==== Returns
+      # <ResourcePool>:: initialized pool
       def initialize_pool(size_limit)
         @__pool = ResourcePool.new(size_limit, self)
       end
@@ -33,15 +41,31 @@ class Object
       end
     end
 
+    # ==== Notes
+    # Raised when pooled resource class does not
+    # implement +dispose+ instance method.
     class DoesNotRespondToDispose < ArgumentError
       def initialize(klass)
-        super "Class #{klass} must implement dispose instance method to be poolable."
+        super "Class #{klass.inspect} must implement dispose instance method to be poolable."
       end
     end
 
+    # ==== Notes
+    # Pool
+    #
     class ResourcePool
       attr_reader :size_limit, :size, :reserved, :available, :class_of_resources
 
+      # ==== Notes
+      # Initializes resource pool.
+      #
+      # ==== Parameters
+      # size_limit<Fixnum>:: maximum number of resources in the pool.
+      # class_of_resources<Class>:: class of resource.
+      #
+      # ==== Raises
+      # ArgumentError:: when class of resource does not implement
+      #                 dispose instance method or is not a Class.
       def initialize(size_limit, class_of_resources)
         raise ArgumentError.new("Expected class of resources to be instance of Class") unless class_of_resources.is_a?(Class)
         raise ArgumentError.new("Class #{class_of_resources} must implement dispose instance method to be poolable.") unless class_of_resources.instance_methods.include?("dispose")
@@ -50,34 +74,36 @@ class Object
         @class_of_resources = class_of_resources
 
         @reserved  = Set.new
-        # how come Set has no pop method? Purists!
         @available = []
-
-        @lock = Mutex.new
-
-        @lock.synchronize do
-          @size_limit.times do |n|
-            instance = class_of_resources.allocate
-            instance.send(:initialize)
-
-            @available << instance
-          end
-        end
+        @lock      = Mutex.new
       end
 
+      # ==== Notes
+      # Current size of pool: number of already reserved
+      # resources.
       def size
         reserved.size
       end
 
+      # ==== Notes
+      # Indicates if pool has resources to aquire.
+      #
+      # ==== Returns
+      # <Boolean>:: true if pool has resources can be aquired,
+      #             false otherwise.
       def available?
         reserved.size < size_limit
       end
 
+      # ==== Notes
+      # Aquires last used available resource and returns it.
+      # If no resources available, current implementation
+      # throws an exception.
       def aquire
         if available?
           instance = nil
           @lock.synchronize do
-            instance = @available.pop
+            instance = prepair_available_resource
 
             reserved << instance
           end
@@ -88,6 +114,14 @@ class Object
         end
       end
 
+      # ==== Notes
+      # Releases previously aquired instance.
+      #
+      # ==== Parameters
+      # instance <Anything>:: previosly aquired instance.
+      #
+      # ==== Raises
+      # RuntimeError:: when given not pooled instance.
       def release(instance)
         if reserved.include?(instance)
           reserved.delete(instance)
@@ -98,6 +132,11 @@ class Object
         end
       end
 
+      # ==== Notes
+      # Releases all objects in the pool.
+      #
+      # ==== Returns
+      # nil
       def flush!
         @lock.synchronize do
           reserved.each do |instance|
@@ -105,25 +144,23 @@ class Object
           end
         end
       end
-    end # ResourcePool
-
-    class ResourcePoolWithEnvironment < ResourcePool
-      attr_reader :class_of_environment
-
-      def initialize(size_limit, class_of_resources, env_class)
-        super(size_limit, class_of_resources)
-        raise ArgumentError.new("Class #{class_of_resources} must implement aquire and release instance methods to be usable as resource environment.") unless valid_environment_class?(env_class)
-
-        @class_of_environment = env_class
-      end
 
       protected
 
-      def valid_environment_class?(klass)
-        instance_methods_list = klass.instance_methods
+      # ==== Notes
+      # Either allocates new resource,
+      # or takes last used available resource from
+      # the pool.
+      def prepair_available_resource
+        if @available.size > 0
+          @available.pop
+        else
+          res = @class_of_resources.allocate
+          res.send(:initialize)
 
-        instance_methods_list.include?("aquire") && instance_methods_list.include?("release")
+          res
+        end
       end
-    end # ResourcePoolWithEnvironment
+    end # ResourcePool
   end
 end
