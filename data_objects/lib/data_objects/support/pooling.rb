@@ -100,17 +100,15 @@ class Object
       # If no resources available, current implementation
       # throws an exception.
       def aquire
-        if available?
-          instance = nil
-          @lock.synchronize do
+        @lock.synchronize do
+          if available?
             instance = prepair_available_resource
-
             reserved << instance
-          end
 
-          instance
-        else
-          raise RuntimeError
+            instance
+          else
+            raise RuntimeError
+          end
         end
       end
 
@@ -123,12 +121,14 @@ class Object
       # ==== Raises
       # RuntimeError:: when given not pooled instance.
       def release(instance)
-        if reserved.include?(instance)
-          reserved.delete(instance)
-          instance.dispose
-          available << instance
-        else
-          raise RuntimeError
+        @lock.synchronize do
+          if reserved.include?(instance)
+            reserved.delete(instance)
+            instance.dispose
+            available << instance
+          else
+            raise RuntimeError
+          end
         end
       end
 
@@ -138,10 +138,8 @@ class Object
       # ==== Returns
       # nil
       def flush!
-        @lock.synchronize do
-          reserved.each do |instance|
-            self.release(instance)
-          end
+        reserved.each do |instance|
+          self.release(instance)
         end
       end
 
