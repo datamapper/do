@@ -2,7 +2,6 @@ require File.expand_path(File.join(File.dirname(__FILE__), '..', 'spec_helper'))
 require File.join(File.dirname(__FILE__), '..', '..', 'lib', 'data_objects', 'support', 'pooling')
 require 'timeout'
 
-
 # This implements dispose
 # and works perfectly with
 # pooling.
