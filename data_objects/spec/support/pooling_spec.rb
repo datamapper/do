@@ -1,3 +1,4 @@
+require File.expand_path(File.join(File.dirname(__FILE__), '..', 'spec_helper'))
 require File.join(File.dirname(__FILE__), '..', '..', 'lib', 'data_objects', 'support', 'pooling')
 require 'timeout'
 
@@ -46,11 +47,12 @@ describe "Object::Pooling" do
   end
   
   it "should raise an error if the target object doesn't implement a `dispose' method" do
-    lambda do
       class Durian
         include Object::Pooling
-      end.new
-    end.should raise_error(Object::Pooling::MustImplementDisposeError)
+      end
+      lambda do
+        Durian.new
+      end.should raise_error(Object::Pooling::MustImplementDisposeError)
   end
   
   it "should be able to aquire an object" do    
