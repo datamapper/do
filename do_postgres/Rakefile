@@ -35,8 +35,12 @@ end
 # Use of ext_helper to properly setup compile tasks and native gem generation
 setup_extension "#{spec.name}_ext", spec
 
+windows = (PLATFORM =~ /win32|cygwin/) rescue nil
+
+SUDO = windows ? "" : "sudo"
+
 task :install => [ :package ] do
-  sh %{#{'sudo' unless ENV['SUDOLESS']} gem install pkg/#{spec.name}-#{spec.version}}, :verbose => false
+  sh %{#{SUDO unless ENV['SUDOLESS']} gem install --local pkg/#{spec.name}-#{spec.version} --no-update-sources}, :verbose => false
 end
 
 desc 'Run specifications'
