@@ -375,7 +375,7 @@ static VALUE cCommand_quote_string(VALUE self, VALUE string) {
 
 	// Wrap the escaped string in single-quotes, this is DO's convention
 	escaped[quoted_length + 1] = escaped[0] = '\'';
-	
+
 	result = rb_str_new(escaped, quoted_length + 2);
 	free(escaped);
 	return result;
@@ -599,3 +599,4 @@ void Init_do_postgres_ext() {
 	rb_define_method(cReader, "fields", cReader_fields, 0);
 	
 }
+
