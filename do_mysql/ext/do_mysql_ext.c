@@ -7,7 +7,7 @@
 #include <mysql.h>
 #include <errmsg.h>
 #include <mysqld_error.h>
- 
+
 #define RUBY_CLASS(name) rb_const_get(rb_cObject, rb_intern(name))
 #define RUBY_STRING(char_ptr) rb_str_new2(char_ptr)
 #define TAINTED_STRING(name) rb_tainted_str_new2(name)
@@ -76,7 +76,6 @@ static char * ruby_type_from_mysql_type(MYSQL_FIELD *field) {
 			ruby_type_name = "TrueClass";
 			break;
 		}
-		case MYSQL_TYPE_BIT:
 		case MYSQL_TYPE_SHORT:
 		case MYSQL_TYPE_LONG:
 		case MYSQL_TYPE_INT24:
@@ -86,7 +85,6 @@ static char * ruby_type_from_mysql_type(MYSQL_FIELD *field) {
 			break;
 		}
 		case MYSQL_TYPE_DECIMAL:
-		case MYSQL_TYPE_NEWDECIMAL:
 		case MYSQL_TYPE_FLOAT:
 		case MYSQL_TYPE_DOUBLE: {
 			ruby_type_name = "BigDecimal";
@@ -263,9 +261,10 @@ static void data_objects_debug(VALUE string) {
 	}
 }
 
+// We can add custom information to error messages using this function
+// if we think it matters
 static void raise_mysql_error(MYSQL *db, int mysql_error_code) {
 	char *error_message = (char *)mysql_error(db);
-	// char *extra = "";
 
 	switch(mysql_error_code) {
 		case CR_UNKNOWN_ERROR: 
@@ -321,8 +320,11 @@ static void raise_mysql_error(MYSQL *db, int mysql_error_code) {
 		case CR_FETCH_CANCELED: 
 		case CR_NO_DATA: 
 		case CR_NO_STMT_METADATA: 
+#if MYSQL_VERSION_ID >= 50000
 		case CR_NO_RESULT_SET: 
-		case CR_NOT_IMPLEMENTED: {
+		case CR_NOT_IMPLEMENTED:
+#endif
+		{
 			break;
 		}
 		default: {
@@ -434,7 +436,7 @@ static VALUE cConnection_initialize(VALUE self, VALUE uri) {
 	}
 
 	if (NULL == charset) {
-		charset = (char*)calloc(4, sizeof(char));
+		charset = (char*)calloc(5, sizeof(char));
 		strcpy(charset, "utf8");
 	}
 
@@ -446,11 +448,6 @@ static VALUE cConnection_initialize(VALUE self, VALUE uri) {
 
 	rb_iv_set(self, "@uri", uri);
 	rb_iv_set(self, "@connection", Data_Wrap_Struct(rb_cObject, 0, 0, db));
-
-	// free(host);
-	// free(user);
-	// free(socket);
-	// free(charset);
 
 	return Qtrue;
 }
@@ -530,24 +527,23 @@ static VALUE cCommand_quote_string(VALUE self, VALUE string) {
 	MYSQL *db = DATA_PTR(rb_iv_get(rb_iv_get(self, "@connection"), "@connection"));
 	const char *source = StringValuePtr(string);
 	char *escaped;
-	char *with_quotes;
+	VALUE result;
 	
 	int quoted_length = 0;
 
 	// Allocate space for the escaped version of 'string'.  Use + 3 allocate space for null term.
 	// and the leading and trailing single-quotes.
 	// Thanks to http://www.browardphp.com/mysql_manual_en/manual_MySQL_APIs.html#mysql_real_escape_string	
-	escaped = (char *)calloc(strlen(source) * 3 + 1, sizeof(char));
+	escaped = (char *)calloc(strlen(source) * 3 + 3, sizeof(char));
 
 	// Escape 'source' using the current charset in use on the conection 'db'
-	quoted_length = mysql_real_escape_string(db, escaped, source, strlen(source));
+	quoted_length = mysql_real_escape_string(db, escaped + 1, source, strlen(source));
 
-	// Allocate space for the final version of the quoted string.
-	with_quotes = (char *)calloc(quoted_length + 3, sizeof(char));
 	// Wrap the escaped string in single-quotes, this is DO's convention
-	sprintf(with_quotes, "'%s'", escaped);
-
-	return RUBY_STRING(with_quotes);
+	escaped[0] = escaped[quoted_length + 1] = '\'';
+	result = rb_str_new(escaped, quoted_length + 2);
+	free(escaped);
+	return result;
 }
 
 static VALUE build_query_from_args(VALUE klass, int count, VALUE *args) {

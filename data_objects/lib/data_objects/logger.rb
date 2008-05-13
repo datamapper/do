@@ -194,6 +194,6 @@ module DataObjects
   end # class Logger
   
   # HACK: Not cross-platform
-  DeadLogger = Logger.new(File.open('/dev/null', 'w'), 7)
+  DeadLogger = Logger.new(File.open('/dev/null', 'w'), :fatal)
   
 end # module DataObjects

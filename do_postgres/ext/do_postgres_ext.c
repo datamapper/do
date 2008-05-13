@@ -361,24 +361,24 @@ static VALUE cCommand_quote_string(VALUE self, VALUE string) {
 	size_t length;
 	const char *source = StringValuePtr(string);
 	char *escaped;
-	char *with_quotes;
 	int quoted_length = 0;
+	VALUE result;
 	
 	length = strlen(source);
 
 	// Allocate space for the escaped version of 'string'
 	// http://www.postgresql.org/docs/8.3/static/libpq-exec.html#LIBPQ-EXEC-ESCAPE-STRING
-	escaped = (char *)calloc(strlen(source) * 2 + 1, sizeof(char));
+	escaped = (char *)calloc(strlen(source) * 2 + 3, sizeof(char));
 
 	// Escape 'source' using the current charset in use on the conection 'db'
-	quoted_length = PQescapeStringConn(db, escaped, source, length, NULL);
+	quoted_length = PQescapeStringConn(db, escaped + 1, source, length, NULL);
 
-	// Allocate space for the final version of the quoted string.
-	with_quotes = (char *)calloc(quoted_length + 3, sizeof(char));
 	// Wrap the escaped string in single-quotes, this is DO's convention
-	sprintf(with_quotes, "'%s'", escaped);
+	escaped[quoted_length + 1] = escaped[0] = '\'';
 
-	return rb_str_new2(with_quotes);
+	result = rb_str_new(escaped, quoted_length + 2);
+	free(escaped);
+	return result;
 }
 
 static VALUE cCommand_execute_non_query(int argc, VALUE *argv[], VALUE self) {
@@ -599,3 +599,4 @@ void Init_do_postgres_ext() {
 	rb_define_method(cReader, "fields", cReader_fields, 0);
 	
 }
+

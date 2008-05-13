@@ -1,3 +1,4 @@
+require File.expand_path(File.join(File.dirname(__FILE__), '..', 'spec_helper'))
 require File.join(File.dirname(__FILE__), '..', '..', 'lib', 'data_objects', 'support', 'pooling')
 require 'timeout'
 
@@ -49,12 +50,13 @@ describe "Pooled object class" do
     Thing.instance_methods.should include("release")
   end
 
-  it "raises an error on initialization if the target object doesn't implement a `dispose' method" do
-    lambda do
+  it "should raise an error if the target object doesn't implement a `dispose' method" do
       class Durian
         include Object::Pooling
-      end.new
-    end.should raise_error(Object::Pooling::MustImplementDisposeError)
+      end
+      lambda do
+        Durian.new
+      end.should raise_error(Object::Pooling::MustImplementDisposeError)
   end
 
   it "is able to aquire an object when pool size limit is not hit yet" do

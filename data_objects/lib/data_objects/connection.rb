@@ -6,8 +6,6 @@ begin
 rescue LoadError
 end
 
-require 'logger'
-
 module DataObjects
   class Connection
 
