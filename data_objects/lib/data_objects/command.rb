@@ -5,6 +5,7 @@ module DataObjects
     
     # initialize creates a new Command object
     def initialize(connection, text)
+      raise ArgumentError.new("+connection+ must be a DataObjects::Connection") unless DataObjects::Connection === connection
       @connection, @text = connection, text
     end
     

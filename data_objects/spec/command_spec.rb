@@ -2,11 +2,12 @@ require File.expand_path(File.join(File.dirname(__FILE__), 'spec_helper'))
 
 describe DataObjects::Command do
   before do
-    @command = DataObjects::Command.new('connection://uri', 'SQL STRING')
+    @connection = DataObjects::Connection.new('mock://localhost')
+    @command = DataObjects::Command.new(@connection, 'SQL STRING')
   end
 
   it "should assign the connection object to @connection" do
-    @command.instance_variable_get("@connection").should == 'connection://uri'
+    @command.instance_variable_get("@connection").should == @connection
   end
 
   it "should assign the sql text to @text" do
