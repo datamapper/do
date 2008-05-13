@@ -26,7 +26,7 @@ Rake::GemPackageTask.new(spec) do |pkg|
 end
 
 task :install => [ :package ] do
-  sh %{#{'sudo' unless ENV['SUDOLESS']} gem install pkg/#{spec.name}-#{spec.version}}, :verbose => false
+  sh %{#{'sudo' unless ENV['SUDOLESS']} gem install --local pkg/#{spec.name}-#{spec.version} --no-update-sources}, :verbose => false
 end
 
 desc 'Run specifications'
