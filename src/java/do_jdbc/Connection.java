@@ -1,5 +1,9 @@
 package do_jdbc;
 
+import java.sql.DriverManager;
+import java.sql.SQLException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.jruby.Ruby;
 import org.jruby.RubyClass;
 import org.jruby.RubyModule;
@@ -18,6 +22,8 @@ import static do_jdbc.DataObjects.DATA_OBJECTS_MODULE_NAME;
 public class Connection extends RubyObject {
 
     public final static String RUBY_CLASS_NAME = "Connection";
+    
+    private java.sql.Connection conn;
 
     private final static ObjectAllocator CONNECTION_ALLOCATOR = new ObjectAllocator() {
         public IRubyObject allocate(Ruby runtime, RubyClass klass) {
@@ -41,35 +47,66 @@ public class Connection extends RubyObject {
         super(runtime, klass);
     }
     
-    @JRubyMethod(name = "initialize", required = 1)
-    public static IRubyObject initialize_p(IRubyObject recv) {
+    @JRubyMethod(required = 1)
+    public static IRubyObject initialize(IRubyObject recv, IRubyObject uri) {
+
+        // convert a DM URI to a JDBC URI
+        String url = "";
+        String protocol = "";
         
+        // do something with the options
         
+        String jdbcUrl;
+        String userName = "";
+        String password = "";
         
-        return recv.getRuntime().getFalse();
+        jdbcUrl = "jdbc:" + protocol + ":" + url;
+        //try {
+
+            // conn = DriverManager.getConnection(jdbcUrl, userName, password);
+            java.sql.Connection conn = getConnection(recv);
+        //} catch (SQLException ex) {
+        //    Logger.getLogger(Connection.class.getName()).log(Level.SEVERE, null, ex);
+        //}
+        //java.sql.Connection conn = getConnection(recv);
+
+        return recv;
     }
 
-    @JRubyMethod(name = "using_socket?", required = 0)
-    public static IRubyObject using_socket_p(IRubyObject recv) {
+    @JRubyMethod(name = "using_socket?")
+    public static IRubyObject using_socket(IRubyObject recv) {
         return recv.getRuntime().getFalse();
     }
     
-    @JRubyMethod(name = "character_set", required = 0)
-    public static IRubyObject character_set_p(IRubyObject recv) {
+    @JRubyMethod
+    public static IRubyObject character_set(IRubyObject recv) {
         String charSet = "iso-9292";
         return recv.getRuntime().newString(charSet);
     }
     
-    @JRubyMethod(name = "real_close", required = 0)
-    public static IRubyObject real_close_p(IRubyObject recv) {
+    @JRubyMethod
+    public static IRubyObject real_close(IRubyObject recv) {
+        
+        java.sql.Connection prev = getConnection(recv);
+        if (prev != null) {
+            try {
+                prev.close();
+            } catch(Exception e) {}
+        }
+        
         return recv.getRuntime().getFalse();
     }
      
-    @JRubyMethod(name = "begin_transaction", required = 0)
-    public static IRubyObject begin_transaction_p(IRubyObject recv) {
+    @JRubyMethod
+    public static IRubyObject begin_transaction(IRubyObject recv) {
         
         return recv;
          //return recv.getRuntime().getFalse();
+    }
+    
+    private static java.sql.Connection getConnection(IRubyObject recv) {
+        java.sql.Connection conn = (java.sql.Connection) recv.dataGetStruct();
+        return conn;
     }
     
 }

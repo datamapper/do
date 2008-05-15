@@ -1,7 +1,3 @@
-/*
- * To change this template, choose Tools | Templates
- * and open the template in the editor.
- */
 package do_jdbc;
 
 import org.jruby.Ruby;
@@ -41,4 +37,6 @@ public class Result extends RubyObject {
     private Result(Ruby runtime, RubyClass klass) {
         super(runtime, klass);
     }
+    
+    // inherit initialize
 }

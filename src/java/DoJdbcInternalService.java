@@ -1,5 +1,4 @@
 
-
 import do_jdbc.Command;
 import do_jdbc.Connection;
 import do_jdbc.Reader;
@@ -54,7 +53,7 @@ public class DoJdbcInternalService implements BasicLibraryService {
     public boolean basicLoad(Ruby runtime) throws IOException {     
         
         doModule = runtime.getModule(DATA_OBJECTS_MODULE_NAME);
-
+        
         //rb_require("rubygems");
         //rb_require("bigdecimal");
         //rb_require("date");

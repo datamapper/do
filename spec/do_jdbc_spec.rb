@@ -66,6 +66,29 @@ describe "DataObjects::Jdbc::Connection" do
     connection.should_not respond_to(:not_a_conn_method)
   end
   
+  it "should be able to create a command" do
+    @connection = DataObjects::Jdbc::Connection.new("jdbc://postgres:pg123@localhost:5432/do_jdbc_test?driver=org.postgresql.Driver&protocol=postgresql")
+    
+    command = @connection.create_command("SELECT * FROM widgets")
+    command.should be_kind_of(DataObjects::Jdbc::Command)
+  end
+  
+  it "should return a Result" do
+    @connection = DataObjects::Jdbc::Connection.new("jdbc://postgres:pg123@localhost:5432/do_jdbc_test?driver=org.postgresql.Driver&protocol=postgresql")
+
+    command = @connection.create_command("INSERT INTO invoices (invoice_number) VALUES ('1234')")
+    result = command.execute_non_query
+    result.should be_kind_of(DataObjects::Jdbc::Result)
+  end
+
+  it "should be able to determine the affected_rows" do
+    @connection = DataObjects::Jdbc::Connection.new("jdbc://postgres:pg123@localhost:5432/do_jdbc_test?driver=org.postgresql.Driver&protocol=postgresql")
+
+    command = @connection.create_command("INSERT INTO invoices (invoice_number) VALUES ('1234')")
+    result = command.execute_non_query
+    result.to_i.should == 1
+  end
+  
 end
 
 describe "DataObjects::Jdbc::Reader" do
