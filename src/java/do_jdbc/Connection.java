@@ -1,5 +1,6 @@
 package do_jdbc;
 
+import java.net.URISyntaxException;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.logging.Level;
@@ -49,43 +50,42 @@ public class Connection extends RubyObject {
     
     @JRubyMethod(required = 1)
     public static IRubyObject initialize(IRubyObject recv, IRubyObject uri) {
+        Ruby runtime = recv.getRuntime();
 
-        // convert a DM URI to a JDBC URI
-        String url = "";
-        String protocol = "";
+        // Convert a DM URI (Addressable::URI) to a JDBC URI
+        String fullUri = uri.callMethod(runtime.getCurrentContext(), "to_s").toString();
+        String protocol = uri.callMethod(runtime.getCurrentContext(), "scheme").toString();
+        String host = uri.callMethod(runtime.getCurrentContext(), "host").toString();
+        String port = uri.callMethod(runtime.getCurrentContext(), "port").toString();
+        String path = uri.callMethod(runtime.getCurrentContext(), "path").toString();
+        String user = uri.callMethod(runtime.getCurrentContext(), "user").toString();
+        String pass = uri.callMethod(runtime.getCurrentContext(), "password").toString();
         
-        // do something with the options
+        System.out.println(fullUri);
+        try {
+            System.out.println(new java.net.URI(fullUri).toString());
+        } catch (URISyntaxException ex) {
+            Logger.getLogger(Connection.class.getName()).log(Level.SEVERE, null, ex);
+        }
         
         String jdbcUrl;
-        String userName = "";
-        String password = "";
+        java.sql.Connection conn;
         
-        jdbcUrl = "jdbc:" + protocol + ":" + url;
-        //try {
+        //jdbcUrl = "jdbc:" + protocol + ":" + url;
+        try {
+            conn = DriverManager.getConnection(fullUri, user, pass);
+            //java.sql.Connection conn = getConnection(recv);
+        } catch (SQLException ex) {
+           Logger.getLogger(Connection.class.getName()).log(Level.SEVERE, null, ex);
+        }
+       //java.sql.Connection conn = getConnection(recv);
 
-            // conn = DriverManager.getConnection(jdbcUrl, userName, password);
-            java.sql.Connection conn = getConnection(recv);
-        //} catch (SQLException ex) {
-        //    Logger.getLogger(Connection.class.getName()).log(Level.SEVERE, null, ex);
-        //}
-        //java.sql.Connection conn = getConnection(recv);
-
-        return recv;
-    }
-
-    @JRubyMethod(name = "using_socket?")
-    public static IRubyObject using_socket(IRubyObject recv) {
-        return recv.getRuntime().getFalse();
-    }
-    
-    @JRubyMethod
-    public static IRubyObject character_set(IRubyObject recv) {
-        String charSet = "iso-9292";
-        return recv.getRuntime().newString(charSet);
+        return runtime.getTrue();
     }
     
     @JRubyMethod
     public static IRubyObject real_close(IRubyObject recv) {
+        Ruby runtime = recv.getRuntime();
         
         java.sql.Connection prev = getConnection(recv);
         if (prev != null) {
@@ -94,14 +94,7 @@ public class Connection extends RubyObject {
             } catch(Exception e) {}
         }
         
-        return recv.getRuntime().getFalse();
-    }
-     
-    @JRubyMethod
-    public static IRubyObject begin_transaction(IRubyObject recv) {
-        
-        return recv;
-         //return recv.getRuntime().getFalse();
+        return runtime.getTrue();
     }
     
     private static java.sql.Connection getConnection(IRubyObject recv) {

@@ -59,11 +59,10 @@ describe "DataObjects::Jdbc::Connection" do
   
   it "should have initialize, using_socket?, character_set, real_close methods" do
     connection = DataObjects::Jdbc::const_get('Connection').new("jdbc://test/")
-    connection.should respond_to(:using_socket?)
-    connection.should respond_to(:character_set)
+
     connection.should respond_to(:real_close)
-    connection.should respond_to(:begin_transaction)
     connection.should_not respond_to(:not_a_conn_method)
+    
   end
   
   it "should be able to create a command" do
