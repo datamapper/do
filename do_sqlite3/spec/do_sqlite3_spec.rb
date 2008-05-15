@@ -98,7 +98,7 @@ describe "DataObjects::Sqlite3::Result" do
   end
 
   it "should raise an error when you pass too many or too few types for the expected result set" do
-    lambda { select("SELECT name, id FROM users", [String, Fixnum, String]) }.should raise_error(Sqlite3Error)
+    lambda { select("SELECT name, id FROM users", [String, Integer, String]) }.should raise_error(Sqlite3Error)
   end
 
   it "should do a custom typecast reader with Class" do
@@ -106,7 +106,7 @@ describe "DataObjects::Sqlite3::Result" do
 
     id = insert("INSERT INTO users (name, age, type) VALUES (?, ?, ?)", 'Sam', 30, Person)
 
-    select("SELECT name, age, type FROM users WHERE id = ?", [String, Fixnum, Class], id) do |reader|
+    select("SELECT name, age, type FROM users WHERE id = ?", [String, Integer, Class], id) do |reader|
       reader.fields.should == ["name", "age", "type"]
       reader.values.should == ["Sam", 30, Person]
     end
@@ -224,7 +224,7 @@ describe "DataObjects::Sqlite3::Result" do
 
     it "should quote an Array with NULL values returned AND set_types called" do
       command = @connection.create_command("SELECT id, NULL AS notes FROM sail_boats WHERE (id IN ?)")
-      command.set_types [ Fixnum, String ]
+      command.set_types [ Integer, String ]
 
       reader = command.execute_reader([1, 2, 3])
 

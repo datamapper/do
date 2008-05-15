@@ -251,7 +251,7 @@ static VALUE typecast(char *value, char *type) {
 	
 	if ( strcmp(type, "Class") == 0) {
 	  return rb_funcall(mDO, rb_intern("find_const"), 1, TAINTED_STRING(value));
-	} else if ( strcmp(type, "Fixnum") == 0 || strcmp(type, "Integer") == 0 || strcmp(type, "Bignum") == 0 ) {
+	} else if ( strcmp(type, "Integer") == 0 || strcmp(type, "Fixnum") == 0 || strcmp(type, "Bignum") == 0 ) {
 		return rb_cstr2inum(value, 10);
 	} else if ( strcmp(type, "Float") == 0 ) {
 		return rb_float_new(rb_cstr_to_dbl(value, Qfalse));

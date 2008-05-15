@@ -231,7 +231,7 @@ static VALUE typecast(const char* value, char* type) {
 
 	if ( strcmp(type, "Class") == 0) {
 	  return rb_funcall(mDO, rb_intern("find_const"), 1, TAINTED_STRING(value));
-	} else if ( strcmp(type, "Fixnum") == 0 || strcmp(type, "Integer") == 0 || strcmp(type, "Bignum") == 0 ) {
+	} else if ( strcmp(type, "Integer") == 0 || strcmp(type, "Fixnum") == 0 || strcmp(type, "Bignum") == 0 ) {
 		return rb_cstr2inum(value, 10);
 	} else if (0 == strcmp("String", type)) {
 		return TAINTED_STRING(value);

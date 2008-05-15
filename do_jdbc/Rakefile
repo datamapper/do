@@ -2,6 +2,9 @@ require 'rubygems'
 require 'rake/gempackagetask'
 require 'spec/rake/spectask'
 
+WIN32 = (PLATFORM =~ /win32|cygwin/) rescue nil
+SUDO  = WIN32 ? '' : ('sudo' unless ENV['SUDOLESS'])
+
 spec = Gem::Specification.new do |s|
   s.name = "do_jdbc"
   s.version = "0.9.0"
@@ -24,12 +27,8 @@ Rake::GemPackageTask.new(spec) do |pkg|
   pkg.gem_spec = spec
 end
 
-windows = (PLATFORM =~ /win32|cygwin/) rescue nil
-
-SUDO = windows ? "" : "sudo"
-
 task :install => [:package] do
-  sh %{#{SUDO unless ENV['SUDOLESS']} gem install --local pkg/#{spec.name}-#{spec.version} --no-update-sources}
+  sh %{#{SUDO} gem install --local pkg/#{spec.name}-#{spec.version} --no-update-sources}
 end
 
 desc "Run all specs in spec directory (excluding plugin specs)"

@@ -10,6 +10,9 @@ CLEAN.include '**/*.o', '**/*.so', '**/*.bundle', '**/*.a',
   '**/*.log', '{ext,lib}/*.{bundle,so,obj,pdb,lib,def,exp}',
   'ext/Makefile'
 
+WIN32 = (PLATFORM =~ /win32|cygwin/) rescue nil
+SUDO  = WIN32 ? '' : ('sudo' unless ENV['SUDOLESS'])
+
 spec = Gem::Specification.new do |s|
   s.name              = 'do_mysql'
   s.version           = '0.9.0'
@@ -35,12 +38,8 @@ end
 # Use of ext_helper to properly setup compile tasks and native gem generation
 setup_extension "#{spec.name}_ext", spec
 
-windows = (PLATFORM =~ /win32|cygwin/) rescue nil
-
-SUDO = windows ? "" : "sudo"
-
 task :install => [ :package ] do
-  sh %{#{SUDO unless ENV['SUDOLESS']} gem install --local pkg/#{spec.name}-#{spec.version} --no-update-sources}, :verbose => false
+  sh %{#{SUDO} gem install --local pkg/#{spec.name}-#{spec.version} --no-update-sources}, :verbose => false
 end
 
 desc 'Run specifications'

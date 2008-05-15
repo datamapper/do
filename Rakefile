@@ -10,17 +10,23 @@ require Pathname('rake/rdoctask')
 
 DIR = Pathname(__FILE__).dirname.expand_path.to_s
 
+WIN32 = (PLATFORM =~ /win32|cygwin/) rescue nil
+SUDO  = WIN32 ? '' : ('sudo' unless ENV['SUDOLESS'])
+
 # projects = %w[data_objects do_jdbc do_mysql do_postgres do_sqlite3]
 # Took out do_jdbc since it doesn't build yet.
 projects = %w[data_objects do_mysql do_postgres do_sqlite3]
 
-namespace :do do
+desc 'Install the do gems'
+task :install => [ 'ci:install_all' ]
+
 desc 'Run specifications'
-  Spec::Rake::SpecTask.new(:spec) do |t|
-    t.spec_opts << '--options' << 'spec/spec.opts' if File.exists?('spec/spec.opts')
-    t.spec_files = Pathname.glob(Pathname.new(__FILE__).parent.join("**").join("spec").join("**").join("*_spec.rb").to_s)
-  end
+Spec::Rake::SpecTask.new(:spec) do |t|
+  t.spec_opts << '--format specdoc' << '--color'
+  t.spec_files = Pathname.glob(Pathname.new(__FILE__).parent + '**/spec/**/*_spec.rb')
 end
+
+task 'do:spec' => [ 'spec' ]
 
 namespace :ci do
 
@@ -31,7 +37,7 @@ namespace :ci do
       Rake::Task["ci:run_all"].invoke
     end
   end
-  
+
   task :install_all do
     projects.each do |gem_name|
       cd(File.join(File.dirname(__FILE__), gem_name))
@@ -54,7 +60,7 @@ namespace :ci do
   end
 
   task :uninstall do
-    sh %{#{'sudo' unless ENV['SUDOLESS']} gem uninstall #{ENV['gem_name']} --ignore-dependencies} rescue nil
+    sh %{#{SUDO} gem uninstall #{ENV['gem_name']} --ignore-dependencies} rescue nil
   end
 
   task :publish do
@@ -68,7 +74,7 @@ namespace :ci do
 
   task :define_tasks do
     gem_name = ENV['gem_name']
-    
+
     unless FileList["#{DIR}/#{gem_name}/ext/**/extconf.rb"].empty?
       file "#{gem_name}/Makefile" => FileList["#{DIR}/#{gem_name}/ext/**/extconf.rb", "#{DIR}/#{gem_name}/ext/**/*.c", "#{DIR}/#{gem_name}/ext/**/*.h"] do
         system("cd #{gem_name} && ruby ext/extconf.rb")

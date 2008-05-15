@@ -12,7 +12,7 @@ begin
       DataObjects::Jdbc.const_get('Result').should_not be_nil
       DataObjects::Jdbc.const_get('Reader').should_not be_nil
     end
-    
+
     it "should connect successfully using the full URI" do
       DataObjects::Jdbc::Connection.
         new(URI.parse("jdbc://postgres:pg123@localhost:5432/do_jdbc_test?driver=org.postgresql.Driver&protocol=postgresql"))
@@ -37,30 +37,30 @@ begin
 
       describe "reading results" do
         before(:each) do
-	  @reader = @command.execute_reader
+          @reader = @command.execute_reader
         end
-    
+
         it "should return the proper number of fields" do
-	  @reader.fields.size.should == 18
+          @reader.fields.size.should == 18
         end
 
         it "should fetch 2 rows" do
-	  @reader.next!.should == true
-	  @reader.values.should be_kind_of(Array)
+          @reader.next!.should == true
+          @reader.values.should be_kind_of(Array)
 
-	  @reader.next!.should == true
-	  @reader.values.should be_kind_of(Array)
-          
-	  @reader.next!.should be_nil
+          @reader.next!.should == true
+          @reader.values.should be_kind_of(Array)
+
+          @reader.next!.should be_nil
         end
       end
 
-      describe "executing a query w/ set_types" do      
+      describe "executing a query w/ set_types" do
         before(:all) do
           @types = [
-            Fixnum, String, String, String, String, String,
-            String, Fixnum, Fixnum, Fixnum, Fixnum, Float, Float, 
-	    BigDecimal, Date, DateTime, DateTime, String
+            Integer, String, String, String, String, String,
+            String, Integer, Integer, Integer, Integer, Float, Float,
+            BigDecimal, Date, DateTime, DateTime, String
           ]
         end
 
@@ -93,13 +93,13 @@ begin
         result = command.execute_non_query
         result.to_i.should == 1
       end
-      
+
       it "should yield the last inserted id" do
         @connection.create_command("TRUNCATE TABLE invoices").execute_non_query
-    
+
         result = @connection.create_command("INSERT INTO invoices (invoice_number) VALUES ('1234')").execute_non_query
         result.insert_id.should == 1
-        
+
         result = @connection.create_command("INSERT INTO invoices (invoice_number) VALUES ('3456')").execute_non_query
         result.insert_id.should == 2
       end
