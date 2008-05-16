@@ -20,7 +20,6 @@ spec = Gem::Specification.new do |s|
 # s.extensions       = ["ext/extconf.rb"]
   s.files            = %w(LICENSE README Rakefile TODO) + Dir.glob("{lib,specs}/**/*").reject {|x| x =~ /\.(o|bundle)$/ }
   s.add_dependency('data_objects', '>= 0.9.0')
-  s.add_dependency('addressable',  '>= 1.0.3')
 end
 
 Rake::GemPackageTask.new(spec) do |pkg|
