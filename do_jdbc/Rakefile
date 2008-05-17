@@ -2,8 +2,8 @@ require 'rubygems'
 require 'rake/gempackagetask'
 require 'spec/rake/spectask'
 
-WIN32 = (RUBY_PLATFORM =~ /mswin|mingw|cygwin/) rescue nil
-SUDO  = WIN32 ? '' : ('sudo' unless ENV['SUDOLESS'])
+WINDOWS = (RUBY_PLATFORM =~ /mswin|mingw|cygwin/) rescue nil
+SUDO    = WINDOWS ? '' : ('sudo' unless ENV['SUDOLESS'])
 
 spec = Gem::Specification.new do |s|
   s.name             = 'do_jdbc'

@@ -10,8 +10,8 @@ require Pathname('rake/rdoctask')
 
 DIR = Pathname(__FILE__).dirname.expand_path.to_s
 
-WIN32 = (PLATFORM =~ /win32|cygwin/) rescue nil
-SUDO  = WIN32 ? '' : ('sudo' unless ENV['SUDOLESS'])
+WINDOWS = (RUBY_PLATFORM =~ /mswin|mingw|cygwin/) rescue nil
+SUDO    = WINDOWS ? '' : ('sudo' unless ENV['SUDOLESS'])
 
 # projects = %w[data_objects do_jdbc do_mysql do_postgres do_sqlite3]
 # Took out do_jdbc since it doesn't build yet.

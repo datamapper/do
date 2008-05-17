@@ -4,8 +4,8 @@ require 'rake/gempackagetask'
 require 'spec/rake/spectask'
 require 'pathname'
 
-WIN32 = (PLATFORM =~ /win32|cygwin/) rescue nil
-SUDO  = WIN32 ? '' : ('sudo' unless ENV['SUDOLESS'])
+WINDOWS = (RUBY_PLATFORM =~ /mswin|mingw|cygwin/) rescue nil
+SUDO    = WINDOWS ? '' : ('sudo' unless ENV['SUDOLESS'])
 
 spec = Gem::Specification.new do |s|
   s.name             = 'data_objects'
