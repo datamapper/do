@@ -10,7 +10,7 @@ CLEAN.include '**/*.o', '**/*.so', '**/*.bundle', '**/*.a',
   '**/*.log', '{ext,lib}/*.{bundle,so,obj,pdb,lib,def,exp}',
   'ext/Makefile'
 
-WIN32 = (PLATFORM =~ /win32|cygwin/) rescue nil
+WIN32 = (RUBY_PLATFORM =~ /mswin|mingw|cygwin/) rescue nil
 SUDO  = WIN32 ? '' : ('sudo' unless ENV['SUDOLESS'])
 
 spec = Gem::Specification.new do |s|
