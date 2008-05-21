@@ -60,7 +60,7 @@ static VALUE native_typecast(sqlite3_value *value, int type) {
 			break;
 		}
 		case SQLITE_INTEGER: {
-			ruby_value = INT2NUM(sqlite3_value_int(value));
+			ruby_value = LL2NUM(sqlite3_value_int64(value));
 			break;
 		}
 		case SQLITE3_TEXT: {
@@ -244,7 +244,7 @@ static VALUE ruby_typecast(sqlite3_value *value, char *type, int original_type) 
 	} else if ( strcmp(type, "TrueClass") == 0 ) {
 		ruby_value = strcmp((char*)sqlite3_value_text(value), "t") == 0 ? Qtrue : Qfalse;
 	} else if ( strcmp(type, "Integer") == 0 || strcmp(type, "Fixnum") == 0 || strcmp(type, "Bignum") == 0 ) {
-		ruby_value = INT2NUM(sqlite3_value_int(value));
+		ruby_value = LL2NUM(sqlite3_value_int64(value));
 	} else if ( strcmp(type, "BigDecimal") == 0 ) {
 		ruby_value = rb_funcall(rb_cBigDecimal, ID_NEW, 1, TAINTED_STRING((char*)sqlite3_value_text(value)));
 	} else if ( strcmp(type, "String") == 0 ) {
