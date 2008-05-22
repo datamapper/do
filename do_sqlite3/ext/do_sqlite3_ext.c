@@ -225,11 +225,16 @@ static VALUE parse_date_time(char *date) {
 
 static VALUE parse_time(char *date) {
 
-	int year, month, day, hour, min, sec;
+	int year, month, day, hour, min, sec, usec;
 
-	sscanf(date, "%4d-%2d-%2d %2d:%2d:%2d", &year, &month, &day, &hour, &min, &sec);
-	
-	return rb_funcall(rb_cTime, rb_intern("utc"), 6, INT2NUM(year), INT2NUM(month), INT2NUM(day), INT2NUM(hour), INT2NUM(min), INT2NUM(sec));
+	if (0 != strchr(date, '.')) {
+		sscanf(date, "%4d-%2d-%2d %2d:%2d:%2d.%d", &year, &month, &day, &hour, &min, &sec, &usec);
+	} else {
+		sscanf(date, "%4d-%2d-%2d %2d:%2d:%2d", &year, &month, &day, &hour, &min, &sec);
+		usec = 0;
+	}
+
+	return rb_funcall(rb_cTime, rb_intern("utc"), 7, INT2NUM(year), INT2NUM(month), INT2NUM(day), INT2NUM(hour), INT2NUM(min), INT2NUM(sec), INT2NUM(usec));
 }
 
 static VALUE ruby_typecast(sqlite3_value *value, char *type, int original_type) {

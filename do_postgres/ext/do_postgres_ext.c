@@ -199,14 +199,18 @@ static VALUE parse_date_time(const char *date) {
 	return rb_funcall(rb_cDateTime, ID_NEW_DATE, 3, ajd, offset, INT2NUM(2299161));
 }
 
-static VALUE parse_time(char *date) {	
-	int seconds, h, min, s;
-	sscanf(date, "%2d:%2d:%2d", &h, &min, &s);
-	
-	seconds = h * 3600 + min * 60 + s;
-	seconds += 6 * 3600; // Epoch begins at 6pm, so this gets our times fixed up
-	
-	return rb_funcall(rb_cTime, rb_intern("at"), 1, INT2NUM(seconds));
+static VALUE parse_time(char *date) {
+
+	int year, month, day, hour, min, sec, usec;
+
+	if (0 != strchr(date, '.')) {
+		sscanf(date, "%4d-%2d-%2d %2d:%2d:%2d.%d", &year, &month, &day, &hour, &min, &sec, &usec);
+	} else {
+		sscanf(date, "%4d-%2d-%2d %2d:%2d:%2d", &year, &month, &day, &hour, &min, &sec);
+		usec = 0;
+	}
+
+	return rb_funcall(rb_cTime, rb_intern("utc"), 7, INT2NUM(year), INT2NUM(month), INT2NUM(day), INT2NUM(hour), INT2NUM(min), INT2NUM(sec), INT2NUM(usec));
 }
 
 /* ===== Typecasting Functions ===== */

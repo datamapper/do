@@ -158,12 +158,18 @@ static VALUE parse_date(const char *date) {
 	return rb_funcall(rb_cDate, ID_NEW_DATE, 3, rational, INT2NUM(0), INT2NUM(2299161));
 }
 
-static VALUE parse_time(const char *time) {
-	int year, month, day, hour, min, sec;
-	
-	sscanf(time, "%4d-%2d-%2d %2d:%2d:%2d", &year, &month, &day, &hour, &min, &sec);
+static VALUE parse_time(char *date) {
 
-	return rb_funcall(rb_cTime, ID_UTC, 6, INT2NUM(year), INT2NUM(month), INT2NUM(day), INT2NUM(hour), INT2NUM(min), INT2NUM(sec));
+	int year, month, day, hour, min, sec, usec;
+
+	if (0 != strchr(date, '.')) {
+		sscanf(date, "%4d-%2d-%2d %2d:%2d:%2d.%d", &year, &month, &day, &hour, &min, &sec, &usec);
+	} else {
+		sscanf(date, "%4d-%2d-%2d %2d:%2d:%2d", &year, &month, &day, &hour, &min, &sec);
+		usec = 0;
+	}
+
+	return rb_funcall(rb_cTime, rb_intern("utc"), 7, INT2NUM(year), INT2NUM(month), INT2NUM(day), INT2NUM(hour), INT2NUM(min), INT2NUM(sec), INT2NUM(usec));
 }
 
 static VALUE parse_date_time(const char *date_time) {
