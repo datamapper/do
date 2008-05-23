@@ -169,7 +169,7 @@ static VALUE parse_time(char *date) {
 		usec = 0;
 	}
 
-	return rb_funcall(rb_cTime, rb_intern("utc"), 7, INT2NUM(year), INT2NUM(month), INT2NUM(day), INT2NUM(hour), INT2NUM(min), INT2NUM(sec), INT2NUM(usec));
+	return rb_funcall(rb_cTime, rb_intern("local"), 7, INT2NUM(year), INT2NUM(month), INT2NUM(day), INT2NUM(hour), INT2NUM(min), INT2NUM(sec), INT2NUM(usec));
 }
 
 static VALUE parse_date_time(const char *date_time) {
