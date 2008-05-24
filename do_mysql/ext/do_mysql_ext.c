@@ -161,7 +161,7 @@ static VALUE parse_date(const char *date) {
 static VALUE parse_time(char *date) {
 
 	int year, month, day, hour, min, sec, usec;
-	char subsec[6];
+	char subsec[7];
 
 	if (0 != strchr(date, '.')) {
 		// right padding usec with 0. e.g. '012' will become 12000 microsecond, since Time#local use microsecond
