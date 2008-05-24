@@ -181,9 +181,9 @@ static VALUE parse_date_time(char *date) {
 	
 		// TODO: Refactor the following few lines to do the calculation with the *seconds*
 		// value instead of having to do the hour/minute math
-		hour_offset = 7;//abs(timeinfo->tm_gmtoff) / 3600;
-		minute_offset = 0;//abs(timeinfo->tm_gmtoff) % 3600 / 60;
-		sign = '-';//timeinfo->tm_gmtoff < 0 ? '-' : '+';
+		hour_offset = abs(timeinfo->tm_gmtoff) / 3600;
+		minute_offset = abs(timeinfo->tm_gmtoff) % 3600 / 60;
+		sign = timeinfo->tm_gmtoff < 0 ? '-' : '+';
 	} else {
 		// Something went terribly wrong
 		rb_raise(eSqlite3Error, "Couldn't parse date: %s", date);
