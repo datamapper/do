@@ -161,9 +161,12 @@ static VALUE parse_date(const char *date) {
 static VALUE parse_time(char *date) {
 
 	int year, month, day, hour, min, sec, usec;
+	char subsec[6];
 
 	if (0 != strchr(date, '.')) {
-		sscanf(date, "%4d-%2d-%2d %2d:%2d:%2d.%d", &year, &month, &day, &hour, &min, &sec, &usec);
+		// right padding usec with 0. e.g. '012' will become 12000 microsecond, since Time#local use microsecond
+	  sscanf(date, "%4d-%2d-%2d %2d:%2d:%2d.%s", &year, &month, &day, &hour, &min, &sec, subsec);
+		sscanf(subsec, "%d", &usec);
 	} else {
 		sscanf(date, "%4d-%2d-%2d %2d:%2d:%2d", &year, &month, &day, &hour, &min, &sec);
 		usec = 0;

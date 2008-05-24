@@ -71,7 +71,7 @@ module DataObjects
     end
     
     def quote_time(value)
-      "'#{value.strftime('%Y-%m-%d %H:%M:%S')}" + (value.usec > 0 ? ".#{value.usec.to_s.ljust(6, '0')}'" : "'")
+      "'#{value.strftime('%Y-%m-%d %H:%M:%S')}" + (value.usec > 0 ? ".#{value.usec.to_s.rjust(6, '0')}'" : "'")
     end
     
     def quote_datetime(value)

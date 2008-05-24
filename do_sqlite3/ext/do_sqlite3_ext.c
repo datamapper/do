@@ -181,9 +181,9 @@ static VALUE parse_date_time(char *date) {
 	
 		// TODO: Refactor the following few lines to do the calculation with the *seconds*
 		// value instead of having to do the hour/minute math
-		hour_offset = abs(timeinfo->tm_gmtoff) / 3600;
-		minute_offset = abs(timeinfo->tm_gmtoff) % 3600 / 60;
-		sign = timeinfo->tm_gmtoff < 0 ? '-' : '+';
+		hour_offset = 7;//abs(timeinfo->tm_gmtoff) / 3600;
+		minute_offset = 0;//abs(timeinfo->tm_gmtoff) % 3600 / 60;
+		sign = '-';//timeinfo->tm_gmtoff < 0 ? '-' : '+';
 	} else {
 		// Something went terribly wrong
 		rb_raise(eSqlite3Error, "Couldn't parse date: %s", date);
@@ -226,9 +226,12 @@ static VALUE parse_date_time(char *date) {
 static VALUE parse_time(char *date) {
 
 	int year, month, day, hour, min, sec, usec;
+	char subsec[6];
 
 	if (0 != strchr(date, '.')) {
-		sscanf(date, "%4d-%2d-%2d %2d:%2d:%2d.%d", &year, &month, &day, &hour, &min, &sec, &usec);
+		// right padding usec with 0. e.g. '012' will become 12000 microsecond, since Time#local use microsecond
+	  sscanf(date, "%4d-%2d-%2d %2d:%2d:%2d.%s", &year, &month, &day, &hour, &min, &sec, subsec);
+		sscanf(subsec, "%d", &usec);
 	} else {
 		sscanf(date, "%4d-%2d-%2d %2d:%2d:%2d", &year, &month, &day, &hour, &min, &sec);
 		usec = 0;
