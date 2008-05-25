@@ -50,7 +50,7 @@ def setup_extension(extension_name, gem_spec = nil)
         # clear the extension (to avoid RubyGems firing the build process)
         gem_spec.extensions.clear
 
-        # add the precompiled binaries to the list of files 
+        # add the precompiled binaries to the list of files
         # (taken from compile task dependency)
         gem_spec.files += Rake::Task['compile'].prerequisites
       end

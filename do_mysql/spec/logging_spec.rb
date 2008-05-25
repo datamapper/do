@@ -1,11 +1,11 @@
 require File.expand_path(File.join(File.dirname(__FILE__), 'spec_helper'))
 
 describe DataObjects::Mysql::Command do
-  
+
   before(:each) do
     @connection = DataObjects::Mysql::Connection.new("mysql://root@127.0.0.1:3306/do_mysql_test")
   end
-  
+
   describe "Executing a Reader" do
 
     it "should log reader queries when the level is Debug (0)" do
@@ -24,7 +24,7 @@ describe DataObjects::Mysql::Command do
       command.execute_reader('Scott')
     end
   end
-  
+
   describe "Executing a Non-Query" do
     it "should log non-query statements when the level is Debug (0)" do
       command = @connection.create_command("INSERT INTO invoices (invoice_number) VALUES (?)")
@@ -42,5 +42,5 @@ describe DataObjects::Mysql::Command do
       command.execute_non_query(1234)
     end
   end
-  
+
 end

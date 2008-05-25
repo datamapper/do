@@ -1,7 +1,7 @@
 module DataObjects
 
   class Transaction
-  
+
     HOST = "#{Socket::gethostbyname(Socket::gethostname)[0]}" rescue "localhost"
     @@counter = 0
 
@@ -35,7 +35,7 @@ def #{method_name}
   raise NotImplementedError
 end
 EOF
-      
+
     end
 
   end

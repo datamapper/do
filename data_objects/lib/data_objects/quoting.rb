@@ -1,5 +1,5 @@
 module DataObjects
-  
+
   module Quoting
     # Escape a string of SQL with a set of arguments.
     # The first argument is assumed to be the SQL to escape,
@@ -9,28 +9,28 @@ module DataObjects
     # ==== Examples
     #   escape_sql("SELECT * FROM zoos")
     #   # => "SELECT * FROM zoos"
-    # 
+    #
     #   escape_sql("SELECT * FROM zoos WHERE name = ?", "Dallas")
     #   # => "SELECT * FROM zoos WHERE name = `Dallas`"
     #
     #   escape_sql("SELECT * FROM zoos WHERE name = ? AND acreage > ?", "Dallas", 40)
     #   # => "SELECT * FROM zoos WHERE name = `Dallas` AND acreage > 40"
-    # 
+    #
     # ==== Warning
     # This method is meant mostly for adapters that don't support
     # bind-parameters.
     def escape_sql(args)
       sql = @text.dup
-    
+
       unless args.empty?
         sql.gsub!(/\?/) do |x|
           quote_value(args.shift)
         end
       end
-      
+
       sql
     end
-    
+
     def quote_value(value)
       return 'NULL' if value.nil?
 
@@ -45,7 +45,7 @@ module DataObjects
         when Array then quote_array(value)
         when Range then quote_range(value)
         when Symbol then quote_symbol(value)
-        else 
+        else
           if value.respond_to?(:to_sql)
             value.to_sql
           else
@@ -53,46 +53,46 @@ module DataObjects
           end
       end
     end
-    
+
     def quote_symbol(value)
       quote_string(value.to_s)
     end
-    
+
     def quote_numeric(value)
       value.to_s
     end
-    
+
     def quote_string(value)
       "'#{value.gsub("'", "''")}'"
     end
-    
+
     def quote_class(value)
       quote_string(value.name)
     end
-    
+
     def quote_time(value)
       "'#{value.strftime('%Y-%m-%d %H:%M:%S')}" + (value.usec > 0 ? ".#{value.usec.to_s.rjust(6, '0')}'" : "'")
     end
-    
+
     def quote_datetime(value)
       "'#{value.dup}'"
     end
-    
+
     def quote_date(value)
       "'#{value.strftime("%Y-%m-%d")}'"
     end
-    
+
     def quote_boolean(value)
       value.to_s.upcase
     end
-    
+
     def quote_array(value)
       "(#{value.map { |entry| quote_value(entry) }.join(', ')})"
     end
-    
+
     def quote_range(value)
-      "#{quote_value(value.first)} AND #{quote_value(value.last)}"      
+      "#{quote_value(value.first)} AND #{quote_value(value.last)}"
     end
   end
-  
+
 end

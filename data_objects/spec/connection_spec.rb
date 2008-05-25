@@ -3,16 +3,16 @@ require File.expand_path(File.join(File.dirname(__FILE__), 'spec_helper'))
 describe DataObjects::Connection do
   before do
     @connection = DataObjects::Connection.new('mock://localhost')
-  end 
+  end
 
   %w{acquire release}.each do |meth|
-    it "should respond to class method ##{meth}" do 
+    it "should respond to class method ##{meth}" do
       DataObjects::Connection.should respond_to(meth.intern)
     end
   end
-  
+
   %w{real_close create_command}.each do |meth|
-    it "should respond to ##{meth}" do 
+    it "should respond to ##{meth}" do
       @connection.should respond_to(meth.intern)
     end
   end

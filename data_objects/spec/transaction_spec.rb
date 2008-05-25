@@ -7,7 +7,7 @@ describe DataObjects::Transaction do
     DataObjects::Connection.should_receive(:new).with("mock://mock/mock").once.and_return(@connection)
     @transaction = DataObjects::Transaction.new("mock://mock/mock")
   end
-  
+
   it "should have a HOST constant" do
     DataObjects::Transaction::HOST.should_not == nil?
   end

@@ -60,7 +60,7 @@ module MysqlSpecHelpers
     EOF
 
     @connection.create_command(<<-EOF).execute_non_query
-      DROP TABLE IF EXISTS `widgets` 
+      DROP TABLE IF EXISTS `widgets`
     EOF
 
     @connection.create_command(<<-EOF).execute_non_query

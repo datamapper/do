@@ -1,6 +1,6 @@
 require 'mkmf'
 
-# be polite: you can't force existance of uname functionality on all 
+# be polite: you can't force existance of uname functionality on all
 # platforms.
 if RUBY_PLATFORM =~ /darwin/
   ENV["RC_ARCHS"] = `uname -m`.chomp if `uname -sr` =~ /^Darwin/

@@ -14,7 +14,7 @@ describe DataObjects::Sqlite3::Transaction do
     :begin => "BEGIN",
     :commit => "COMMIT",
     :rollback => "ROLLBACK",
-    :rollback_prepared => "ROLLBACK", 
+    :rollback_prepared => "ROLLBACK",
     :prepare => nil
   }.each do |method, commands|
     it "should execute #{commands.inspect} on ##{method}" do

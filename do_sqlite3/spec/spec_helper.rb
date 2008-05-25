@@ -22,7 +22,7 @@ DataObjects::Sqlite3.logger = DataObjects::Logger.new(log_path, 0)
 at_exit { DataObjects.logger.flush }
 
 module Sqlite3SpecHelpers
-  
+
   def insert(query, *args)
     result = @connection.create_command(query).execute_non_query(*args)
     result.insert_id

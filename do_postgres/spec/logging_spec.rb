@@ -1,11 +1,11 @@
 require File.expand_path(File.join(File.dirname(__FILE__), 'spec_helper'))
 
 describe DataObjects::Postgres::Command do
-  
+
   before(:each) do
     @connection = DataObjects::Postgres::Connection.new("postgres://localhost/do_test")
   end
-  
+
   describe "Executing a Reader" do
 
     it "should log reader queries when the level is Debug (0)" do
@@ -24,7 +24,7 @@ describe DataObjects::Postgres::Command do
       command.execute_reader
     end
   end
-  
+
   describe "Executing a Non-Query" do
     it "should log non-query statements when the level is Debug (0)" do
       command = @connection.create_command("INSERT INTO users (name) VALUES (?)")
@@ -42,5 +42,5 @@ describe DataObjects::Postgres::Command do
       command.execute_non_query('Blah')
     end
   end
-  
+
 end

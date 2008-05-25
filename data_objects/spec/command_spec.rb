@@ -13,7 +13,7 @@ describe DataObjects::Command do
   it "should assign the sql text to @text" do
     @command.instance_variable_get("@text").should == 'SQL STRING'
   end
-  
+
   %w{connection execute_non_query execute_reader set_types to_s}.each do |meth|
     it "should respond to ##{meth}" do
       @command.should respond_to(meth.intern)
@@ -33,5 +33,5 @@ describe DataObjects::Command do
   it "should make the SQL text available in #to_s" do
     @command.to_s.should == @command.instance_variable_get("@text")
   end
-  
+
 end

@@ -14,5 +14,5 @@ describe DataObjects::Postgres::Command do
     @command.quote_string("The\\Backslasher\\Rises\\Again").should == "'The\\\\Backslasher\\\\Rises\\\\Again'"
     @command.quote_string("Scott \"The Rage\" Bauer").should == "'Scott \"The Rage\" Bauer'"
   end
-    
+
 end

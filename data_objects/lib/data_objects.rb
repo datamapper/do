@@ -11,11 +11,11 @@ require File.expand_path(File.join(File.dirname(__FILE__), 'data_objects', 'quot
 
 module DataObjects
   class LengthMismatchError < StandardError; end
-  
+
   def self.root
     @root ||= Pathname(__FILE__).dirname.parent.expand_path
   end
-  
+
   def self.find_const(name)
     klass = Object
     name.to_s.split('::').each do |part|
@@ -26,15 +26,15 @@ module DataObjects
 end
 
 # class ConnectionFailed < StandardError; end
-# 
+#
 # class ReaderClosed < StandardError; end
-# 
+#
 # class ReaderError < StandardError; end
-# 
+#
 # class QueryError < StandardError; end
-# 
+#
 # class NoInsertError < StandardError; end
-# 
+#
 # class LostConnectionError < StandardError; end
-# 
+#
 # class UnknownError < StandardError; end
