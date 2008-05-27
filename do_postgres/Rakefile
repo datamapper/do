@@ -25,10 +25,10 @@ spec = Gem::Specification.new do |s|
   s.email             = 'wycats@gmail.com'
   s.homepage          = 'http://rubyforge.org/projects/dorb'
   s.rubyforge_project = 'dorb'
-  s.add_dependency('data_objects', "= #{s.version}")
   s.require_path      = 'lib'
   s.extensions        = %w[ ext/extconf.rb ]
   s.files             = FileList[ '{ext,lib,spec}/**/*.{c,h,rb}', 'Rakefile', *s.extra_rdoc_files ]
+  s.add_dependency('data_objects', "=#{s.version}")
 end
 
 Rake::GemPackageTask.new(spec) do |pkg|
