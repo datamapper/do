@@ -68,12 +68,15 @@ describe "DataObjects::Jdbc::Connection" do
   it "should be able to create a command" do
     @connection = DataObjects::Jdbc::Connection.new("jdbc://postgres:pg123@localhost:5432/do_jdbc_test?driver=org.postgresql.Driver&protocol=postgresql")
     
-    command = @connection.create_command("SELECT * FROM widgets")
+    command = @connection.create_command("SELECT id, name FROM users")
+    command.set_types [Integer, String]
     command.should be_kind_of(DataObjects::Jdbc::Command)
+    command.instance_variable_get("@types").should == [Integer, String]
   end
   
   it "should return a Result" do
-    @connection = DataObjects::Jdbc::Connection.new("jdbc://postgres:pg123@localhost:5432/do_jdbc_test?driver=org.postgresql.Driver&protocol=postgresql")
+    #@connection = DataObjects::Jdbc::Connection.new("jdbc://postgres:pg123@localhost:5432/do_jdbc_test?driver=org.postgresql.Driver&protocol=postgresql")
+    @connection = DataObjects::Jdbc::Connection.new("jdbc:hsqldb:mem:")
 
     command = @connection.create_command("INSERT INTO invoices (invoice_number) VALUES ('1234')")
     result = command.execute_non_query
