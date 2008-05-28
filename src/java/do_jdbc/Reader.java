@@ -67,6 +67,8 @@ public class Reader extends RubyObject {
         if (!reader.isNil()) {
             // TODO:
             // CLOSE THE READER IN JAVA
+            //
+            // rs.close();
             // 
             reader = (Reader) rubyApi.setInstanceVariable(recv, "@reader", runtime.getNil());
             return runtime.getTrue();
@@ -87,6 +89,9 @@ public class Reader extends RubyObject {
         IRubyObject result_next = rubyApi.getInstanceVariable(recv, "@result.next");
         // recv.getRuntime().getNil();
         IRubyObject in_row = rubyApi.setInstanceVariable(recv, "@in_row", result_next);
+        
+       // ResultSet rs = null;
+       // rs.next();
         
         return in_row;
     }

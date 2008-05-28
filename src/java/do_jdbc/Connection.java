@@ -1,7 +1,6 @@
 package do_jdbc;
 
 import java.io.UnsupportedEncodingException;
-import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.sql.DriverManager;
 import java.sql.SQLException;
@@ -14,8 +13,13 @@ import org.jruby.Ruby;
 import org.jruby.RubyClass;
 import org.jruby.RubyModule;
 import org.jruby.RubyObject;
+import org.jruby.RubyObjectAdapter;
 import org.jruby.anno.JRubyMethod;
 import org.jruby.exceptions.RaiseException;
+import org.jruby.javasupport.Java;
+import org.jruby.javasupport.JavaEmbedUtils;
+import org.jruby.javasupport.JavaObject;
+import org.jruby.runtime.Block;
 import org.jruby.runtime.ObjectAllocator;
 import org.jruby.runtime.ThreadContext;
 import org.jruby.runtime.builtin.IRubyObject;
@@ -30,7 +34,7 @@ import static do_jdbc.DataObjects.DATA_OBJECTS_MODULE_NAME;
 public class Connection extends RubyObject {
 
     public final static String RUBY_CLASS_NAME = "Connection";
-
+    private static RubyObjectAdapter rubyApi;
     private java.sql.Connection conn;
 
     private final static ObjectAllocator CONNECTION_ALLOCATOR = new ObjectAllocator() {
@@ -48,6 +52,7 @@ public class Connection extends RubyObject {
                 superClass, CONNECTION_ALLOCATOR);
 
         connectionClass.defineAnnotatedMethods(Connection.class);
+        rubyApi = JavaEmbedUtils.newObjectAdapter();
         return connectionClass;
     }
 
@@ -105,11 +110,21 @@ public class Connection extends RubyObject {
             //Logger.getLogger(Connection.class.getName()).log(Level.SEVERE, null, ex);
             throw runtime.newRuntimeError("Can't connect:" + connectionUri + ex.getLocalizedMessage());
         }
-        //java.sql.Connection conn = getConnection(recv);
 
+        IRubyObject rubyconn1 = wrappedConnection(recv, conn);
+        //IRubyObject rubyconn1 = JavaEmbedUtils.javaToRuby(runtime, conn);
+        
+        rubyApi.setInstanceVariable(recv, "@uri", uri);  
+        rubyApi.setInstanceVariable(recv, "@connection", rubyconn1);
+        rubyconn1.dataWrapStruct(conn);
+        
         return runtime.getTrue();
     }
-
+    
+    private static IRubyObject wrappedConnection(IRubyObject recv, java.sql.Connection c) {
+        return Java.java_to_ruby(recv, JavaObject.wrap(recv.getRuntime(), c), Block.NULL_BLOCK);
+    }
+    
     @JRubyMethod
     public static IRubyObject real_close(IRubyObject recv) {
         Ruby runtime = recv.getRuntime();

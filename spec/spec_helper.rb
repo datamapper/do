@@ -3,3 +3,7 @@ $:.push File.join(File.dirname(__FILE__), '..', 'lib')
 
 require 'rubygems'
 require 'do_jdbc'
+
+require 'hsqldb'
+include Java
+import 'org.hsqldb.jdbcDriver'

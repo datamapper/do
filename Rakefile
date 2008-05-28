@@ -34,14 +34,14 @@ end
 task :default => [ :java_compile, :spec ]
 
 def java_classpath_arg # myriad of ways to discover JRuby classpath
-  begin
-    jruby_cpath = Java::java.lang.System.getProperty('java.class.path')
-  rescue => e
-  end
-  unless jruby_cpath
+  #begin
+  #  jruby_cpath = Java::java.lang.System.getProperty('java.class.path')
+  #rescue => e
+  #end
+  #unless jruby_cpath
     jruby_cpath = ENV['JRUBY_PARENT_CLASSPATH'] || ENV['JRUBY_HOME'] &&
       FileList["#{ENV['JRUBY_HOME']}/lib/*.jar"].join(File::PATH_SEPARATOR)
-  end
+  #end
   jruby_cpath ? "-cp #{jruby_cpath}" : ""
 end
 

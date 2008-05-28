@@ -12,6 +12,12 @@ import org.jruby.runtime.builtin.IRubyObject;
  * @author alexbcoles
  */
 public class DoJdbcUtils {
+    
+    // STOLEN FROM AR-JDBC
+    static java.sql.Connection getConnection(IRubyObject recv) {
+        java.sql.Connection conn = (java.sql.Connection) recv.dataGetStruct();
+        return conn;
+    }
 
     private static IRubyObject java_types_to_ruby_types(Ruby runtime, int row, 
             int type, int scale, ResultSet rs) throws SQLException {
