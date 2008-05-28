@@ -10,7 +10,7 @@
                 <root id="src.java.dir"/>
             </source-roots>
             <test-roots>
-                <root id="test.src.dir"/>
+                <root id="test.spec.dir"/>
             </test-roots>
         </data>
     </configuration>

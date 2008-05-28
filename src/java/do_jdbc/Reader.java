@@ -48,10 +48,10 @@ public class Reader extends RubyObject {
         super(runtime, klass);
     }
     
-    //@JRubyMethod(name = "initialize", required = 2) 
-    //public static IRubyObject initialize(IRubyObject recv) {
-    //    return recv;
-    //}
+    @JRubyMethod(name = "initialize", required = 2) 
+    public static IRubyObject initialize(IRubyObject recv) {
+        return recv;
+    }
     
     //
     // @result = result
@@ -61,7 +61,18 @@ public class Reader extends RubyObject {
     
     @JRubyMethod
     public static IRubyObject close(IRubyObject recv) {
-        return recv.getRuntime().getFalse();
+        Ruby runtime = recv.getRuntime();
+        Reader reader = (Reader) rubyApi.getInstanceVariable(recv, "@reader");
+        
+        if (!reader.isNil()) {
+            // TODO:
+            // CLOSE THE READER IN JAVA
+            // 
+            reader = (Reader) rubyApi.setInstanceVariable(recv, "@reader", runtime.getNil());
+            return runtime.getTrue();
+        } else {
+            return runtime.getFalse();
+        }
     }
 
     /**
@@ -82,100 +93,23 @@ public class Reader extends RubyObject {
 
     @JRubyMethod
     public static IRubyObject values(IRubyObject recv) {
-       
-        //raise "error" unless @in_row
-       // new RaiseException(recv.getRuntime(), "error", "error");
+       Ruby runtime = recv.getRuntime();
+       IRubyObject state = rubyApi.getInstanceVariable(recv, "@state");
         
-        IRubyObject values = rubyApi.getInstanceVariable(recv, "@values");
-        
-//        
-//
-//	@values = (1 .. @meta_data.column_count).map do |i|
-//	  type_cast_value(i - 1, @result.object(i))
-//	end
-        
-        return recv.getRuntime().getFalse();
+       //raise "error" unless @in_row
+       if ( state.isNil() || state.convertToInteger().getLongValue() == 0) // change this to row index
+       {
+           // Make a SLIT
+           throw runtime.newStandardError("Reader is not initialized");
+       }
+       IRubyObject values = rubyApi.getInstanceVariable(recv, "@values");
+       return values;
     }
 
     @JRubyMethod
     public static IRubyObject fields(IRubyObject recv) {
-        Ruby runtime = recv.getRuntime();
         IRubyObject fields = rubyApi.getInstanceVariable(recv, "@fields");
-        
-//        	@fields ||= begin
-//	  ccnt = @meta_data.column_count
-//	  fields = []
-//	  1.upto(ccnt) do |i|
-//	    fields << @meta_data.column_name(i)
-//	  end
-//	  fields
-//	end
-        
-        
-        return recv.getRuntime().getFalse();
+        return fields;
     }
-    
-    private static IRubyObject java_types_to_ruby_types(Ruby runtime, int row, 
-            int type, int scale, ResultSet rs) throws SQLException {
-       //try {
-            String dmType;
-        
-            switch(type) {
-                case Types.INTEGER:
-                case Types.SMALLINT:
-                case Types.TINYINT:
-                    dmType = "Fixnum";
-                case Types.BIGINT:
-                    dmType = "Bignum";
-                case Types.BIT:
-                case Types.BOOLEAN:
-                    dmType = "TrueClass";
-                case Types.CHAR:
-                case Types.VARCHAR:
-                    dmType = "String";
-                case Types.DATE:
-                    dmType = "Date";
-                case Types.DECIMAL:
-                case Types.NUMERIC:
-                    dmType = "BigDecimal";
-                case Types.FLOAT:
-                case Types.DOUBLE:
-                    dmType = "Float";
-                case Types.OTHER:
-                    dmType = "String";
-            } 
-                // No casting rule for type #{meta_data.column_type(i)} (#{meta_data.column_name(i)}). Please report this."
-        
-                return null;
-        } //catch(IOException ioe) {
-          //  throw (SQLException) new SQLException(ioe.getMessage()).initCause(ioe);
-        //}
-    //}
-    
-    private static IRubyObject type_cast_value(int index, Object value) {
-        //Ruby runtime = recv.getRuntime(); 
-
-//        
-//        	if String == @types[index]
-//	  value.to_s
-//        elsif [Fixnum, Bignum].include?(@types[index])
-//	  value.to_i
-//        elsif BigDecimal == @types[index]
-//	  BigDecimal.new(value.to_string)
-//        elsif Float == @types[index]
-//	  value.to_f
-//	elsif [TrueClass, FalseClass].include?(@types[index])
-//	  value
-//        elsif Date == @types[index]
-//	  Date.parse(value.to_string)
-//        elsif DateTime == @types[index]
-//	  DateTime.parse(value.to_string)
-	//else
-	//  raise "Oops! Forgot to handle #{@types[index]} (#{value})"
-	//end
-        
-        return null;
-    }
-    
     
 }

@@ -1,39 +1,37 @@
 require 'rubygems'
 require 'rake'
+require 'rake/clean'
 require 'rake/rdoctask'
 require 'rake/gempackagetask'
 require 'spec/rake/spectask'
 
-PLUGIN = "do_jdbc"
-NAME = "do_jdbc"
-GEM_VERSION = "0.9.0"
-AUTHOR = "Alex Coles"
-EMAIL = "alex@alexcolesportfolio.com"
-HOMEPAGE = "http://dataobjects.dejavu.com"
-SUMMARY = "A DataObjects.rb driver for JDBC"
+# House-keeping
+CLEAN.include 'derby*', 'test.db.*','test/reports', 'test.sqlite3','lib/**/*.jar','manifest.mf'
+
+JRUBY = (RUBY_PLATFORM =~ /java/) rescue nil
 
 spec = Gem::Specification.new do |s|
-  s.name = NAME
-  s.version = GEM_VERSION
-  s.platform = Gem::Platform::RUBY
-  s.has_rdoc = true
-  s.extra_rdoc_files = ["README", "LICENSE", 'TODO']
-  s.summary = SUMMARY
-  s.description = s.summary
-  s.author = AUTHOR
-  s.email = EMAIL
-  s.homepage = HOMEPAGE
-  s.add_dependency('data_objects', '>= 0.9.0')
-  s.require_path = 'lib'
-  s.autorequire = PLUGIN
-  s.files = %w(LICENSE README Rakefile TODO) #+ Dir.glob("{lib,specs,ext}/**/*").reject {|x| x =~ /\.(o|bundle)$/ }
+  s.name              = 'do_jdbc'
+  s.version           = '0.9.0.1'
+  s.platform          = Gem::Platform::RUBY
+  s.has_rdoc          = true
+  s.extra_rdoc_files  = %w[ README MIT-LICENSE GPL-LICENSE TODO ]
+  s.summary           = 'A DataObjects.rb driver for JDBC'
+  s.description       = s.summary
+  s.author            = 'Alex Coles'
+  s.email             = 'alex@alexcolesportfolio.com'
+  s.homepage          = 'http://rubyforge.org/projects/dorb'
+  s.require_path      = 'lib'
+  #s.extensions
+  s.files             = FileList[ '{lib,spec}/**/*.{class,rb}', 'Rakefile', *s.extra_rdoc_files ]
+  s.add_dependency('data_objects', "= #{s.version}")
 end
 
 Rake::GemPackageTask.new(spec) do |pkg|
   pkg.gem_spec = spec
 end
 
-task :default => [:java_compile, :spec]
+task :default => [ :java_compile, :spec ]
 
 def java_classpath_arg # myriad of ways to discover JRuby classpath
   begin
@@ -49,7 +47,6 @@ end
 
 desc "Compile the native Java code."
 task :java_compile do
-  puts "Fishcakes #{java_classpath_arg}"
   pkg_classes = File.join(*%w(pkg classes))
   jar_name = File.join(*%w(lib do_jdbc_internal.jar))
   mkdir_p pkg_classes
@@ -58,22 +55,12 @@ task :java_compile do
 end
 file "lib/do_jdbc_internal.jar" => :java_compile
 
-task :more_clean do
-  rm_rf FileList['derby*']
-  rm_rf FileList['test.db.*']
-  rm_rf "test/reports"
-  rm_f FileList['lib/**/*.jar']
-  rm_f "manifest.mf"
-end
-
-task :clean => :more_clean
-
 task :filelist do
   puts FileList['pkg/**/*'].inspect
 end
 
-task :install => [:package] do
-  sh %{sudo gem install pkg/#{NAME}-#{VERSION}}, :verbose => false
+task :install => [ :package ] do
+  sh %{jruby -S gem install pkg/#{spec.name}-#{spec.version} --no-update-sources}, :verbose => false
 end
 
 desc "Run specifications"
