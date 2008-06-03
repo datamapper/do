@@ -210,18 +210,23 @@ module DataObjects
     # Generate the following logging methods for DataObjects.logger as described
     # in the API:
     #  :fatal, :error, :warn, :info, :debug
+    #  :off only gets an off? method
     LEVELS.each_pair do |name, number|
-      class_eval <<-LEVELMETHODS, __FILE__, __LINE__
-      # DOC
-      def #{name}(message)
-        self.<<( prep_msg(message, "#{name}") ) if #{name}?
+      unless name.to_sym == :off
+        class_eval <<-EOS
+        # DOC
+        def #{name}(message)
+          self.<<( prep_msg(message, "#{name}") ) if #{name}?
+        end
+        EOS
       end
 
+      class_eval <<-EOS
       # DOC
       def #{name}?
         #{number} >= level
       end
-      LEVELMETHODS
+      EOS
     end
 
   end # class Logger
