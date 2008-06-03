@@ -53,10 +53,12 @@ public class Command extends RubyObject {
         super(runtime, klass);
     }
 
+    // -------------------------------------------------- DATAOBJECTS PUBLIC API
+    
     // inherit initialize
 
-    @JRubyMethod
-    public static IRubyObject execute_non_query(IRubyObject recv) {
+    @JRubyMethod(optional = 1)
+    public static IRubyObject execute_non_query(IRubyObject recv, IRubyObject[] args) {
         Ruby runtime = recv.getRuntime();
         RubyModule jdbcModule = runtime.getModule(DATA_OBJECTS_MODULE_NAME).defineModuleUnder(JDBC_MODULE_NAME);
 
@@ -109,13 +111,13 @@ public class Command extends RubyObject {
         IRubyObject insertKey = null; // TODO: fix this
 
         RubyClass result = Result.createResultClass(runtime, jdbcModule);
-        IRubyObject[] args = new IRubyObject[] { recv, affected_rows, insertKey };
-        result.initialize(args, Block.NULL_BLOCK);
+        IRubyObject[] resultArgs = new IRubyObject[] { recv, affected_rows, insertKey };
+        result.initialize(resultArgs, Block.NULL_BLOCK);
         return result;
     }
 
-    @JRubyMethod
-    public static IRubyObject execute_reader(IRubyObject recv) {
+    @JRubyMethod(optional = 1)
+    public static IRubyObject execute_reader(IRubyObject recv, IRubyObject[] args) {
         Ruby runtime = recv.getRuntime();
 
         RubyModule jdbcModule = null; // FIXME
@@ -149,12 +151,12 @@ public class Command extends RubyObject {
 
             while (resultSet.next()) {
                 rowCount++;
-                
+
                 if (rowCount == 1) {
                     rsMetaData = resultSet.getMetaData();
                     colCount = rsMetaData.getColumnCount();
                 }
-                
+
             // handle each result
             }
 
@@ -184,7 +186,7 @@ public class Command extends RubyObject {
 
         // save the field count
         // TODO
-        
+
         // instantiate a new reader
         reader = Reader.createReaderClass(runtime, jdbcModule);
         reader.initialize();
@@ -195,15 +197,15 @@ public class Command extends RubyObject {
 
         // mark the reader as opened
         // TODO
-        
+
         // save the field_count in reader
         reader.setInstanceVariable("@field_count", runtime.newFixnum(colCount));
         reader.setInstanceVariable("@row_count",   runtime.newFixnum(rowCount));
-        
+
         // get the field types
         RubyArray fieldNames = runtime.newArray();
         IRubyObject field_types = rubyApi.getInstanceVariable(recv , "@field_types");
-        
+
         // if no types passed, guess the types
         if (field_types.isNil() || field_types.convertToArray().length().getLongValue() == 0)
         {
@@ -221,7 +223,7 @@ public class Command extends RubyObject {
            //     field_types.push_m(getRubyType()); // (PQftype(response, i))
             //}
         //}
-            
+
         // set the reader @field_names and @types (guessed or otherwise)
         reader.setInstanceVariable("@fields", fieldNames);
         reader.setInstanceVariable("@field_types", field_types);
@@ -232,6 +234,14 @@ public class Command extends RubyObject {
         return reader;
     }
 
+    @JRubyMethod(required = 1)
+    public static IRubyObject set_types(IRubyObject recv, IRubyObject value) {
+        IRubyObject types = rubyApi.setInstanceVariable(recv, "@types", value);
+        return types;
+    }
+
+    // ------------------------------------------------ ADDITIONAL JRUBY METHODS
+    
     @JRubyMethod
     public static IRubyObject quote_boolean(IRubyObject recv, IRubyObject value) {
 
@@ -247,13 +257,7 @@ public class Command extends RubyObject {
         return recv.getRuntime().getFalse();
     }
 
-    @JRubyMethod(required = 1)
-    public static IRubyObject set_types(IRubyObject recv, IRubyObject value) {
-        IRubyObject types = rubyApi.setInstanceVariable(recv, "@types", value);
-        return types;
-    }
-
-   private static String build_query_from_args(IRubyObject recv) {
+    private static String build_query_from_args(IRubyObject recv) {
         throw new UnsupportedOperationException("Not yet implemented");
     }
 
