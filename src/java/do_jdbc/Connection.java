@@ -7,8 +7,6 @@ import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.StringTokenizer;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import org.jruby.Ruby;
 import org.jruby.RubyClass;
 import org.jruby.RubyModule;
@@ -16,7 +14,6 @@ import org.jruby.RubyObject;
 import org.jruby.RubyObjectAdapter;
 import org.jruby.anno.JRubyClass;
 import org.jruby.anno.JRubyMethod;
-import org.jruby.exceptions.RaiseException;
 import org.jruby.javasupport.Java;
 import org.jruby.javasupport.JavaEmbedUtils;
 import org.jruby.javasupport.JavaObject;
@@ -122,11 +119,7 @@ public class Connection extends RubyObject {
         
         return runtime.getTrue();
     }
-    
-    private static IRubyObject wrappedConnection(IRubyObject recv, java.sql.Connection c) {
-        return Java.java_to_ruby(recv, JavaObject.wrap(recv.getRuntime(), c), Block.NULL_BLOCK);
-    }
-    
+        
     @JRubyMethod
     public static IRubyObject real_close(IRubyObject recv) {
         Ruby runtime = recv.getRuntime();
@@ -141,6 +134,10 @@ public class Connection extends RubyObject {
         return runtime.getTrue();
     }
 
+    private static IRubyObject wrappedConnection(IRubyObject recv, java.sql.Connection c) {
+        return Java.java_to_ruby(recv, JavaObject.wrap(recv.getRuntime(), c), Block.NULL_BLOCK);
+    }
+    
     private static java.sql.Connection getConnection(IRubyObject recv) {
         java.sql.Connection conn = (java.sql.Connection) recv.dataGetStruct();
         return conn;

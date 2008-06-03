@@ -4,6 +4,8 @@ import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Arrays;
+import java.util.List;
 import org.jruby.Ruby;
 import org.jruby.RubyArray;
 import org.jruby.RubyClass;
@@ -78,23 +80,25 @@ public class Command extends RubyObject {
         System.out.println("--" + conn.toString());
         System.out.println("--" + conn.getClass().getCanonicalName());
 
-        String text = ""; // TODO: build query from args
+        String querySql = buildQueryFromArgs(recv, args);
 
-        java.sql.Connection fish = (java.sql.Connection) wrappedJdbcConnection.dataGetStruct();
+        java.sql.Connection javaConn = (java.sql.Connection) wrappedJdbcConnection.dataGetStruct();
         int affectedCount = 0;           // rows affected
         Statement sqlStatement = null;
         java.sql.ResultSet keys = null;
         try {
-            sqlStatement = fish.createStatement();
-            //sqlStatement.setMaxRows();
-            affectedCount = sqlStatement.executeUpdate(text, Statement.RETURN_GENERATED_KEYS);
-            keys = sqlStatement.getGeneratedKeys();
-            //
+            sqlStatement = javaConn.createStatement();
+            // sqlStatement.setMaxRows();
+            affectedCount = sqlStatement.executeUpdate(querySql);
+            // XXX: Fails with 'not a supported function on HSQLDB'
+            // affectedCount = sqlStatement.executeUpdate(querySql, Statement.RETURN_GENERATED_KEYS);
+            // keys = sqlStatement.getGeneratedKeys();
             sqlStatement.close();
             sqlStatement = null;
         } catch (SQLException sqle) {
-            // do something with the SQLException
-            // TODO: throw a Ruby Error
+            // TODO: create a custom Ruby DoJDbcError class
+            // sqle.printStackTrace();
+            throw runtime.newStandardError("SQL Error in (" + querySql +  "): " + sqle.getLocalizedMessage());
         } finally {
             if (sqlStatement != null) {
                 try {
@@ -125,7 +129,6 @@ public class Command extends RubyObject {
         RubyModule jdbcModule = null; // FIXME
 
         IRubyObject conn = rubyApi.getInstanceVariable(recv, "@connection");
-        String text = rubyApi.getInstanceVariable(recv, "@text").toString();
         java.sql.Connection conn2 = (java.sql.Connection) conn.dataGetStruct();
 
         IRubyObject wrappedJdbcConnection = rubyApi.getInstanceVariable(conn, "@connection");
@@ -135,7 +138,7 @@ public class Command extends RubyObject {
 
         RubyClass reader;
         // escape all parameters given and pass them to query
-        String query = build_query_from_args(recv);
+        String querySql = buildQueryFromArgs(recv, args);
 
         java.sql.Connection fish = (java.sql.Connection) wrappedJdbcConnection.dataGetStruct();
         int colCount = 0;
@@ -149,7 +152,7 @@ public class Command extends RubyObject {
         try {
             sqlStatement = fish.createStatement();
             //sqlStatement.setMaxRows();
-            resultSet = sqlStatement.executeQuery(text);
+            resultSet = sqlStatement.executeQuery(querySql);
 
             while (resultSet.next()) {
                 rowCount++;
@@ -244,23 +247,39 @@ public class Command extends RubyObject {
 
     // ------------------------------------------------ ADDITIONAL JRUBY METHODS
     
-    @JRubyMethod
+    @JRubyMethod(required = 1)
     public static IRubyObject quote_boolean(IRubyObject recv, IRubyObject value) {
-
-        return recv.getRuntime().getFalse();
+        // TODO: escape this
+        return value;
     }
 
-    @JRubyMethod
+    @JRubyMethod(required = 1)
     public static IRubyObject quote_string(IRubyObject recv, IRubyObject value) {
-
+        // TODO: escape this
         // how do we handle quoted strings with JDBC?
         // ("\"" + include + "\"");
-
-        return recv.getRuntime().getFalse();
+        return value;
     }
 
-    private static String build_query_from_args(IRubyObject recv) {
-        throw new UnsupportedOperationException("Not yet implemented");
+    // -------------------------------------------------- PRIVATE HELPER METHODS
+    
+    /**
+     * 
+     * @param recv
+     * @param args
+     * @return the query as a java.lang.String 
+     */
+    private static String buildQueryFromArgs(IRubyObject recv, IRubyObject[] args) {
+        Ruby runtime = recv.getRuntime();
+        String query = rubyApi.getInstanceVariable(recv, "@text").toString();
+        RubyArray escape_args;
+        
+        if (args.length > 0) {
+            //for (IRubyObject arg : args) { }
+            escape_args = runtime.newArray(args);
+            query = rubyApi.callMethod(recv, "escape_sql", escape_args).convertToString().asJavaString();
+        }
+        return query;
     }
-
+    
 }
