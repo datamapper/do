@@ -9,6 +9,7 @@ import org.jruby.RubyClass;
 import org.jruby.RubyModule;
 import org.jruby.RubyObject;
 import org.jruby.RubyObjectAdapter;
+import org.jruby.anno.JRubyClass;
 import org.jruby.anno.JRubyMethod;
 import org.jruby.exceptions.RaiseException;
 import org.jruby.javasupport.JavaEmbedUtils;
@@ -22,6 +23,7 @@ import static do_jdbc.DataObjects.DATA_OBJECTS_MODULE_NAME;
  * 
  * @author alexbcoles
  */
+@JRubyClass(name = "Reader")
 public class Reader extends RubyObject {
     
     private static RubyObjectAdapter rubyApi;

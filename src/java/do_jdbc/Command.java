@@ -10,6 +10,7 @@ import org.jruby.RubyClass;
 import org.jruby.RubyModule;
 import org.jruby.RubyObject;
 import org.jruby.RubyObjectAdapter;
+import org.jruby.anno.JRubyClass;
 import org.jruby.anno.JRubyMethod;
 import org.jruby.javasupport.JavaEmbedUtils;
 import org.jruby.runtime.Block;
@@ -24,6 +25,7 @@ import static do_jdbc.DataObjects.JDBC_MODULE_NAME;
  *
  * @author alexbcoles
  */
+@JRubyClass(name = "Command")
 public class Command extends RubyObject {
 
     public final static String RUBY_CLASS_NAME = "Command";

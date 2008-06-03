@@ -4,6 +4,7 @@ import org.jruby.Ruby;
 import org.jruby.RubyClass;
 import org.jruby.RubyModule;
 import org.jruby.RubyObject;
+import org.jruby.anno.JRubyClass;
 import org.jruby.runtime.ObjectAllocator;
 import org.jruby.runtime.builtin.IRubyObject;
 
@@ -14,6 +15,7 @@ import static do_jdbc.DataObjects.DATA_OBJECTS_MODULE_NAME;
  * 
  * @author alexbcoles
  */
+@JRubyClass(name = "Result")
 public class Result extends RubyObject {
     
     public final static String RUBY_CLASS_NAME = "Result";
