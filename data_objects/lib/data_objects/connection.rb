@@ -26,7 +26,7 @@ module DataObjects
           end
         EOS
 
-        driver_module.logger = DataObjects::DeadLogger
+        driver_module.logger = DataObjects::Logger.new(nil, :off)
       end
     end
 

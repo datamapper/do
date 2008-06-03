@@ -26,6 +26,10 @@ require "time" # httpdate
 #
 # To initialize the logger you create a new object, proxies to set_log.
 #   DataObjects::Logger.new(log{String, IO},level{Symbol, String})
+#
+# Logger will not create the file until something is actually logged
+# This avoids file creation on DataObjects init when it creates the
+# default logger.
 module DataObjects
 
   class << self #:nodoc:
@@ -35,22 +39,24 @@ module DataObjects
   class Logger
 
     attr_accessor :aio
-    attr_accessor :level
     attr_accessor :delimiter
+    attr_reader   :level
     attr_reader   :buffer
     attr_reader   :log
 
-    # Note:
+    # @note
     #   Ruby (standard) logger levels:
+    #     off:   absolutely nothing
     #     fatal: an unhandleable error that results in a program crash
     #     error: a handleable error condition
     #     warn:  a warning
     #     info:  generic (useful) information about system operation
     #     debug: low-level information for developers
     #
-    #   DataObjects::Logger::LEVELS[:fatal, :error, :warn, :info, :debug]
+    #   DataObjects::Logger::LEVELS[:off, :fatal, :error, :warn, :info, :debug]
     LEVELS =
     {
+      :off   => 99999,
       :fatal => 7,
       :error => 6,
       :warn  => 4,
@@ -58,10 +64,15 @@ module DataObjects
       :debug => 0
     }
 
+    def level=(new_level)
+      @level = LEVELS[new_level.to_sym]
+      reset_methods(:close)
+    end
+
     private
 
-    # The idea here is that instead of performing an 'if' conditional check
-    # on each logging we do it once when the log object is setup
+    # The idea here is that instead of performing an 'if' conditional check on
+    # each logging we do it once when the log object is setup
     def set_write_method
       @log.instance_eval do
 
@@ -84,88 +95,18 @@ module DataObjects
 
     def initialize_log(log)
       close if @log # be sure that we don't leave open files laying around.
-      log ||= "log/dm.log"
-      if log.respond_to?(:write)
-        @log = log
-      else
-        log = Pathname(log)
-        log.dirname.mkpath
-        @log = log.open('a')
-        @log.sync = true
-        @log.write("#{Time.now.httpdate} #{delimiter} info #{delimiter} Logfile created\n")
+      @log = log || "log/dm.log"
+    end
+
+    def reset_methods(o_or_c)
+      if o_or_c == :open
+        alias internal_push push_opened
+      elsif o_or_c == :close
+        alias internal_push push_closed
       end
-      set_write_method
     end
 
-    public
-
-    # To initialize the logger you create a new object, proxies to set_log.
-    #   DataObjects::Logger.new(log{String, IO},level{Symbol, String})
-    #
-    # ==== Parameters
-    # log<IO,String>
-    #   Either an IO object or a name of a logfile.
-    # log_level<String>
-    #   The string message to be logged
-    # delimiter<String>
-    #   Delimiter to use between message sections
-    def initialize(*args)
-      set_log(*args)
-    end
-
-    # To replace an existing logger with a new one:
-    #  DataObjects::Logger.set_log(log{String, IO},level{Symbol, String})
-    #
-    # ==== Parameters
-    # log<IO,String>
-    #   Either an IO object or a name of a logfile.
-    # log_level<Symbol>
-    #   A symbol representing the log level from {:fatal, :error, :warn, :info, :debug}
-    # delimiter<String>
-    #   Delimiter to use between message sections
-    def set_log(log, log_level = nil, delimiter = " ~ ")
-      if log_level && LEVELS[log_level.to_sym]
-        @level = LEVELS[log_level.to_sym]
-      else
-        @level = LEVELS[:debug]
-      end
-      @buffer    = []
-      @delimiter = delimiter
-
-      initialize_log(log)
-
-      DataObjects.logger = self
-    end
-
-    # Flush the entire buffer to the log object.
-    #   DataObjects.logger.flush
-    # ==== Parameters
-    # none
-    def flush
-      return unless @buffer.size > 0
-      @log.write_method(@buffer.slice!(0..-1).to_s)
-    end
-
-    # Close and remove the current log object.
-    #   DataObjects.logger.close
-    # ==== Parameters
-    # none
-    def close
-      flush
-      @log.close if @log.respond_to?(:close)
-      @log = nil
-    end
-
-    # Appends a string and log level to logger's buffer.
-    # Note that the string is discarded if the string's log level less than the logger's log level.
-    # Note that if the logger is aio capable then the logger will use non-blocking asynchronous writes.
-    #
-    # ==== Parameters
-    # level<Fixnum>
-    #   The logging level as an integer
-    # string<String>
-    #   The string message to be logged
-    def push(string)
+    def push_opened(string)
       message = Time.now.httpdate
       message << delimiter
       message << string
@@ -173,15 +114,107 @@ module DataObjects
       @buffer << message
       flush # Force a flush for now until we figure out where we want to use the buffering.
     end
+
+    def push_closed(string)
+      unless @log.respond_to?(:write)
+        log = Pathname(@log)
+        log.dirname.mkpath
+        @log = log.open('a')
+        @log.sync = true
+      end
+      set_write_method
+      reset_methods(:open)
+      push(string)
+    end
+
+    alias internal_push push_closed
+
+    def prep_msg(message, level)
+      level << delimiter << message
+    end
+
+    public
+
+    # To initialize the logger you create a new object, proxies to set_log.
+    #   DataObjects::Logger.new(log{String, IO},level{Symbol, String})
+    #
+    # @param log<IO,String>        either an IO object or a name of a logfile.
+    # @param log_level<String>     the message string to be logged
+    # @param delimiter<String>     delimiter to use between message sections
+    # @param log_creation<Boolean> log that the file is being created
+    def initialize(*args)
+      set_log(*args)      
+    end
+
+    # To replace an existing logger with a new one:
+    #  DataObjects::Logger.set_log(log{String, IO},level{Symbol, String})
+    #
+    #
+    # @param log<IO,String>        either an IO object or a name of a logfile.
+    # @param log_level<Symbol>     a symbol representing the log level from
+    #   {:off, :fatal, :error, :warn, :info, :debug}
+    # @param delimiter<String>     delimiter to use between message sections
+    # @param log_creation<Boolean> log that the file is being created
+    def set_log(log, log_level = :off, delimiter = " ~ ", log_creation = false)
+      delimiter    ||= " ~ "
+
+      if log_level && LEVELS[log_level.to_sym]
+        self.level = log_level.to_sym
+      else
+        self.level = :debug
+      end
+
+      @buffer    = []
+      @delimiter = delimiter
+
+      initialize_log(log)
+
+      DataObjects.logger = self
+
+      self.info("Logfile created") if log_creation
+    end
+
+    # Flush the entire buffer to the log object.
+    #   DataObjects.logger.flush
+    #
+    def flush
+      return unless @buffer.size > 0
+      @log.write_method(@buffer.slice!(0..-1).to_s)
+    end
+
+    # Close and remove the current log object.
+    #   DataObjects.logger.close
+    #
+    def close
+      flush
+      @log.close if @log.respond_to?(:close)
+      @log = nil
+    end
+
+    # Appends a string and log level to logger's buffer.
+
+    # @note
+    #   Note that the string is discarded if the string's log level less than the
+    #   logger's log level.
+    # @note
+    #   Note that if the logger is aio capable then the logger will use
+    #   non-blocking asynchronous writes.
+    #
+    # @param level<Fixnum>  the logging level as an integer
+    # @param string<String> the message string to be logged
+    def push(string)
+      internal_push(string)
+    end
     alias << push
 
-    # Generate the following logging methods for DataObjects.logger as described in the api:
+    # Generate the following logging methods for DataObjects.logger as described
+    # in the API:
     #  :fatal, :error, :warn, :info, :debug
     LEVELS.each_pair do |name, number|
       class_eval <<-LEVELMETHODS, __FILE__, __LINE__
       # DOC
       def #{name}(message)
-        self.<<(message) if #{name}?
+        self.<<( prep_msg(message, "#{name}") ) if #{name}?
       end
 
       # DOC
@@ -192,8 +225,4 @@ module DataObjects
     end
 
   end # class Logger
-
-  # HACK: Not cross-platform
-  DeadLogger = Logger.new(File.open('/dev/null', 'w'), :fatal)
-
 end # module DataObjects
