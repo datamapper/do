@@ -65,10 +65,11 @@ describe "DataObjects::Jdbc::Command" do
   end
   
   it "should execute a query and return a reader" do
-    pending "Not returning a Reader"
+    #pending "Not returning a Reader"
     command = @connection.create_command("SELECT * FROM invoices")
     reader = command.execute_reader
     reader.should be_kind_of(DataObjects::Jdbc::Reader)
+    reader.close.should == true
   end
 
 end

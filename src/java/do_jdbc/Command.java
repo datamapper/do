@@ -12,8 +12,10 @@ import org.jruby.RubyObject;
 import org.jruby.RubyObjectAdapter;
 import org.jruby.anno.JRubyClass;
 import org.jruby.anno.JRubyMethod;
-import org.jruby.exceptions.RaiseException;
+import org.jruby.javasupport.Java;
 import org.jruby.javasupport.JavaEmbedUtils;
+import org.jruby.javasupport.JavaObject;
+import org.jruby.runtime.Block;
 import org.jruby.runtime.ObjectAllocator;
 import org.jruby.runtime.builtin.IRubyObject;
 
@@ -123,7 +125,7 @@ public class Command extends RubyObject {
 
 	boolean inferTypes = false;
 
-        RubyClass reader;
+        RubyClass readerClass = Reader.createReaderClass(runtime, jdbcModule);
         // escape all parameters given and pass them to query
         String querySql = buildQueryFromArgs(recv, args);
 
@@ -133,7 +135,10 @@ public class Command extends RubyObject {
         Statement sqlStatement = null;
         ResultSet resultSet = null;
         ResultSetMetaData rsMetaData = null;
-
+        // instantiate a new reader
+        IRubyObject reader = readerClass.newInstance(runtime.getCurrentContext(), 
+                new IRubyObject[] { }, Block.NULL_BLOCK);
+        
         // execute the query
 
         try {
@@ -151,8 +156,54 @@ public class Command extends RubyObject {
 
             // handle each result
             }
+            
+            // pass the response to the reader
+            IRubyObject wrappedResultSet = Java.java_to_ruby(recv, JavaObject.wrap(recv.getRuntime(), resultSet), Block.NULL_BLOCK);
+            reader.getInstanceVariables().setInstanceVariable("@reader", wrappedResultSet);
+            wrappedResultSet.dataWrapStruct(resultSet);
+
+            // mark the reader as opened
+            // TODO
 
             // TODO: if no response return nil
+            
+            reader.getInstanceVariables().setInstanceVariable("@position", runtime.newFixnum(0));
+
+            System.out.println("READER: " + reader.toString());
+
+
+
+            // save the field_count in reader
+            reader.getInstanceVariables().setInstanceVariable("@field_count", runtime.newFixnum(colCount));
+            reader.getInstanceVariables().setInstanceVariable("@row_count",   runtime.newFixnum(rowCount));
+
+            // get the field types
+            RubyArray fieldNames = runtime.newArray();
+            IRubyObject field_types = rubyApi.getInstanceVariable(recv , "@field_types");
+
+            // if no types passed, guess the types
+            if (field_types == null || field_types.isNil() || field_types.convertToArray().length().getLongValue() == 0)
+            {
+                field_types = runtime.newArray();
+                inferTypes = true;
+            }
+
+            // for each field
+            // USE RESULTSETMETADATA FOR THIS
+            //for (int i = 0; i < colCount; i++) {
+                //   save its name
+             //   fieldNames.push_m(NULL_ARRAY); // rb_ary_push(field_names, rb_str_new2(PQfname(response, i)));
+                //   guess the type if no types passed
+               // if (inferTypes) {
+               //     field_types.push_m(getRubyType()); // (PQftype(response, i))
+                //}
+            //}
+
+            // set the reader @field_names and @types (guessed or otherwise)
+            reader.getInstanceVariables().setInstanceVariable("@fields", fieldNames);
+            reader.getInstanceVariables().setInstanceVariable("@field_types", field_types);
+            
+            
 
             resultSet.close();
             resultSet = null;
@@ -178,48 +229,6 @@ public class Command extends RubyObject {
 
         // save the field count
         // TODO
-
-        // instantiate a new reader
-        reader = Reader.createReaderClass(runtime, jdbcModule);
-        reader.initialize();
-        reader.setInstanceVariable("@position", runtime.newFixnum(0));
-
-        // pass the response to the reader
-        reader.setInstanceVariable("@reader", null);          // TODO: Data_Wrap_Struct(rb_cObject, 0, 0, response)
-
-        // mark the reader as opened
-        // TODO
-
-        // save the field_count in reader
-        reader.setInstanceVariable("@field_count", runtime.newFixnum(colCount));
-        reader.setInstanceVariable("@row_count",   runtime.newFixnum(rowCount));
-
-        // get the field types
-        RubyArray fieldNames = runtime.newArray();
-        IRubyObject field_types = rubyApi.getInstanceVariable(recv , "@field_types");
-
-        // if no types passed, guess the types
-        if (field_types == null || field_types.isNil() || field_types.convertToArray().length().getLongValue() == 0)
-        {
-            field_types = runtime.newArray();
-            inferTypes = true;
-        }
-
-        // for each field
-        // USE RESULTSETMETADATA FOR THIS
-        //for (int i = 0; i < colCount; i++) {
-            //   save its name
-         //   fieldNames.push_m(NULL_ARRAY); // rb_ary_push(field_names, rb_str_new2(PQfname(response, i)));
-            //   guess the type if no types passed
-           // if (inferTypes) {
-           //     field_types.push_m(getRubyType()); // (PQftype(response, i))
-            //}
-        //}
-
-        // set the reader @field_names and @types (guessed or otherwise)
-        reader.setInstanceVariable("@fields", fieldNames);
-        reader.setInstanceVariable("@field_types", field_types);
-
         // yield the reader if a block is given, then close it
 
         // return the reader
@@ -258,13 +267,14 @@ public class Command extends RubyObject {
      */
     private static String buildQueryFromArgs(IRubyObject recv, IRubyObject[] args) {
         Ruby runtime = recv.getRuntime();
-        String query = rubyApi.getInstanceVariable(recv, "@text").toString();
+        String query = recv.getInstanceVariables().getInstanceVariable("@text").asJavaString();
         RubyArray escape_args;
         
         if (args.length > 0) {
             //for (IRubyObject arg : args) { }
             escape_args = runtime.newArray(args);
             query = rubyApi.callMethod(recv, "escape_sql", escape_args).convertToString().asJavaString();
+            //query = recv.callMethod(runtime.getCurrentContext(), "escape_sql", escape_args).c;
         }
         return query;
     }

@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.jruby.Ruby;
 import org.jruby.RubyClass;
 import org.jruby.RubyModule;
@@ -50,29 +52,28 @@ public class Reader extends RubyObject {
         super(runtime, klass);
     }
     
-    @JRubyMethod(name = "initialize", required = 2) 
-    public static IRubyObject initialize(IRubyObject recv) {
-        return recv;
-    }
     
-    //
-    // @result = result
-    // @meta_data = result.meta_data
-    // @types = types || java_types_to_ruby_types(@meta_data)
-    //
+    // -------------------------------------------------- DATAOBJECTS PUBLIC API
+    
+    // default initialize
     
     @JRubyMethod
     public static IRubyObject close(IRubyObject recv) {
         Ruby runtime = recv.getRuntime();
-        Reader reader = (Reader) rubyApi.getInstanceVariable(recv, "@reader");
+        IRubyObject reader = rubyApi.getInstanceVariable(recv, "@reader");
         
-        if (!reader.isNil()) {
-            // TODO:
-            // CLOSE THE READER IN JAVA
-            //
-            // rs.close();
-            // 
-            reader = (Reader) rubyApi.setInstanceVariable(recv, "@reader", runtime.getNil());
+        if (!(reader == null || reader.isNil())) {
+
+            ResultSet rs = (ResultSet) reader.dataGetStruct();
+            try {
+                rs.close();
+                rs = null;
+            } catch (SQLException ex) {
+                Logger.getLogger(Reader.class.getName()).log(Level.SEVERE, null, ex);
+            } finally {
+                reader = rubyApi.setInstanceVariable(recv, "@reader", runtime.getNil());
+            } 
+            
             return runtime.getTrue();
         } else {
             return runtime.getFalse();

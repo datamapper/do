@@ -59,6 +59,8 @@ public class Connection extends RubyObject {
         super(runtime, klass);
     }
 
+    // -------------------------------------------------- DATAOBJECTS PUBLIC API
+    
     @JRubyMethod(required = 1)
     public static IRubyObject initialize(IRubyObject recv, IRubyObject uri) {
         Ruby runtime = recv.getRuntime();
@@ -134,6 +136,8 @@ public class Connection extends RubyObject {
         return runtime.getTrue();
     }
 
+    // -------------------------------------------------- PRIVATE HELPER METHODS
+    
     private static IRubyObject wrappedConnection(IRubyObject recv, java.sql.Connection c) {
         return Java.java_to_ruby(recv, JavaObject.wrap(recv.getRuntime(), c), Block.NULL_BLOCK);
     }
