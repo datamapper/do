@@ -3,6 +3,11 @@ require Pathname(__FILE__).dirname.expand_path.parent + 'spec_helper'
 
 describe "DataObjects::Jdbc::Result" do
 
+  it "should inherit from DataObjects::Result" do
+    pending
+    #DataObjects::Jdbc::const_get('Result').new.should be_kind_of(DataObjects::Result)
+  end
+
   #connection = DataObjects::Connection.new('jdbc://localhost')
   #command = connection.create_command("SELECT * FROM example")
   #result = command.execute_non_query

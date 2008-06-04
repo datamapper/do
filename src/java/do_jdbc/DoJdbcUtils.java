@@ -4,6 +4,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
 import org.jruby.Ruby;
+import org.jruby.RubyClass;
+import org.jruby.exceptions.RaiseException;
 import org.jruby.runtime.builtin.IRubyObject;
 
 /**
@@ -12,6 +14,11 @@ import org.jruby.runtime.builtin.IRubyObject;
  * @author alexbcoles
  */
 public class DoJdbcUtils {
+    
+    public static RaiseException newJdbcError(Ruby runtime, String message) {
+        RubyClass jdbcError = runtime.getClass("JdbcError");
+        return new RaiseException(runtime, jdbcError, message, true);
+    }
     
     // STOLEN FROM AR-JDBC
     static java.sql.Connection getConnection(IRubyObject recv) {

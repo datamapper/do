@@ -4,8 +4,6 @@ import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.Arrays;
-import java.util.List;
 import org.jruby.Ruby;
 import org.jruby.RubyArray;
 import org.jruby.RubyClass;
@@ -14,8 +12,8 @@ import org.jruby.RubyObject;
 import org.jruby.RubyObjectAdapter;
 import org.jruby.anno.JRubyClass;
 import org.jruby.anno.JRubyMethod;
+import org.jruby.exceptions.RaiseException;
 import org.jruby.javasupport.JavaEmbedUtils;
-import org.jruby.runtime.Block;
 import org.jruby.runtime.ObjectAllocator;
 import org.jruby.runtime.builtin.IRubyObject;
 
@@ -67,18 +65,11 @@ public class Command extends RubyObject {
         RubyModule jdbcModule = runtime.getModule(DATA_OBJECTS_MODULE_NAME).defineModuleUnder(JDBC_MODULE_NAME);
 
         IRubyObject connection = rubyApi.getInstanceVariable(recv, "@connection");
-        //System.out.println("FOR THE INSTANT!: " + connection.getVariableNameList());
-            // should be @uri, @connection and one other thing
-
         IRubyObject wrappedJdbcConnection = rubyApi.getInstanceVariable(connection, "@connection");
-        //java.sql.Connection conn2 = DoJdbcUtils.getConnection(wrappedJdbcConnection);
-
+        
         System.out.println("--" + (wrappedJdbcConnection ==  null));
         System.out.println("--" + (wrappedJdbcConnection.getClass().getCanonicalName()));
         System.out.println("--" + wrappedJdbcConnection.dataGetStruct());
-        Object conn = (Object) wrappedJdbcConnection.dataGetStruct();
-        System.out.println("--" + conn.toString());
-        System.out.println("--" + conn.getClass().getCanonicalName());
 
         String querySql = buildQueryFromArgs(recv, args);
 
@@ -96,9 +87,8 @@ public class Command extends RubyObject {
             sqlStatement.close();
             sqlStatement = null;
         } catch (SQLException sqle) {
-            // TODO: create a custom Ruby DoJDbcError class
-            // sqle.printStackTrace();
-            throw runtime.newStandardError("SQL Error in (" + querySql +  "): " + sqle.getLocalizedMessage());
+            // TODO: log sqle.printStackTrace();
+            throw DoJdbcUtils.newJdbcError(runtime, sqle.getLocalizedMessage());
         } finally {
             if (sqlStatement != null) {
                 try {
@@ -116,23 +106,20 @@ public class Command extends RubyObject {
         IRubyObject affected_rows = runtime.newFixnum(affectedCount);
         IRubyObject insertKey = null; // TODO: fix this
 
-        RubyClass result = Result.createResultClass(runtime, jdbcModule);
-        IRubyObject[] resultArgs = new IRubyObject[] { recv, affected_rows, insertKey };
-        result.initialize(resultArgs, Block.NULL_BLOCK);
+        RubyClass resultClass = Result.createResultClass(runtime, jdbcModule);
+        IRubyObject result = rubyApi.callMethod(resultClass, "new", new IRubyObject[] {
+            recv, affected_rows, insertKey
+        });
         return result;
     }
 
     @JRubyMethod(optional = 1)
     public static IRubyObject execute_reader(IRubyObject recv, IRubyObject[] args) {
         Ruby runtime = recv.getRuntime();
+        RubyModule jdbcModule = runtime.getModule(DATA_OBJECTS_MODULE_NAME).defineModuleUnder(JDBC_MODULE_NAME);
 
-        RubyModule jdbcModule = null; // FIXME
-
-        IRubyObject conn = rubyApi.getInstanceVariable(recv, "@connection");
-        java.sql.Connection conn2 = (java.sql.Connection) conn.dataGetStruct();
-
-        IRubyObject wrappedJdbcConnection = rubyApi.getInstanceVariable(conn, "@connection");
-        //java.sql.Connection conn2 = DoJdbcUtils.getConnection(wrappedJdbcConnection);
+        IRubyObject connection = rubyApi.getInstanceVariable(recv, "@connection");
+        IRubyObject wrappedJdbcConnection = rubyApi.getInstanceVariable(connection, "@connection");
 
 	boolean inferTypes = false;
 
@@ -140,7 +127,7 @@ public class Command extends RubyObject {
         // escape all parameters given and pass them to query
         String querySql = buildQueryFromArgs(recv, args);
 
-        java.sql.Connection fish = (java.sql.Connection) wrappedJdbcConnection.dataGetStruct();
+        java.sql.Connection javaConn = (java.sql.Connection) wrappedJdbcConnection.dataGetStruct();
         int colCount = 0;
         int rowCount = 0;
         Statement sqlStatement = null;
@@ -150,7 +137,7 @@ public class Command extends RubyObject {
         // execute the query
 
         try {
-            sqlStatement = fish.createStatement();
+            sqlStatement = javaConn.createStatement();
             //sqlStatement.setMaxRows();
             resultSet = sqlStatement.executeQuery(querySql);
 
@@ -171,9 +158,9 @@ public class Command extends RubyObject {
             resultSet = null;
             sqlStatement.close();
             sqlStatement = null;
-        } catch (SQLException sqlex) {
-            // do something with the SQLException
-            // TODO: throw a Ruby Error
+        } catch (SQLException sqle) {
+            // TODO: log sqle.printStackTrace();
+            throw DoJdbcUtils.newJdbcError(runtime, sqle.getLocalizedMessage());
         } finally {
             if (resultSet != null) {
                 try {
@@ -212,7 +199,7 @@ public class Command extends RubyObject {
         IRubyObject field_types = rubyApi.getInstanceVariable(recv , "@field_types");
 
         // if no types passed, guess the types
-        if (field_types.isNil() || field_types.convertToArray().length().getLongValue() == 0)
+        if (field_types == null || field_types.isNil() || field_types.convertToArray().length().getLongValue() == 0)
         {
             field_types = runtime.newArray();
             inferTypes = true;
