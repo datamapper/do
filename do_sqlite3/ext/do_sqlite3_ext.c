@@ -152,9 +152,6 @@ static VALUE parse_date_time(char *date) {
 	char sign, seperator;
 	do_int64 num, den;
 
-	time_t rawtime;
-	struct tm * timeinfo;
-
 	int tokens_read, max_tokens;
 	
 	if (0 != strchr(date, '.')) {
@@ -174,16 +171,12 @@ static VALUE parse_date_time(char *date) {
 		minute_offset = 0;
 	} else if (tokens_read >= (max_tokens - 3)) {
 		// We read the Date and Time, maybe the Sign, default to the current locale's offset
-
-		// Get localtime
-		time(&rawtime);
-		timeinfo = localtime(&rawtime);
 	
 		// TODO: Refactor the following few lines to do the calculation with the *seconds*
 		// value instead of having to do the hour/minute math
-		hour_offset = abs(timeinfo->tm_gmtoff) / 3600;
-		minute_offset = abs(timeinfo->tm_gmtoff) % 3600 / 60;
-		sign = timeinfo->tm_gmtoff < 0 ? '-' : '+';
+		hour_offset = abs(timezone) / 3600;
+		minute_offset = abs(timezone) % 3600 / 60;
+		sign = timezone > 0 ? '-' : '+';
 	} else {
 		// Something went terribly wrong
 		rb_raise(eSqlite3Error, "Couldn't parse date: %s", date);

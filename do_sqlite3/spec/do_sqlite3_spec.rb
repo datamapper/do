@@ -132,7 +132,6 @@ describe "DataObjects::Sqlite3::Result" do
   end
 
   it "should return DateTimes using the same timezone that was used to insert it" do
-    pending "improved support for timezone checking"
 
     dates = [
       NOW,
