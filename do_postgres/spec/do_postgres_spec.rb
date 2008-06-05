@@ -174,6 +174,19 @@ describe "DataObjects::Postgres::Reader" do
     reader.values[0].should be_a_kind_of(Date)
     
   end
+  
+  it "should work on a join" do
+    @connection.create_command("INSERT INTO companies (name) VALUES ('ELEC')").execute_non_query
+    reader = @connection.create_command(<<-EOF).execute_reader
+      SELECT u.*, c.name FROM users AS u
+      LEFT JOIN companies AS c
+        ON u.company_id=c.id
+      WHERE c.name='ELEC'
+    EOF
+    reader.next!
+    reader.values.last.should == "ELEC"
+    reader.values.first.should == 1
+  end
 
   it "should return DateTimes using the current locale's Time Zone for TIMESTAMP WITHOUT TIME ZONE fields" do
     date = DateTime.now
