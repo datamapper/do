@@ -15,6 +15,13 @@ import org.jruby.runtime.builtin.IRubyObject;
  */
 public class DoJdbcUtils {
     
+    /**
+     * Create a Ruby JDBCError
+     * 
+     * @param runtime
+     * @param message
+     * @return
+     */
     public static RaiseException newJdbcError(Ruby runtime, String message) {
         RubyClass jdbcError = runtime.getClass("JdbcError");
         return new RaiseException(runtime, jdbcError, message, true);

@@ -79,6 +79,8 @@ public class Command extends RubyObject {
         int affectedCount = 0;           // rows affected
         Statement sqlStatement = null;
         java.sql.ResultSet keys = null;
+        
+        debug(runtime, querySql);
         try {
             sqlStatement = javaConn.createStatement();
             // sqlStatement.setMaxRows();
@@ -140,7 +142,8 @@ public class Command extends RubyObject {
                 new IRubyObject[] { }, Block.NULL_BLOCK);
         
         // execute the query
-
+        debug(runtime, querySql);
+        
         try {
             sqlStatement = javaConn.createStatement();
             //sqlStatement.setMaxRows();
@@ -202,9 +205,11 @@ public class Command extends RubyObject {
             // set the reader @field_names and @types (guessed or otherwise)
             reader.getInstanceVariables().setInstanceVariable("@fields", fieldNames);
             reader.getInstanceVariables().setInstanceVariable("@field_types", field_types);
-            
-            
 
+            // save the field count
+            // TODO
+            // yield the reader if a block is given, then close it
+            
             resultSet.close();
             resultSet = null;
             sqlStatement.close();
@@ -226,11 +231,7 @@ public class Command extends RubyObject {
                 }
             }
         }
-
-        // save the field count
-        // TODO
-        // yield the reader if a block is given, then close it
-
+        
         // return the reader
         return reader;
     }
@@ -251,10 +252,12 @@ public class Command extends RubyObject {
 
     @JRubyMethod(required = 1)
     public static IRubyObject quote_string(IRubyObject recv, IRubyObject value) {
-        // TODO: escape this
-        // how do we handle quoted strings with JDBC?
-        // ("\"" + include + "\"");
-        return value;
+        String toQuote = value.asJavaString();
+        StringBuffer quotedValue = new StringBuffer(toQuote.length() + 2);
+        quotedValue.append("\'"); // single-quotes in HSQLDB
+        quotedValue.append(toQuote);
+        quotedValue.append("\'"); // single-quotes in HSQLDB
+        return recv.getRuntime().newString(quotedValue.toString());
     }
 
     // -------------------------------------------------- PRIVATE HELPER METHODS
@@ -277,6 +280,23 @@ public class Command extends RubyObject {
             //query = recv.callMethod(runtime.getCurrentContext(), "escape_sql", escape_args).c;
         }
         return query;
+    }
+    
+    /**
+     * Output a log message
+     * 
+     * @param runtime
+     * @param logMessage
+     */
+    public static void debug(Ruby runtime, String logMessage) {
+        RubyModule jdbcModule = runtime.getModule(DATA_OBJECTS_MODULE_NAME).defineModuleUnder(JDBC_MODULE_NAME);
+        IRubyObject logger = jdbcModule.callMethod(runtime.getCurrentContext(), "logger");
+        long level = logger.callMethod(runtime.getCurrentContext(), "level").convertToInteger().getLongValue();
+        // FIXME: ^^ this doesn't seem like the right way of doing this
+        
+        if (0 == level) {
+            logger.callMethod(runtime.getCurrentContext(), "debug", runtime.newString(logMessage));
+        }
     }
     
 }

@@ -20,7 +20,8 @@ describe "DataObjects::Jdbc::Command" do
   include JdbcSpecHelpers
 
   before(:all) do
-    @connection = DataObjects::Connection.new("jdbc:hsqldb:mem")
+    setup_test_environment
+    #@connection = DataObjects::Connection.new("jdbc:hsqldb:mem")
   end
 
   it "should be able to create a command" do
@@ -48,14 +49,6 @@ describe "DataObjects::Jdbc::Command" do
     command = @connection.create_command("SELECT * FROM table_which_doesnt_exist")
     lambda { command.execute_reader }.should raise_error(JdbcError,
         /Table not found in statement \[SELECT \* FROM table_which_doesnt_exist\]/)
-  end
-
-  it "should create a table" do
-    command = @connection.create_command(<<-EOF).execute_non_query
-    CREATE TABLE invoices (
-      id INTEGER IDENTITY, invoice_number VARCHAR(256), num_col INTEGER
-      )
-    EOF
   end
 
   it "should execute a non query and return a result" do
@@ -91,5 +84,7 @@ end
 
 describe "DataObjects::Jdbc::Reader" do
   include JdbcSpecHelpers
+
+  
 
 end

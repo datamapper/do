@@ -43,65 +43,86 @@ module JdbcSpecHelpers
     @connection = DataObjects::Connection.new("jdbc:hsqldb:mem")
 
     @connection.create_command(<<-EOF).execute_non_query
-      DROP TABLE IF EXISTS `invoices`
+      DROP TABLE IF EXISTS invoices
     EOF
 
     @connection.create_command(<<-EOF).execute_non_query
-      DROP TABLE IF EXISTS `users`
+      DROP TABLE IF EXISTS users
     EOF
 
     @connection.create_command(<<-EOF).execute_non_query
-      DROP TABLE IF EXISTS `widgets`
+      DROP TABLE IF EXISTS widgets
     EOF
 
     @connection.create_command(<<-EOF).execute_non_query
-      CREATE TABLE `users` (
-        `id` int(11) NOT NULL auto_increment,
-        `name` varchar(200) default 'Billy' NULL,
-        `fired_at` timestamp,
-        PRIMARY KEY  (`id`)
-      ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+      CREATE TABLE users (
+        id                INTEGER IDENTITY,
+        name              VARCHAR(200) default 'Billy' NULL,
+        fired_at          TIMESTAMP
+      )
     EOF
 
     @connection.create_command(<<-EOF).execute_non_query
-      CREATE TABLE `invoices` (
-        `id` int(11) NOT NULL auto_increment,
-        `invoice_number` varchar(50) NOT NULL,
-        PRIMARY KEY  (`id`)
-      ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+      CREATE TABLE invoices (
+        id                INTEGER IDENTITY,
+        invoice_number    VARCHAR(50) NOT NULL
+      )
     EOF
 
     @connection.create_command(<<-EOF).execute_non_query
-      CREATE TABLE `widgets` (
-        `id` int(11) NOT NULL auto_increment,
-        `code` char(8) default 'A14' NULL,
-        `name` varchar(200) default 'Super Widget' NULL,
-        `shelf_location` tinytext NULL,
-        `description` text NULL,
-        `image_data` blob NULL,
-        `ad_description` mediumtext NULL,
-        `ad_image` mediumblob NULL,
-        `whitepaper_text` longtext NULL,
-        `cad_drawing` longblob NULL,
-        `flags` tinyint(1) default 0,
-        `number_in_stock` smallint default 500,
-        `number_sold` mediumint default 0,
-        `super_number` bigint default 9223372036854775807,
-        `weight` float default 1.23,
-        `cost1` double(8,2) default 10.23,
-        `cost2` decimal(8,2) default 50.23,
-        `release_date` date default '2008-02-14',
-        `release_datetime` datetime default '2008-02-14 00:31:12',
-        `release_timestamp` timestamp default '2008-02-14 00:31:31',
-        `status` enum('active','out of stock') NOT NULL default 'active',
-        PRIMARY KEY  (`id`)
-      ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+      CREATE TABLE widgets (
+        id                INTEGER IDENTITY,
+        code              CHAR(8) DEFAULT 'A14' NULL,
+        name              VARCHAR(200) DEFAULT 'Super Widget' NULL,
+        shelf_location    VARCHAR NULL,
+        description       LONGVARCHAR NULL,
+        image_data        VARBINARY NULL,
+        ad_description    LONGVARCHAR NULL,
+        ad_image          VARBINARY NULL,
+        whitepaper_text   LONGVARCHAR NULL,
+        cad_drawing       LONGVARBINARY NULL,
+        flags             TINYINT DEFAULT 0,
+        number_in_stock   SMALLINT DEFAULT 500,
+        number_sold       INTEGER DEFAULT 0,
+        super_number      BIGINT DEFAULT 9223372036854775807,
+        weight            FLOAT DEFAULT 1.23,
+        cost1             REAL DEFAULT 10.23,
+        cost2             DECIMAL DEFAULT 50.23,
+        release_date      DATE DEFAULT '2008-02-14',
+        release_datetime  DATETIME DEFAULT '2008-02-14 00:31:12',
+        release_timestamp TIMESTAMP DEFAULT '2008-02-14 00:31:31' 
+      )
     EOF
+    # XXX: HSQLDB has no ENUM
+    # status` enum('active','out of stock') NOT NULL default 'active'
 
     1.upto(16) do |n|
       @connection.create_command(<<-EOF).execute_non_query
-        insert into widgets(code, name, shelf_location, description, image_data, ad_description, ad_image, whitepaper_text, cad_drawing, super_number) VALUES ('W#{n.to_s.rjust(7,"0")}', 'Widget #{n}', 'A14', 'This is a description', 'IMAGE DATA', 'Buy this product now!', 'AD IMAGE DATA', 'Utilizing blah blah blah', 'CAD DRAWING', 1234);
+        INSERT INTO widgets(
+          code, 
+          name, 
+          shelf_location,
+          description,
+          image_data,
+          ad_description,
+          ad_image,
+          whitepaper_text,
+          cad_drawing,
+          super_number)
+        VALUES (
+          'W#{n.to_s.rjust(7,"0")}',
+          'Widget #{n}',
+          'A14',
+          'This is a description',
+          '4f3d4331434343434331',
+          'Buy this product now!',
+          '4f3d4331434343434331',
+          'Utilizing blah blah blah',
+          '4f3d4331434343434331',
+          1234);
       EOF
+      
+      ## TODO: change the hexadecimal examples
     end
 
   end
