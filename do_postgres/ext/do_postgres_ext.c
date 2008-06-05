@@ -143,6 +143,8 @@ static VALUE parse_date_time(const char *date) {
 	} else if ((max_tokens - 1) == tokens_read) {
 		// We read the Date and Time, but no Minute Offset
 		minute_offset = 0;
+	} else if (tokens_read == 3) {
+        return parse_date(date);
 	} else if (tokens_read >= (max_tokens - 3)) {
 		// We read the Date and Time, maybe the Sign, default to the current locale's offset
 		

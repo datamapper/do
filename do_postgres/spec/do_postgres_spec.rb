@@ -167,6 +167,12 @@ describe "DataObjects::Postgres::Reader" do
     reader.next!
     dt = reader.values[0]
     reader.values[0].should be_a_kind_of(DateTime)
+    
+    command = @connection.create_command("SELECT created_at::date as date FROM users WHERE created_at is not null LIMIT 1")
+    reader = command.execute_reader
+    reader.next!
+    reader.values[0].should be_a_kind_of(Date)
+    
   end
 
   it "should return DateTimes using the current locale's Time Zone for TIMESTAMP WITHOUT TIME ZONE fields" do
