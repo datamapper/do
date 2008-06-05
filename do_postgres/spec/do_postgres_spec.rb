@@ -233,6 +233,7 @@ describe "DataObjects::Postgres::Reader" do
   end
 
   it "should typecast a time field" do
+    pending "Time fields have no date information, and don't work with Time"
     command = @connection.create_command("SELECT born_at FROM users LIMIT 1")
     reader = command.execute_reader
     reader.next!

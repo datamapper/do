@@ -38,7 +38,7 @@ module PostgresSpecHelpers
         money double precision DEFAULT 1908.56,
         created_on date DEFAULT ('now'::text)::date,
         created_at timestamp without time zone DEFAULT now(),
-        born_at time without time zone DEFAULT now(),
+--        born_at time without time zone DEFAULT now(),
         fired_at timestamp with time zone DEFAULT now(),
         company_id integer DEFAULT 1
       )
