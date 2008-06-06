@@ -35,8 +35,8 @@ public class Connection extends RubyObject {
     public final static String RUBY_CLASS_NAME = "Connection";
     private static RubyObjectAdapter rubyApi;
     private java.sql.Connection conn;
-
     private final static ObjectAllocator CONNECTION_ALLOCATOR = new ObjectAllocator() {
+
         public IRubyObject allocate(Ruby runtime, RubyClass klass) {
             Connection instance = new Connection(runtime, klass);
             return instance;
@@ -60,18 +60,17 @@ public class Connection extends RubyObject {
     }
 
     // -------------------------------------------------- DATAOBJECTS PUBLIC API
-    
     @JRubyMethod(required = 1)
     public static IRubyObject initialize(IRubyObject recv, IRubyObject uri) {
         Ruby runtime = recv.getRuntime();
         String driver = null;
         java.net.URI connectionUri;
-        
+
         try {
             connectionUri = parseConnectionUri(uri);
         } catch (URISyntaxException ex) {
             throw runtime.newArgumentError("Malformed URI: " + ex);
-            //Logger.getLogger(Connection.class.getName()).log(Level.SEVERE, null, ex);
+        //Logger.getLogger(Connection.class.getName()).log(Level.SEVERE, null, ex);
         }
 
         if (connectionUri.getQuery() != null) {
@@ -80,11 +79,11 @@ public class Connection extends RubyObject {
                 query = parseQueryString(connectionUri.getQuery());
             } catch (UnsupportedEncodingException ex) {
                 throw runtime.newArgumentError("Unsupported Encoding in Query Parameters" + ex);
-                //Logger.getLogger(Connection.class.getName()).log(Level.SEVERE, null, ex);
+            //Logger.getLogger(Connection.class.getName()).log(Level.SEVERE, null, ex);
             }
-            
+
             driver = query.get("driver");
-            //String protocol = query.get("protocol"); XXX : not sure of the point of this
+        //String protocol = query.get("protocol"); XXX : not sure of the point of this
         }
 
         // Load JDBC Driver Class
@@ -92,17 +91,17 @@ public class Connection extends RubyObject {
             try {
                 Class.forName(driver).newInstance();
             } catch (ClassNotFoundException cfe) {
-                throw runtime.newArgumentError("Driver class library (" + driver +") not found.");
-                //Logger.getLogger(Connection.class.getName()).log(Level.SEVERE, null, cfe);
+                throw runtime.newArgumentError("Driver class library (" + driver + ") not found.");
+            //Logger.getLogger(Connection.class.getName()).log(Level.SEVERE, null, cfe);
             } catch (InstantiationException ine) {
                 throw runtime.newArgumentError("Driver class library you specified could not be instantiated");
             } catch (IllegalAccessException iae) {
                 throw runtime.newArgumentError("Driver class library is not available:" + iae.getLocalizedMessage());
             }
-            // should be handled implicitly
-            // DriverManager.registerDriver(driver);
+        // should be handled implicitly
+        // DriverManager.registerDriver(driver);
         }
-        
+
         java.sql.Connection conn;
 
         try {
@@ -114,14 +113,14 @@ public class Connection extends RubyObject {
 
         IRubyObject rubyconn1 = wrappedConnection(recv, conn);
         //IRubyObject rubyconn1 = JavaEmbedUtils.javaToRuby(runtime, conn);
-        
-        rubyApi.setInstanceVariable(recv, "@uri", uri);  
+
+        rubyApi.setInstanceVariable(recv, "@uri", uri);
         rubyApi.setInstanceVariable(recv, "@connection", rubyconn1);
         rubyconn1.dataWrapStruct(conn);
-        
+
         return runtime.getTrue();
     }
-        
+
     @JRubyMethod
     public static IRubyObject real_close(IRubyObject recv) {
         Ruby runtime = recv.getRuntime();
@@ -130,18 +129,18 @@ public class Connection extends RubyObject {
         if (prev != null) {
             try {
                 prev.close();
-            } catch(Exception e) {}
+            } catch (Exception e) {
+            }
         }
 
         return runtime.getTrue();
     }
 
     // -------------------------------------------------- PRIVATE HELPER METHODS
-    
     private static IRubyObject wrappedConnection(IRubyObject recv, java.sql.Connection c) {
         return Java.java_to_ruby(recv, JavaObject.wrap(recv.getRuntime(), c), Block.NULL_BLOCK);
     }
-    
+
     private static java.sql.Connection getConnection(IRubyObject recv) {
         java.sql.Connection conn = (java.sql.Connection) recv.dataGetStruct();
         return conn;
@@ -181,8 +180,9 @@ public class Connection extends RubyObject {
      */
     private static Map<String, String> parseQueryString(String query)
             throws UnsupportedEncodingException {
-        if (query == null) return null;
-
+        if (query == null) {
+            return null;
+        }
         Map<String, String> nameValuePairs = new HashMap<String, String>();
         StringTokenizer stz = new StringTokenizer(query, "&");
 
@@ -198,8 +198,7 @@ public class Connection extends RubyObject {
             value = java.net.URLDecoder.decode(value, "UTF-8");
             nameValuePairs.put(name, value);
         }
-        
+
         return nameValuePairs;
     }
-
 }

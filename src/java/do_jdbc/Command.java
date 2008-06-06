@@ -10,6 +10,7 @@ import org.jruby.RubyClass;
 import org.jruby.RubyModule;
 import org.jruby.RubyObject;
 import org.jruby.RubyObjectAdapter;
+import org.jruby.RubyString;
 import org.jruby.anno.JRubyClass;
 import org.jruby.anno.JRubyMethod;
 import org.jruby.javasupport.Java;
@@ -31,7 +32,7 @@ import static do_jdbc.DataObjects.JDBC_MODULE_NAME;
 public class Command extends RubyObject {
 
     public final static String RUBY_CLASS_NAME = "Command";
-    private static RubyObjectAdapter rubyApi;
+    private static RubyObjectAdapter api;
 
     private final static ObjectAllocator COMMAND_ALLOCATOR = new ObjectAllocator() {
         public IRubyObject allocate(Ruby runtime, RubyClass klass) {
@@ -49,7 +50,7 @@ public class Command extends RubyObject {
 
         commandClass.includeModule(quotingModule);
         commandClass.defineAnnotatedMethods(Command.class);
-        rubyApi = JavaEmbedUtils.newObjectAdapter();
+        api = JavaEmbedUtils.newObjectAdapter();
         return commandClass;
     }
 
@@ -58,7 +59,7 @@ public class Command extends RubyObject {
     }
 
     // -------------------------------------------------- DATAOBJECTS PUBLIC API
-    
+
     // inherit initialize
 
     @JRubyMethod(optional = 1)
@@ -66,12 +67,9 @@ public class Command extends RubyObject {
         Ruby runtime = recv.getRuntime();
         RubyModule jdbcModule = runtime.getModule(DATA_OBJECTS_MODULE_NAME).defineModuleUnder(JDBC_MODULE_NAME);
 
-        IRubyObject connection = rubyApi.getInstanceVariable(recv, "@connection");
-        IRubyObject wrappedJdbcConnection = rubyApi.getInstanceVariable(connection, "@connection");
-        
-        System.out.println("--" + (wrappedJdbcConnection ==  null));
-        System.out.println("--" + (wrappedJdbcConnection.getClass().getCanonicalName()));
-        System.out.println("--" + wrappedJdbcConnection.dataGetStruct());
+        IRubyObject connection = api.getInstanceVariable(recv, "@connection");
+        IRubyObject wrappedJdbcConnection = api.getInstanceVariable(connection, "@connection");
+        RubyClass resultClass = Result.createResultClass(runtime, jdbcModule);
 
         String querySql = buildQueryFromArgs(recv, args);
 
@@ -79,7 +77,7 @@ public class Command extends RubyObject {
         int affectedCount = 0;           // rows affected
         Statement sqlStatement = null;
         java.sql.ResultSet keys = null;
-        
+
         debug(runtime, querySql);
         try {
             sqlStatement = javaConn.createStatement();
@@ -110,8 +108,7 @@ public class Command extends RubyObject {
         IRubyObject affected_rows = runtime.newFixnum(affectedCount);
         IRubyObject insertKey = null; // TODO: fix this
 
-        RubyClass resultClass = Result.createResultClass(runtime, jdbcModule);
-        IRubyObject result = rubyApi.callMethod(resultClass, "new", new IRubyObject[] {
+        IRubyObject result = api.callMethod(resultClass, "new", new IRubyObject[] {
             recv, affected_rows, insertKey
         });
         return result;
@@ -122,96 +119,92 @@ public class Command extends RubyObject {
         Ruby runtime = recv.getRuntime();
         RubyModule jdbcModule = runtime.getModule(DATA_OBJECTS_MODULE_NAME).defineModuleUnder(JDBC_MODULE_NAME);
 
-        IRubyObject connection = rubyApi.getInstanceVariable(recv, "@connection");
-        IRubyObject wrappedJdbcConnection = rubyApi.getInstanceVariable(connection, "@connection");
-
-	boolean inferTypes = false;
+        IRubyObject connection = api.getInstanceVariable(recv, "@connection");
+        IRubyObject wrappedJdbcConnection = api.getInstanceVariable(connection, "@connection");
 
         RubyClass readerClass = Reader.createReaderClass(runtime, jdbcModule);
         // escape all parameters given and pass them to query
         String querySql = buildQueryFromArgs(recv, args);
 
         java.sql.Connection javaConn = (java.sql.Connection) wrappedJdbcConnection.dataGetStruct();
-        int colCount = 0;
+        boolean inferTypes = false;
+        int columnCount = 0;
         int rowCount = 0;
         Statement sqlStatement = null;
         ResultSet resultSet = null;
-        ResultSetMetaData rsMetaData = null;
+        ResultSetMetaData metaData = null;
+
         // instantiate a new reader
-        IRubyObject reader = readerClass.newInstance(runtime.getCurrentContext(), 
+        IRubyObject reader = readerClass.newInstance(runtime.getCurrentContext(),
                 new IRubyObject[] { }, Block.NULL_BLOCK);
-        
+
         // execute the query
         debug(runtime, querySql);
-        
         try {
             sqlStatement = javaConn.createStatement();
             //sqlStatement.setMaxRows();
             resultSet = sqlStatement.executeQuery(querySql);
+            metaData = resultSet.getMetaData();
+            columnCount = metaData.getColumnCount();
 
-            while (resultSet.next()) {
-                rowCount++;
-
-                if (rowCount == 1) {
-                    rsMetaData = resultSet.getMetaData();
-                    colCount = rsMetaData.getColumnCount();
-                }
-
-            // handle each result
-            }
-            
             // pass the response to the reader
             IRubyObject wrappedResultSet = Java.java_to_ruby(recv, JavaObject.wrap(recv.getRuntime(), resultSet), Block.NULL_BLOCK);
             reader.getInstanceVariables().setInstanceVariable("@reader", wrappedResultSet);
+
             wrappedResultSet.dataWrapStruct(resultSet);
 
+            // handle each result
+
             // mark the reader as opened
-            // TODO
-
+            api.setInstanceVariable(reader, "@opened", runtime.newBoolean(true));
             // TODO: if no response return nil
-            
-            reader.getInstanceVariables().setInstanceVariable("@position", runtime.newFixnum(0));
 
-            System.out.println("READER: " + reader.toString());
-
-
+            api.setInstanceVariable(reader, "@position", runtime.newFixnum(0));
 
             // save the field_count in reader
-            reader.getInstanceVariables().setInstanceVariable("@field_count", runtime.newFixnum(colCount));
-            reader.getInstanceVariables().setInstanceVariable("@row_count",   runtime.newFixnum(rowCount));
+            api.setInstanceVariable(reader, "@field_count", runtime.newFixnum(columnCount));
+            api.setInstanceVariable(reader, "@row_count", runtime.newFixnum(rowCount));
 
             // get the field types
-            RubyArray fieldNames = runtime.newArray();
-            IRubyObject field_types = rubyApi.getInstanceVariable(recv , "@field_types");
+            RubyArray field_names = runtime.newArray();
+            IRubyObject field_types = api.getInstanceVariable(recv , "@types");
 
-            // if no types passed, guess the types
-            if (field_types == null || field_types.isNil() || field_types.convertToArray().length().getLongValue() == 0)
-            {
+            // If no types are passed in, infer them
+            if (field_types == null) {
                 field_types = runtime.newArray();
                 inferTypes = true;
+            } else {
+                int fieldTypesCount = field_types.convertToArray().getLength();
+                if (field_types.isNil() || fieldTypesCount == 0) {
+                    field_types = runtime.newArray();
+                    inferTypes = true;
+                } else if (fieldTypesCount != columnCount) {
+                    // Wrong number of fields passed to set_types. Close the reader
+                    // and raise an error.
+                    api.callMethod(reader, "close");
+                    throw DoJdbcUtils.newJdbcError(runtime,
+                            String.format("Field-count mismatch. Expected %1$d fields, but the query yielded %2$d",
+                            fieldTypesCount,
+                            columnCount));
+                }
             }
 
             // for each field
-            // USE RESULTSETMETADATA FOR THIS
-            //for (int i = 0; i < colCount; i++) {
-                //   save its name
-             //   fieldNames.push_m(NULL_ARRAY); // rb_ary_push(field_names, rb_str_new2(PQfname(response, i)));
-                //   guess the type if no types passed
-               // if (inferTypes) {
-               //     field_types.push_m(getRubyType()); // (PQftype(response, i))
-                //}
-            //}
+            for (int i = 0; i < columnCount; i++) {
+                RubyString field_name = runtime.newString("");//metaData.getColumnName(i));
+                // infer the type if no types passed
+                field_names.push_m(new IRubyObject[] { field_name });
+                if (inferTypes) {
+                    // TODO: do something
+                }
+            }
 
             // set the reader @field_names and @types (guessed or otherwise)
-            reader.getInstanceVariables().setInstanceVariable("@fields", fieldNames);
-            reader.getInstanceVariables().setInstanceVariable("@field_types", field_types);
+            api.setInstanceVariable(reader, "@fields", field_names);
+            api.setInstanceVariable(reader, "@types", field_types);
 
-            // save the field count
-            // TODO
-            // yield the reader if a block is given, then close it
-            
-            resultSet.close();
-            resultSet = null;
+            //resultSet.close();
+            //resultSet = null;
             sqlStatement.close();
             sqlStatement = null;
         } catch (SQLException sqle) {
@@ -231,19 +224,19 @@ public class Command extends RubyObject {
                 }
             }
         }
-        
+
         // return the reader
         return reader;
     }
 
     @JRubyMethod(required = 1)
     public static IRubyObject set_types(IRubyObject recv, IRubyObject value) {
-        IRubyObject types = rubyApi.setInstanceVariable(recv, "@types", value);
+        IRubyObject types = api.setInstanceVariable(recv, "@types", value);
         return types;
     }
 
     // ------------------------------------------------ ADDITIONAL JRUBY METHODS
-    
+
     @JRubyMethod(required = 1)
     public static IRubyObject quote_boolean(IRubyObject recv, IRubyObject value) {
         // TODO: escape this
@@ -261,30 +254,30 @@ public class Command extends RubyObject {
     }
 
     // -------------------------------------------------- PRIVATE HELPER METHODS
-    
+
     /**
-     * 
+     *
      * @param recv
      * @param args
-     * @return the query as a java.lang.String 
+     * @return the query as a java.lang.String
      */
     private static String buildQueryFromArgs(IRubyObject recv, IRubyObject[] args) {
         Ruby runtime = recv.getRuntime();
         String query = recv.getInstanceVariables().getInstanceVariable("@text").asJavaString();
         RubyArray escape_args;
-        
+
         if (args.length > 0) {
             //for (IRubyObject arg : args) { }
             escape_args = runtime.newArray(args);
-            query = rubyApi.callMethod(recv, "escape_sql", escape_args).convertToString().asJavaString();
+            query = api.callMethod(recv, "escape_sql", escape_args).convertToString().asJavaString();
             //query = recv.callMethod(runtime.getCurrentContext(), "escape_sql", escape_args).c;
         }
         return query;
     }
-    
+
     /**
      * Output a log message
-     * 
+     *
      * @param runtime
      * @param logMessage
      */
@@ -293,10 +286,10 @@ public class Command extends RubyObject {
         IRubyObject logger = jdbcModule.callMethod(runtime.getCurrentContext(), "logger");
         long level = logger.callMethod(runtime.getCurrentContext(), "level").convertToInteger().getLongValue();
         // FIXME: ^^ this doesn't seem like the right way of doing this
-        
+
         if (0 == level) {
             logger.callMethod(runtime.getCurrentContext(), "debug", runtime.newString(logMessage));
         }
     }
-    
+
 }

@@ -12,20 +12,20 @@ import static do_jdbc.DataObjects.DATA_OBJECTS_MODULE_NAME;
 
 /**
  * Transaction Class
- * 
+ *
  * @author alexbcoles
  */
 public class Transaction extends RubyObject {
-    
-    public final static String RUBY_CLASS_NAME = "Transaction";
 
+    public final static String RUBY_CLASS_NAME = "Transaction";
     private final static ObjectAllocator TRANSACTION_ALLOCATOR = new ObjectAllocator() {
+
         public IRubyObject allocate(Ruby runtime, RubyClass klass) {
             Transaction instance = new Transaction(runtime, klass);
             return instance;
         }
     };
-    
+
     public static RubyClass createTransactionClass(Ruby runtime, RubyModule jdbcModule) {
         RubyModule doModule = runtime.getModule(DATA_OBJECTS_MODULE_NAME);
         RubyClass superClass = doModule.getClass(RUBY_CLASS_NAME);
@@ -35,11 +35,11 @@ public class Transaction extends RubyObject {
         transactionClass.defineAnnotatedMethods(Transaction.class);
         return transactionClass;
     }
-    
+
     private Transaction(Ruby runtime, RubyClass klass) {
         super(runtime, klass);
     }
-    
+
     @JRubyMethod(required = 1)
     public static IRubyObject initialize(IRubyObject recv) {
         return recv;
@@ -47,7 +47,7 @@ public class Transaction extends RubyObject {
 
     /**
      * Commits the transaction
-     * 
+     *
      * @param recv
      * @return
      */
@@ -58,7 +58,7 @@ public class Transaction extends RubyObject {
 
     /**
      * Rollsback the transaction
-     * 
+     *
      * @param recv
      * @return
      */
@@ -69,7 +69,7 @@ public class Transaction extends RubyObject {
 
     /**
      * Creates a savepoint for rolling back later
-     * 
+     *
      * @param recv
      * @return
      */
@@ -82,5 +82,4 @@ public class Transaction extends RubyObject {
     public static IRubyObject create_command(IRubyObject recv) {
         return recv.getRuntime().getFalse();
     }
-
 }

@@ -32,7 +32,7 @@ module JdbcSpecHelpers
       command.set_types types unless types.nil?
       reader = command.execute_reader(*args)
       reader.next!
-      yield reader
+      yield reader if block_given?
     ensure
       reader.close if reader
     end
@@ -90,7 +90,7 @@ module JdbcSpecHelpers
         cost2             DECIMAL DEFAULT 50.23,
         release_date      DATE DEFAULT '2008-02-14',
         release_datetime  DATETIME DEFAULT '2008-02-14 00:31:12',
-        release_timestamp TIMESTAMP DEFAULT '2008-02-14 00:31:31' 
+        release_timestamp TIMESTAMP DEFAULT '2008-02-14 00:31:31'
       )
     EOF
     # XXX: HSQLDB has no ENUM
@@ -99,8 +99,8 @@ module JdbcSpecHelpers
     1.upto(16) do |n|
       @connection.create_command(<<-EOF).execute_non_query
         INSERT INTO widgets(
-          code, 
-          name, 
+          code,
+          name,
           shelf_location,
           description,
           image_data,
@@ -121,7 +121,7 @@ module JdbcSpecHelpers
           '4f3d4331434343434331',
           1234);
       EOF
-      
+
       ## TODO: change the hexadecimal examples
     end
 
