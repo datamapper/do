@@ -107,7 +107,7 @@ public class Reader extends RubyObject {
         for (int i = 0; i < field_count.convertToInteger().getLongValue(); i++) {
             //if (fieldTypesCount == 0) {
 
-            value = DoJdbcUtils.java_types_to_ruby_types(runtime, i, i, i, rs);
+            value = DataObjectsUtils.java_types_to_ruby_types(runtime, i, i, i, rs);
 
             //} else {
             //    value = rubyTypeCast(rs.getString(i));
@@ -125,7 +125,7 @@ public class Reader extends RubyObject {
         IRubyObject state = api.getInstanceVariable(recv, "@state");
 
         if (state.isNil() || !state.isTrue()) {
-            throw DoJdbcUtils.newJdbcError(runtime, "Reader is not initialized");
+            throw DataObjectsUtils.newJdbcError(runtime, "Reader is not initialized");
         }
         IRubyObject values = api.getInstanceVariable(recv, "@values");
         return values;

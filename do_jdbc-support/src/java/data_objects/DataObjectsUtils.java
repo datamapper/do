@@ -13,7 +13,7 @@ import org.jruby.runtime.builtin.IRubyObject;
  *
  * @author alexbcoles
  */
-public class DoJdbcUtils {
+public class DataObjectsUtils {
 
     /**
      * Create a Ruby JDBCError

@@ -121,7 +121,7 @@ public class Command extends RubyObject {
             sqlStatement = null;
         } catch (SQLException sqle) {
             // TODO: log sqle.printStackTrace();
-            throw DoJdbcUtils.newJdbcError(runtime, sqle.getLocalizedMessage());
+            throw DataObjectsUtils.newJdbcError(runtime, sqle.getLocalizedMessage());
         } finally {
             if (sqlStatement != null) {
                 try {
@@ -213,7 +213,7 @@ public class Command extends RubyObject {
                     // Wrong number of fields passed to set_types. Close the reader
                     // and raise an error.
                     api.callMethod(reader, "close");
-                    throw DoJdbcUtils.newJdbcError(runtime,
+                    throw DataObjectsUtils.newJdbcError(runtime,
                             String.format("Field-count mismatch. Expected %1$d fields, but the query yielded %2$d",
                             fieldTypesCount,
                             columnCount));
@@ -240,7 +240,7 @@ public class Command extends RubyObject {
             sqlStatement = null;
         } catch (SQLException sqle) {
             // TODO: log sqle.printStackTrace();
-            throw DoJdbcUtils.newJdbcError(runtime, sqle.getLocalizedMessage());
+            throw DataObjectsUtils.newJdbcError(runtime, sqle.getLocalizedMessage());
         } finally {
             if (resultSet != null) {
                 try {

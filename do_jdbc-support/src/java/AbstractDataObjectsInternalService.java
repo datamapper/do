@@ -20,7 +20,7 @@ import static data_objects.DataObjects.JDBC_MODULE_NAME;
  *
  * @author alexbcoles
  */
-public class DoJdbcInternalService implements BasicLibraryService {
+public class AbstractDataObjectsInternalService implements BasicLibraryService {
 
     public static RubyModule doModule;
     public static RubyModule doJdbcModule;
@@ -42,7 +42,7 @@ public class DoJdbcInternalService implements BasicLibraryService {
         // Define a JdbcError
         runtime.defineClass("JdbcError", runtime.getStandardError(), runtime.getStandardError().getAllocator());
 
-        // Define the DataObjects::Jdbc classes
+        // Define the DataObjects classes
         command = Command.createCommandClass(runtime, doJdbcModule);
         connection = Connection.createConnectionClass(runtime, doJdbcModule);
         result = Result.createResultClass(runtime, doJdbcModule);

@@ -33,7 +33,7 @@ import static data_objects.DataObjects.DATA_OBJECTS_MODULE_NAME;
 public class Connection extends RubyObject {
 
     public final static String RUBY_CLASS_NAME = "Connection";
-    private static RubyObjectAdapter rubyApi;
+    private static RubyObjectAdapter api;
     private java.sql.Connection conn;
     private final static ObjectAllocator CONNECTION_ALLOCATOR = new ObjectAllocator() {
 
@@ -51,7 +51,7 @@ public class Connection extends RubyObject {
                 superClass, CONNECTION_ALLOCATOR);
 
         connectionClass.defineAnnotatedMethods(Connection.class);
-        rubyApi = JavaEmbedUtils.newObjectAdapter();
+        api = JavaEmbedUtils.newObjectAdapter();
         return connectionClass;
     }
 
@@ -114,8 +114,8 @@ public class Connection extends RubyObject {
         IRubyObject rubyconn1 = wrappedConnection(recv, conn);
         //IRubyObject rubyconn1 = JavaEmbedUtils.javaToRuby(runtime, conn);
 
-        rubyApi.setInstanceVariable(recv, "@uri", uri);
-        rubyApi.setInstanceVariable(recv, "@connection", rubyconn1);
+        api.setInstanceVariable(recv, "@uri", uri);
+        api.setInstanceVariable(recv, "@connection", rubyconn1);
         rubyconn1.dataWrapStruct(conn);
 
         return runtime.getTrue();
