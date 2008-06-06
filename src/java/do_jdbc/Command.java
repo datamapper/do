@@ -1,9 +1,12 @@
 package do_jdbc;
 
+import java.sql.CallableStatement;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.sql.Types;
 import org.jruby.Ruby;
 import org.jruby.RubyArray;
 import org.jruby.RubyClass;
@@ -68,6 +71,7 @@ public class Command extends RubyObject {
         RubyModule jdbcModule = runtime.getModule(DATA_OBJECTS_MODULE_NAME).defineModuleUnder(JDBC_MODULE_NAME);
 
         IRubyObject connection = api.getInstanceVariable(recv, "@connection");
+        IRubyObject url = api.getInstanceVariable(connection, "@uri"); 
         IRubyObject wrappedJdbcConnection = api.getInstanceVariable(connection, "@connection");
         RubyClass resultClass = Result.createResultClass(runtime, jdbcModule);
 
@@ -77,15 +81,42 @@ public class Command extends RubyObject {
         int affectedCount = 0;           // rows affected
         Statement sqlStatement = null;
         java.sql.ResultSet keys = null;
-
+        boolean supportsGeneratedKeys = false; // TODO: actually test for this
+        
         debug(runtime, querySql);
         try {
             sqlStatement = javaConn.createStatement();
             // sqlStatement.setMaxRows();
-            affectedCount = sqlStatement.executeUpdate(querySql);
-            // XXX: Fails with 'not a supported function on HSQLDB'
-            // affectedCount = sqlStatement.executeUpdate(querySql, Statement.RETURN_GENERATED_KEYS);
-            // keys = sqlStatement.getGeneratedKeys();
+            
+            if (supportsGeneratedKeys) {
+                // Only Derby, H2, and MySQL support getGeneratedKeys()
+                affectedCount = sqlStatement.executeUpdate(querySql, Statement.RETURN_GENERATED_KEYS);
+                keys = sqlStatement.getGeneratedKeys();
+            } else {
+                // getGeneratedKeys fails with 'not a supported function on HSQLDB'
+                affectedCount = sqlStatement.executeUpdate(querySql);
+                
+                try {
+                    CallableStatement cs = javaConn.prepareCall("identity()");
+                    cs.registerOutParameter(1, Types.NUMERIC);
+                    cs.execute();
+                    
+                    double fish = cs.getDouble(1);
+                    System.out.println(fish);
+                    
+                    //keys = sqlStatement.executeQuery("call IDENTITY()");
+                    
+                } catch (SQLException sqlee) {
+                    // do nothing
+                    System.out.println(sqlee.getLocalizedMessage());
+                } finally {
+                    if (keys != null) {
+                        keys.close();
+                    }
+                }
+                
+            }
+
             sqlStatement.close();
             sqlStatement = null;
         } catch (SQLException sqle) {
@@ -106,10 +137,10 @@ public class Command extends RubyObject {
         }
 
         IRubyObject affected_rows = runtime.newFixnum(affectedCount);
-        IRubyObject insertKey = null; // TODO: fix this
+        IRubyObject insert_key = null; // TODO: fix this
 
         IRubyObject result = api.callMethod(resultClass, "new", new IRubyObject[] {
-            recv, affected_rows, insertKey
+            recv, affected_rows, insert_key
         });
         return result;
     }
@@ -267,10 +298,8 @@ public class Command extends RubyObject {
         RubyArray escape_args;
 
         if (args.length > 0) {
-            //for (IRubyObject arg : args) { }
             escape_args = runtime.newArray(args);
             query = api.callMethod(recv, "escape_sql", escape_args).convertToString().asJavaString();
-            //query = recv.callMethod(runtime.getCurrentContext(), "escape_sql", escape_args).c;
         }
         return query;
     }

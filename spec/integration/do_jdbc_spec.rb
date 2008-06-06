@@ -86,6 +86,17 @@ describe "DataObjects::Jdbc::Result" do
     result.to_i.should == 1
   end
 
+  it "should yield the last inserted id" do
+    pending "this is not yet functional for HSQLDB"
+    @connection.create_command("DELETE FROM invoices").execute_non_query
+
+    result = @connection.create_command("INSERT INTO invoices (invoice_number) VALUES ('1234')").execute_non_query
+    result.insert_id.should == 1
+
+    result = @connection.create_command("INSERT INTO invoices (invoice_number) VALUES ('3456')").execute_non_query
+    result.insert_id.should == 2
+  end
+
   it "should be able to determine affected_rows, when multiple rows are affected" do
     [
       "DELETE FROM invoices",
@@ -132,6 +143,29 @@ describe "DataObjects::Jdbc::Reader" do
       reader.next!
 
       lambda { reader.values }.should raise_error(JdbcError)
+    end
+  end
+
+  it "should fetch the proper number of rows" do
+    ids = [
+      insert("INSERT INTO users (name) VALUES ('Slappy Wilson')"),
+      insert("INSERT INTO users (name) VALUES ('Jumpy Jones')")
+    ]
+
+    pending "ids not being returned using HSQLDB adapter"
+    
+    select("SELECT * FROM users WHERE id IN ?", nil, ids) do |reader|
+      # select already calls next once for us
+      reader.next!.should == true
+      reader.next!.should be_nil
+    end
+  end
+
+  it "should return DB nulls as nil" do
+    pending "needs fixing"
+    id = insert("INSERT INTO users (name) VALUES (NULL)")
+    select("SELECT name from users WHERE name is null") do |reader|
+      reader.values[0].should == nil
     end
   end
 
