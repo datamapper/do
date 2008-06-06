@@ -1,4 +1,4 @@
-package do_jdbc;
+package data_objects;
 
 import java.sql.CallableStatement;
 import java.sql.PreparedStatement;
@@ -23,8 +23,8 @@ import org.jruby.runtime.Block;
 import org.jruby.runtime.ObjectAllocator;
 import org.jruby.runtime.builtin.IRubyObject;
 
-import static do_jdbc.DataObjects.DATA_OBJECTS_MODULE_NAME;
-import static do_jdbc.DataObjects.JDBC_MODULE_NAME;
+import static data_objects.DataObjects.DATA_OBJECTS_MODULE_NAME;
+import static data_objects.DataObjects.JDBC_MODULE_NAME;
 
 /**
  * Command Class

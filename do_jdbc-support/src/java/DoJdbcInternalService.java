@@ -1,17 +1,17 @@
 
-import do_jdbc.Command;
-import do_jdbc.Connection;
-import do_jdbc.Reader;
-import do_jdbc.Result;
-import do_jdbc.Transaction;
+import data_objects.Command;
+import data_objects.Connection;
+import data_objects.Reader;
+import data_objects.Result;
+import data_objects.Transaction;
 import java.io.IOException;
 import org.jruby.Ruby;
 import org.jruby.RubyClass;
 import org.jruby.RubyModule;
 import org.jruby.runtime.load.BasicLibraryService;
 
-import static do_jdbc.DataObjects.DATA_OBJECTS_MODULE_NAME;
-import static do_jdbc.DataObjects.JDBC_MODULE_NAME;
+import static data_objects.DataObjects.DATA_OBJECTS_MODULE_NAME;
+import static data_objects.DataObjects.JDBC_MODULE_NAME;
 
 /**
  *

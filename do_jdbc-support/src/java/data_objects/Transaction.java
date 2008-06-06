@@ -1,4 +1,4 @@
-package do_jdbc;
+package data_objects;
 
 import org.jruby.Ruby;
 import org.jruby.RubyClass;
@@ -8,7 +8,7 @@ import org.jruby.anno.JRubyMethod;
 import org.jruby.runtime.ObjectAllocator;
 import org.jruby.runtime.builtin.IRubyObject;
 
-import static do_jdbc.DataObjects.DATA_OBJECTS_MODULE_NAME;
+import static data_objects.DataObjects.DATA_OBJECTS_MODULE_NAME;
 
 /**
  * Transaction Class

@@ -1,4 +1,4 @@
-package do_jdbc;
+package data_objects;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URISyntaxException;
@@ -22,7 +22,7 @@ import org.jruby.runtime.ObjectAllocator;
 import org.jruby.runtime.ThreadContext;
 import org.jruby.runtime.builtin.IRubyObject;
 
-import static do_jdbc.DataObjects.DATA_OBJECTS_MODULE_NAME;
+import static data_objects.DataObjects.DATA_OBJECTS_MODULE_NAME;
 
 /**
  * Connection Class

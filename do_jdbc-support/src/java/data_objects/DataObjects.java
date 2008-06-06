@@ -1,4 +1,4 @@
-package do_jdbc;
+package data_objects;
 
 /**
  * Constants for DataObjects
