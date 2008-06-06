@@ -1,4 +1,4 @@
 do_postgres
-=================
+===========
 
-Data Objects PostgreSQL adapter
+A PostgreSQL driver for DataObjects
