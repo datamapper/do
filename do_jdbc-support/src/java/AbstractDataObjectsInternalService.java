@@ -4,6 +4,7 @@ import data_objects.Connection;
 import data_objects.Reader;
 import data_objects.Result;
 import data_objects.Transaction;
+import data_objects.drivers.DriverDefinition;
 import java.io.IOException;
 import org.jruby.Ruby;
 import org.jruby.RubyClass;
@@ -11,7 +12,6 @@ import org.jruby.RubyModule;
 import org.jruby.runtime.load.BasicLibraryService;
 
 import static data_objects.DataObjects.DATA_OBJECTS_MODULE_NAME;
-import static data_objects.DataObjects.JDBC_MODULE_NAME;
 
 /**
  *
@@ -20,10 +20,10 @@ import static data_objects.DataObjects.JDBC_MODULE_NAME;
  *
  * @author alexbcoles
  */
-public class AbstractDataObjectsInternalService implements BasicLibraryService {
+public abstract class AbstractDataObjectsInternalService implements BasicLibraryService {
 
     public static RubyModule doModule;
-    public static RubyModule doJdbcModule;
+    public static RubyModule doDriverModule;
 
     private static RubyClass connection;
     private static RubyClass command;
@@ -33,23 +33,28 @@ public class AbstractDataObjectsInternalService implements BasicLibraryService {
 
     public boolean basicLoad(Ruby runtime) throws IOException {
 
-        // Get the ::DataObjects module
+        // Get the DataObjects module
         doModule = runtime.getModule(DATA_OBJECTS_MODULE_NAME);
 
-        // Define the DataObjects::Jdbc module
-        doJdbcModule = doModule.defineModuleUnder(JDBC_MODULE_NAME);
+        // Define the DataObjects module for this Driver
+        // e.g. DataObjects::Derby, DataObjects::MySql
+        doDriverModule = doModule.defineModuleUnder(getModuleName());
 
         // Define a JdbcError
         runtime.defineClass("JdbcError", runtime.getStandardError(), runtime.getStandardError().getAllocator());
 
-        // Define the DataObjects classes
-        command = Command.createCommandClass(runtime, doJdbcModule);
-        connection = Connection.createConnectionClass(runtime, doJdbcModule);
-        result = Result.createResultClass(runtime, doJdbcModule);
-        reader = Reader.createReaderClass(runtime, doJdbcModule);
-        transaction = Transaction.createTransactionClass(runtime, doJdbcModule);
+        // Define the DataObjects driver classes
+        command = Command.createCommandClass(runtime, doDriverModule);
+        connection = Connection.createConnectionClass(runtime, doDriverModule);
+        result = Result.createResultClass(runtime, doDriverModule);
+        reader = Reader.createReaderClass(runtime, doDriverModule);
+        transaction = Transaction.createTransactionClass(runtime, doDriverModule);
 
         return true;
     }
 
+    public abstract String getModuleName();
+    
+    public abstract DriverDefinition getDriverDefinition();
+    
 }

@@ -1,5 +1,6 @@
 package data_objects;
 
+import data_objects.drivers.DriverDefinition;
 import java.sql.CallableStatement;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -71,7 +72,7 @@ public class Command extends RubyObject {
         RubyModule jdbcModule = runtime.getModule(DATA_OBJECTS_MODULE_NAME).defineModuleUnder(JDBC_MODULE_NAME);
 
         IRubyObject connection = api.getInstanceVariable(recv, "@connection");
-        IRubyObject url = api.getInstanceVariable(connection, "@uri"); 
+        IRubyObject url = api.getInstanceVariable(connection, "@uri");
         IRubyObject wrappedJdbcConnection = api.getInstanceVariable(connection, "@connection");
         RubyClass resultClass = Result.createResultClass(runtime, jdbcModule);
 
@@ -82,12 +83,12 @@ public class Command extends RubyObject {
         Statement sqlStatement = null;
         java.sql.ResultSet keys = null;
         boolean supportsGeneratedKeys = false; // TODO: actually test for this
-        
+
         debug(runtime, querySql);
         try {
             sqlStatement = javaConn.createStatement();
             // sqlStatement.setMaxRows();
-            
+
             if (supportsGeneratedKeys) {
                 // Only Derby, H2, and MySQL support getGeneratedKeys()
                 affectedCount = sqlStatement.executeUpdate(querySql, Statement.RETURN_GENERATED_KEYS);
@@ -95,17 +96,17 @@ public class Command extends RubyObject {
             } else {
                 // getGeneratedKeys fails with 'not a supported function on HSQLDB'
                 affectedCount = sqlStatement.executeUpdate(querySql);
-                
+
                 try {
                     CallableStatement cs = javaConn.prepareCall("identity()");
                     cs.registerOutParameter(1, Types.NUMERIC);
                     cs.execute();
-                    
+
                     double fish = cs.getDouble(1);
                     System.out.println(fish);
-                    
+
                     //keys = sqlStatement.executeQuery("call IDENTITY()");
-                    
+
                 } catch (SQLException sqlee) {
                     // do nothing
                     System.out.println(sqlee.getLocalizedMessage());
@@ -114,7 +115,7 @@ public class Command extends RubyObject {
                         keys.close();
                     }
                 }
-                
+
             }
 
             sqlStatement.close();
