@@ -82,7 +82,7 @@ static int jd_from_date(int year, int month, int day) {
 	return floor(365.25 * (year + 4716)) + floor(30.6001 * (month + 1)) + day + b - 1524;
 }
 
-static VALUE parse_date(char *date) {
+static VALUE parse_date(const char *date) {
 	int year, month, day;
 	int jd, ajd;
 	VALUE rational;
@@ -105,15 +105,11 @@ static VALUE seconds_to_offset(do_int64 num) {
 	return rb_funcall(rb_cRational, rb_intern("new!"), 2, rb_ll2inum(num), rb_ll2inum(den));	
 }
 
-static VALUE timezone_to_offset(const char sign, int hour_offset, int minute_offset) {
+static VALUE timezone_to_offset(int hour_offset, int minute_offset) {
 	do_int64 seconds = 0;
 
 	seconds += hour_offset * 3600;
 	seconds += minute_offset * 60;
-
-	if ('-' == sign) {
-		seconds *= -1;
-	}
 
 	return seconds_to_offset(seconds);
 }
@@ -123,7 +119,6 @@ static VALUE parse_date_time(const char *date) {
 
 	int year, month, day, hour, min, sec, usec, hour_offset, minute_offset;
 	int jd;
-	char sign;
 	do_int64 num, den;
 	
 	time_t rawtime;
@@ -133,33 +128,38 @@ static VALUE parse_date_time(const char *date) {
 	
 	if (0 != strchr(date, '.')) {
 		// This is a datetime with sub-second precision
-		tokens_read = sscanf(date, "%4d-%2d-%2d %2d:%2d:%2d.%d%1s%2d:%2d", &year, &month, &day, &hour, &min, &sec, &usec, &sign, &hour_offset, &minute_offset);
-		max_tokens = 10;
+		tokens_read = sscanf(date, "%4d-%2d-%2d %2d:%2d:%2d.%d%3d:%2d", &year, &month, &day, &hour, &min, &sec, &usec, &hour_offset, &minute_offset);
+		max_tokens = 9;
 	} else {
 		// This is a datetime second precision
-		tokens_read = sscanf(date, "%4d-%2d-%2d %2d:%2d:%2d%1s%2d:%2d", &year, &month, &day, &hour, &min, &sec, &sign, &hour_offset, &minute_offset);
-		max_tokens = 9;
+		tokens_read = sscanf(date, "%4d-%2d-%2d %2d:%2d:%2d%3d:%2d", &year, &month, &day, &hour, &min, &sec, &hour_offset, &minute_offset);
+		max_tokens = 8;
 	}
 	
 	if (max_tokens == tokens_read) {
 		// We read the Date, Time, and Timezone info
+		minute_offset *= hour_offset < 0 ? -1 : 1;
 	} else if ((max_tokens - 1) == tokens_read) {
 		// We read the Date and Time, but no Minute Offset
 		minute_offset = 0;
 	} else if (tokens_read == 3) {
-        return parse_date(date);
+    return parse_date(date);
 	} else if (tokens_read >= (max_tokens - 3)) {
 		// We read the Date and Time, maybe the Sign, default to the current locale's offset
-
+		
 		// Get localtime
 		time(&rawtime);
 		timeinfo = localtime(&rawtime);
+		
+		int offset = -timezone;
+		int is_dst = timeinfo->tm_isdst * 3600;
+		
+		offset += is_dst;
 			
 		// TODO: Refactor the following few lines to do the calculation with the *seconds*
 		// value instead of having to do the hour/minute math
-		hour_offset = abs(timeinfo->tm_gmtoff) / 3600;
-		minute_offset = abs(timeinfo->tm_gmtoff) % 3600 / 60;
-		sign = timeinfo->tm_gmtoff < 0 ? '-' : '+';
+		hour_offset = offset / 3600;
+		minute_offset = offset % 3600 / 60;
 	} else {
 		// Something went terribly wrong
 		rb_raise(ePostgresError, "Couldn't parse date: %s", date);
@@ -172,13 +172,7 @@ static VALUE parse_date_time(const char *date) {
 	num = (hour * 1440) + (min * 24);
 
 	// Modify the numerator so when we apply the timezone everything works out
-	if ('-' == sign) {
-		// If the Timezone is behind UTC, we need to add the time offset
-		num += (hour_offset * 1440) + (minute_offset * 24);
-	} else {
-		// If the Timezone is ahead of UTC, we need to subtract the time offset
-		num -= (hour_offset * 1440) + (minute_offset * 24);
-	}
+	num -= (hour_offset * 1440) + (minute_offset * 24);
 	
 	den = (24 * 1440);
 	reduce(&num, &den);
@@ -196,7 +190,7 @@ static VALUE parse_date_time(const char *date) {
 	reduce(&num, &den);
 
 	ajd = rb_funcall(rb_cRational, rb_intern("new!"), 2, rb_ull2inum(num), rb_ull2inum(den));
-	offset = timezone_to_offset(sign, hour_offset, minute_offset);
+	offset = timezone_to_offset(hour_offset, minute_offset);
 	
 	return rb_funcall(rb_cDateTime, ID_NEW_DATE, 3, ajd, offset, INT2NUM(2299161));
 }
