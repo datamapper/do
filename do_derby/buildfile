@@ -1,0 +1,17 @@
+# Apache Buildr buildfile for do_derby
+# see http://incubator.apache.org/buildr/ for more information on Apache Buildr
+require 'buildr'
+
+VERSION_NUMBER = '1.0'
+
+repositories.remote << 'http://www.ibiblio.org/maven2/'
+
+define 'do_derby' do
+  project.version = VERSION_NUMBER
+  project.group = 'data_objects.rb'
+
+  manifest['Copyright'] = 'Alex Coles (C) 2008'
+
+  compile.using :target => '1.5', :lint => 'all', :deprecation => 'true'
+
+end
