@@ -14,11 +14,11 @@ import org.jruby.runtime.load.BasicLibraryService;
 import static data_objects.DataObjects.DATA_OBJECTS_MODULE_NAME;
 
 /**
- * AbstractDataObjectsInternalService
+ * AbstractDataObjectsExtService
  *
  * @author alexbcoles
  */
-public abstract class AbstractDataObjectsInternalService implements BasicLibraryService {
+public abstract class AbstractDataObjectsExtService implements BasicLibraryService {
 
     public boolean basicLoad(final Ruby runtime) throws IOException {
 

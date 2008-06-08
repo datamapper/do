@@ -1,7 +1,7 @@
 import data_objects.drivers.DriverDefinition;
 import do_derby.DerbyDriverDefinition;
 
-public class DoDerbyExtService extends AbstractDataObjectsInternalService {
+public class DoDerbyExtService extends AbstractDataObjectsExtService {
 
     private final static DriverDefinition driver = new DerbyDriverDefinition();
     public final static String RUBY_MODULE_NAME = "Derby";
