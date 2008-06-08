@@ -32,7 +32,14 @@ module DataObjects
 
     def self.new(uri)
       uri = uri.is_a?(String) ? Addressable::URI::parse(uri) : uri
-      DataObjects.const_get(uri.scheme.capitalize)::Connection.acquire(uri)
+      
+      if uri.scheme == 'jdbc'
+        driver_name = uri.path.split(':').first
+      else
+        driver_name = uri.scheme.capitalize
+      end
+      
+      DataObjects.const_get(driver_name.capitalize)::Connection.acquire(uri)
     end
 
     def self.acquire(connection_uri)
