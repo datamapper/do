@@ -32,29 +32,21 @@ Rake::GemPackageTask.new(spec) do |pkg|
   pkg.gem_spec = spec
 end
 
-task :default => [ :java_compile, :spec ]
+task :default => [ :compile, :spec ]
 
-def java_classpath_arg # myriad of ways to discover JRuby classpath
-  #begin
-  #  jruby_cpath = Java::java.lang.System.getProperty('java.class.path')
-  #rescue => e
-  #end
-  #unless jruby_cpath
-    jruby_cpath = ENV['JRUBY_PARENT_CLASSPATH'] || ENV['JRUBY_HOME'] &&
-      FileList["#{ENV['JRUBY_HOME']}/lib/*.jar"].join(File::PATH_SEPARATOR)
-  #end
-  jruby_cpath ? "-cp #{jruby_cpath}" : ""
+desc 'Compile the Java extension'
+task :compile do
+  begin
+    # gem 'buildr', '1.3.1.1'
+    # require 'buildr'
+    # FIXME: this is throwing rspec activation errors
+    sh %{jruby -S buildr package}
+    cp 'ext-java/target/do_derby-ext-java-1.0.jar','lib/do_derby-ext-java.jar'
+  rescue LoadError
+    puts "#{spec.name} requires the buildr gem to compile the Java extension"
+  end
 end
-
-desc "Compile the native Java code."
-task :java_compile do
-  pkg_classes = File.join(*%w(pkg classes))
-  jar_name = File.join(*%w(lib do_jdbc_internal.jar))
-  mkdir_p pkg_classes
-  sh "javac -target 1.5 -source 1.5 -d pkg/classes #{java_classpath_arg} #{FileList['src/java/**/*.java'].join(' ')}"
-  sh "jar cf #{jar_name} -C #{pkg_classes} ."
-end
-file "lib/do_jdbc_internal.jar" => :java_compile
+file "lib/do_jdbc_internal.jar" => :compile
 
 task :filelist do
   puts FileList['pkg/**/*'].inspect
@@ -68,8 +60,4 @@ desc "Run specifications"
 Spec::Rake::SpecTask.new('spec') do |t|
   t.spec_opts = ["--format", "specdoc", "--colour"]
   t.spec_files = Dir["spec/**/*_spec.rb"].sort
-  #unless ENV['NO_RCOV']
-  #  t.rcov = true
-  #  t.rcov_opts = ['--exclude', 'spec,environment.rb']
-  #end
 end
