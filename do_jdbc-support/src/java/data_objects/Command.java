@@ -25,7 +25,6 @@ import org.jruby.runtime.ObjectAllocator;
 import org.jruby.runtime.builtin.IRubyObject;
 
 import static data_objects.DataObjects.DATA_OBJECTS_MODULE_NAME;
-import static data_objects.DataObjects.JDBC_MODULE_NAME;
 
 /**
  * Command Class
@@ -38,6 +37,8 @@ public class Command extends RubyObject {
     public final static String RUBY_CLASS_NAME = "Command";
     private static RubyObjectAdapter api;
     private static DriverDefinition driver;
+    private static String moduleName;
+    private static String errorName;
 
     private final static ObjectAllocator COMMAND_ALLOCATOR = new ObjectAllocator() {
         public IRubyObject allocate(Ruby runtime, RubyClass klass) {
@@ -46,18 +47,21 @@ public class Command extends RubyObject {
         }
     };
 
-    public static RubyClass createCommandClass(Ruby runtime, RubyModule jdbcModule,
+    public static RubyClass createCommandClass(final Ruby runtime,
+            final String moduleName, final String errorName,
             final DriverDefinition driverDefinition) {
         RubyModule doModule = runtime.getModule(DATA_OBJECTS_MODULE_NAME);
         RubyModule quotingModule = (RubyModule) doModule.getConstant("Quoting");
         RubyClass superClass = doModule.getClass(RUBY_CLASS_NAME);
+        RubyModule driverModule = (RubyModule) doModule.getConstant(moduleName);
         RubyClass commandClass = runtime.defineClassUnder("Command",
-                superClass, COMMAND_ALLOCATOR, jdbcModule);
-
+                superClass, COMMAND_ALLOCATOR, driverModule);
+        Command.api = JavaEmbedUtils.newObjectAdapter();
+        Command.driver = driverDefinition;
+        Command.moduleName = moduleName;
+        Command.errorName = errorName;
         commandClass.includeModule(quotingModule);
         commandClass.defineAnnotatedMethods(Command.class);
-        api = JavaEmbedUtils.newObjectAdapter();
-        driver = driverDefinition;
         return commandClass;
     }
 
@@ -72,12 +76,12 @@ public class Command extends RubyObject {
     @JRubyMethod(optional = 1)
     public static IRubyObject execute_non_query(IRubyObject recv, IRubyObject[] args) {
         Ruby runtime = recv.getRuntime();
-        RubyModule jdbcModule = runtime.getModule(DATA_OBJECTS_MODULE_NAME).defineModuleUnder(JDBC_MODULE_NAME);
+        RubyModule jdbcModule = runtime.getModule(DATA_OBJECTS_MODULE_NAME).defineModuleUnder(moduleName);
 
         IRubyObject connection = api.getInstanceVariable(recv, "@connection");
         IRubyObject url = api.getInstanceVariable(connection, "@uri");
         IRubyObject wrappedJdbcConnection = api.getInstanceVariable(connection, "@connection");
-        RubyClass resultClass = Result.createResultClass(runtime, jdbcModule, driver);
+        RubyClass resultClass = Result.createResultClass(runtime, moduleName, errorName, driver);
 
         String querySql = buildQueryFromArgs(recv, args);
 
@@ -125,7 +129,7 @@ public class Command extends RubyObject {
             sqlStatement = null;
         } catch (SQLException sqle) {
             // TODO: log sqle.printStackTrace();
-            throw DataObjectsUtils.newJdbcError(runtime, sqle.getLocalizedMessage());
+            throw DataObjectsUtils.newDriverError(runtime, errorName, sqle.getLocalizedMessage());
         } finally {
             if (sqlStatement != null) {
                 try {
@@ -152,12 +156,12 @@ public class Command extends RubyObject {
     @JRubyMethod(optional = 1)
     public static IRubyObject execute_reader(IRubyObject recv, IRubyObject[] args) {
         Ruby runtime = recv.getRuntime();
-        RubyModule jdbcModule = runtime.getModule(DATA_OBJECTS_MODULE_NAME).defineModuleUnder(JDBC_MODULE_NAME);
+        RubyModule jdbcModule = runtime.getModule(DATA_OBJECTS_MODULE_NAME).defineModuleUnder(moduleName);
 
         IRubyObject connection = api.getInstanceVariable(recv, "@connection");
         IRubyObject wrappedJdbcConnection = api.getInstanceVariable(connection, "@connection");
 
-        RubyClass readerClass = Reader.createReaderClass(runtime, jdbcModule, driver);
+        RubyClass readerClass = Reader.createReaderClass(runtime, moduleName, errorName, driver);
         // escape all parameters given and pass them to query
         String querySql = buildQueryFromArgs(recv, args);
 
@@ -217,7 +221,7 @@ public class Command extends RubyObject {
                     // Wrong number of fields passed to set_types. Close the reader
                     // and raise an error.
                     api.callMethod(reader, "close");
-                    throw DataObjectsUtils.newJdbcError(runtime,
+                    throw DataObjectsUtils.newDriverError(runtime, errorName,
                             String.format("Field-count mismatch. Expected %1$d fields, but the query yielded %2$d",
                             fieldTypesCount,
                             columnCount));
@@ -244,7 +248,7 @@ public class Command extends RubyObject {
             sqlStatement = null;
         } catch (SQLException sqle) {
             // TODO: log sqle.printStackTrace();
-            throw DataObjectsUtils.newJdbcError(runtime, sqle.getLocalizedMessage());
+            throw DataObjectsUtils.newDriverError(runtime, errorName, sqle.getLocalizedMessage());
         } finally {
             if (resultSet != null) {
                 try {
@@ -315,8 +319,13 @@ public class Command extends RubyObject {
      * @param logMessage
      */
     public static void debug(Ruby runtime, String logMessage) {
-        RubyModule jdbcModule = runtime.getModule(DATA_OBJECTS_MODULE_NAME).defineModuleUnder(JDBC_MODULE_NAME);
-        IRubyObject logger = jdbcModule.callMethod(runtime.getCurrentContext(), "logger");
+        if (runtime == null ) {
+            System.out.println ("RUNTIME IS NULL!");
+        }
+        IRubyObject derbyModule = runtime.getModule("DataObjects");
+        IRubyObject logger = derbyModule.callMethod(runtime.getCurrentContext(), "logger");
+
+        //IRubyObject logger = driverRubyModule.callMethod(runtime.getCurrentContext(), "logger");
         long level = logger.callMethod(runtime.getCurrentContext(), "level").convertToInteger().getLongValue();
         // FIXME: ^^ this doesn't seem like the right way of doing this
 

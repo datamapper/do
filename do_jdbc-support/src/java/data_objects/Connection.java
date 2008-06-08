@@ -36,6 +36,8 @@ public class Connection extends RubyObject {
     public final static String RUBY_CLASS_NAME = "Connection";
     private static RubyObjectAdapter api;
     private static DriverDefinition driver;
+    private static String moduleName;
+    private static String errorName;
 
     private final static ObjectAllocator CONNECTION_ALLOCATOR = new ObjectAllocator() {
 
@@ -45,17 +47,21 @@ public class Connection extends RubyObject {
         }
     };
 
-    public static RubyClass createConnectionClass(Ruby runtime, RubyModule jdbcModule,
+
+    public static RubyClass createConnectionClass(final Ruby runtime,
+            final String moduleName, final String errorName,
             final DriverDefinition driverDefinition) {
         RubyModule doModule = runtime.getModule(DATA_OBJECTS_MODULE_NAME);
         RubyClass superClass = doModule.getClass(RUBY_CLASS_NAME);
+        RubyModule driverModule = (RubyModule) doModule.getConstant(moduleName);
         RubyClass connectionClass =
-                jdbcModule.defineClassUnder(RUBY_CLASS_NAME,
+                driverModule.defineClassUnder(RUBY_CLASS_NAME,
                 superClass, CONNECTION_ALLOCATOR);
-
+        Connection.api = JavaEmbedUtils.newObjectAdapter();
+        Connection.driver = driverDefinition;
+        Connection.moduleName = moduleName;
+        Connection.errorName = errorName;
         connectionClass.defineAnnotatedMethods(Connection.class);
-        api = JavaEmbedUtils.newObjectAdapter();
-        driver = driverDefinition;
         return connectionClass;
     }
 

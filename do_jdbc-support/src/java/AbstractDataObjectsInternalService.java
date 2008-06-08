@@ -14,53 +14,44 @@ import org.jruby.runtime.load.BasicLibraryService;
 import static data_objects.DataObjects.DATA_OBJECTS_MODULE_NAME;
 
 /**
- *
- * thanks to Ola Bini's
- * http://ola-bini.blogspot.com/2006/10/jruby-tutorial-4-writing-java.html
+ * AbstractDataObjectsInternalService
  *
  * @author alexbcoles
  */
 public abstract class AbstractDataObjectsInternalService implements BasicLibraryService {
 
-    public static RubyModule doModule;
-    public static RubyModule doDriverModule;
+    public boolean basicLoad(final Ruby runtime) throws IOException {
 
-    private static RubyClass connection;
-    private static RubyClass command;
-    private static RubyClass result;
-    private static RubyClass reader;
-    private static RubyClass transaction;
-
-    public boolean basicLoad(Ruby runtime) throws IOException {
+        final String moduleName = getModuleName();
+        final String errorName = getErrorName();
+        final DriverDefinition driverDefinition = getDriverDefinition();
 
         // Get the DataObjects module
-        doModule = runtime.getModule(DATA_OBJECTS_MODULE_NAME);
+        RubyModule doModule = runtime.getModule(DATA_OBJECTS_MODULE_NAME);
 
         // Define the DataObjects module for this Driver
         // e.g. DataObjects::Derby, DataObjects::MySql
-        doDriverModule = doModule.defineModuleUnder(getModuleName());
-        
-        // Define a JdbcError
+        RubyModule doDriverModule = doModule.defineModuleUnder(errorName);
+
+        // Define a driver Error class
         runtime.defineClass(getErrorName(), runtime.getStandardError(), runtime.getStandardError().getAllocator());
 
         // Define the DataObjects driver classes
-        DriverDefinition driverDefinition = getDriverDefinition();
-        
-        command = Command.createCommandClass(runtime, doDriverModule, driverDefinition);
-        connection = Connection.createConnectionClass(runtime, doDriverModule, driverDefinition);
-        result = Result.createResultClass(runtime, doDriverModule, driverDefinition);
-        reader = Reader.createReaderClass(runtime, doDriverModule, driverDefinition);
-        transaction = Transaction.createTransactionClass(runtime, doDriverModule, driverDefinition);
+        RubyClass command = Command.createCommandClass(runtime, moduleName, errorName, driverDefinition);
+        RubyClass connection = Connection.createConnectionClass(runtime, moduleName, errorName, driverDefinition);
+        RubyClass result = Result.createResultClass(runtime, moduleName, errorName, driverDefinition);
+        RubyClass reader = Reader.createReaderClass(runtime, moduleName, errorName, driverDefinition);
+        RubyClass transaction = Transaction.createTransactionClass(runtime, moduleName, errorName, driverDefinition);
 
         return true;
     }
 
     public abstract String getModuleName();
-    
+
     public String getErrorName() {
-       return getModuleName() + "Error"; 
+       return getModuleName() + "Error";
     }
-    
+
     public abstract DriverDefinition getDriverDefinition();
-    
+
 }
