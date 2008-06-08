@@ -1,5 +1,6 @@
 package data_objects;
 
+import data_objects.drivers.DriverDefinition;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.logging.Level;
@@ -26,8 +27,12 @@ import static data_objects.DataObjects.DATA_OBJECTS_MODULE_NAME;
 @JRubyClass(name = "Reader")
 public class Reader extends RubyObject {
 
-    private static RubyObjectAdapter api;
     public final static String RUBY_CLASS_NAME = "Reader";
+    private static RubyObjectAdapter api;
+    private static DriverDefinition driver;
+    private static String moduleName;
+    private static String errorName;
+
     private final static ObjectAllocator READER_ALLOCATOR = new ObjectAllocator() {
 
         public IRubyObject allocate(Ruby runtime, RubyClass klass) {
@@ -36,13 +41,19 @@ public class Reader extends RubyObject {
         }
     };
 
-    public static RubyClass createReaderClass(Ruby runtime, RubyModule jdbcModule) {
+    public static RubyClass createReaderClass(final Ruby runtime,
+            final String moduleName, final String errorName,
+            final DriverDefinition driverDefinition) {
         RubyModule doModule = runtime.getModule(DATA_OBJECTS_MODULE_NAME);
         RubyClass superClass = doModule.getClass(RUBY_CLASS_NAME);
-        RubyClass readerClass = jdbcModule.defineClassUnder(RUBY_CLASS_NAME,
+        RubyModule driverModule = (RubyModule) doModule.getConstant(moduleName);
+        RubyClass readerClass = driverModule.defineClassUnder(RUBY_CLASS_NAME,
                 superClass, READER_ALLOCATOR);
         readerClass.defineAnnotatedMethods(Reader.class);
-        api = JavaEmbedUtils.newObjectAdapter();
+        Reader.api = JavaEmbedUtils.newObjectAdapter();
+        Reader.driver = driverDefinition;
+        Reader.moduleName = moduleName;
+        Reader.errorName = errorName;
         return readerClass;
     }
 
@@ -125,7 +136,7 @@ public class Reader extends RubyObject {
         IRubyObject state = api.getInstanceVariable(recv, "@state");
 
         if (state.isNil() || !state.isTrue()) {
-            throw DataObjectsUtils.newJdbcError(runtime, "Reader is not initialized");
+            throw DataObjectsUtils.newDriverError(runtime, errorName, "Reader is not initialized");
         }
         IRubyObject values = api.getInstanceVariable(recv, "@values");
         return values;

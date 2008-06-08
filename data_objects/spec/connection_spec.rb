@@ -44,7 +44,7 @@ describe DataObjects::Connection do
   end
 
   describe "initialization" do
-    it "should accept a connection uri as a String" do
+    it "should accept a regular connection uri as a String" do
       c = DataObjects::Connection.new('mock://localhost/database')
       # relying on the fact that mock connection sets @uri
       uri = c.instance_variable_get("@uri")
@@ -67,6 +67,11 @@ describe DataObjects::Connection do
     it "should determine which DataObject adapter from the uri scheme" do
       DataObjects::Mock::Connection.should_receive(:acquire)
       DataObjects::Connection.new('mock://localhost/database')
+    end
+
+    it "should determine which DataObject adapter from a JDBC URL scheme" do
+      DataObjects::Mock::Connection.should_receive(:acquire)
+      DataObjects::Connection.new('jdbc:mock://localhost/database')
     end
 
     it "should aquire a connection" do

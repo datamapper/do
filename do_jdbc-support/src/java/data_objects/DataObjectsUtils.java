@@ -22,8 +22,9 @@ public class DataObjectsUtils {
      * @param message
      * @return
      */
-    public static RaiseException newJdbcError(Ruby runtime, String message) {
-        RubyClass jdbcError = runtime.getClass("JdbcError");
+    public static RaiseException newDriverError(Ruby runtime, String errorName,
+            String message) {
+        RubyClass jdbcError = runtime.getClass(errorName);
         return new RaiseException(runtime, jdbcError, message, true);
     }
 
