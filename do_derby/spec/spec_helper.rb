@@ -51,7 +51,7 @@ module DerbySpecHelpers
 
 
   def setup_test_environment
-    @connection = DataObjects::Connection.new("jdbc:hsqldb:mem")
+    @connection = DataObjects::Connection.new("jdbc:derby:testdb;create=true")
 
     @connection.create_command(<<-EOF).execute_non_query
       DROP TABLE IF EXISTS invoices

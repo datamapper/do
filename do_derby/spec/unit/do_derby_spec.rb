@@ -16,7 +16,7 @@ describe "DataObjects::Derby" do
       DataObjects::Derby::const_get('NotDoJdbcClass')
     }.should raise_error(NameError)
 
-    DataObjects::Derby::const_get('JdbcError').should_not be_nil
+    DataObjects::Derby::const_get('DerbyError').should_not be_nil
 
     DataObjects::Derby::const_get('Command').should_not be_nil
     DataObjects::Derby::const_get('Connection').should_not be_nil

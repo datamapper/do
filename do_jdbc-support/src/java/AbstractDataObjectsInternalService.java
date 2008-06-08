@@ -41,7 +41,7 @@ public abstract class AbstractDataObjectsInternalService implements BasicLibrary
         doDriverModule = doModule.defineModuleUnder(getModuleName());
         
         // Define a JdbcError
-        runtime.defineClass("JdbcError", runtime.getStandardError(), runtime.getStandardError().getAllocator());
+        runtime.defineClass(getErrorName(), runtime.getStandardError(), runtime.getStandardError().getAllocator());
 
         // Define the DataObjects driver classes
         DriverDefinition driverDefinition = getDriverDefinition();
@@ -56,6 +56,10 @@ public abstract class AbstractDataObjectsInternalService implements BasicLibrary
     }
 
     public abstract String getModuleName();
+    
+    public String getErrorName() {
+       return getModuleName() + "Error"; 
+    }
     
     public abstract DriverDefinition getDriverDefinition();
     
