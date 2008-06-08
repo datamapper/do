@@ -53,57 +53,70 @@ module DerbySpecHelpers
   def setup_test_environment
     @connection = DataObjects::Connection.new("jdbc:derby:testdb;create=true")
 
-    @connection.create_command(<<-EOF).execute_non_query
-      DROP TABLE IF EXISTS invoices
-    EOF
+    # Derby does not support DROP TABLE IF EXISTS
+    begin
+        @connection.create_command(<<-EOF).execute_non_query
+          DROP TABLE invoices
+        EOF
+    rescue DerbyError
+    end
 
-    @connection.create_command(<<-EOF).execute_non_query
-      DROP TABLE IF EXISTS users
-    EOF
+    begin
+        @connection.create_command(<<-EOF).execute_non_query
+            DROP TABLE users
+        EOF
+    rescue DerbyError
+    end
 
-    @connection.create_command(<<-EOF).execute_non_query
-      DROP TABLE IF EXISTS widgets
-    EOF
+    begin
+        @connection.create_command(<<-EOF).execute_non_query
+          DROP TABLE widgets
+        EOF
+    rescue DerbyError
+    end
 
     @connection.create_command(<<-EOF).execute_non_query
       CREATE TABLE users (
-        id                INTEGER IDENTITY,
-        name              VARCHAR(200) default 'Billy' NULL,
+        id                INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+        name              VARCHAR(200) default 'Billy',
         fired_at          TIMESTAMP
       )
     EOF
 
     @connection.create_command(<<-EOF).execute_non_query
       CREATE TABLE invoices (
-        id                INTEGER IDENTITY,
+        id                INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
         invoice_number    VARCHAR(50) NOT NULL
       )
     EOF
 
     @connection.create_command(<<-EOF).execute_non_query
       CREATE TABLE widgets (
-        id                INTEGER IDENTITY,
-        code              CHAR(8) DEFAULT 'A14' NULL,
-        name              VARCHAR(200) DEFAULT 'Super Widget' NULL,
-        shelf_location    VARCHAR NULL,
-        description       LONGVARCHAR NULL,
-        image_data        VARBINARY NULL,
-        ad_description    LONGVARCHAR NULL,
-        ad_image          VARBINARY NULL,
-        whitepaper_text   LONGVARCHAR NULL,
-        cad_drawing       LONGVARBINARY NULL,
-        flags             TINYINT DEFAULT 0,
+        id                INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+        code              CHAR(8) DEFAULT 'A14',
+        name              VARCHAR(200) DEFAULT 'Super Widget',
+        shelf_location    VARCHAR(50),
+        description       LONG VARCHAR,
+        image_data        BLOB,
+        ad_description    LONG VARCHAR,
+        ad_image          BLOB,
+        whitepaper_text   LONG VARCHAR,
+        cad_drawing       BLOB,
+        flags             SMALLINT DEFAULT 0,
         number_in_stock   SMALLINT DEFAULT 500,
         number_sold       INTEGER DEFAULT 0,
-        super_number      BIGINT DEFAULT 9223372036854775807,
-        weight            FLOAT DEFAULT 1.23,
-        cost1             REAL DEFAULT 10.23,
-        cost2             DECIMAL DEFAULT 50.23,
-        release_date      DATE DEFAULT '2008-02-14',
-        release_datetime  DATETIME DEFAULT '2008-02-14 00:31:12',
-        release_timestamp TIMESTAMP DEFAULT '2008-02-14 00:31:31'
+        super_number      BIGINT DEFAULT 9223372036854775807
       )
     EOF
+    
+    # REMOVED:
+    # weight            FLOAT DEFAULT 1.23,
+    # cost1             REAL DEFAULT 10.23,
+    # cost2             DECIMAL DEFAULT 50.23,
+    # release_date      DATE DEFAULT '2008-02-14',
+    # release_datetime  DATETIME, DEFAULT '2008-02-14 00:31:12',
+    # release_timestamp TIMESTAMP, DEFAULT '2008-02-14 00:31:31'
+    #
     # XXX: HSQLDB has no ENUM
     # status` enum('active','out of stock') NOT NULL default 'active'
 
@@ -114,26 +127,24 @@ module DerbySpecHelpers
           name,
           shelf_location,
           description,
-          image_data,
           ad_description,
-          ad_image,
           whitepaper_text,
-          cad_drawing,
           super_number)
         VALUES (
           'W#{n.to_s.rjust(7,"0")}',
           'Widget #{n}',
           'A14',
           'This is a description',
-          '4f3d4331434343434331',
           'Buy this product now!',
-          '4f3d4331434343434331',
           'Utilizing blah blah blah',
-          '4f3d4331434343434331',
-          1234);
+          1234)
       EOF
 
-      ## TODO: change the hexadecimal examples
+      # Removed
+      #           image_data,
+      #           ad_image,
+      #           cad_drawing,
+      # XXX: figure out how to insert BLOBS
     end
 
   end

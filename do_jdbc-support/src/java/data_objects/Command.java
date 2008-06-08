@@ -12,6 +12,7 @@ import org.jruby.Ruby;
 import org.jruby.RubyArray;
 import org.jruby.RubyClass;
 import org.jruby.RubyModule;
+import org.jruby.RubyNumeric;
 import org.jruby.RubyObject;
 import org.jruby.RubyObjectAdapter;
 import org.jruby.RubyString;
@@ -319,15 +320,9 @@ public class Command extends RubyObject {
      * @param logMessage
      */
     public static void debug(Ruby runtime, String logMessage) {
-        if (runtime == null ) {
-            System.out.println ("RUNTIME IS NULL!");
-        }
-        IRubyObject derbyModule = runtime.getModule("DataObjects");
-        IRubyObject logger = derbyModule.callMethod(runtime.getCurrentContext(), "logger");
-
-        //IRubyObject logger = driverRubyModule.callMethod(runtime.getCurrentContext(), "logger");
-        long level = logger.callMethod(runtime.getCurrentContext(), "level").convertToInteger().getLongValue();
-        // FIXME: ^^ this doesn't seem like the right way of doing this
+        RubyModule driverModule = (RubyModule) runtime.getModule(DATA_OBJECTS_MODULE_NAME).getConstant(moduleName);
+        IRubyObject logger = api.callMethod(driverModule, "logger");
+        int level = RubyNumeric.fix2int(logger.callMethod(runtime.getCurrentContext(), "level"));
 
         if (0 == level) {
             logger.callMethod(runtime.getCurrentContext(), "debug", runtime.newString(logMessage));
