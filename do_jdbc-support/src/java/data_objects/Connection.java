@@ -1,5 +1,6 @@
 package data_objects;
 
+import data_objects.drivers.DriverDefinition;
 import java.io.UnsupportedEncodingException;
 import java.net.URISyntaxException;
 import java.sql.DriverManager;
@@ -34,7 +35,8 @@ public class Connection extends RubyObject {
 
     public final static String RUBY_CLASS_NAME = "Connection";
     private static RubyObjectAdapter api;
-    private java.sql.Connection conn;
+    private static DriverDefinition driver;
+
     private final static ObjectAllocator CONNECTION_ALLOCATOR = new ObjectAllocator() {
 
         public IRubyObject allocate(Ruby runtime, RubyClass klass) {
@@ -43,7 +45,8 @@ public class Connection extends RubyObject {
         }
     };
 
-    public static RubyClass createConnectionClass(Ruby runtime, RubyModule jdbcModule) {
+    public static RubyClass createConnectionClass(Ruby runtime, RubyModule jdbcModule,
+            final DriverDefinition driverDefinition) {
         RubyModule doModule = runtime.getModule(DATA_OBJECTS_MODULE_NAME);
         RubyClass superClass = doModule.getClass(RUBY_CLASS_NAME);
         RubyClass connectionClass =
@@ -52,6 +55,7 @@ public class Connection extends RubyObject {
 
         connectionClass.defineAnnotatedMethods(Connection.class);
         api = JavaEmbedUtils.newObjectAdapter();
+        driver = driverDefinition;
         return connectionClass;
     }
 

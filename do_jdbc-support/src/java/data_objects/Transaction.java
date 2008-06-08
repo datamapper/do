@@ -1,5 +1,6 @@
 package data_objects;
 
+import data_objects.drivers.DriverDefinition;
 import org.jruby.Ruby;
 import org.jruby.RubyClass;
 import org.jruby.RubyModule;
@@ -18,6 +19,8 @@ import static data_objects.DataObjects.DATA_OBJECTS_MODULE_NAME;
 public class Transaction extends RubyObject {
 
     public final static String RUBY_CLASS_NAME = "Transaction";
+    private static DriverDefinition driver;
+    
     private final static ObjectAllocator TRANSACTION_ALLOCATOR = new ObjectAllocator() {
 
         public IRubyObject allocate(Ruby runtime, RubyClass klass) {
@@ -26,13 +29,15 @@ public class Transaction extends RubyObject {
         }
     };
 
-    public static RubyClass createTransactionClass(Ruby runtime, RubyModule jdbcModule) {
+    public static RubyClass createTransactionClass(Ruby runtime, RubyModule jdbcModule,
+            final DriverDefinition driverDefinition) {
         RubyModule doModule = runtime.getModule(DATA_OBJECTS_MODULE_NAME);
         RubyClass superClass = doModule.getClass(RUBY_CLASS_NAME);
         RubyClass transactionClass = runtime.defineClassUnder("Transaction",
                 superClass, TRANSACTION_ALLOCATOR, jdbcModule);
 
         transactionClass.defineAnnotatedMethods(Transaction.class);
+        driver = driverDefinition;
         return transactionClass;
     }
 

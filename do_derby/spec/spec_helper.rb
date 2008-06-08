@@ -21,10 +21,6 @@ require 'do_jdbc-support'
 $:.unshift File.expand_path(File.join(File.dirname(__FILE__), '..', 'lib'))
 require 'do_derby'
 
-# Load the Derby Driver
-# include Java
-# import 'org.hsqldb.jdbcDriver'
-
 Spec::Runner.configure do |config|
   # Use Mocha rather than RSpec Mocks
   config.mock_with :mocha

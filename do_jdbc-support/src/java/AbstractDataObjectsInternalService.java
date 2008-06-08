@@ -39,16 +39,18 @@ public abstract class AbstractDataObjectsInternalService implements BasicLibrary
         // Define the DataObjects module for this Driver
         // e.g. DataObjects::Derby, DataObjects::MySql
         doDriverModule = doModule.defineModuleUnder(getModuleName());
-
+        
         // Define a JdbcError
         runtime.defineClass("JdbcError", runtime.getStandardError(), runtime.getStandardError().getAllocator());
 
         // Define the DataObjects driver classes
-        command = Command.createCommandClass(runtime, doDriverModule);
-        connection = Connection.createConnectionClass(runtime, doDriverModule);
-        result = Result.createResultClass(runtime, doDriverModule);
-        reader = Reader.createReaderClass(runtime, doDriverModule);
-        transaction = Transaction.createTransactionClass(runtime, doDriverModule);
+        DriverDefinition driverDefinition = getDriverDefinition();
+        
+        command = Command.createCommandClass(runtime, doDriverModule, driverDefinition);
+        connection = Connection.createConnectionClass(runtime, doDriverModule, driverDefinition);
+        result = Result.createResultClass(runtime, doDriverModule, driverDefinition);
+        reader = Reader.createReaderClass(runtime, doDriverModule, driverDefinition);
+        transaction = Transaction.createTransactionClass(runtime, doDriverModule, driverDefinition);
 
         return true;
     }

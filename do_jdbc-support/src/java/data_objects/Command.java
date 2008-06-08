@@ -37,6 +37,7 @@ public class Command extends RubyObject {
 
     public final static String RUBY_CLASS_NAME = "Command";
     private static RubyObjectAdapter api;
+    private static DriverDefinition driver;
 
     private final static ObjectAllocator COMMAND_ALLOCATOR = new ObjectAllocator() {
         public IRubyObject allocate(Ruby runtime, RubyClass klass) {
@@ -45,7 +46,8 @@ public class Command extends RubyObject {
         }
     };
 
-    public static RubyClass createCommandClass(Ruby runtime, RubyModule jdbcModule) {
+    public static RubyClass createCommandClass(Ruby runtime, RubyModule jdbcModule,
+            final DriverDefinition driverDefinition) {
         RubyModule doModule = runtime.getModule(DATA_OBJECTS_MODULE_NAME);
         RubyModule quotingModule = (RubyModule) doModule.getConstant("Quoting");
         RubyClass superClass = doModule.getClass(RUBY_CLASS_NAME);
@@ -55,6 +57,7 @@ public class Command extends RubyObject {
         commandClass.includeModule(quotingModule);
         commandClass.defineAnnotatedMethods(Command.class);
         api = JavaEmbedUtils.newObjectAdapter();
+        driver = driverDefinition;
         return commandClass;
     }
 
@@ -74,7 +77,7 @@ public class Command extends RubyObject {
         IRubyObject connection = api.getInstanceVariable(recv, "@connection");
         IRubyObject url = api.getInstanceVariable(connection, "@uri");
         IRubyObject wrappedJdbcConnection = api.getInstanceVariable(connection, "@connection");
-        RubyClass resultClass = Result.createResultClass(runtime, jdbcModule);
+        RubyClass resultClass = Result.createResultClass(runtime, jdbcModule, driver);
 
         String querySql = buildQueryFromArgs(recv, args);
 
@@ -154,7 +157,7 @@ public class Command extends RubyObject {
         IRubyObject connection = api.getInstanceVariable(recv, "@connection");
         IRubyObject wrappedJdbcConnection = api.getInstanceVariable(connection, "@connection");
 
-        RubyClass readerClass = Reader.createReaderClass(runtime, jdbcModule);
+        RubyClass readerClass = Reader.createReaderClass(runtime, jdbcModule, driver);
         // escape all parameters given and pass them to query
         String querySql = buildQueryFromArgs(recv, args);
 

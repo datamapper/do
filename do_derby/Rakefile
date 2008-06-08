@@ -41,12 +41,12 @@ task :compile do
     # require 'buildr'
     # FIXME: this is throwing rspec activation errors
     sh %{jruby -S buildr package}
-    cp 'ext-java/target/do_derby-ext-java-1.0.jar','lib/do_derby-ext-java.jar'
+    cp 'ext-java/target/do_derby-ext-java-1.0.jar','lib/do_derby_ext.jar'
   rescue LoadError
     puts "#{spec.name} requires the buildr gem to compile the Java extension"
   end
 end
-file "lib/do_jdbc_internal.jar" => :compile
+file 'lib/do_derby_ext' => :compile
 
 task :filelist do
   puts FileList['pkg/**/*'].inspect

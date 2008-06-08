@@ -31,7 +31,7 @@ Rake::GemPackageTask.new(spec) do |pkg|
   pkg.gem_spec = spec
 end
 
-task :default => [ :java_compile, :spec ]
+task :default => [ :java_compile ]
 
 def java_classpath_arg # myriad of ways to discover JRuby classpath
   #begin
@@ -61,14 +61,4 @@ end
 
 task :install => [ :package ] do
   sh %{jruby -S gem install pkg/#{spec.name}-#{spec.version} --no-update-sources}, :verbose => false
-end
-
-desc "Run specifications"
-Spec::Rake::SpecTask.new('spec') do |t|
-  t.spec_opts = ["--format", "specdoc", "--colour"]
-  t.spec_files = Dir["spec/**/*_spec.rb"].sort
-  #unless ENV['NO_RCOV']
-  #  t.rcov = true
-  #  t.rcov_opts = ['--exclude', 'spec,environment.rb']
-  #end
 end

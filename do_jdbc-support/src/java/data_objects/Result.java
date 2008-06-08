@@ -1,5 +1,6 @@
 package data_objects;
 
+import data_objects.drivers.DriverDefinition;
 import org.jruby.Ruby;
 import org.jruby.RubyClass;
 import org.jruby.RubyModule;
@@ -19,6 +20,8 @@ import static data_objects.DataObjects.DATA_OBJECTS_MODULE_NAME;
 public class Result extends RubyObject {
 
     public final static String RUBY_CLASS_NAME = "Result";
+    private static DriverDefinition driver;
+    
     private final static ObjectAllocator RESULT_ALLOCATOR = new ObjectAllocator() {
 
         public IRubyObject allocate(Ruby runtime, RubyClass klass) {
@@ -27,12 +30,14 @@ public class Result extends RubyObject {
         }
     };
 
-    public static RubyClass createResultClass(Ruby runtime, RubyModule jdbcModule) {
+    public static RubyClass createResultClass(Ruby runtime, RubyModule jdbcModule,
+            DriverDefinition driverDefinition) {
         RubyModule doModule = runtime.getModule(DATA_OBJECTS_MODULE_NAME);
         RubyClass superClass = doModule.getClass(RUBY_CLASS_NAME);
         RubyClass resultClass = jdbcModule.defineClassUnder(RUBY_CLASS_NAME,
                 superClass, RESULT_ALLOCATOR);
         resultClass.defineAnnotatedMethods(Result.class);
+        driver = driverDefinition;
         return resultClass;
     }
 

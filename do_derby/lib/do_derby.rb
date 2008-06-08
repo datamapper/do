@@ -1,13 +1,17 @@
 require 'rubygems'
 require 'data_objects'
 
-DERBY_VERSION = '10.4.1.3'
+module DataObjects
+  module Derby
+    JDBC_DRIVER_VERSION = '10.4.1.3'
+  end
+end
 
 if RUBY_PLATFORM =~ /java/
   require 'do_jdbc-support'
-  require 'do_derby-ext-java'
+  require 'do_derby_ext'
   require 'java'
-  require "derby-#{DERBY_VERSION}.jar"
+  require "derby-#{DataObjects::Derby::JDBC_DRIVER_VERSION}.jar"
 else
   warn "do-derby is only for use with JRuby"
 end
