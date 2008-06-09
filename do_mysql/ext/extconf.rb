@@ -1,3 +1,10 @@
+if RUBY_PLATFORM =~ /darwin/
+  ENV["RC_ARCHS"] = `uname -m`.chomp if `uname -sr` =~ /^Darwin/
+
+  # On PowerPC the defaults are fine
+  ENV["RC_ARCHS"] = '' if `uname -m` =~ /^Power Macintosh/
+end
+
 require 'mkmf'
 
 # All instances of mysql_config on PATH ...

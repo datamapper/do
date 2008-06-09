@@ -158,7 +158,7 @@ static VALUE parse_date(const char *date) {
 	return rb_funcall(rb_cDate, ID_NEW_DATE, 3, rational, INT2NUM(0), INT2NUM(2299161));
 }
 
-static VALUE parse_time(char *date) {
+static VALUE parse_time(const char *date) {
 
 	int year, month, day, hour, min, sec, usec;
 	char subsec[7];
