@@ -12,7 +12,7 @@ if RUBY_PLATFORM =~ /java/
   require 'do_derby_ext'
   require 'java'
   require "derby-#{DataObjects::Derby::JDBC_DRIVER_VERSION}.jar"
-  
+
   # Another way of loading the JDBC Class. This seems to be more relaible
   # than Class.forName() within the data_objects.Connection Java class,
   # which is currently not working as expected.

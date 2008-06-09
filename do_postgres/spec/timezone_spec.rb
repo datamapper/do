@@ -2,7 +2,7 @@ require File.expand_path(File.join(File.dirname(__FILE__), 'spec_helper'))
 
 describe "DataObjects::Postgres::Reader" do
   include PostgresSpecHelpers
-  
+
   before :all do
     @connection = ensure_users_table_and_return_connection
     Time.now.to_s.match(/\w{3} \w{3} \d{2} \d{2}:\d{2}:\d{2} ([-+]\d{2})(\d{2})/)
@@ -11,7 +11,7 @@ describe "DataObjects::Postgres::Reader" do
     @connection.create_command("INSERT INTO users (name) VALUES ('Test')").execute_non_query
     @connection.create_command("INSERT INTO users (name) VALUES ('Test')").execute_non_query
   end
-  
+
 
   it "should return DateTimes using the current locale's Time Zone for TIMESTAMP WITHOUT TIME ZONE fields" do
     date = DateTime.now
@@ -53,5 +53,5 @@ describe "DataObjects::Postgres::Reader" do
       exec("DELETE FROM users WHERE id = ?", id)
     end
   end
-  
+
 end

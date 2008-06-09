@@ -153,7 +153,7 @@ describe "DataObjects::Jdbc::Reader" do
     ]
 
     pending "ids not being returned using HSQLDB adapter"
-    
+
     select("SELECT * FROM users WHERE id IN ?", nil, ids) do |reader|
       # select already calls next once for us
       reader.next!.should == true

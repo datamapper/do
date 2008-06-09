@@ -108,7 +108,7 @@ module DerbySpecHelpers
         super_number      BIGINT DEFAULT 9223372036854775807
       )
     EOF
-    
+
     # REMOVED:
     # weight            FLOAT DEFAULT 1.23,
     # cost1             REAL DEFAULT 10.23,

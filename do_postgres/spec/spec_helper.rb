@@ -44,7 +44,7 @@ module PostgresSpecHelpers
       )
       WITH (OIDS=FALSE);
     EOF
-    
+
     connection.create_command(<<-EOF).execute_non_query
       CREATE TABLE companies (
         id serial NOT NULL,
