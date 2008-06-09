@@ -3,6 +3,7 @@
 #include <string.h>
 #include <math.h>
 #include <time.h>
+#include <locale.h>
 #include <libpq-fe.h>
 #include "type-oids.h"
 
@@ -121,6 +122,9 @@ static VALUE parse_date_time(const char *date) {
 	int jd;
 	do_int64 num, den;
 	
+    long int gmt_offset;
+    int is_dst;
+	
 	time_t rawtime;
 	struct tm * timeinfo;
 
@@ -145,21 +149,25 @@ static VALUE parse_date_time(const char *date) {
 	} else if (tokens_read == 3) {
     return parse_date(date);
 	} else if (tokens_read >= (max_tokens - 3)) {
-		// We read the Date and Time, maybe the Sign, default to the current locale's offset
+		// We read the Date and Time, default to the current locale's offset
 		
 		// Get localtime
 		time(&rawtime);
-		timeinfo = localtime(&rawtime);
+        timeinfo = localtime(&rawtime);
 		
-		int offset = -timezone;
-		int is_dst = timeinfo->tm_isdst * 3600;
-		
-		offset += is_dst;
-			
-		// TODO: Refactor the following few lines to do the calculation with the *seconds*
-		// value instead of having to do the hour/minute math
-		hour_offset = offset / 3600;
-		minute_offset = offset % 3600 / 60;
+		is_dst = timeinfo->tm_isdst * 3600;
+        
+        // Reset to GM Time
+        timeinfo = gmtime(&rawtime);
+        
+        gmt_offset = mktime(timeinfo) - rawtime;
+        
+        if ( is_dst > 0 )
+            gmt_offset -= is_dst;
+        
+        hour_offset = -(gmt_offset / 3600);
+        minute_offset = -(gmt_offset % 3600 / 60);
+        
 	} else {
 		// Something went terribly wrong
 		rb_raise(ePostgresError, "Couldn't parse date: %s", date);
