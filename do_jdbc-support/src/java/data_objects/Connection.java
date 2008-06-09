@@ -73,7 +73,7 @@ public class Connection extends RubyObject {
     @JRubyMethod(required = 1)
     public static IRubyObject initialize(IRubyObject recv, IRubyObject uri) {
         Ruby runtime = recv.getRuntime();
-        String driver = null;
+        String jdbcDriver = null;
         java.net.URI connectionUri;
 
         try {
@@ -92,16 +92,16 @@ public class Connection extends RubyObject {
             //Logger.getLogger(Connection.class.getName()).log(Level.SEVERE, null, ex);
             }
 
-            driver = query.get("driver");
+            jdbcDriver = query.get("driver");
         //String protocol = query.get("protocol"); XXX : not sure of the point of this
         }
 
         // Load JDBC Driver Class
-        if (driver != null) {
+        if (jdbcDriver != null) {
             try {
-                Class.forName(driver).newInstance();
+                Class.forName(jdbcDriver).newInstance();
             } catch (ClassNotFoundException cfe) {
-                throw runtime.newArgumentError("Driver class library (" + driver + ") not found.");
+                throw runtime.newArgumentError("Driver class library (" + jdbcDriver + ") not found.");
             //Logger.getLogger(Connection.class.getName()).log(Level.SEVERE, null, cfe);
             } catch (InstantiationException ine) {
                 throw runtime.newArgumentError("Driver class library you specified could not be instantiated");
@@ -147,6 +147,7 @@ public class Connection extends RubyObject {
     }
 
     // -------------------------------------------------- PRIVATE HELPER METHODS
+
     private static IRubyObject wrappedConnection(IRubyObject recv, java.sql.Connection c) {
         return Java.java_to_ruby(recv, JavaObject.wrap(recv.getRuntime(), c), Block.NULL_BLOCK);
     }
@@ -164,19 +165,8 @@ public class Connection extends RubyObject {
      */
     private static java.net.URI parseConnectionUri(IRubyObject connectionUri)
             throws URISyntaxException {
-        ThreadContext context = connectionUri.getRuntime().getCurrentContext();
         java.net.URI uri;
-
-        String fullUri = connectionUri.callMethod(context, "to_s").toString();
-        //String protocol = uri.callMethod(context, "scheme").toString();
-        //String host = uri.callMethod(context, "host").toString();
-        //String port = uri.callMethod(context, "port").toString();
-        //String path = uri.callMethod(context, "path").toString();
-        //String user = uri.callMethod(context, "user").toString();
-        //String pass = uri.callMethod(context, "password").toString();
-        //String query = uri.callMethod(context, "query").toString();
-
-        // jdbc:
+        String fullUri = api.callMethod(connectionUri, "to_s").asJavaString();
         uri = new java.net.URI(fullUri);
         return uri;
     }
@@ -196,7 +186,7 @@ public class Connection extends RubyObject {
         Map<String, String> nameValuePairs = new HashMap<String, String>();
         StringTokenizer stz = new StringTokenizer(query, "&");
 
-        // Tokenize at & for name / value pairs
+        // Tokenize at and for name / value pairs
         while (stz.hasMoreTokens()) {
             String nameValueToken = stz.nextToken();
             // Split at = to split the pairs

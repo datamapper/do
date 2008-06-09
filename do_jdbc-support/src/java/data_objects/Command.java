@@ -77,30 +77,52 @@ public class Command extends RubyObject {
     @JRubyMethod(optional = 1)
     public static IRubyObject execute_non_query(IRubyObject recv, IRubyObject[] args) {
         Ruby runtime = recv.getRuntime();
-        RubyModule jdbcModule = runtime.getModule(DATA_OBJECTS_MODULE_NAME).defineModuleUnder(moduleName);
-
         IRubyObject connection = api.getInstanceVariable(recv, "@connection");
         IRubyObject url = api.getInstanceVariable(connection, "@uri");
         IRubyObject wrappedJdbcConnection = api.getInstanceVariable(connection, "@connection");
         RubyClass resultClass = Result.createResultClass(runtime, moduleName, errorName, driver);
 
+        // escape all parameters given and pass them to query
         String querySql = buildQueryFromArgs(recv, args);
 
         java.sql.Connection javaConn = (java.sql.Connection) wrappedJdbcConnection.dataGetStruct();
-        int affectedCount = 0;           // rows affected
+        int affectedCount = 0;
+        Long lastKey = null;
         Statement sqlStatement = null;
         java.sql.ResultSet keys = null;
-        boolean supportsGeneratedKeys = false; // TODO: actually test for this
+        boolean supportsGeneratedKeys = driver.supportsJdbcGeneratedKeys();
 
         debug(runtime, querySql);
         try {
             sqlStatement = javaConn.createStatement();
+            javaConn.setAutoCommit(true); // hangs with autocommit set to false
             // sqlStatement.setMaxRows();
 
             if (supportsGeneratedKeys) {
-                // Only Derby, H2, and MySQL support getGeneratedKeys()
+                // Derby, H2, and MySQL all support getGeneratedKeys(), but only
+                // to varying extents.
+                //
+                // However, javaConn.getMetaData().supportsGetGeneratedKeys()
+                // currently returns FALSE for the Derby driver, as its support
+                // is limited. As such, we use supportsJdbcGeneratedKeys() from
+                // our own driver definition.
+                //
+                // See http://issues.apache.org/jira/browse/DERBY-242
+                // See http://issues.apache.org/jira/browse/DERBY-2631
+                // (Derby only supplies getGeneratedKeys() for auto-incremented
+                // columns)
+                //
                 affectedCount = sqlStatement.executeUpdate(querySql, Statement.RETURN_GENERATED_KEYS);
                 keys = sqlStatement.getGeneratedKeys();
+
+                if (keys != null) {
+                    if (keys.next()) {
+                        if(keys.getMetaData().getColumnCount() > 0)
+                           lastKey = keys.getLong(1);
+                    }
+
+                }
+
             } else {
                 // getGeneratedKeys fails with 'not a supported function on HSQLDB'
                 affectedCount = sqlStatement.executeUpdate(querySql);
@@ -146,7 +168,10 @@ public class Command extends RubyObject {
         }
 
         IRubyObject affected_rows = runtime.newFixnum(affectedCount);
-        IRubyObject insert_key = null; // TODO: fix this
+
+        // Need to do proper coersion here?
+        // LastKey could be Integer, String, Long
+        IRubyObject insert_key = (lastKey == null) ? runtime.getNil() : runtime.newFixnum(lastKey);
 
         IRubyObject result = api.callMethod(resultClass, "new", new IRubyObject[] {
             recv, affected_rows, insert_key
@@ -157,12 +182,10 @@ public class Command extends RubyObject {
     @JRubyMethod(optional = 1)
     public static IRubyObject execute_reader(IRubyObject recv, IRubyObject[] args) {
         Ruby runtime = recv.getRuntime();
-        RubyModule jdbcModule = runtime.getModule(DATA_OBJECTS_MODULE_NAME).defineModuleUnder(moduleName);
-
         IRubyObject connection = api.getInstanceVariable(recv, "@connection");
         IRubyObject wrappedJdbcConnection = api.getInstanceVariable(connection, "@connection");
-
         RubyClass readerClass = Reader.createReaderClass(runtime, moduleName, errorName, driver);
+
         // escape all parameters given and pass them to query
         String querySql = buildQueryFromArgs(recv, args);
 
@@ -251,12 +274,12 @@ public class Command extends RubyObject {
             // TODO: log sqle.printStackTrace();
             throw DataObjectsUtils.newDriverError(runtime, errorName, sqle.getLocalizedMessage());
         } finally {
-            if (resultSet != null) {
-                try {
-                    resultSet.close();
-                } catch (SQLException rssqlex) {
-                }
-            }
+            //if (resultSet != null) {
+            //    try {
+             //       resultSet.close();
+             //   } catch (SQLException rssqlex) {
+            //    }
+            //}
             if (sqlStatement != null) {
                 try {
                     sqlStatement.close();
@@ -276,12 +299,6 @@ public class Command extends RubyObject {
     }
 
     // ------------------------------------------------ ADDITIONAL JRUBY METHODS
-
-    @JRubyMethod(required = 1)
-    public static IRubyObject quote_boolean(IRubyObject recv, IRubyObject value) {
-        // TODO: escape this
-        return value;
-    }
 
     @JRubyMethod(required = 1)
     public static IRubyObject quote_string(IRubyObject recv, IRubyObject value) {

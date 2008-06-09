@@ -4,6 +4,8 @@ package data_objects.drivers;
  *
  * @author alexbcoles
  */
-public class AbstractDriverDefinition implements DriverDefinition {
+public abstract class AbstractDriverDefinition implements DriverDefinition {
+
+    public abstract boolean supportsJdbcGeneratedKeys();
 
 }

@@ -87,7 +87,6 @@ describe "DataObjects::Derby::Result" do
   end
 
   it "should yield the last inserted id" do
-    pending "this is not yet functional for HSQLDB"
     @connection.create_command("DELETE FROM invoices").execute_non_query
 
     result = @connection.create_command("INSERT INTO invoices (invoice_number) VALUES ('1234')").execute_non_query
@@ -128,7 +127,6 @@ describe "DataObjects::Derby::Reader" do
   end
 
   it "should return the proper number of fields" do
-    pending "deal with return values"
     id = insert("INSERT INTO users (name) VALUES ('Billy Bob')")
     select("SELECT id, name, fired_at FROM users WHERE id = ?", nil, id) do |reader|
       reader.fields.size.should == 3
@@ -151,8 +149,6 @@ describe "DataObjects::Derby::Reader" do
       insert("INSERT INTO users (name) VALUES ('Slappy Wilson')"),
       insert("INSERT INTO users (name) VALUES ('Jumpy Jones')")
     ]
-
-    pending "ids not being returned using HSQLDB adapter"
 
     select("SELECT * FROM users WHERE id IN ?", nil, ids) do |reader|
       # select already calls next once for us
