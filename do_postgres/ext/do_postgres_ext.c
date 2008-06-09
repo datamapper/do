@@ -147,27 +147,27 @@ static VALUE parse_date_time(const char *date) {
 		// We read the Date and Time, but no Minute Offset
 		minute_offset = 0;
 	} else if (tokens_read == 3) {
-    return parse_date(date);
+		return parse_date(date);
 	} else if (tokens_read >= (max_tokens - 3)) {
 		// We read the Date and Time, default to the current locale's offset
 		
 		// Get localtime
 		time(&rawtime);
-    timeinfo = localtime(&rawtime);
+		timeinfo = localtime(&rawtime);
 		
 		is_dst = timeinfo->tm_isdst * 3600;
-        
-    // Reset to GM Time
-    timeinfo = gmtime(&rawtime);
-    
-    gmt_offset = mktime(timeinfo) - rawtime;
-    
-    if ( is_dst > 0 )
-      gmt_offset -= is_dst;
-      
-    hour_offset = -(gmt_offset / 3600);
-    minute_offset = -(gmt_offset % 3600 / 60);
-        
+
+		// Reset to GM Time
+		timeinfo = gmtime(&rawtime);
+
+		gmt_offset = mktime(timeinfo) - rawtime;
+
+		if ( is_dst > 0 )
+			gmt_offset -= is_dst;
+
+		hour_offset = -(gmt_offset / 3600);
+		minute_offset = -(gmt_offset % 3600 / 60);
+
 	} else {
 		// Something went terribly wrong
 		rb_raise(ePostgresError, "Couldn't parse date: %s", date);
