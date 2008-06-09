@@ -122,8 +122,8 @@ static VALUE parse_date_time(const char *date) {
 	int jd;
 	do_int64 num, den;
 	
-    long int gmt_offset;
-    int is_dst;
+	long int gmt_offset;
+	int is_dst;
 	
 	time_t rawtime;
 	struct tm * timeinfo;
@@ -153,20 +153,20 @@ static VALUE parse_date_time(const char *date) {
 		
 		// Get localtime
 		time(&rawtime);
-        timeinfo = localtime(&rawtime);
+    timeinfo = localtime(&rawtime);
 		
 		is_dst = timeinfo->tm_isdst * 3600;
         
-        // Reset to GM Time
-        timeinfo = gmtime(&rawtime);
-        
-        gmt_offset = mktime(timeinfo) - rawtime;
-        
-        if ( is_dst > 0 )
-            gmt_offset -= is_dst;
-        
-        hour_offset = -(gmt_offset / 3600);
-        minute_offset = -(gmt_offset % 3600 / 60);
+    // Reset to GM Time
+    timeinfo = gmtime(&rawtime);
+    
+    gmt_offset = mktime(timeinfo) - rawtime;
+    
+    if ( is_dst > 0 )
+      gmt_offset -= is_dst;
+      
+    hour_offset = -(gmt_offset / 3600);
+    minute_offset = -(gmt_offset % 3600 / 60);
         
 	} else {
 		// Something went terribly wrong
