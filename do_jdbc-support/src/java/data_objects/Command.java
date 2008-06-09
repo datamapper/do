@@ -80,6 +80,7 @@ public class Command extends RubyObject {
         IRubyObject connection = api.getInstanceVariable(recv, "@connection");
         IRubyObject url = api.getInstanceVariable(connection, "@uri");
         IRubyObject wrappedJdbcConnection = api.getInstanceVariable(connection, "@connection");
+        IRubyObject insert_key = runtime.getNil();
         RubyClass resultClass = Result.createResultClass(runtime, moduleName, errorName, driver);
 
         // escape all parameters given and pass them to query
@@ -87,7 +88,6 @@ public class Command extends RubyObject {
 
         java.sql.Connection javaConn = (java.sql.Connection) wrappedJdbcConnection.dataGetStruct();
         int affectedCount = 0;
-        Long lastKey = null;
         Statement sqlStatement = null;
         java.sql.ResultSet keys = null;
         boolean supportsGeneratedKeys = driver.supportsJdbcGeneratedKeys();
@@ -114,38 +114,14 @@ public class Command extends RubyObject {
                 //
                 affectedCount = sqlStatement.executeUpdate(querySql, Statement.RETURN_GENERATED_KEYS);
                 keys = sqlStatement.getGeneratedKeys();
-
-                if (keys != null) {
-                    if (keys.next()) {
-                        if(keys.getMetaData().getColumnCount() > 0)
-                           lastKey = keys.getLong(1);
-                    }
-
-                }
-
             } else {
-                // getGeneratedKeys fails with 'not a supported function on HSQLDB'
+                // If there is no support, then a custom method canb e defined
+                // to return a ResultSet with keys
                 affectedCount = sqlStatement.executeUpdate(querySql);
-
-                try {
-                    CallableStatement cs = javaConn.prepareCall("identity()");
-                    cs.registerOutParameter(1, Types.NUMERIC);
-                    cs.execute();
-
-                    double fish = cs.getDouble(1);
-                    System.out.println(fish);
-
-                    //keys = sqlStatement.executeQuery("call IDENTITY()");
-
-                } catch (SQLException sqlee) {
-                    // do nothing
-                    System.out.println(sqlee.getLocalizedMessage());
-                } finally {
-                    if (keys != null) {
-                        keys.close();
-                    }
-                }
-
+                keys = driver.getGeneratedKeys(javaConn);
+            }
+            if (keys != null) {
+                insert_key = unmarshal_id_result(runtime, keys);
             }
 
             sqlStatement.close();
@@ -168,10 +144,6 @@ public class Command extends RubyObject {
         }
 
         IRubyObject affected_rows = runtime.newFixnum(affectedCount);
-
-        // Need to do proper coersion here?
-        // LastKey could be Integer, String, Long
-        IRubyObject insert_key = (lastKey == null) ? runtime.getNil() : runtime.newFixnum(lastKey);
 
         IRubyObject result = api.callMethod(resultClass, "new", new IRubyObject[] {
             recv, affected_rows, insert_key
@@ -266,26 +238,19 @@ public class Command extends RubyObject {
             api.setInstanceVariable(reader, "@fields", field_names);
             api.setInstanceVariable(reader, "@types", field_types);
 
-            //resultSet.close();
-            //resultSet = null;
-            sqlStatement.close();
-            sqlStatement = null;
+            // keep the statement open
+            //sqlStatement.close();
+            //sqlStatement = null;
         } catch (SQLException sqle) {
             // TODO: log sqle.printStackTrace();
             throw DataObjectsUtils.newDriverError(runtime, errorName, sqle.getLocalizedMessage());
         } finally {
-            //if (resultSet != null) {
+            //if (sqlStatement != null) {
             //    try {
-             //       resultSet.close();
-             //   } catch (SQLException rssqlex) {
+            //        sqlStatement.close();
+            //    } catch (SQLException stsqlex) {
             //    }
             //}
-            if (sqlStatement != null) {
-                try {
-                    sqlStatement.close();
-                } catch (SQLException stsqlex) {
-                }
-            }
         }
 
         // return the reader
@@ -304,13 +269,39 @@ public class Command extends RubyObject {
     public static IRubyObject quote_string(IRubyObject recv, IRubyObject value) {
         String toQuote = value.asJavaString();
         StringBuffer quotedValue = new StringBuffer(toQuote.length() + 2);
-        quotedValue.append("\'"); // single-quotes in HSQLDB
+        quotedValue.append("\'");
         quotedValue.append(toQuote);
-        quotedValue.append("\'"); // single-quotes in HSQLDB
+        quotedValue.append("\'");
         return recv.getRuntime().newString(quotedValue.toString());
     }
 
-    // -------------------------------------------------- PRIVATE HELPER METHODS
+    // ---------------------------------------------------------- HELPER METHODS
+
+    /**
+     * Unmarshal a java.sql.Resultset containing generated keys, and return a
+     * Ruby Fixnum with the last key.
+     *
+     * @param runtime
+     * @param rs
+     * @return
+     * @throws java.sql.SQLException
+     */
+    public static IRubyObject unmarshal_id_result(Ruby runtime, ResultSet rs) throws SQLException {
+        try {
+            if (rs.next()) {
+                if (rs.getMetaData().getColumnCount() > 0) {
+                    // Need to do check for other types here, as keys could be
+                    // of type Integer, Long or String
+                    return runtime.newFixnum(rs.getLong(1));
+                }
+            }
+            return runtime.getNil();
+        } finally {
+            try {
+                rs.close();
+            } catch (Exception e) {}
+        }
+    }
 
     /**
      *
@@ -320,11 +311,10 @@ public class Command extends RubyObject {
      */
     private static String buildQueryFromArgs(IRubyObject recv, IRubyObject[] args) {
         Ruby runtime = recv.getRuntime();
-        String query = recv.getInstanceVariables().getInstanceVariable("@text").asJavaString();
-        RubyArray escape_args;
+        String query = api.getInstanceVariable(recv, "@text").asJavaString();
 
         if (args.length > 0) {
-            escape_args = runtime.newArray(args);
+            RubyArray escape_args = runtime.newArray(args);
             query = api.callMethod(recv, "escape_sql", escape_args).convertToString().asJavaString();
         }
         return query;
@@ -336,13 +326,13 @@ public class Command extends RubyObject {
      * @param runtime
      * @param logMessage
      */
-    public static void debug(Ruby runtime, String logMessage) {
+    private static void debug(Ruby runtime, String logMessage) {
         RubyModule driverModule = (RubyModule) runtime.getModule(DATA_OBJECTS_MODULE_NAME).getConstant(moduleName);
         IRubyObject logger = api.callMethod(driverModule, "logger");
-        int level = RubyNumeric.fix2int(logger.callMethod(runtime.getCurrentContext(), "level"));
+        int level = RubyNumeric.fix2int(api.callMethod(logger, "level"));
 
-        if (0 == level) {
-            logger.callMethod(runtime.getCurrentContext(), "debug", runtime.newString(logMessage));
+        if (level == 0) {
+            api.callMethod(logger, "debug", runtime.newString(logMessage));
         }
     }
 

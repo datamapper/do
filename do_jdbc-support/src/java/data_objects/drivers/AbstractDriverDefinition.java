@@ -1,5 +1,8 @@
 package data_objects.drivers;
 
+import java.sql.Connection;
+import java.sql.ResultSet;
+
 /**
  *
  * @author alexbcoles
@@ -7,5 +10,9 @@ package data_objects.drivers;
 public abstract class AbstractDriverDefinition implements DriverDefinition {
 
     public abstract boolean supportsJdbcGeneratedKeys();
+
+    public ResultSet getGeneratedKeys(Connection connection) {
+        return null;
+    }
 
 }

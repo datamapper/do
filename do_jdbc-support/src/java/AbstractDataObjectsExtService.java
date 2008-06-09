@@ -31,7 +31,7 @@ public abstract class AbstractDataObjectsExtService implements BasicLibraryServi
 
         // Define the DataObjects module for this Driver
         // e.g. DataObjects::Derby, DataObjects::MySql
-        RubyModule doDriverModule = doModule.defineModuleUnder(errorName);
+        RubyModule doDriverModule = doModule.defineModuleUnder(moduleName);
 
         // Define a driver Error class
         runtime.defineClass(getErrorName(), runtime.getStandardError(), runtime.getStandardError().getAllocator());

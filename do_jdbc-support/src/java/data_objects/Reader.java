@@ -3,12 +3,14 @@ package data_objects;
 import data_objects.drivers.DriverDefinition;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.jruby.Ruby;
 import org.jruby.RubyArray;
 import org.jruby.RubyClass;
 import org.jruby.RubyModule;
+import org.jruby.RubyNumeric;
 import org.jruby.RubyObject;
 import org.jruby.RubyObjectAdapter;
 import org.jruby.anno.JRubyClass;
@@ -72,8 +74,11 @@ public class Reader extends RubyObject {
 
             ResultSet rs = (ResultSet) reader.dataGetStruct();
             try {
+                Statement st = rs.getStatement();
                 rs.close();
                 rs = null;
+                st.close();
+                st = null;
             } catch (SQLException ex) {
                 Logger.getLogger(Reader.class.getName()).log(Level.SEVERE, null, ex);
             } finally {
@@ -115,7 +120,7 @@ public class Reader extends RubyObject {
             return runtime.getNil();
         }
 
-        for (int i = 0; i < field_count.convertToInteger().getLongValue(); i++) {
+        for (int i = 0; i < RubyNumeric.fix2int(field_count.convertToInteger()); i++) {
             //if (fieldTypesCount == 0) {
 
             value = DataObjectsUtils.java_types_to_ruby_types(runtime, i, i, i, rs);
