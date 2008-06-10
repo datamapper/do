@@ -171,10 +171,6 @@ static VALUE parse_time(const char *date) {
 		sscanf(date, "%4d-%2d-%2d %2d:%2d:%2d", &year, &month, &day, &hour, &min, &sec);
 		usec = 0;
 	}
-	
-	// When no time is given, mysql's timestamp is: 0000-00-00 00:0 and as such month == 0
-	if (month == 0)
-    return Qnil;
 
 	return rb_funcall(rb_cTime, rb_intern("local"), 7, INT2NUM(year), INT2NUM(month), INT2NUM(day), INT2NUM(hour), INT2NUM(min), INT2NUM(sec), INT2NUM(usec));
 }

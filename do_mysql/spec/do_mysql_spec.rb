@@ -198,14 +198,6 @@ describe DataObjects::Mysql::Reader do
       exec("DELETE FROM users WHERE id = ?", id)
     end
 
-    it "should return nil when the timestamp is 0000-00-00 00:00:00" do
-      id = insert("INSERT INTO users () VALUES ()");
-      select("SELECT fired_at, activated_at FROM users WHERE id = ?", [Time, Time], id) do |reader|
-        reader.values.last.should be_nil
-      end
-      exec("DELETE FROM users WHERE id = ?", id)
-    end
-
     now = DateTime.now
 
     dates = [

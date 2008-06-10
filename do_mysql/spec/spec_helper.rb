@@ -81,7 +81,6 @@ module MysqlSpecHelpers
         `id` int(11) NOT NULL auto_increment,
         `name` varchar(200) default 'Billy' NULL,
         `fired_at` timestamp,
-        `activated_at` timestamp,
         PRIMARY KEY  (`id`)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
     EOF
