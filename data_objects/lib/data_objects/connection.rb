@@ -8,15 +8,33 @@ end
 
 module DataObjects
   class Connection
+    
+    def self.new(uri)
+      uri = uri.is_a?(String) ? Addressable::URI::parse(uri) : uri
 
-    include Extlib::Pooling
+      if uri.scheme == 'jdbc'
+        driver_name = uri.path.split(':').first
+      else
+        driver_name = uri.scheme.capitalize
+      end
+
+      DataObjects.const_get(driver_name.capitalize)::Connection.new(uri)
+    end
+    
+    def self.inherited(target)
+      target.class_eval do
         
-    def self.inherited(base)
-      base.instance_variable_set('@connection_lock', Mutex.new)
-      base.instance_variable_set('@available_connections', Hash.new { |h,k| h[k] = [] })
-      base.instance_variable_set('@reserved_connections', Set.new)
-
-      if driver_module_name = base.name.split('::')[-2]
+        def self.new(*args)
+          instance = allocate
+          instance.send(:initialize, *args)
+          instance
+        end
+        
+        include Extlib::Pooling
+        alias close release
+      end
+           
+      if driver_module_name = target.name.split('::')[-2]
         driver_module = DataObjects::const_get(driver_module_name)
         driver_module.class_eval <<-EOS
           def self.logger
@@ -31,21 +49,7 @@ module DataObjects
         driver_module.logger = DataObjects::Logger.new(nil, :off)
       end
     end
-
-    def self.new(uri)
-      uri = uri.is_a?(String) ? Addressable::URI::parse(uri) : uri
-
-      if uri.scheme == 'jdbc'
-        driver_name = uri.path.split(':').first
-      else
-        driver_name = uri.scheme.capitalize
-      end
-
-      DataObjects.const_get(driver_name.capitalize)::Connection.__new(uri)
-    end
-
-    alias close release
-
+    
     #####################################################
     # Standard API Definition
     #####################################################
