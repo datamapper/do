@@ -9,6 +9,8 @@ end
 module DataObjects
   class Connection
 
+    include Extlib::Pooling
+        
     def self.inherited(base)
       base.instance_variable_set('@connection_lock', Mutex.new)
       base.instance_variable_set('@available_connections', Hash.new { |h,k| h[k] = [] })
@@ -39,40 +41,10 @@ module DataObjects
         driver_name = uri.scheme.capitalize
       end
 
-      DataObjects.const_get(driver_name.capitalize)::Connection.acquire(uri)
+      DataObjects.const_get(driver_name.capitalize)::Connection.__new(uri)
     end
 
-    def self.acquire(connection_uri)
-      conn = nil
-      connection_string = connection_uri.to_s
-
-      @connection_lock.synchronize do
-        unless @available_connections[connection_string].empty?
-          conn = @available_connections[connection_string].pop
-        else
-          conn = allocate
-          conn.send(:initialize, connection_uri)
-          at_exit { conn.real_close }
-        end
-
-        @reserved_connections << conn
-      end
-
-      return conn
-    end
-
-    def self.release(connection)
-      @connection_lock.synchronize do
-        if @reserved_connections.delete?(connection)
-          @available_connections[connection.to_s] << connection
-        end
-      end
-      return nil
-    end
-
-    def close
-      self.class.release(self)
-    end
+    alias close release
 
     #####################################################
     # Standard API Definition
@@ -85,7 +57,7 @@ module DataObjects
       raise NotImplementedError.new
     end
 
-    def real_close
+    def dispose
       raise NotImplementedError.new
     end
 
