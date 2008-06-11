@@ -8,13 +8,33 @@ end
 
 module DataObjects
   class Connection
+    
+    def self.new(uri)
+      uri = uri.is_a?(String) ? Addressable::URI::parse(uri) : uri
 
-    def self.inherited(base)
-      base.instance_variable_set('@connection_lock', Mutex.new)
-      base.instance_variable_set('@available_connections', Hash.new { |h,k| h[k] = [] })
-      base.instance_variable_set('@reserved_connections', Set.new)
+      if uri.scheme == 'jdbc'
+        driver_name = uri.path.split(':').first
+      else
+        driver_name = uri.scheme.capitalize
+      end
 
-      if driver_module_name = base.name.split('::')[-2]
+      DataObjects.const_get(driver_name.capitalize)::Connection.new(uri)
+    end
+    
+    def self.inherited(target)
+      target.class_eval do
+        
+        def self.new(*args)
+          instance = allocate
+          instance.send(:initialize, *args)
+          instance
+        end
+        
+        include Extlib::Pooling
+        alias close release
+      end
+           
+      if driver_module_name = target.name.split('::')[-2]
         driver_module = DataObjects::const_get(driver_module_name)
         driver_module.class_eval <<-EOS
           def self.logger
@@ -28,43 +48,6 @@ module DataObjects
 
         driver_module.logger = DataObjects::Logger.new(nil, :off)
       end
-    end
-
-    def self.new(uri)
-      uri = uri.is_a?(String) ? Addressable::URI::parse(uri) : uri
-      DataObjects.const_get(uri.scheme.capitalize)::Connection.acquire(uri)
-    end
-
-    def self.acquire(connection_uri)
-      conn = nil
-      connection_string = connection_uri.to_s
-
-      @connection_lock.synchronize do
-        unless @available_connections[connection_string].empty?
-          conn = @available_connections[connection_string].pop
-        else
-          conn = allocate
-          conn.send(:initialize, connection_uri)
-          at_exit { conn.dispose }
-        end
-
-        @reserved_connections << conn
-      end
-
-      return conn
-    end
-
-    def self.release(connection)
-      @connection_lock.synchronize do
-        if @reserved_connections.delete?(connection)
-          @available_connections[connection.to_s] << connection
-        end
-      end
-      return nil
-    end
-
-    def close
-      self.class.release(self)
     end
 
     #####################################################

@@ -1,4 +1,4 @@
 data_objects
-=================
+============
 
-A plugin for the Merb framework that provides ....
+A unified Ruby API for popular databases.

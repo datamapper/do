@@ -5,12 +5,6 @@ describe DataObjects::Connection do
     @connection = DataObjects::Connection.new('mock://localhost')
   end
 
-  %w{acquire release}.each do |meth|
-    it "should respond to class method ##{meth}" do
-      DataObjects::Connection.should respond_to(meth.intern)
-    end
-  end
-
   %w{dispose create_command}.each do |meth|
     it "should respond to ##{meth}" do
       @connection.should respond_to(meth.intern)
@@ -44,7 +38,7 @@ describe DataObjects::Connection do
   end
 
   describe "initialization" do
-    it "should accept a connection uri as a String" do
+    it "should accept a regular connection uri as a String" do
       c = DataObjects::Connection.new('mock://localhost/database')
       # relying on the fact that mock connection sets @uri
       uri = c.instance_variable_get("@uri")
@@ -65,13 +59,18 @@ describe DataObjects::Connection do
     end
 
     it "should determine which DataObject adapter from the uri scheme" do
-      DataObjects::Mock::Connection.should_receive(:acquire)
+      DataObjects::Mock::Connection.should_receive(:__new)
       DataObjects::Connection.new('mock://localhost/database')
+    end
+
+    it "should determine which DataObject adapter from a JDBC URL scheme" do
+      DataObjects::Mock::Connection.should_receive(:__new)
+      DataObjects::Connection.new('jdbc:mock://localhost/database')
     end
 
     it "should aquire a connection" do
       uri = Addressable::URI.parse('mock://localhost/database')
-      DataObjects::Mock::Connection.should_receive(:acquire).with(uri)
+      DataObjects::Mock::Connection.should_receive(:__new).with(uri)
 
       DataObjects::Connection.new(uri)
     end
@@ -81,51 +80,4 @@ describe DataObjects::Connection do
       c.should be_kind_of(DataObjects::Mock::Connection)
     end
   end
-
-  describe 'connection pooling' do
-    before do
-      @uri = Addressable::URI.parse('mock://localhost/database')
-
-      clear_connections!
-
-      DataObjects::Mock::Connection.instance_variable_get("@available_connections")[@uri.to_s].should be_empty
-      DataObjects::Mock::Connection.instance_variable_get("@reserved_connections").should be_empty
-    end
-
-    def clear_connections!
-      # in real life, we should close the connections, but since its just a mock adapter...
-      DataObjects::Mock::Connection.instance_variable_set("@reserved_connections", Set.new)
-      DataObjects::Mock::Connection.instance_variable_set("@available_connections", Hash.new { |h,k| h[k] = [] })
-    end
-
-    it "should make a new connection if the pool is empty" do
-      c = DataObjects::Mock::Connection.acquire(@uri)
-      DataObjects::Mock::Connection.instance_variable_get("@available_connections")[@uri.to_s].should be_empty
-      DataObjects::Mock::Connection.instance_variable_get("@reserved_connections").should include(c)
-    end
-
-    it "should add the connection to available connections on release" do
-      c = DataObjects::Mock::Connection.acquire(@uri)
-      DataObjects::Mock::Connection.instance_variable_get("@reserved_connections").should_not be_empty
-      c.close
-      DataObjects::Mock::Connection.instance_variable_get("@reserved_connections").should be_empty
-      DataObjects::Mock::Connection.instance_variable_get("@available_connections")[@uri.to_s].should_not be_empty
-      DataObjects::Mock::Connection.instance_variable_get("@available_connections")[@uri.to_s].should include(c)
-    end
-
-    it "should reuse a connection if there's one available" do
-      c = DataObjects::Mock::Connection.acquire(@uri)
-      c.close
-      DataObjects::Mock::Connection.instance_variable_get("@available_connections")[@uri.to_s].should_not be_empty
-      c.should == DataObjects::Mock::Connection.acquire(@uri)
-    end
-
-    it "should make a new connection if they're all in use" do
-      c = DataObjects::Mock::Connection.acquire(@uri)
-      DataObjects::Mock::Connection.instance_variable_get("@available_connections")[@uri.to_s].should be_empty
-      c.should_not == DataObjects::Mock::Connection.acquire(@uri)
-    end
-
-  end
-
 end

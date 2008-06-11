@@ -28,6 +28,7 @@ Rake::GemPackageTask.new(spec) do |pkg|
   pkg.gem_spec = spec
 end
 
+desc "Install #{spec.name} #{spec.version} (default ruby)"
 task :install => [ :package ] do
   sh %{#{SUDO} gem install --local pkg/#{spec.name}-#{spec.version} --no-update-sources}, :verbose => false
 end
@@ -36,4 +37,11 @@ desc 'Run specifications'
 Spec::Rake::SpecTask.new(:spec) do |t|
   t.spec_opts << '--options' << 'spec/spec.opts' if File.exists?('spec/spec.opts')
   t.spec_files = Pathname.glob(Pathname.new(__FILE__).dirname + 'spec/**/*_spec.rb')
+end
+
+namespace :jruby do
+  desc "Install #{spec.name} #{spec.version} with JRuby"
+  task :install => [ :package ] do
+    sh %{#{SUDO} jruby -S gem install --local pkg/#{spec.name}-#{spec.version} --no-update-sources}, :verbose => false
+  end
 end

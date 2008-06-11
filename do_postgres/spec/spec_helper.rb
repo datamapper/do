@@ -29,6 +29,7 @@ module PostgresSpecHelpers
   def ensure_users_table_and_return_connection
     connection = DataObjects::Connection.new("postgres://localhost/do_test")
     connection.create_command("DROP TABLE users").execute_non_query rescue nil
+    connection.create_command("DROP TABLE companies").execute_non_query rescue nil
     connection.create_command(<<-EOF).execute_non_query
       CREATE TABLE users (
         id serial NOT NULL,
@@ -37,8 +38,17 @@ module PostgresSpecHelpers
         money double precision DEFAULT 1908.56,
         created_on date DEFAULT ('now'::text)::date,
         created_at timestamp without time zone DEFAULT now(),
-        born_at time without time zone DEFAULT now(),
-        fired_at timestamp with time zone DEFAULT now()
+--        born_at time without time zone DEFAULT now(),
+        fired_at timestamp with time zone DEFAULT now(),
+        company_id integer DEFAULT 1
+      )
+      WITH (OIDS=FALSE);
+    EOF
+
+    connection.create_command(<<-EOF).execute_non_query
+      CREATE TABLE companies (
+        id serial NOT NULL,
+        "name" character varying
       )
       WITH (OIDS=FALSE);
     EOF

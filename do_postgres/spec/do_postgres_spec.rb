@@ -167,50 +167,32 @@ describe "DataObjects::Postgres::Reader" do
     reader.next!
     dt = reader.values[0]
     reader.values[0].should be_a_kind_of(DateTime)
+
+    command = @connection.create_command("SELECT created_at::date as date FROM users WHERE created_at is not null LIMIT 1")
+    reader = command.execute_reader
+    reader.next!
+    reader.values[0].should be_a_kind_of(Date)
+
   end
 
-  it "should return DateTimes using the current locale's Time Zone for TIMESTAMP WITHOUT TIME ZONE fields" do
-    date = DateTime.now
-    id = insert("INSERT INTO users (name, created_at) VALUES (?, ?)", 'Sam', date)
-    select("SELECT created_at FROM users WHERE id = ?", [DateTime], id) do |reader|
-      reader.values.last.to_s.should == date.to_s
-    end
-    exec("DELETE FROM users WHERE id = ?", id)
-  end
+  it "should work on a join" do
 
-  it "should return DateTimes using the current locale's Time Zone TIMESTAMP WITH TIME ZONE fields" do
-    date = DateTime.now
-    id = insert("INSERT INTO users (name, fired_at) VALUES (?, ?)", 'Sam', date)
-    select("SELECT fired_at FROM users WHERE id = ?", [DateTime], id) do |reader|
-      reader.values.last.to_s.should == date.to_s
-    end
-    exec("DELETE FROM users WHERE id = ?", id)
-  end
+    user = @connection.create_command("SELECT * FROM users WHERE id = 1").execute_reader
+    user.next!
 
-  it "should return DateTimes using the current locale's Time Zone if they were inserted using a different timezone" do
-    now = DateTime.now
-    dates = [
-      now,
-      now.new_offset( (-11 * 3600).to_r / 86400), # GMT -11:00
-      now.new_offset( (-9 * 3600 + 10 * 60).to_r / 86400), # GMT -9:10
-      now.new_offset( (-8 * 3600).to_r / 86400), # GMT -08:00
-      now.new_offset( (+3 * 3600).to_r / 86400), # GMT +03:00
-      now.new_offset( (+5 * 3600 + 30 * 60).to_r / 86400)  # GMT +05:30 (New Delhi)
-    ]
-
-    dates.each do |date|
-      id = insert("INSERT INTO users (name, fired_at) VALUES (?, ?)", 'Sam', date)
-
-      select("SELECT name, fired_at FROM users WHERE id = ?", [String, DateTime], id) do |reader|
-        reader.fields.should == ["name", "fired_at"]
-        reader.values.last.to_s.should == now.to_s
-      end
-
-      exec("DELETE FROM users WHERE id = ?", id)
-    end
+    @connection.create_command("INSERT INTO companies (name) VALUES ('ELEC')").execute_non_query
+    reader = @connection.create_command(<<-EOF).execute_reader
+      SELECT u.* FROM users AS u
+      LEFT JOIN companies AS c
+        ON u.company_id=c.id
+      WHERE c.name='ELEC'
+    EOF
+    reader.next!
+    reader.values.should == user.values
   end
 
   it "should typecast a time field" do
+    pending "Time fields have no date information, and don't work with Time"
     command = @connection.create_command("SELECT born_at FROM users LIMIT 1")
     reader = command.execute_reader
     reader.next!

@@ -1,4 +1,0 @@
-do_mysql
-=================
-
-A driver for DataObjects.rb that provides access to the Mysql database.
