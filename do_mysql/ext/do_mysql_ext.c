@@ -481,7 +481,7 @@ static VALUE cConnection_is_using_socket(VALUE self) {
 	return rb_iv_get(self, "@using_socket");
 }
 
-static VALUE cConnection_real_close(VALUE self) {
+static VALUE cConnection_dispose(VALUE self) {
 	VALUE connection_container = rb_iv_get(self, "@connection");
 
 	MYSQL *db;
@@ -783,7 +783,7 @@ void Init_do_mysql_ext() {
 	rb_define_method(cConnection, "initialize", cConnection_initialize, 1);
 	rb_define_method(cConnection, "using_socket?", cConnection_is_using_socket, 0);
 	rb_define_method(cConnection, "character_set", cConnection_character_set , 0);
-	rb_define_method(cConnection, "real_close", cConnection_real_close, 0);
+	rb_define_method(cConnection, "dispose", cConnection_dispose, 0);
 	
 	cCommand = DRIVER_CLASS("Command", cDO_Command);
 	rb_include_module(cCommand, cDO_Quoting);

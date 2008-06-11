@@ -45,7 +45,7 @@ module DataObjects
         else
           conn = allocate
           conn.send(:initialize, connection_uri)
-          at_exit { conn.real_close }
+          at_exit { conn.dispose }
         end
 
         @reserved_connections << conn
@@ -78,7 +78,7 @@ module DataObjects
       raise NotImplementedError.new
     end
 
-    def real_close
+    def dispose
       raise NotImplementedError.new
     end
 

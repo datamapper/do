@@ -6,7 +6,7 @@ module DataObjects
         @uri = uri
       end
 
-      def real_close
+      def dispose
         nil
       end
     end

@@ -11,7 +11,7 @@ describe DataObjects::Connection do
     end
   end
 
-  %w{real_close create_command}.each do |meth|
+  %w{dispose create_command}.each do |meth|
     it "should respond to ##{meth}" do
       @connection.should respond_to(meth.intern)
     end

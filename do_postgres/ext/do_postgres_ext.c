@@ -339,7 +339,7 @@ static VALUE cConnection_initialize(VALUE self, VALUE uri) {
 	return Qtrue;
 }
 
-static VALUE cConnection_real_close(VALUE self) {
+static VALUE cConnection_dispose(VALUE self) {
 	PGconn *db = DATA_PTR(rb_iv_get(self, "@connection"));
 	PQfinish(db);
 	return Qtrue;
@@ -589,7 +589,7 @@ void Init_do_postgres_ext() {
 	
 	cConnection = POSTGRES_CLASS("Connection", cDO_Connection);
 	rb_define_method(cConnection, "initialize", cConnection_initialize, 1);
-	rb_define_method(cConnection, "real_close", cConnection_real_close, 0);
+	rb_define_method(cConnection, "dispose", cConnection_dispose, 0);
 	
 	cCommand = POSTGRES_CLASS("Command", cDO_Command);
 	rb_include_module(cCommand, cDO_Quoting);

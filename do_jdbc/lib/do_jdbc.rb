@@ -26,7 +26,7 @@ module DataObjects
         @connection
       end
 
-      def real_close
+      def dispose
         @connection.close
       end
 

@@ -291,7 +291,7 @@ static VALUE cConnection_initialize(VALUE self, VALUE uri) {
 	return Qtrue;
 }
 
-static VALUE cConnection_real_close(VALUE self) {
+static VALUE cConnection_dispose(VALUE self) {
 	sqlite3 *db;
 	Data_Get_Struct(rb_iv_get(self, "@connection"), sqlite3, db);
 	sqlite3_close(db);
@@ -517,7 +517,7 @@ void Init_do_sqlite3_ext() {
 	
 	cConnection = SQLITE3_CLASS("Connection", cDO_Connection);
 	rb_define_method(cConnection, "initialize", cConnection_initialize, 1);
-	rb_define_method(cConnection, "real_close", cConnection_real_close, 0);
+	rb_define_method(cConnection, "dispose", cConnection_dispose, 0);
 	
 	cCommand = SQLITE3_CLASS("Command", cDO_Command);
 	rb_include_module(cCommand, cDO_Quoting);
