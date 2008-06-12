@@ -158,7 +158,6 @@ describe "DataObjects::Derby::Reader" do
   end
 
   it "should return DB nulls as nil" do
-    pending "needs fixing"
     id = insert("INSERT INTO users (name) VALUES (NULL)")
     select("SELECT name from users WHERE name is null") do |reader|
       reader.values[0].should == nil

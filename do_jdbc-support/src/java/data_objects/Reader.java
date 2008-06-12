@@ -13,6 +13,7 @@ import org.jruby.RubyModule;
 import org.jruby.RubyNumeric;
 import org.jruby.RubyObject;
 import org.jruby.RubyObjectAdapter;
+import org.jruby.RubyString;
 import org.jruby.anno.JRubyClass;
 import org.jruby.anno.JRubyMethod;
 import org.jruby.javasupport.JavaEmbedUtils;
@@ -121,13 +122,25 @@ public class Reader extends RubyObject {
         }
 
         for (int i = 0; i < RubyNumeric.fix2int(field_count.convertToInteger()); i++) {
-            //if (fieldTypesCount == 0) {
+            int col = i + 1;
+            RubyType type;
 
-            value = DataObjectsUtils.java_types_to_ruby_types(runtime, i, i, i, rs);
+            if (fieldTypesCount > 0) {
+                // use the specified type
+                String typeName = field_types.convertToArray().get(i).toString();
+                type = RubyType.getRubyType(typeName);
+            } else {
+                // infer the type
+                type = DataObjectsUtils.jdbcTypeToRubyType(rs.getMetaData().getColumnType(col),
+                    rs.getMetaData().getScale(col));
+            }
 
-            //} else {
-            //    value = rubyTypeCast(rs.getString(i));
-            //}
+            // -- debugging what's coming out
+            System.out.println("JDBC TypeName" + rs.getMetaData().getColumnTypeName(col));
+            System.out.println("JDBC Metadata" + rs.getMetaData().getScale(col));
+            System.out.println("Ruby Type" + type);
+
+            value = get_typecast_rs_value(runtime, rs, col, type);
             row.push_m(new IRubyObject[]{value});
         }
 
@@ -140,15 +153,65 @@ public class Reader extends RubyObject {
         Ruby runtime = recv.getRuntime();
         IRubyObject state = api.getInstanceVariable(recv, "@state");
 
-        if (state.isNil() || !state.isTrue()) {
+        if (state == null || state.isNil() || !state.isTrue()) {
             throw DataObjectsUtils.newDriverError(runtime, errorName, "Reader is not initialized");
         }
         IRubyObject values = api.getInstanceVariable(recv, "@values");
-        return values;
+        return (values != null) ? values : runtime.getNil();
     }
 
     @JRubyMethod
     public static IRubyObject fields(IRubyObject recv) {
         return api.getInstanceVariable(recv, "@fields");
+    }
+
+    // -------------------------------------------------- PRIVATE HELPER METHODS
+
+    /**
+     *
+     * @param rs
+     * @param type
+     * @return
+     */
+    private static IRubyObject get_typecast_rs_value(Ruby runtime, ResultSet rs,
+            int col, RubyType type) throws SQLException {
+        switch (type) {
+            case FIXNUM:
+            case BIGNUM:
+                long lng = rs.getLong(col);
+                return RubyNumeric.int2fix(runtime, lng);
+            case BIG_DECIMAL:
+            case FLOAT:
+                double dbl = rs.getDouble(col);
+                return RubyNumeric.dbl2num(runtime, dbl);
+            case TRUE_CLASS:
+                boolean bool = rs.getBoolean(col);
+                return runtime.newBoolean(bool);
+            case DATE:
+                java.sql.Date dt = rs.getDate(col);
+                if (dt == null || rs.wasNull()) {
+                    return runtime.getNil();
+                }
+                return DataObjectsUtils.parse_date(runtime, dt);
+            case DATE_TIME:
+                java.sql.Timestamp ts = rs.getTimestamp(col);
+                if (ts == null || rs.wasNull()) {
+                    return runtime.getNil();
+                }
+                return DataObjectsUtils.parse_date_time(runtime, ts);
+            case TIME:
+                java.sql.Time tm = rs.getTime(col);
+                if (tm == null || rs.wasNull()) {
+                    return runtime.getNil();
+                }
+                return DataObjectsUtils.parse_time(runtime, tm);
+            case STRING:
+            default:
+                String str = rs.getString(col);
+                if (str == null || rs.wasNull()) {
+                    return runtime.getNil();
+                }
+                return RubyString.newUnicodeString(runtime, str);
+        }
     }
 }
