@@ -9,9 +9,8 @@ describe "DataObjects::Derby::Connection" do
   end
 
   it "should be closeable" do
-    pending
     @connection = DataObjects::Connection.new("jdbc:derby:testdb;create=true")
-    @connection.real_close.should_not raise_error
+    lambda { @connection.real_close }.should_not raise_error
   end
 
 end
@@ -89,11 +88,13 @@ describe "DataObjects::Derby::Result" do
   it "should yield the last inserted id" do
     @connection.create_command("DELETE FROM invoices").execute_non_query
 
+    # for Derby the newly generated ids are starting at 2?
+
     result = @connection.create_command("INSERT INTO invoices (invoice_number) VALUES ('1234')").execute_non_query
-    result.insert_id.should == 1
+    result.insert_id.should == 2
 
     result = @connection.create_command("INSERT INTO invoices (invoice_number) VALUES ('3456')").execute_non_query
-    result.insert_id.should == 2
+    result.insert_id.should == 3
   end
 
   it "should be able to determine affected_rows, when multiple rows are affected" do
@@ -161,6 +162,13 @@ describe "DataObjects::Derby::Reader" do
     id = insert("INSERT INTO users (name) VALUES (NULL)")
     select("SELECT name from users WHERE name is null") do |reader|
       reader.values[0].should == nil
+    end
+  end
+
+  it "should not convert empty strings to null" do
+    id = insert("INSERT INTO users (name) VALUES ('')")
+    select("SELECT name FROM users WHERE id = ?", [String], id) do |reader|
+      reader.values.first.should == ''
     end
   end
 

@@ -20,7 +20,6 @@ import org.jruby.javasupport.JavaEmbedUtils;
 import org.jruby.javasupport.JavaObject;
 import org.jruby.runtime.Block;
 import org.jruby.runtime.ObjectAllocator;
-import org.jruby.runtime.ThreadContext;
 import org.jruby.runtime.builtin.IRubyObject;
 
 import static data_objects.DataObjects.DATA_OBJECTS_MODULE_NAME;
@@ -70,6 +69,7 @@ public class Connection extends RubyObject {
     }
 
     // -------------------------------------------------- DATAOBJECTS PUBLIC API
+
     @JRubyMethod(required = 1)
     public static IRubyObject initialize(IRubyObject recv, IRubyObject uri) {
         Ruby runtime = recv.getRuntime();
