@@ -17,6 +17,17 @@ if RUBY_PLATFORM =~ /java/
   # than Class.forName() within the data_objects.Connection Java class,
   # which is currently not working as expected.
   import 'org.apache.derby.jdbc.EmbeddedDriver'
+  
+  module DataObjects
+    module Derby
+      class Connection
+        def self.pool_size
+          20
+        end
+      end
+    end
+  end
+  
 else
   warn "do-derby is only for use with JRuby"
 end

@@ -13,7 +13,7 @@ describe "DataObjects::Derby" do
     }.should_not raise_error(NameError)
 
     lambda {
-      DataObjects::Derby::const_get('NotDoJdbcClass')
+      DataObjects::Derby::const_get('NotDoDerbyClass')
     }.should raise_error(NameError)
 
     DataObjects::Derby::const_get('DerbyError').should_not be_nil

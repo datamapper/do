@@ -10,7 +10,7 @@ describe "DataObjects::Derby::Connection" do
 
   it "should be closeable" do
     @connection = DataObjects::Connection.new("jdbc:derby:testdb;create=true")
-    lambda { @connection.real_close }.should_not raise_error
+    lambda { @connection.dispose }.should_not raise_error
   end
 
 end

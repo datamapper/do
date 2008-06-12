@@ -132,7 +132,7 @@ public class Connection extends RubyObject {
     }
 
     @JRubyMethod
-    public static IRubyObject real_close(IRubyObject recv) {
+    public static IRubyObject dispose(IRubyObject recv) {
         Ruby runtime = recv.getRuntime();
 
         java.sql.Connection prev = getConnection(recv);
