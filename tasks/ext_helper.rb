@@ -1,10 +1,11 @@
 require 'rbconfig'
 
-# setup_extension will create the needed task
-# add wrap all them into 'compile'
+#
+# setup_extension create relevant tasks, wraps them into 'compile'
 # also will set a task named 'native' that will change the supplied
-# Gem::Specification and inject into the pre compiled binaries.
-# if no gem_spec is supplied, no native task get defined.
+# Gem::Specification and inject into the pre-compiled binaries. if no gem_spec
+# is supplied, no native task get defined.
+#
 def setup_extension(extension_name, gem_spec = nil)
   # use the DLEXT for the true extension name
   ext_name = "#{extension_name}.#{RbConfig::CONFIG['DLEXT']}"
@@ -20,20 +21,25 @@ def setup_extension(extension_name, gem_spec = nil)
     end
 
     # getting this file is part of the compile task
-    desc "Compile the extension"
-    task :compile => ["lib/#{ext_name}"]
+    desc "Compile Extension for current Ruby (= compile:mri)"
+    task :compile => [ 'compile:mri' ] unless JRUBY
 
-    file "ext/#{ext_name}" => FileList["ext/Makefile", "ext/*.c", "ext/*.h"] do
-      # Visual C make utility is named 'nmake', MinGW conforms GCC 'make' standard.
-      make_cmd = RUBY_PLATFORM =~ /mswin/ ? 'nmake' : 'make'
-      Dir.chdir('ext') do
-        sh make_cmd
+    namespace :compile do
+      desc 'Compile C Extension for Ruby 1.8 (MRI)'
+      task :mri => ["lib/#{ext_name}"]
+
+      file "ext/#{ext_name}" => FileList["ext/Makefile", "ext/*.c", "ext/*.h"] do
+        # Visual C make utility is named 'nmake', MinGW conforms GCC 'make' standard.
+        make_cmd = RUBY_PLATFORM =~ /mswin/ ? 'nmake' : 'make'
+        Dir.chdir('ext') do
+          sh make_cmd
+        end
       end
-    end
 
-    file "ext/Makefile" => "ext/extconf.rb" do
-      Dir.chdir('ext') do
-        ruby 'extconf.rb'
+      file "ext/Makefile" => "ext/extconf.rb" do
+        Dir.chdir('ext') do
+          ruby 'extconf.rb'
+        end
       end
     end
   else
@@ -42,7 +48,7 @@ def setup_extension(extension_name, gem_spec = nil)
 
   unless Rake::Task.task_defined?('native')
     if gem_spec
-      desc "Build the extensions into native binaries."
+      desc "Build Extensions into native binaries."
       task :native => [:compile] do |t|
         # use CURRENT platform instead of RUBY
         gem_spec.platform = Gem::Platform::CURRENT

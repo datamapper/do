@@ -3,21 +3,25 @@ require 'rake/clean'
 require 'rake/gempackagetask'
 require 'spec/rake/spectask'
 require 'pathname'
-require Pathname(__FILE__).dirname.expand_path.parent + 'ext_helper'
+require Pathname(__FILE__).dirname.expand_path.parent + 'tasks/ext_helper'
+require Pathname(__FILE__).dirname.expand_path.parent + 'tasks/ext_helper_java'
 
 # House-keeping
 CLEAN.include '**/*.o', '**/*.so', '**/*.bundle', '**/*.a',
   '**/*.log', '{ext,lib}/*.{bundle,so,obj,pdb,lib,def,exp}',
   'ext/Makefile'
 
+JRUBY   = (RUBY_PLATFORM =~ /java/) rescue nil
 WINDOWS = (RUBY_PLATFORM =~ /mswin|mingw|cygwin/) rescue nil
-SUDO    = WINDOWS ? '' : ('sudo' unless ENV['SUDOLESS'])
+          # don't use SUDO with JRuby, for the moment, although this behaviour
+          # is not entirely correct.
+SUDO    = (WINDOWS || JRUBY) ? '' : ('sudo' unless ENV['SUDOLESS'])
 
 spec = Gem::Specification.new do |s|
   s.name              = 'do_mysql'
   s.version           = '0.9.1'
   s.platform          = Gem::Platform::RUBY
-  s.has_rdoc          = true
+  s.has_rdoc          = false
   s.extra_rdoc_files  = %w[ LICENSE TODO ]
   s.summary           = 'A DataObject.rb driver for MySQL'
   s.description       = s.summary
@@ -36,7 +40,8 @@ Rake::GemPackageTask.new(spec) do |pkg|
 end
 
 # Use of ext_helper to properly setup compile tasks and native gem generation
-setup_extension "#{spec.name}_ext", spec
+setup_extension       "#{spec.name}_ext", spec
+setup_extension_java  "#{spec.name}_ext", spec
 
 task :install => [ :package ] do
   sh %{#{SUDO} gem install --local pkg/#{spec.name}-#{spec.version} --no-update-sources}, :verbose => false
