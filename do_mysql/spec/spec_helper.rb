@@ -14,16 +14,24 @@ require 'fileutils'
 $:.unshift File.expand_path(File.join(File.dirname(__FILE__), '..', '..', 'data_objects', 'lib'))
 require 'data_objects'
 
+if RUBY_PLATFORM =~ /java/
+  $:.unshift File.expand_path(File.join(File.dirname(__FILE__), '..', '..', 'do_jdbc-support', 'lib'))
+  require 'do_jdbc-support'
+end
+
 # put the pre-compiled extension in the path to be found
 $:.unshift File.expand_path(File.join(File.dirname(__FILE__), '..', 'lib'))
 require 'do_mysql'
 
-log_path = File.expand_path(File.join(File.dirname(__FILE__), '..', 'log', 'do.log'))
-FileUtils.mkdir_p(File.dirname(log_path))
+unless RUBY_PLATFORM =~ /java/
+  # FIXME: broken on JRuby
+  log_path = File.expand_path(File.join(File.dirname(__FILE__), '..', 'log', 'do.log'))
+  FileUtils.mkdir_p(File.dirname(log_path))
 
-DataObjects::Mysql.logger = DataObjects::Logger.new(log_path, 0)
+  DataObjects::Mysql.logger = DataObjects::Logger.new(log_path, 0)
 
-at_exit { DataObjects.logger.flush }
+  at_exit { DataObjects.logger.flush }
+end
 
 module MysqlSpecHelpers
   def insert(query, *args)
@@ -48,8 +56,13 @@ module MysqlSpecHelpers
   end
 
   def setup_test_environment
-    @connection = DataObjects::Mysql::Connection.new("mysql://root@127.0.0.1:3306/do_mysql_test")
-    @secondary_connection = DataObjects::Mysql::Connection.new("mysql://root@127.0.0.1:3306/do_mysql_test")
+    if RUBY_PLATFORM =~ /java/
+      @connection = DataObjects::Mysql::Connection.new("jdbc:mysql://root@127.0.0.1:3306/do_mysql_test")
+      @secondary_connection = DataObjects::Mysql::Connection.new("mysql://root@127.0.0.1:3306/do_mysql_test")
+    elsif
+      @connection = DataObjects::Mysql::Connection.new("jdbc:mysql://root@127.0.0.1:3306/do_mysql_test")
+      @secondary_connection = DataObjects::Mysql::Connection.new("mysql://root@127.0.0.1:3306/do_mysql_test")      
+    end
 
     @connection.create_command(<<-EOF).execute_non_query
       DROP TABLE IF EXISTS `invoices`
