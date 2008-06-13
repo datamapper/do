@@ -1,7 +1,11 @@
 require 'rubygems'
 require 'rake'
+require 'rake/clean'
+require 'rake/gempackagetask'
 require 'pathname'
 require Pathname('lib/do_jdbc/postgres_version')
+
+CLEAN.include '{pkg}/'
 
 spec = Gem::Specification.new do |s|
   s.name              = 'do_jdbc-postgres'
@@ -19,3 +23,14 @@ spec = Gem::Specification.new do |s|
 end
 
 warn "#{spec.name} is only for use with JRuby" unless RUBY_PLATFORM =~ /java/
+
+task :default => [ :install ]
+
+Rake::GemPackageTask.new(spec) do |pkg|
+  pkg.gem_spec = spec
+end
+
+desc "Install #{spec.name} #{spec.version}"
+task :install =>  [ :package ] do
+  sh %{jruby -S gem install --local pkg/#{spec.name}-#{spec.version} --no-update-sources}, :verbose => false
+end
