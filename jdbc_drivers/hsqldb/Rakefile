@@ -5,10 +5,10 @@ require Pathname('lib/do_jdbc/hsqldb_version')
 
 spec = Gem::Specification.new do |s|
   s.name              = 'do_jdbc-hsqldb'
-  s.version           = DataObjects::Jdbc::Derby::VERSION
+  s.version           = DataObjects::Jdbc::HSQLDB::VERSION
   s.platform          = 'java'
   s.has_rdoc          = false
-  s.extra_rdoc_files  = %w[ README APACHE-LICENSE-2.0 ]
+  s.extra_rdoc_files  = %w[ README HSQLDB-LICENSE ]
   s.summary           = 'JDBC Driver for HSQLDB, packaged as a Gem'
   s.description       = s.summary
   s.author            = ''
