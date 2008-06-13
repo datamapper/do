@@ -17,9 +17,9 @@ or:
 Installation
 ------------
 
-Install Data Objects 0.9.1 from Git sources:
+Install Data Objects 0.9.2 from Git sources:
 
-	jruby -S gem install pkg/data_objects-0.9.1.gem
+	jruby -S gem install pkg/data_objects-0.9.2.gem
 or
 
     rake jruby:install
@@ -29,7 +29,7 @@ then build, test Doppio:
 
  	jruby -S rake java_compile
 	jruby -S rake package
-	jruby -S gem install pkg/do_jdbc-support-0.9.1.gem
+	jruby -S gem install pkg/do_jdbc-support-0.9.2.gem
 
 Licensing and Copyright
 -----------------------
