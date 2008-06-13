@@ -62,3 +62,8 @@ end
 task :install => [ :package ] do
   sh %{jruby -S gem install pkg/#{spec.name}-#{spec.version} --no-update-sources}, :verbose => false
 end
+
+desc "Uninstall #{spec.name} #{spec.version} (default ruby)"
+task :uninstall => [ :clobber ] do
+  sh "jruby -S gem uninstall #{spec.name} -v#{spec.version} -I -x", :verbose => false
+end

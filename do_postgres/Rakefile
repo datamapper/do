@@ -45,6 +45,11 @@ task :install => [ :package ] do
   sh %{#{SUDO} gem install --local pkg/#{spec.name}-#{spec.version} --no-update-sources}, :verbose => false
 end
 
+desc "Uninstall #{spec.name} #{spec.version} (default ruby)"
+task :uninstall => [ :clobber ] do
+  sh "#{SUDO} gem uninstall #{spec.name} -v#{spec.version} -I -x", :verbose => false
+end
+
 desc 'Run specifications'
 Spec::Rake::SpecTask.new(:spec => [ :compile ]) do |t|
   t.spec_opts << '--options' << 'spec/spec.opts' if File.exists?('spec/spec.opts')
