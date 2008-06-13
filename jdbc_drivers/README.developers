@@ -1,0 +1,6 @@
+README for Developers
+=====================
+
+To update JDBC drivers from Maven Repository:
+
+    jruby -S buildr update_drivers

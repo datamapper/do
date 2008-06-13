@@ -1,0 +1,21 @@
+require 'rubygems'
+require 'rake'
+require 'pathname'
+require Pathname('lib/do_jdbc/hsqldb_version')
+
+spec = Gem::Specification.new do |s|
+  s.name              = 'do_jdbc-hsqldb'
+  s.version           = DataObjects::Jdbc::Derby::VERSION
+  s.platform          = 'java'
+  s.has_rdoc          = false
+  s.extra_rdoc_files  = %w[ README APACHE-LICENSE-2.0 ]
+  s.summary           = 'JDBC Driver for HSQLDB, packaged as a Gem'
+  s.description       = s.summary
+  s.author            = ''
+  s.email             = ''
+  s.homepage          = ''
+  s.require_path      = 'lib'
+  s.files             = FileList[ '{lib}/**/*.{rb,jar}', 'Rakefile', *s.extra_rdoc_files ]
+end
+
+warn "#{spec.name} is only for use with JRuby" unless RUBY_PLATFORM =~ /java/

@@ -1,13 +1,7 @@
-module DataObjects
-  module Jdbc
-    module HSQLDB
-      VERSION = "1.8.0.7"
-    end
-  end
-end
+require 'hsqldb_version'
 
 if RUBY_PLATFORM =~ /java/
   require "hsqldb-#{DataObjects::Jdbc::HSQLDB::VERSION}.jar"
 else
-  warn "jdbc-hsqldb is only for use with JRuby"
+  warn "do_jdbc-hsqldb is only for use with JRuby"
 end

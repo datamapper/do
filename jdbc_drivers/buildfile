@@ -1,0 +1,55 @@
+# Apache Buildr buildfile for jdbc_drivers
+#
+# tasks to help download and keep various driver Maven artefacts up-to-date
+# see http://incubator.apache.org/buildr/ for more information on Apache Buildr
+require 'buildr'
+require 'extlib'
+require 'pathname'
+
+dir = Pathname(__FILE__).dirname.expand_path
+derby_dir    =  dir / 'derby'    / 'lib'
+h2_dir       =  dir / 'h2'       / 'lib'
+hsqldb_dir   =  dir / 'hsqldb'   / 'lib'
+mysql_dir    =  dir / 'mysql'    / 'lib'
+postgres_dir =  dir / 'postgres' / 'lib'
+sqlite3_dir  =  dir / 'sqlite3'  / 'lib'
+
+# get the version of each of the JDBC Drivers
+require derby_dir     / 'do_jdbc' / 'derby_version'
+require h2_dir        / 'do_jdbc' / 'h2_version'
+require hsqldb_dir    / 'do_jdbc' / 'hsqldb_version'
+require mysql_dir     / 'do_jdbc' / 'mysql_version'
+require postgres_dir  / 'do_jdbc' / 'postgres_version'
+require sqlite3_dir   / 'do_jdbc' / 'sqlite3_version'
+
+# define the remote repositories and artefacts
+repositories.remote << 'http://www.ibiblio.org/maven2/'
+
+DERBY    = {  :group    => 'org.apache.derby',
+              :id       => 'derbyclient',
+              :version  => DataObjects::Jdbc::Derby::VERSION }     # 10.2.2.0
+H2       = {  :group    => 'com.h2database',
+              :id       => 'h2',
+              :version  => DataObjects::Jdbc::H2::VERSION }        # 1.0.20061217                             
+HSQLDB   = {  :group    => 'hsqldb',
+              :id       => 'hsqldb',
+              :version  => DataObjects::Jdbc::HSQLDB::VERSION }    #1.8.0.7
+MYSQL    = {  :group    => 'mysql',
+              :id       => 'mysql-connector-java',
+              :version  => DataObjects::Jdbc::MySQL::VERSION }     #5.0.5
+POSTGRES = {  :group    => 'postgresql',
+              :id       => 'postgresql',
+              :version  => DataObjects::Jdbc::Postgres::VERSION }  #8.1-407.jdbc3
+SQLITE3  = {  :group    => 'sqlite3',
+              :id       => 'sqlite3',
+              :version  => DataObjects::Jdbc::SQLite3::VERSION }
+
+define 'do_jdbc' do
+  task 'update_drivers' do
+    # download the drivers
+    cp(artifact(DERBY).download,  derby_dir)
+    cp(artifact(H2).download,     h2_dir)
+    cp(artifact(HSQLDB).download, hsqldb_dir)
+    cp(artifact(MYSQL).download,  mysql_dir)
+  end
+end
