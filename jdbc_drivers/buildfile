@@ -22,34 +22,65 @@ require mysql_dir     / 'do_jdbc' / 'mysql_version'
 require postgres_dir  / 'do_jdbc' / 'postgres_version'
 require sqlite3_dir   / 'do_jdbc' / 'sqlite3_version'
 
-# define the remote repositories and artefacts
+# define remote repository and artifacts
 repositories.remote << 'http://www.ibiblio.org/maven2/'
 
 DERBY    = {  :group    => 'org.apache.derby',
-              :id       => 'derbyclient',
-              :version  => DataObjects::Jdbc::Derby::VERSION }     # 10.2.2.0
+              :id       => 'derby',
+              :version  => DataObjects::Jdbc::Derby::VERSION }
+              # TODO: check this includes both client and embedded versions?
 H2       = {  :group    => 'com.h2database',
               :id       => 'h2',
-              :version  => DataObjects::Jdbc::H2::VERSION }        # 1.0.20061217                             
+              :version  => DataObjects::Jdbc::H2::VERSION }              
 HSQLDB   = {  :group    => 'hsqldb',
               :id       => 'hsqldb',
-              :version  => DataObjects::Jdbc::HSQLDB::VERSION }    #1.8.0.7
+              :version  => DataObjects::Jdbc::HSQLDB::VERSION }
 MYSQL    = {  :group    => 'mysql',
               :id       => 'mysql-connector-java',
-              :version  => DataObjects::Jdbc::MySQL::VERSION }     #5.0.5
+              :version  => DataObjects::Jdbc::MySQL::VERSION }
 POSTGRES = {  :group    => 'postgresql',
               :id       => 'postgresql',
-              :version  => DataObjects::Jdbc::Postgres::VERSION }  #8.1-407.jdbc3
-SQLITE3  = {  :group    => 'sqlite3',
+              :version  => DataObjects::Jdbc::Postgres::VERSION + "-504.jdbc3" }
+              # TODO: handle minor vs major versions more elegantly
+SQLITE3  = {  :group    => 'org.sqlite3',
               :id       => 'sqlite3',
               :version  => DataObjects::Jdbc::SQLite3::VERSION }
+              # TODO: there are JNI and pure Java versions - which one to use?
+              # Pure-Java: http://www.zentus.com/sqlitejdbc/dist/sqlitejdbc-v048-nested.tgz
+              # Windows:   http://www.zentus.com/sqlitejdbc/dist/sqlitejdbc-v048-Win-i586.tgz
+              # OSX:       http://www.zentus.com/sqlitejdbc/dist/sqlitejdbc-v048-Mac.tgz
+              # Linux:     http://www.zentus.com/sqlitejdbc/dist/sqlitejdbc-v048-Linux-i386.tgz
+
+# Download the Maven Artifact, and return the Path of the JAR file in the local
+# ~/.m2/repo folder
+#
+# TODO: this could use DRY'ing up and refactoring by someone who knows the
+#       buildr API well
+def download_and_get_path(artifact_hash)
+  artifact(artifact_hash).invoke
+  Artifact.lookup(artifact(artifact_hash).to_hash).to_s
+end
+
+# Copies only if the new file_path does not already exist
+#
+def copy_only_if_not_exist(old_file_path, new_file_path)
+  cp(old_file_path, new_file_path, :preserve => true, :verbose => true) unless File.exists?(new_file_path)
+end
 
 define 'do_jdbc' do
   task 'update_drivers' do
-    # download the drivers
-    cp(artifact(DERBY).download,  derby_dir)
-    cp(artifact(H2).download,     h2_dir)
-    cp(artifact(HSQLDB).download, hsqldb_dir)
-    cp(artifact(MYSQL).download,  mysql_dir)
+    # specify the local path for the driver artifacts
+    derby_file_path     = download_and_get_path(DERBY)
+    h2_file_path        = download_and_get_path(H2)
+    hsqldb_file_path    = download_and_get_path(HSQLDB)
+    mysql_file_path     = download_and_get_path(MYSQL)
+    postgres_file_path  = download_and_get_path(POSTGRES)
+    #sqlite_file_path  = download_and_get_path(SQLITE3)
+    
+    copy_only_if_not_exist(derby_file_path,    derby_dir    / DataObjects::Jdbc::Derby::JAR_NAME)
+    copy_only_if_not_exist(h2_file_path,       h2_dir       / DataObjects::Jdbc::H2::JAR_NAME)
+    copy_only_if_not_exist(hsqldb_file_path,   hsqldb_dir   / DataObjects::Jdbc::HSQLDB::JAR_NAME)
+    copy_only_if_not_exist(mysql_file_path,    mysql_dir    / DataObjects::Jdbc::MySQL::JAR_NAME)
+    copy_only_if_not_exist(postgres_file_path, postgres_dir / DataObjects::Jdbc::Postgres::JAR_NAME)
   end
 end
