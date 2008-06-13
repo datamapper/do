@@ -9,6 +9,7 @@ if RUBY_PLATFORM =~ /java/
   # Another way of loading the JDBC Class. This seems to be more relaible
   # than Class.forName() within the data_objects.Connection Java class,
   # which is currently not working as expected.
+  require 'java'
   import 'org.apache.derby.jdbc.EmbeddedDriver'
 
   module DataObjects

@@ -15,7 +15,7 @@ spec = Gem::Specification.new do |s|
   s.version           = '0.9.1'
   s.platform          = 'java'
   s.has_rdoc          = false
-  s.extra_rdoc_files  = %w[ README MIT-LICENSE APACHE-LICENSE-2.0 TODO ]
+  s.extra_rdoc_files  = %w[ README MIT-LICENSE TODO ]
   s.summary           = 'A DataObjects.rb driver for Derby'
   s.description       = s.summary
   s.author            = 'Alex Coles'
@@ -26,6 +26,7 @@ spec = Gem::Specification.new do |s|
   s.files             = FileList[ '{lib,spec}/**/*.{class,rb}', 'Rakefile', *s.extra_rdoc_files ]
   s.add_dependency('data_objects',    "= #{s.version}")
   s.add_dependency('do_jdbc-support', "= #{s.version}")
+  s.add_dependency('do_jdbc-derby')
 end
 
 Rake::GemPackageTask.new(spec) do |pkg|
