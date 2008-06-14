@@ -2,7 +2,7 @@ require 'pathname'
 require Pathname(__FILE__).dirname.expand_path.parent + 'spec_helper'
 require 'date'
 
-describe DataObjects::Mysql::Command. "Quoting" do
+describe DataObjects::Mysql::Command, "Quoting" do
   include MysqlSpecHelpers
 
   before :all do
