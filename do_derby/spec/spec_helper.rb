@@ -26,6 +26,13 @@ Spec::Runner.configure do |config|
   config.mock_with :mocha
 end
 
+log_path = File.expand_path(File.join(File.dirname(__FILE__), '..', 'log', 'do.log'))
+FileUtils.mkdir_p(File.dirname(log_path))
+
+DataObjects::Derby.logger = DataObjects::Logger.new(log_path, 0)
+
+at_exit { DataObjects.logger.flush }
+
 module DerbySpecHelpers
 
   def insert(query, *args)

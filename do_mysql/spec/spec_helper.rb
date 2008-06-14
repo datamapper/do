@@ -24,14 +24,12 @@ end
 $:.unshift File.expand_path(File.join(File.dirname(__FILE__), '..', 'lib'))
 require 'do_mysql'
 
-unless JRUBY # FIXME: broken on JRuby
-  log_path = File.expand_path(File.join(File.dirname(__FILE__), '..', 'log', 'do.log'))
-  FileUtils.mkdir_p(File.dirname(log_path))
+log_path = File.expand_path(File.join(File.dirname(__FILE__), '..', 'log', 'do.log'))
+FileUtils.mkdir_p(File.dirname(log_path))
 
-  DataObjects::Mysql.logger = DataObjects::Logger.new(log_path, 0)
+DataObjects::Mysql.logger = DataObjects::Logger.new(log_path, 0)
 
-  at_exit { DataObjects.logger.flush }
-end
+at_exit { DataObjects.logger.flush }
 
 # use different, JDBC-style URLs for JRuby, for the time-being
 DO_MYSQL_SPEC_URI      = ENV["DO_MYSQL_SPEC_URI"]      || "mysql://root@127.0.0.1:3306/do_mysql_test"
