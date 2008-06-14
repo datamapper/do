@@ -14,5 +14,9 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
     public ResultSet getGeneratedKeys(Connection connection) {
         return null;
     }
+    
+    public String quoteString(String str) {
+        return null;
+    }
 
 }
