@@ -41,7 +41,7 @@ public abstract class AbstractDataObjectsExtService implements BasicLibraryServi
         RubyClass connection = Connection.createConnectionClass(runtime, moduleName, errorName, driverDefinition);
         RubyClass result = Result.createResultClass(runtime, moduleName, errorName, driverDefinition);
         RubyClass reader = Reader.createReaderClass(runtime, moduleName, errorName, driverDefinition);
-        RubyClass transaction = Transaction.createTransactionClass(runtime, moduleName, errorName, driverDefinition);
+        //RubyClass transaction = Transaction.createTransactionClass(runtime, moduleName, errorName, driverDefinition);
 
         return true;
     }
