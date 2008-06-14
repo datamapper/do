@@ -3,7 +3,11 @@ require File.expand_path(File.join(File.dirname(__FILE__), 'spec_helper'))
 describe DataObjects::Mysql::Command do
 
   before(:each) do
-    @connection = DataObjects::Mysql::Connection.new("mysql://root@127.0.0.1:3306/do_mysql_test")
+    @connection = if JRUBY
+      DataObjects::Mysql::Connection.new(DO_MYSQL_SPEC_JDBC_URI)
+    else
+      DataObjects::Mysql::Connection.new(DO_MYSQL_SPEC_URI)
+    end
   end
 
   describe "Executing a Reader" do

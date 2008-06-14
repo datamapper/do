@@ -14,7 +14,7 @@ if RUBY_PLATFORM =~ /java/
   import 'com.mysql.jdbc.Driver'
 
   module DataObjects
-    module MySql
+    module Mysql
       class Connection
         def self.pool_size
           20

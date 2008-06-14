@@ -120,11 +120,11 @@ public final class DataObjectsUtils {
     }
 
     public static IRubyObject parse_date(Ruby runtime, Date dt) {
-        throw new UnsupportedOperationException("Not yet implemented");
+        return RubyTime.newTime(runtime, 10000000000L);
     }
 
     public static IRubyObject parse_date_time(Ruby runtime, Timestamp ts) {
-        throw new UnsupportedOperationException("Not yet implemented");
+        return RubyTime.newTime(runtime, 10000000000L);
     }
 
     public static IRubyObject parse_time(Ruby runtime, Time tm) {

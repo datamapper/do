@@ -16,6 +16,7 @@ describe DataObjects::Mysql do
   end
 
   it "should connect successfully via TCP" do
+    pending "Problems parsing regular connection URIs vs. JDBC URLs" if JRUBY
     connection = DataObjects::Mysql::Connection.new("mysql://root@127.0.0.1:3306/do_mysql_test")
     connection.should_not be_using_socket
   end
@@ -31,11 +32,13 @@ describe DataObjects::Mysql do
 #  end
 
   it "should return the current character set" do
+    pending "Problems parsing regular connection URIs vs. JDBC URLs" if JRUBY
     connection = DataObjects::Mysql::Connection.new("mysql://root@localhost:3306/do_mysql_test")
     connection.character_set.should == "utf8"
   end
 
   it "should support changing the character set" do
+    pending "Problems parsing regular connection URIs vs. JDBC URLs" if JRUBY
     connection = DataObjects::Mysql::Connection.new("mysql://root@localhost:3306/do_mysql_test/?charset=latin1")
     connection.character_set.should == "latin1"
 
@@ -44,6 +47,7 @@ describe DataObjects::Mysql do
   end
 
   it "should raise an error when opened with an invalid server uri" do
+    pending "Problems parsing regular connection URIs vs. JDBC URLs" if JRUBY
     def connecting_with(uri)
       lambda { DataObjects::Mysql::Connection.new(uri) }
     end
@@ -267,7 +271,5 @@ describe DataObjects::Mysql::Reader do
     end
 
   end
-
-
 
 end

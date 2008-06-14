@@ -26,7 +26,8 @@ def setup_extension_java(extension_name, gem_spec = nil)
           puts "#{spec.name} requires the buildr gem to compile the Java extension"
         end
       end
-
     end
+    file "lib/#{ext_name}" => 'compile:jruby'
+
   end
 end

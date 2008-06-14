@@ -5,7 +5,11 @@ require 'date'
 describe DataObjects::Mysql::Command do
 
   before(:each) do
-    @connection = DataObjects::Mysql::Connection.new("mysql://root@127.0.0.1:3306/do_mysql_test")
+    @connection = if JRUBY
+      DataObjects::Mysql::Connection.new(DO_MYSQL_SPEC_JDBC_URI)
+    else
+      DataObjects::Mysql::Connection.new(DO_MYSQL_SPEC_URI)
+    end
   end
 
   it "should escape strings properly" do

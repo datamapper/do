@@ -1,4 +1,5 @@
 $TESTING=true
+JRUBY = RUBY_PLATFORM =~ /java/
 
 require 'rubygems'
 
@@ -14,7 +15,7 @@ require 'fileutils'
 $:.unshift File.expand_path(File.join(File.dirname(__FILE__), '..', '..', 'data_objects', 'lib'))
 require 'data_objects'
 
-if RUBY_PLATFORM =~ /java/
+if JRUBY
   $:.unshift File.expand_path(File.join(File.dirname(__FILE__), '..', '..', 'do_jdbc-support', 'lib'))
   require 'do_jdbc-support'
 end
@@ -23,8 +24,7 @@ end
 $:.unshift File.expand_path(File.join(File.dirname(__FILE__), '..', 'lib'))
 require 'do_mysql'
 
-unless RUBY_PLATFORM =~ /java/
-  # FIXME: broken on JRuby
+unless JRUBY # FIXME: broken on JRuby
   log_path = File.expand_path(File.join(File.dirname(__FILE__), '..', 'log', 'do.log'))
   FileUtils.mkdir_p(File.dirname(log_path))
 
@@ -32,6 +32,10 @@ unless RUBY_PLATFORM =~ /java/
 
   at_exit { DataObjects.logger.flush }
 end
+
+# use different, JDBC-style URLs for JRuby, for the time-being
+DO_MYSQL_SPEC_URI      = ENV["DO_MYSQL_SPEC_URI"]      || "mysql://root@127.0.0.1:3306/do_mysql_test"
+DO_MYSQL_SPEC_JDBC_URI = ENV["DO_MYSQL_SPEC_JDBC_URI"] || "jdbc:mysql://localhost:3306/do_mysql_test?user=root"
 
 module MysqlSpecHelpers
   def insert(query, *args)
@@ -56,12 +60,12 @@ module MysqlSpecHelpers
   end
 
   def setup_test_environment
-    if RUBY_PLATFORM =~ /java/
-      @connection = DataObjects::Mysql::Connection.new("jdbc:mysql://root@127.0.0.1:3306/do_mysql_test")
-      @secondary_connection = DataObjects::Mysql::Connection.new("mysql://root@127.0.0.1:3306/do_mysql_test")
+    if JRUBY # use different, JDBC-style URLs for JRuby, for the time-being
+      @connection = DataObjects::Mysql::Connection.new(DO_MYSQL_SPEC_JDBC_URI)
+      @secondary_connection = DataObjects::Mysql::Connection.new(DO_MYSQL_SPEC_JDBC_URI)
     elsif
-      @connection = DataObjects::Mysql::Connection.new("jdbc:mysql://root@127.0.0.1:3306/do_mysql_test")
-      @secondary_connection = DataObjects::Mysql::Connection.new("mysql://root@127.0.0.1:3306/do_mysql_test")      
+      @connection = DataObjects::Mysql::Connection.new(DO_MYSQL_SPEC_URI)
+      @secondary_connection = DataObjects::Mysql::Connection.new(DO_MYSQL_SPEC_URI)
     end
 
     @connection.create_command(<<-EOF).execute_non_query

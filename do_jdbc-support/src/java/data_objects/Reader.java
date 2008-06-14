@@ -194,7 +194,14 @@ public class Reader extends RubyObject {
                 }
                 return DataObjectsUtils.parse_date(runtime, dt);
             case DATE_TIME:
-                java.sql.Timestamp ts = rs.getTimestamp(col);
+                java.sql.Timestamp ts = null;
+                // DateTimes with all-zero components throw a SQLException with
+                // SQLState S1009 in MySQL Connector/J 3.1+
+                // See http://dev.mysql.com/doc/refman/5.0/en/connector-j-installing-upgrading.html
+                try {
+                    ts = rs.getTimestamp(col);
+                } catch (SQLException sqle) {
+                }
                 if (ts == null || rs.wasNull()) {
                     return runtime.getNil();
                 }
@@ -211,7 +218,9 @@ public class Reader extends RubyObject {
                 if (str == null || rs.wasNull()) {
                     return runtime.getNil();
                 }
-                return RubyString.newUnicodeString(runtime, str);
+                RubyString return_str = RubyString.newUnicodeString(runtime, str);
+                return_str.setTaint(true);
+                return return_str;
         }
     }
 }
