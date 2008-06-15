@@ -31,17 +31,16 @@ public abstract class AbstractDataObjectsExtService implements BasicLibraryServi
 
         // Define the DataObjects module for this Driver
         // e.g. DataObjects::Derby, DataObjects::MySql
-        RubyModule doDriverModule = doModule.defineModuleUnder(moduleName);
+        doModule.defineModuleUnder(moduleName);
 
         // Define a driver Error class
         runtime.defineClass(getErrorName(), runtime.getStandardError(), runtime.getStandardError().getAllocator());
 
         // Define the DataObjects driver classes
-        RubyClass command = Command.createCommandClass(runtime, moduleName, errorName, driverDefinition);
-        RubyClass connection = Connection.createConnectionClass(runtime, moduleName, errorName, driverDefinition);
-        RubyClass result = Result.createResultClass(runtime, moduleName, errorName, driverDefinition);
-        RubyClass reader = Reader.createReaderClass(runtime, moduleName, errorName, driverDefinition);
-        //RubyClass transaction = Transaction.createTransactionClass(runtime, moduleName, errorName, driverDefinition);
+        Command.createCommandClass(runtime, moduleName, errorName, driverDefinition);
+        Connection.createConnectionClass(runtime, moduleName, errorName, driverDefinition);
+        Result.createResultClass(runtime, moduleName, errorName, driverDefinition);
+        Reader.createReaderClass(runtime, moduleName, errorName, driverDefinition);
 
         return true;
     }
