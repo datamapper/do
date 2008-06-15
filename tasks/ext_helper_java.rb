@@ -19,7 +19,7 @@ def setup_extension_java(extension_name, gem_spec = nil)
           # require 'buildr'
           # FIXME: this is throwing rspec activation errors
           sh %{jruby -S buildr package}
-          
+
           buildr_output = extension_name.gsub(/_(ext)$/, '-\1-java-1.0.jar')
           cp "ext-java/target/#{buildr_output}", "lib/#{ext_name}"
         rescue LoadError
