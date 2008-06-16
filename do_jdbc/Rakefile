@@ -47,7 +47,7 @@ task :java_compile do
   pkg_classes = File.join(*%w(pkg classes))
   jar_name = File.join(*%w(lib do_jdbc_internal.jar))
   mkdir_p pkg_classes
-  sh "javac -target 1.5 -source 1.5 -d pkg/classes #{java_classpath_arg} #{FileList['src/java/**/*.java'].join(' ')}"
+  sh "javac -target 1.5 -source 1.5 -Xlint:unchecked -d pkg/classes #{java_classpath_arg} #{FileList['src/java/**/*.java'].join(' ')}"
   sh "jar cf #{jar_name} -C #{pkg_classes} ."
 end
 file "lib/do_jdbc_internal.jar" => :java_compile
