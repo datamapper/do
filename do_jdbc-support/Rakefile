@@ -12,7 +12,7 @@ JRUBY = (RUBY_PLATFORM =~ /java/) rescue nil
 
 spec = Gem::Specification.new do |s|
   s.name              = 'do_jdbc'
-  s.version           = '0.9.2'
+  s.version           = '0.9.3'
   s.platform          = 'java'
   s.has_rdoc          = true
   s.extra_rdoc_files  = %w[ README MIT-LICENSE GPL-LICENSE TODO ]

@@ -19,7 +19,7 @@ SUDO    = (WINDOWS || JRUBY) ? '' : ('sudo' unless ENV['SUDOLESS'])
 
 spec = Gem::Specification.new do |s|
   s.name              = 'do_mysql'
-  s.version           = '0.9.2'
+  s.version           = '0.9.3'
   s.platform          = Gem::Platform::RUBY
   s.has_rdoc          = false
   s.extra_rdoc_files  = %w[ LICENSE TODO ]
