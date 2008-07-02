@@ -21,6 +21,7 @@ describe "DataObjects::Postgres::Connection" do
 
   it "should connect to the db" do
     connection = DataObjects::Connection.new("postgres://localhost/do_test")
+    connection.close
   end
 end
 
@@ -29,6 +30,10 @@ describe "DataObjects::Postgres::Command" do
 
   before :all do
     @connection = ensure_users_table_and_return_connection
+  end
+
+  after :all do
+    @connection.close
   end
 
   it "should create a command" do
@@ -60,6 +65,10 @@ describe "DataObjects::Postgres::Result" do
 
   before :all do
     @connection = ensure_users_table_and_return_connection
+  end
+
+  after :all do
+    @connection.close
   end
 
   it "should raise errors on bad queries" do
