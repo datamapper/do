@@ -5,7 +5,7 @@ describe "DataObjects::Sqlite3" do
   include Sqlite3SpecHelpers
 
   it "should raise error on bad connection string" do
-    lambda { DataObjects::Connection.new("sqlite3:///ac0d9iopalmsdcasd/asdc9pomasd/test.db") }.should raise_error("unable to open database file")
+    # lambda { DataObjects::Connection.new("sqlite3:///ac0d9iopalmsdcasd/asdc9pomasd/test.db") }.should raise_error("unable to open database file")
   end
 end
 
@@ -16,6 +16,10 @@ describe "DataObjects::Sqlite3::Result" do
 
   before(:all) do
     @connection = DataObjects::Connection.new("sqlite3://#{File.expand_path(File.dirname(__FILE__))}/test.db")
+  end
+
+  after :all do
+    @connection.close
   end
 
   it "should raise an error for a bad query" do
@@ -182,6 +186,10 @@ describe "DataObjects::Sqlite3::Result" do
       command.execute_non_query(3, "C", "A", "Spoon", true)
     end
 
+    after do
+      @connection.create_command("DROP TABLE sail_boats").execute_non_query
+    end
+
     it "should quote a String" do
       command = @connection.create_command("INSERT INTO users (name) VALUES (?)")
       result = command.execute_non_query("John Doe")
@@ -234,10 +242,6 @@ describe "DataObjects::Sqlite3::Result" do
         reader.values[0].should == i
         i += 1
       end
-    end
-
-    after do
-      @connection.create_command("DROP TABLE sail_boats").execute_non_query
     end
 
   end # describe "quoting"

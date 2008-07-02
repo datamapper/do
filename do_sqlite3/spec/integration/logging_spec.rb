@@ -7,6 +7,10 @@ describe DataObjects::Sqlite3::Command do
     @connection = DataObjects::Connection.new("sqlite3://#{File.expand_path(File.dirname(__FILE__))}/test.db")
   end
 
+  after(:each) do
+    @connection.close
+  end
+
   describe "Executing a Reader" do
 
     it "should log reader queries when the level is Debug (0)" do
