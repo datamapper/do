@@ -61,12 +61,12 @@ static VALUE cCommand;
 static VALUE cResult;
 static VALUE cReader;
 static VALUE eMysqlError;
- 
+
 // Figures out what we should cast a given mysql field type to
 static char * ruby_type_from_mysql_type(MYSQL_FIELD *field) {
- 
+
 	char* ruby_type_name;
-	
+
 	switch(field->type) {
 		case MYSQL_TYPE_NULL: {
 			ruby_type_name = NULL;
@@ -108,7 +108,7 @@ static char * ruby_type_from_mysql_type(MYSQL_FIELD *field) {
 			ruby_type_name = "String";
 		}
 	}
- 
+
 	return ruby_type_name;
 }
 
@@ -124,7 +124,7 @@ static void reduce( do_int64 *numerator, do_int64 *denominator ) {
   *numerator = *numerator / b;
   *denominator = *denominator / b;
 }
- 
+
 // Generate the date integer which Date.civil_to_jd returns
 static int jd_from_date(int year, int month, int day) {
   int a, b;
@@ -147,7 +147,7 @@ static VALUE parse_date(const char *date) {
 	int year, month, day;
 	int jd, ajd;
 	VALUE rational;
-	
+
 	sscanf(date, "%4d-%2d-%2d", &year, &month, &day);
 
 	jd = jd_from_date(year, month, day);
@@ -181,15 +181,15 @@ static VALUE parse_date_time(const char *date_time) {
 	int year, month, day, hour, min, sec;
 	int jd;
 	do_int64 num, den;
-	
+
 	time_t rawtime;
 	struct tm * timeinfo;
 
 	// Mysql date format: 2008-05-03 14:43:00
 	sscanf(date_time, "%4d-%2d-%2d %2d:%2d:%2d", &year, &month, &day, &hour, &min, &sec);
-		
+
 	jd = jd_from_date(year, month, day);
-	
+
 	// Generate ajd with fractional days for the time
 	// Extracted from Date#jd_to_ajd, Date#day_fraction_to_time, and Rational#+ and #-
 	num = ((hour) * 1440) + ((min) * 24); // (Hour * Minutes in a day) + (minutes * 24)
@@ -197,7 +197,7 @@ static VALUE parse_date_time(const char *date_time) {
 	// Get localtime
 	time(&rawtime);
 	timeinfo = localtime(&rawtime);
-	
+
 	// TODO: Refactor the following few lines to do the calculation with the *seconds*
 	// value instead of having to do the hour/minute math
 	int hour_offset = abs(timeinfo->tm_gmtoff) / 3600;
@@ -211,22 +211,22 @@ static VALUE parse_date_time(const char *date_time) {
 		// If the Timezone is ahead of UTC, we need to subtract the time offset
 		num -= (hour_offset * 1440) + (minute_offset * 24);
 	}
-	
+
 	den = (24 * 1440);
 	reduce(&num, &den);
-	
+
 	num = (num * 86400) + (sec * den);
 	den = den * 86400;
 	reduce(&num, &den);
-	
+
 	num = (jd * den) + num;
-	
+
 	num = num * 2 - den;
 	den = den * 2;
 	reduce(&num, &den);
-	
+
 	ajd = rb_funcall(rb_cRational, rb_intern("new!"), 2, rb_ull2inum(num), rb_ull2inum(den));
-	
+
 	// Calculate the offset using the seconds from GMT
 	offset = seconds_to_offset(timeinfo->tm_gmtoff);
 
@@ -264,7 +264,7 @@ static VALUE typecast(const char* value, char* type) {
 static void data_objects_debug(VALUE string) {
 	VALUE logger = rb_funcall(mDOMysql, ID_LOGGER, 0);
 	int log_level = NUM2INT(rb_funcall(logger, ID_LEVEL, 0));
-	
+
 	if (0 == log_level) {
 		rb_funcall(logger, ID_DEBUG, 1, string);
 	}
@@ -276,61 +276,61 @@ static void raise_mysql_error(MYSQL *db, int mysql_error_code) {
 	char *error_message = (char *)mysql_error(db);
 
 	switch(mysql_error_code) {
-		case CR_UNKNOWN_ERROR: 
-		case CR_SOCKET_CREATE_ERROR: 
-		case CR_CONNECTION_ERROR: 
-		case CR_CONN_HOST_ERROR: 
-		case CR_IPSOCK_ERROR: 
-		case CR_UNKNOWN_HOST: 
-		case CR_SERVER_GONE_ERROR: 
-		case CR_VERSION_ERROR: 
-		case CR_OUT_OF_MEMORY: 
-		case CR_WRONG_HOST_INFO: 
-		case CR_LOCALHOST_CONNECTION: 
-		case CR_TCP_CONNECTION: 
-		case CR_SERVER_HANDSHAKE_ERR: 
-		case CR_SERVER_LOST: 
-		case CR_COMMANDS_OUT_OF_SYNC: 
-		case CR_NAMEDPIPE_CONNECTION: 
-		case CR_NAMEDPIPEWAIT_ERROR: 
-		case CR_NAMEDPIPEOPEN_ERROR: 
-		case CR_NAMEDPIPESETSTATE_ERROR: 
-		case CR_CANT_READ_CHARSET: 
-		case CR_NET_PACKET_TOO_LARGE: 
-		case CR_EMBEDDED_CONNECTION: 
-		case CR_PROBE_SLAVE_STATUS: 
-		case CR_PROBE_SLAVE_HOSTS: 
-		case CR_PROBE_SLAVE_CONNECT: 
-		case CR_PROBE_MASTER_CONNECT: 
-		case CR_SSL_CONNECTION_ERROR: 
-		case CR_MALFORMED_PACKET: 
-		case CR_WRONG_LICENSE: 
-		case CR_NULL_POINTER: 
-		case CR_NO_PREPARE_STMT: 
-		case CR_PARAMS_NOT_BOUND: 
-		case CR_DATA_TRUNCATED: 
-		case CR_NO_PARAMETERS_EXISTS: 
-		case CR_INVALID_PARAMETER_NO: 
-		case CR_INVALID_BUFFER_USE: 
-		case CR_UNSUPPORTED_PARAM_TYPE: 
-		case CR_SHARED_MEMORY_CONNECTION: 
-		case CR_SHARED_MEMORY_CONNECT_REQUEST_ERROR: 
-		case CR_SHARED_MEMORY_CONNECT_ANSWER_ERROR: 
-		case CR_SHARED_MEMORY_CONNECT_FILE_MAP_ERROR: 
-		case CR_SHARED_MEMORY_CONNECT_MAP_ERROR: 
-		case CR_SHARED_MEMORY_FILE_MAP_ERROR: 
-		case CR_SHARED_MEMORY_MAP_ERROR: 
-		case CR_SHARED_MEMORY_EVENT_ERROR: 
-		case CR_SHARED_MEMORY_CONNECT_ABANDONED_ERROR: 
-		case CR_SHARED_MEMORY_CONNECT_SET_ERROR: 
-		case CR_CONN_UNKNOW_PROTOCOL: 
-		case CR_INVALID_CONN_HANDLE: 
-		case CR_SECURE_AUTH: 
-		case CR_FETCH_CANCELED: 
-		case CR_NO_DATA: 
-		case CR_NO_STMT_METADATA: 
+		case CR_UNKNOWN_ERROR:
+		case CR_SOCKET_CREATE_ERROR:
+		case CR_CONNECTION_ERROR:
+		case CR_CONN_HOST_ERROR:
+		case CR_IPSOCK_ERROR:
+		case CR_UNKNOWN_HOST:
+		case CR_SERVER_GONE_ERROR:
+		case CR_VERSION_ERROR:
+		case CR_OUT_OF_MEMORY:
+		case CR_WRONG_HOST_INFO:
+		case CR_LOCALHOST_CONNECTION:
+		case CR_TCP_CONNECTION:
+		case CR_SERVER_HANDSHAKE_ERR:
+		case CR_SERVER_LOST:
+		case CR_COMMANDS_OUT_OF_SYNC:
+		case CR_NAMEDPIPE_CONNECTION:
+		case CR_NAMEDPIPEWAIT_ERROR:
+		case CR_NAMEDPIPEOPEN_ERROR:
+		case CR_NAMEDPIPESETSTATE_ERROR:
+		case CR_CANT_READ_CHARSET:
+		case CR_NET_PACKET_TOO_LARGE:
+		case CR_EMBEDDED_CONNECTION:
+		case CR_PROBE_SLAVE_STATUS:
+		case CR_PROBE_SLAVE_HOSTS:
+		case CR_PROBE_SLAVE_CONNECT:
+		case CR_PROBE_MASTER_CONNECT:
+		case CR_SSL_CONNECTION_ERROR:
+		case CR_MALFORMED_PACKET:
+		case CR_WRONG_LICENSE:
+		case CR_NULL_POINTER:
+		case CR_NO_PREPARE_STMT:
+		case CR_PARAMS_NOT_BOUND:
+		case CR_DATA_TRUNCATED:
+		case CR_NO_PARAMETERS_EXISTS:
+		case CR_INVALID_PARAMETER_NO:
+		case CR_INVALID_BUFFER_USE:
+		case CR_UNSUPPORTED_PARAM_TYPE:
+		case CR_SHARED_MEMORY_CONNECTION:
+		case CR_SHARED_MEMORY_CONNECT_REQUEST_ERROR:
+		case CR_SHARED_MEMORY_CONNECT_ANSWER_ERROR:
+		case CR_SHARED_MEMORY_CONNECT_FILE_MAP_ERROR:
+		case CR_SHARED_MEMORY_CONNECT_MAP_ERROR:
+		case CR_SHARED_MEMORY_FILE_MAP_ERROR:
+		case CR_SHARED_MEMORY_MAP_ERROR:
+		case CR_SHARED_MEMORY_EVENT_ERROR:
+		case CR_SHARED_MEMORY_CONNECT_ABANDONED_ERROR:
+		case CR_SHARED_MEMORY_CONNECT_SET_ERROR:
+		case CR_CONN_UNKNOW_PROTOCOL:
+		case CR_INVALID_CONN_HANDLE:
+		case CR_SECURE_AUTH:
+		case CR_FETCH_CANCELED:
+		case CR_NO_DATA:
+		case CR_NO_STMT_METADATA:
 #if MYSQL_VERSION_ID >= 50000
-		case CR_NO_RESULT_SET: 
+		case CR_NO_RESULT_SET:
 		case CR_NOT_IMPLEMENTED:
 #endif
 		{
@@ -341,7 +341,7 @@ static void raise_mysql_error(MYSQL *db, int mysql_error_code) {
 			break;
 		}
 	}
-	
+
 	rb_raise(eMysqlError, error_message);
 }
 
@@ -386,7 +386,7 @@ static VALUE cConnection_initialize(VALUE self, VALUE uri) {
 	if (Qnil != r_host) {
 		host = StringValuePtr(r_host);
 	}
-	
+
 	r_user = rb_funcall(uri, rb_intern("user"), 0);
 	if (Qnil != r_user) {
 		user = StringValuePtr(r_user);
@@ -537,12 +537,12 @@ static VALUE cCommand_quote_string(VALUE self, VALUE string) {
 	const char *source = StringValuePtr(string);
 	char *escaped;
 	VALUE result;
-	
+
 	int quoted_length = 0;
 
 	// Allocate space for the escaped version of 'string'.  Use + 3 allocate space for null term.
 	// and the leading and trailing single-quotes.
-	// Thanks to http://www.browardphp.com/mysql_manual_en/manual_MySQL_APIs.html#mysql_real_escape_string	
+	// Thanks to http://www.browardphp.com/mysql_manual_en/manual_MySQL_APIs.html#mysql_real_escape_string
 	escaped = (char *)calloc(strlen(source) * 3 + 3, sizeof(char));
 
 	// Escape 'source' using the current charset in use on the conection 'db'
@@ -619,9 +619,9 @@ static VALUE cCommand_execute_reader(int argc, VALUE *argv, VALUE self) {
 	if (!response) {
 		return Qnil;
 	}
-	
+
 	field_count = (int)mysql_field_count(db);
-	
+
 	reader = rb_funcall(cReader, ID_NEW, 0);
 	rb_iv_set(reader, "@reader", Data_Wrap_Struct(rb_cObject, 0, 0, response));
 	rb_iv_set(reader, "@opened", Qtrue);
@@ -643,7 +643,7 @@ static VALUE cCommand_execute_reader(int argc, VALUE *argv, VALUE self) {
 	for(i = 0; i < field_count; i++) {
 		field = mysql_fetch_field_direct(response, i);
 		rb_ary_push(field_names, RUBY_STRING(field->name));
-		
+
 		if (1 == guess_default_field_types) {
 			VALUE field_ruby_type_name = RUBY_STRING(ruby_type_from_mysql_type(field));
 			rb_ary_push(field_types, field_ruby_type_name);
@@ -677,7 +677,7 @@ static VALUE cReader_close(VALUE self) {
 	if (NULL == reader)
 		return Qfalse;
 
-	mysql_free_result(reader);		
+	mysql_free_result(reader);
 	rb_iv_set(self, "@reader", Qnil);
 
 	return Qtrue;
@@ -758,14 +758,14 @@ void Init_do_mysql_ext() {
 	ID_LOGGER = rb_intern("logger");
 	ID_DEBUG = rb_intern("debug");
 	ID_LEVEL = rb_intern("level");
-	
+
 	// Store references to a few helpful clases that aren't in Ruby Core
 	rb_cDate = RUBY_CLASS("Date");
 	rb_cDateTime = RUBY_CLASS("DateTime");
 	rb_cRational = RUBY_CLASS("Rational");
 	rb_cBigDecimal = RUBY_CLASS("BigDecimal");
 	rb_cCGI = RUBY_CLASS("CGI");
-	
+
 	// Get references to the DataObjects module and its classes
 	mDO = CONST_GET(rb_mKernel, "DataObjects");
 	cDO_Quoting = CONST_GET(mDO, "Quoting");
@@ -776,15 +776,15 @@ void Init_do_mysql_ext() {
 
 	// Top Level Module that all the classes live under
 	mDOMysql = rb_define_module_under(mDO, "Mysql");
-	
+
 	eMysqlError = rb_define_class("MysqlError", rb_eStandardError);
-	
+
 	cConnection = DRIVER_CLASS("Connection", cDO_Connection);
 	rb_define_method(cConnection, "initialize", cConnection_initialize, 1);
 	rb_define_method(cConnection, "using_socket?", cConnection_is_using_socket, 0);
 	rb_define_method(cConnection, "character_set", cConnection_character_set , 0);
 	rb_define_method(cConnection, "dispose", cConnection_dispose, 0);
-	
+
 	cCommand = DRIVER_CLASS("Command", cDO_Command);
 	rb_include_module(cCommand, cDO_Quoting);
 	rb_define_method(cCommand, "set_types", cCommand_set_types, 1);
@@ -797,7 +797,7 @@ void Init_do_mysql_ext() {
 
 	// Non-Query result
 	cResult = DRIVER_CLASS("Result", cDO_Result);
-	
+
 	// Query result
 	cReader = DRIVER_CLASS("Reader", cDO_Reader);
 	rb_define_method(cReader, "close", cReader_close, 0);

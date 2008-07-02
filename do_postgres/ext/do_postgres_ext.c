@@ -53,7 +53,7 @@ static VALUE ePostgresError;
 static void data_objects_debug(VALUE string) {
 	VALUE logger = rb_funcall(mPostgres, ID_LOGGER, 0);
 	int log_level = NUM2INT(rb_funcall(logger, ID_LEVEL, 0));
-	
+
 	if (0 == log_level) {
 		rb_funcall(logger, ID_DEBUG, 1, string);
 	}
@@ -87,23 +87,23 @@ static VALUE parse_date(const char *date) {
 	int year, month, day;
 	int jd, ajd;
 	VALUE rational;
-	
+
 	sscanf(date, "%4d-%2d-%2d", &year, &month, &day);
-	
+
 	jd = jd_from_date(year, month, day);
-	
+
 	// Math from Date.jd_to_ajd
 	ajd = jd * 2 - 1;
 	rational = rb_funcall(rb_cRational, rb_intern("new!"), 2, INT2NUM(ajd), INT2NUM(2));
-	
+
 	return rb_funcall(rb_cDate, ID_NEW_DATE, 3, rational, INT2NUM(0), INT2NUM(2299161));
 }
 
 // Creates a Rational for use as a Timezone offset to be passed to DateTime.new!
 static VALUE seconds_to_offset(do_int64 num) {
-	do_int64 den = 86400;	
+	do_int64 den = 86400;
 	reduce(&num, &den);
-	return rb_funcall(rb_cRational, rb_intern("new!"), 2, rb_ll2inum(num), rb_ll2inum(den));	
+	return rb_funcall(rb_cRational, rb_intern("new!"), 2, rb_ll2inum(num), rb_ll2inum(den));
 }
 
 static VALUE timezone_to_offset(int hour_offset, int minute_offset) {
@@ -121,15 +121,15 @@ static VALUE parse_date_time(const char *date) {
 	int year, month, day, hour, min, sec, usec, hour_offset, minute_offset;
 	int jd;
 	do_int64 num, den;
-	
+
 	long int gmt_offset;
 	int is_dst;
-	
+
 	time_t rawtime;
 	struct tm * timeinfo;
 
 	int tokens_read, max_tokens;
-	
+
 	if (0 != strchr(date, '.')) {
 		// This is a datetime with sub-second precision
 		tokens_read = sscanf(date, "%4d-%2d-%2d %2d:%2d:%2d.%d%3d:%2d", &year, &month, &day, &hour, &min, &sec, &usec, &hour_offset, &minute_offset);
@@ -139,7 +139,7 @@ static VALUE parse_date_time(const char *date) {
 		tokens_read = sscanf(date, "%4d-%2d-%2d %2d:%2d:%2d%3d:%2d", &year, &month, &day, &hour, &min, &sec, &hour_offset, &minute_offset);
 		max_tokens = 8;
 	}
-	
+
 	if (max_tokens == tokens_read) {
 		// We read the Date, Time, and Timezone info
 		minute_offset *= hour_offset < 0 ? -1 : 1;
@@ -150,11 +150,11 @@ static VALUE parse_date_time(const char *date) {
 		return parse_date(date);
 	} else if (tokens_read >= (max_tokens - 3)) {
 		// We read the Date and Time, default to the current locale's offset
-		
+
 		// Get localtime
 		time(&rawtime);
 		timeinfo = localtime(&rawtime);
-		
+
 		is_dst = timeinfo->tm_isdst * 3600;
 
 		// Reset to GM Time
@@ -181,7 +181,7 @@ static VALUE parse_date_time(const char *date) {
 
 	// Modify the numerator so when we apply the timezone everything works out
 	num -= (hour_offset * 1440) + (minute_offset * 24);
-	
+
 	den = (24 * 1440);
 	reduce(&num, &den);
 
@@ -199,7 +199,7 @@ static VALUE parse_date_time(const char *date) {
 
 	ajd = rb_funcall(rb_cRational, rb_intern("new!"), 2, rb_ull2inum(num), rb_ull2inum(den));
 	offset = timezone_to_offset(hour_offset, minute_offset);
-	
+
 	return rb_funcall(rb_cDateTime, ID_NEW_DATE, 3, ajd, offset, INT2NUM(2299161));
 }
 
@@ -260,7 +260,7 @@ static VALUE infer_ruby_type(Oid type) {
 }
 
 static VALUE typecast(char *value, char *type) {
-	
+
 	if ( strcmp(type, "Class") == 0) {
 	  return rb_funcall(mDO, rb_intern("find_const"), 1, TAINTED_STRING(value));
 	} else if ( strcmp(type, "Integer") == 0 || strcmp(type, "Fixnum") == 0 || strcmp(type, "Bignum") == 0 ) {
@@ -324,12 +324,12 @@ static VALUE cConnection_initialize(VALUE self, VALUE uri) {
 	}
 
 	db = PQsetdbLogin(
-		host, 
-		port, 
-		NULL, 
-		NULL, 
-		database, 
-		user, 
+		host,
+		port,
+		NULL,
+		NULL,
+		database,
+		user,
 		password
 	);
 
@@ -375,7 +375,7 @@ static VALUE cCommand_quote_string(VALUE self, VALUE string) {
 	char *escaped;
 	int quoted_length = 0;
 	VALUE result;
-	
+
 	length = strlen(source);
 
 	// Allocate space for the escaped version of 'string'
@@ -397,17 +397,17 @@ static VALUE cCommand_execute_non_query(int argc, VALUE *argv[], VALUE self) {
 	PGconn *db = DATA_PTR(rb_iv_get(rb_iv_get(self, "@connection"), "@connection"));
 	PGresult *response;
 	int status;
-	
+
 	int affected_rows;
 	int insert_id;
-	
+
 	VALUE query = build_query_from_args(self, argc, argv);
 	data_objects_debug(query);
-	
+
 	response = PQexec(db, StringValuePtr(query));
-	
+
 	status = PQresultStatus(response);
-	
+
 	if ( status == PGRES_TUPLES_OK ) {
 		insert_id = atoi(PQgetvalue(response, 0, 0));
 		affected_rows = 1;
@@ -421,9 +421,9 @@ static VALUE cCommand_execute_non_query(int argc, VALUE *argv[], VALUE self) {
 		PQclear(response);
 		rb_raise(ePostgresError, message);
 	}
-	
+
 	PQclear(response);
-	
+
 	return rb_funcall(cResult, ID_NEW, 3, self, INT2NUM(affected_rows), INT2NUM(insert_id));
 }
 
@@ -521,14 +521,14 @@ static VALUE cReader_next(VALUE self) {
 
 	for ( i = 0; i < field_count; i++ ) {
 		ruby_type = RARRAY(field_types)->ptr[i];
-		
+
 		if ( TYPE(ruby_type) == T_STRING ) {
 			type = RSTRING(ruby_type)->ptr;
 		}
 		else {
 			type = rb_class2name(ruby_type);
 		}
-		
+
 		// Always return nil if the value returned from Postgres is null
 		if (!PQgetisnull(reader, position, i)) {
 			value = typecast(PQgetvalue(reader, position, i), type);
@@ -546,10 +546,10 @@ static VALUE cReader_next(VALUE self) {
 }
 
 static VALUE cReader_values(VALUE self) {
-	
+
 	int position = rb_iv_get(self, "@position");
 	int row_count = NUM2INT(rb_iv_get(self, "@row_count"));
-	
+
 	if ( position == Qnil || NUM2INT(position) > row_count ) {
 		rb_raise(ePostgresError, "Reader not initialized");
 	}
@@ -565,16 +565,16 @@ static VALUE cReader_fields(VALUE self) {
 void Init_do_postgres_ext() {
 	rb_require("rubygems");
 	rb_require("date");
-	
-	// Get references classes needed for Date/Time parsing 
+
+	// Get references classes needed for Date/Time parsing
 	rb_cDate = CONST_GET(rb_mKernel, "Date");
 	rb_cDateTime = CONST_GET(rb_mKernel, "DateTime");
 	rb_cTime = CONST_GET(rb_mKernel, "Time");
 	rb_cRational = CONST_GET(rb_mKernel, "Rational");
 	rb_cBigDecimal = CONST_GET(rb_mKernel, "BigDecimal");
-	
+
 	rb_funcall(rb_mKernel, rb_intern("require"), 1, rb_str_new2("data_objects"));
-	
+
 	ID_NEW_DATE = RUBY_VERSION_CODE < 186 ? rb_intern("new0") : rb_intern("new!");
 	ID_LOGGER = rb_intern("logger");
 	ID_DEBUG = rb_intern("debug");
@@ -587,28 +587,28 @@ void Init_do_postgres_ext() {
 	cDO_Command = CONST_GET(mDO, "Command");
 	cDO_Result = CONST_GET(mDO, "Result");
 	cDO_Reader = CONST_GET(mDO, "Reader");
-	
+
 	mPostgres = rb_define_module_under(mDO, "Postgres");
 	ePostgresError = rb_define_class("PostgresError", rb_eStandardError);
-	
+
 	cConnection = POSTGRES_CLASS("Connection", cDO_Connection);
 	rb_define_method(cConnection, "initialize", cConnection_initialize, 1);
 	rb_define_method(cConnection, "dispose", cConnection_dispose, 0);
-	
+
 	cCommand = POSTGRES_CLASS("Command", cDO_Command);
 	rb_include_module(cCommand, cDO_Quoting);
 	rb_define_method(cCommand, "set_types", cCommand_set_types, 1);
 	rb_define_method(cCommand, "execute_non_query", cCommand_execute_non_query, -1);
 	rb_define_method(cCommand, "execute_reader", cCommand_execute_reader, -1);
 	rb_define_method(cCommand, "quote_string", cCommand_quote_string, 1);
-	
+
 	cResult = POSTGRES_CLASS("Result", cDO_Result);
-	
+
 	cReader = POSTGRES_CLASS("Reader", cDO_Reader);
 	rb_define_method(cReader, "close", cReader_close, 0);
 	rb_define_method(cReader, "next!", cReader_next, 0);
 	rb_define_method(cReader, "values", cReader_values, 0);
 	rb_define_method(cReader, "fields", cReader_fields, 0);
-	
+
 }
 
