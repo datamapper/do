@@ -3,12 +3,16 @@ require Pathname(__FILE__).dirname.expand_path.parent + 'spec_helper'
 
 describe DataObjects::Mysql::Command do
 
-  before(:each) do
+  before(:all) do
     @connection = if JRUBY
-      DataObjects::Mysql::Connection.new(DO_MYSQL_SPEC_JDBC_URI)
+      DataObjects::Connection.new(DO_MYSQL_SPEC_JDBC_URI)
     else
-      DataObjects::Mysql::Connection.new(DO_MYSQL_SPEC_URI)
+      DataObjects::Connection.new(DO_MYSQL_SPEC_URI)
     end
+  end
+  
+  after(:all) do
+    @connection.close
   end
 
   describe "Executing a Reader" do
@@ -18,7 +22,8 @@ describe DataObjects::Mysql::Command do
       @mock_logger = mock('MockLogger', :level => 0)
       DataObjects::Mysql.should_receive(:logger).and_return(@mock_logger)
       @mock_logger.should_receive(:debug).with("SELECT * FROM widgets WHERE name = 'Scott'")
-      command.execute_reader('Scott')
+      
+      command.execute_reader('Scott').close # Readers must be closed!
     end
 
     it "shouldn't log reader queries when the level isn't Debug (0)" do
@@ -26,7 +31,7 @@ describe DataObjects::Mysql::Command do
       @mock_logger = mock('MockLogger', :level => 1)
       DataObjects::Mysql.should_receive(:logger).and_return(@mock_logger)
       @mock_logger.should_not_receive(:debug)
-      command.execute_reader('Scott')
+      command.execute_reader('Scott').close # Readers must be closed!
     end
   end
 

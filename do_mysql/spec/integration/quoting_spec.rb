@@ -8,6 +8,10 @@ describe DataObjects::Mysql::Command, "Quoting" do
   before :all do
     setup_test_environment
   end
+  
+  after :all do
+    teardown_test_environment
+  end
 
   it "should escape strings properly" do
     command = @connection.create_command("SELECT * FROM widgets WHERE name = ?")

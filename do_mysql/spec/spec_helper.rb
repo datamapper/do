@@ -32,8 +32,8 @@ DataObjects::Mysql.logger = DataObjects::Logger.new(log_path, 0)
 at_exit { DataObjects.logger.flush }
 
 # use different, JDBC-style URLs for JRuby, for the time-being
-DO_MYSQL_SPEC_URI      = ENV["DO_MYSQL_SPEC_URI"]      || "mysql://root@127.0.0.1:3306/do_mysql_test"
-DO_MYSQL_SPEC_JDBC_URI = ENV["DO_MYSQL_SPEC_JDBC_URI"] || "jdbc:mysql://localhost:3306/do_mysql_test?user=root"
+DO_MYSQL_SPEC_URI      = Addressable::URI::parse(ENV["DO_MYSQL_SPEC_URI"]      || "mysql://root@127.0.0.1:3306/do_mysql_test")
+DO_MYSQL_SPEC_JDBC_URI = Addressable::URI::parse(ENV["DO_MYSQL_SPEC_JDBC_URI"] || "jdbc:mysql://localhost:3306/do_mysql_test?user=root")
 
 module MysqlSpecHelpers
   def insert(query, *args)
@@ -59,11 +59,11 @@ module MysqlSpecHelpers
 
   def setup_test_environment
     if JRUBY # use different, JDBC-style URLs for JRuby, for the time-being
-      @connection = DataObjects::Mysql::Connection.new(DO_MYSQL_SPEC_JDBC_URI)
-      @secondary_connection = DataObjects::Mysql::Connection.new(DO_MYSQL_SPEC_JDBC_URI)
+      @connection = DataObjects::Connection.new(DO_MYSQL_SPEC_JDBC_URI)
+      @secondary_connection = DataObjects::Connection.new(DO_MYSQL_SPEC_JDBC_URI)
     elsif
-      @connection = DataObjects::Mysql::Connection.new(DO_MYSQL_SPEC_URI)
-      @secondary_connection = DataObjects::Mysql::Connection.new(DO_MYSQL_SPEC_URI)
+      @connection = DataObjects::Connection.new(DO_MYSQL_SPEC_URI)
+      @secondary_connection = DataObjects::Connection.new(DO_MYSQL_SPEC_URI)
     end
 
     @connection.create_command(<<-EOF).execute_non_query
@@ -127,5 +127,11 @@ module MysqlSpecHelpers
         insert into widgets(code, name, shelf_location, description, image_data, ad_description, ad_image, whitepaper_text, cad_drawing, super_number) VALUES ('W#{n.to_s.rjust(7,"0")}', 'Widget #{n}', 'A14', 'This is a description', 'IMAGE DATA', 'Buy this product now!', 'AD IMAGE DATA', 'Utilizing blah blah blah', 'CAD DRAWING', 1234);
       EOF
     end
+    
+  end
+  
+  def teardown_test_environment
+    @connection.close
+    @secondary_connection.close
   end
 end

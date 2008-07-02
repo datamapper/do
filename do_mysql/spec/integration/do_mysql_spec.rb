@@ -7,6 +7,10 @@ describe DataObjects::Mysql do
   before :all do
     setup_test_environment
   end
+  
+  after :all do
+    teardown_test_environment
+  end
 
   it "should expose the proper DataObjects classes" do
     DataObjects::Mysql.const_get('Connection').should_not be_nil
@@ -17,8 +21,9 @@ describe DataObjects::Mysql do
 
   it "should connect successfully via TCP" do
     pending "Problems parsing regular connection URIs vs. JDBC URLs" if JRUBY
-    connection = DataObjects::Mysql::Connection.new("mysql://root@127.0.0.1:3306/do_mysql_test")
+    connection = DataObjects::Connection.new("mysql://root@127.0.0.1:3306/do_mysql_test")
     connection.should_not be_using_socket
+    connection.close
   end
 
 #
@@ -33,23 +38,26 @@ describe DataObjects::Mysql do
 
   it "should return the current character set" do
     pending "Problems parsing regular connection URIs vs. JDBC URLs" if JRUBY
-    connection = DataObjects::Mysql::Connection.new("mysql://root@localhost:3306/do_mysql_test")
+    connection = DataObjects::Connection.new("mysql://root@localhost:3306/do_mysql_test")
     connection.character_set.should == "utf8"
+    connection.close
   end
 
   it "should support changing the character set" do
     pending "Problems parsing regular connection URIs vs. JDBC URLs" if JRUBY
-    connection = DataObjects::Mysql::Connection.new("mysql://root@localhost:3306/do_mysql_test/?charset=latin1")
+    connection = DataObjects::Connection.new("mysql://root@localhost:3306/do_mysql_test/?charset=latin1")
     connection.character_set.should == "latin1"
-
-    @connection = DataObjects::Mysql::Connection.new("mysql://root@localhost:3306/do_mysql_test/?charset=utf8")
-    @connection.character_set.should == "utf8"
+    connection.close
+    
+    connection = DataObjects::Connection.new("mysql://root@localhost:3306/do_mysql_test/?charset=utf8")
+    connection.character_set.should == "utf8"
+    connection.close
   end
 
   it "should raise an error when opened with an invalid server uri" do
     pending "Problems parsing regular connection URIs vs. JDBC URLs" if JRUBY
     def connecting_with(uri)
-      lambda { DataObjects::Mysql::Connection.new(uri) }
+      lambda { DataObjects::Connection.new(uri) }
     end
 
     # Missing database name
@@ -82,6 +90,10 @@ describe DataObjects::Mysql::Connection do
     setup_test_environment
   end
 
+  after :all do
+    teardown_test_environment
+  end
+  
   it "should raise an error when attempting to execute a bad query" do
     lambda { @connection.create_command("INSERT INTO non_existant_table (tester) VALUES (1)").execute_non_query }.should raise_error(MysqlError)
     lambda { @connection.create_command("SELECT * FROM non_existant table").execute_reader }.should raise_error(MysqlError)
@@ -94,6 +106,10 @@ describe DataObjects::Mysql::Reader do
 
   before :all do
     setup_test_environment
+  end
+  
+  after :all do
+    teardown_test_environment
   end
 
   it "should raise an error when you pass too many or too few types for the expected result set" do
