@@ -36,7 +36,7 @@ module DataObjects
 
       if driver_module_name = target.name.split('::')[-2]
         driver_module = DataObjects::const_get(driver_module_name)
-        driver_module.class_eval <<-EOS
+        driver_module.class_eval <<-EOS, __FILE__, __LINE__
           def self.logger
             @logger
           end
