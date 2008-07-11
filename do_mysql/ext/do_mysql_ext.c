@@ -271,9 +271,12 @@ static void data_objects_debug(VALUE string) {
 }
 
 static void flush_pool(VALUE connection) {
+  data_objects_debug(rb_funcall(connection, rb_intern("inspect"), 0));
   if ( Qnil != connection ) {
     VALUE pool = rb_iv_get(connection, "@__pool");
-    rb_funcall(pool, rb_intern("dispose"), 0);
+    rb_funcall(pool, rb_intern("flush!"), 0);
+    rb_funcall(pool, rb_intern("delete"), 1, connection);
+    rb_funcall(connection, rb_intern("dispose"), 0);
   }
 }
 
@@ -585,7 +588,11 @@ static VALUE cCommand_execute_non_query(int argc, VALUE *argv, VALUE self) {
 
   my_ulonglong affected_rows;
   VALUE connection = rb_iv_get(self, "@connection");
-  MYSQL *db = DATA_PTR(rb_iv_get(connection, "@connection"));
+  VALUE mysql_connection = rb_iv_get(connection, "@connection");
+  if (Qnil == mysql_connection)
+    rb_raise(eMysqlError, "This connection has already been closed.");
+
+  MYSQL *db = DATA_PTR(mysql_connection);
   query = build_query_from_args(self, argc, argv);
 
   data_objects_debug(query);
@@ -613,7 +620,11 @@ static VALUE cCommand_execute_reader(int argc, VALUE *argv, VALUE self) {
 
   char guess_default_field_types = 0;
   VALUE connection = rb_iv_get(self, "@connection");
-  MYSQL *db = DATA_PTR(rb_iv_get(connection, "@connection"));
+  VALUE mysql_connection = rb_iv_get(connection, "@connection");
+  if (Qnil == mysql_connection)
+    rb_raise(eMysqlError, "This connection has already been closed.");
+
+  MYSQL *db = DATA_PTR(mysql_connection);
 
   MYSQL_RES *response = 0;
   MYSQL_FIELD *field;

@@ -5,11 +5,11 @@ require 'date'
 describe DataObjects::Mysql::Command, "Quoting" do
   include MysqlSpecHelpers
 
-  before :all do
+  before :each do
     setup_test_environment
   end
 
-  after :all do
+  after :each do
     teardown_test_environment
   end
 

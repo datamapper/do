@@ -4,11 +4,11 @@ require Pathname(__FILE__).dirname.expand_path.parent + 'spec_helper'
 describe DataObjects::Mysql do
   include MysqlSpecHelpers
 
-  before :all do
+  before :each do
     setup_test_environment
   end
 
-  after :all do
+  after :each do
     teardown_test_environment
   end
 
@@ -86,22 +86,48 @@ end
 describe DataObjects::Mysql::Connection do
   include MysqlSpecHelpers
 
-  before :all do
+  before :each do
     setup_test_environment
   end
 
-  after :all do
+  after :each do
     teardown_test_environment
   end
 
   it "should raise an error when attempting to execute a bad query" do
     lambda { @connection.create_command("INSERT INTO non_existant_table (tester) VALUES (1)").execute_non_query }.should raise_error(MysqlError)
-    lambda { @connection.create_command("SELECT * FROM non_existant table").execute_reader }.should raise_error(MysqlError)
+  end
+
+  it "should raise an error when executing a bad reader" do
+    lambda { @connection.create_command("SELECT * FROM non_existant_table").execute_reader }.should raise_error(MysqlError)
   end
 
   it "should close the connection when executing a bad query" do
-    lambda { @connection.create_command("INSERT INTO non_existant_table (test) VALUES (1)").execute_non_query }.should raise_error(MysqlError)
-    @connection.instance_variable_get(:@__pool).instance_variable_get(:@available).size.should == 0
+    lambda { @connection.create_command("INSERT INTO non_exista (tester) VALUES (1)").execute_non_query }.should raise_error(MysqlError)
+    @connection.instance_variable_get(:@connection).should == nil
+  end
+
+  it "should flush the pool when executing a bad query" do
+    pool = @connection.instance_variable_get(:@__pool)
+    lambda { @connection.create_command("INSERT INTO non_exista (tester) VALUES (1)").execute_non_query }.should raise_error(MysqlError)
+    Extlib::Pooling.pools.detect { |p| p == pool }.instance_variable_get(:@available).size.should == 0
+  end
+
+  it "should delete itself from the pool" do
+    pool = @connection.instance_variable_get(:@__pool)
+    count = pool.reserved_count
+    lambda { @connection.create_command("INSERT INTO non_exista (tester) VALUES (1)").execute_non_query }.should raise_error(MysqlError)
+    Extlib::Pooling.pools.detect { |p| p == pool }.instance_variable_get(:@reserved_count).should == count-1
+  end
+
+  it "should not raise an error error executing a non query on a closed connection" do
+    lambda { @connection.create_command("INSERT INTO non_existant_table (tester) VALUES (1)").execute_non_query }.should raise_error(MysqlError)
+    lambda { @connection.create_command("INSERT INTO non_existant_table (tester) VALUES (1)").execute_non_query }.should raise_error(MysqlError, "This connection has already been closed.")
+  end
+
+  it "should not raise an error executing a reader on a closed connection" do
+    lambda { @connection.create_command("SELECT * FROM non_existant_table").execute_reader }.should raise_error(MysqlError)
+    lambda { @connection.create_command("SELECT * FROM non_existant_table").execute_reader }.should raise_error(MysqlError, "This connection has already been closed.")
   end
 
 end
@@ -109,11 +135,11 @@ end
 describe DataObjects::Mysql::Reader do
   include MysqlSpecHelpers
 
-  before :all do
+  before :each do
     setup_test_environment
   end
 
-  after :all do
+  after :each do
     teardown_test_environment
   end
 
@@ -256,6 +282,11 @@ describe DataObjects::Mysql::Reader do
 
       lambda { command.execute_non_query }.should raise_error(Exception)
     end
+
+    # it "should raise an error when inserting the wrong typed data" do
+    #   command = @connection.create_command("UPDATE invoices SET invoice_number = ?")
+    #   command.execute_non_query(1)
+    # end
 
   end
 
