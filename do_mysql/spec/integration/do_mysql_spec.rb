@@ -7,7 +7,7 @@ describe DataObjects::Mysql do
   before :all do
     setup_test_environment
   end
-  
+
   after :all do
     teardown_test_environment
   end
@@ -48,7 +48,7 @@ describe DataObjects::Mysql do
     connection = DataObjects::Connection.new("mysql://root@localhost:3306/do_mysql_test/?charset=latin1")
     connection.character_set.should == "latin1"
     connection.close
-    
+
     connection = DataObjects::Connection.new("mysql://root@localhost:3306/do_mysql_test/?charset=utf8")
     connection.character_set.should == "utf8"
     connection.close
@@ -93,7 +93,7 @@ describe DataObjects::Mysql::Connection do
   after :all do
     teardown_test_environment
   end
-  
+
   it "should raise an error when attempting to execute a bad query" do
     lambda { @connection.create_command("INSERT INTO non_existant_table (tester) VALUES (1)").execute_non_query }.should raise_error(MysqlError)
     lambda { @connection.create_command("SELECT * FROM non_existant table").execute_reader }.should raise_error(MysqlError)
@@ -107,7 +107,7 @@ describe DataObjects::Mysql::Reader do
   before :all do
     setup_test_environment
   end
-  
+
   after :all do
     teardown_test_environment
   end

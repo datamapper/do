@@ -127,9 +127,9 @@ module MysqlSpecHelpers
         insert into widgets(code, name, shelf_location, description, image_data, ad_description, ad_image, whitepaper_text, cad_drawing, super_number) VALUES ('W#{n.to_s.rjust(7,"0")}', 'Widget #{n}', 'A14', 'This is a description', 'IMAGE DATA', 'Buy this product now!', 'AD IMAGE DATA', 'Utilizing blah blah blah', 'CAD DRAWING', 1234);
       EOF
     end
-    
+
   end
-  
+
   def teardown_test_environment
     @connection.close
     @secondary_connection.close

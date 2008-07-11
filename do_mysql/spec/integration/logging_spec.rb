@@ -10,7 +10,7 @@ describe DataObjects::Mysql::Command do
       DataObjects::Connection.new(DO_MYSQL_SPEC_URI)
     end
   end
-  
+
   after(:all) do
     @connection.close
   end
@@ -22,7 +22,7 @@ describe DataObjects::Mysql::Command do
       @mock_logger = mock('MockLogger', :level => 0)
       DataObjects::Mysql.should_receive(:logger).and_return(@mock_logger)
       @mock_logger.should_receive(:debug).with("SELECT * FROM widgets WHERE name = 'Scott'")
-      
+
       command.execute_reader('Scott').close # Readers must be closed!
     end
 

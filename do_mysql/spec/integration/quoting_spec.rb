@@ -8,7 +8,7 @@ describe DataObjects::Mysql::Command, "Quoting" do
   before :all do
     setup_test_environment
   end
-  
+
   after :all do
     teardown_test_environment
   end
