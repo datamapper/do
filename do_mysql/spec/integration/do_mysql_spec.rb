@@ -99,6 +99,11 @@ describe DataObjects::Mysql::Connection do
     lambda { @connection.create_command("SELECT * FROM non_existant table").execute_reader }.should raise_error(MysqlError)
   end
 
+  it "should close the connection when executing a bad query" do
+    lambda { @connection.create_command("INSERT INTO non_existant_table (test) VALUES (1)").execute_non_query }.should raise_error(MysqlError)
+    @connection.instance_variable_get(:@__pool).instance_variable_get(:@available).size.should == 0
+  end
+
 end
 
 describe DataObjects::Mysql::Reader do

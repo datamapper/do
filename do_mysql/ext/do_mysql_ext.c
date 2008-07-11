@@ -13,7 +13,7 @@
 #define TAINTED_STRING(name) rb_tainted_str_new2(name)
 #define DRIVER_CLASS(klass, parent) (rb_define_class_under(mDOMysql, klass, parent))
 #define CONST_GET(scope, constant) (rb_funcall(scope, ID_CONST_GET, 1, rb_str_new2(constant)))
-#define CHECK_AND_RAISE(mysql_result_value) if (0 != mysql_result_value) { raise_mysql_error(db, mysql_result_value); }
+#define CHECK_AND_RAISE(mysql_result_value) if (0 != mysql_result_value) { raise_mysql_error(connection, db, mysql_result_value); }
 #define PUTS(string) rb_funcall(rb_mKernel, rb_intern("puts"), 1, RUBY_STRING(string))
 
 #ifdef _WIN32
@@ -272,7 +272,7 @@ static void data_objects_debug(VALUE string) {
 
 // We can add custom information to error messages using this function
 // if we think it matters
-static void raise_mysql_error(MYSQL *db, int mysql_error_code) {
+static void raise_mysql_error(VALUE connection, MYSQL *db, int mysql_error_code) {
 	char *error_message = (char *)mysql_error(db);
 
 	switch(mysql_error_code) {
@@ -340,6 +340,11 @@ static void raise_mysql_error(MYSQL *db, int mysql_error_code) {
 			// Hmmm
 			break;
 		}
+	}
+
+	if ( Qnil != connection ) {
+        VALUE pool = rb_iv_get(connection, "@__pool");
+        rb_funcall(pool, rb_intern("dispose"), 0);
 	}
 
 	rb_raise(eMysqlError, error_message);
@@ -441,7 +446,7 @@ static VALUE cConnection_initialize(VALUE self, VALUE uri) {
 	);
 
 	if (NULL == result) {
-		raise_mysql_error(db, -1);
+		raise_mysql_error(Qnil, db, -1);
 	}
 
 	if (NULL == charset) {
@@ -452,7 +457,7 @@ static VALUE cConnection_initialize(VALUE self, VALUE uri) {
 	// Set the connections character set
 	charset_error = mysql_set_character_set(db, charset);
 	if (0 != charset_error) {
-		raise_mysql_error(db, charset_error);
+		raise_mysql_error(Qnil, db, charset_error);
 	}
 
 	rb_iv_set(self, "@uri", uri);
@@ -575,7 +580,8 @@ static VALUE cCommand_execute_non_query(int argc, VALUE *argv, VALUE self) {
 	int query_result = 0;
 
 	my_ulonglong affected_rows;
-	MYSQL *db = DATA_PTR(rb_iv_get(rb_iv_get(self, "@connection"), "@connection"));
+    VALUE connection = rb_iv_get(self, "@connection");
+	MYSQL *db = DATA_PTR(rb_iv_get(connection, "@connection"));
 	query = build_query_from_args(self, argc, argv);
 
 	data_objects_debug(query);
@@ -602,8 +608,8 @@ static VALUE cCommand_execute_reader(int argc, VALUE *argv, VALUE self) {
 	int i;
 
 	char guess_default_field_types = 0;
-
-	MYSQL *db = DATA_PTR(rb_iv_get(rb_iv_get(self, "@connection"), "@connection"));
+    VALUE connection = rb_iv_get(self, "@connection");
+	MYSQL *db = DATA_PTR(rb_iv_get(connection, "@connection"));
 
 	MYSQL_RES *response = 0;
 	MYSQL_FIELD *field;
