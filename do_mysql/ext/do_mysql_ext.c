@@ -270,6 +270,13 @@ static void data_objects_debug(VALUE string) {
 	}
 }
 
+static void flush_pool(VALUE connection) {
+    if ( Qnil != connection ) {
+        VALUE pool = rb_iv_get(connection, "@__pool");
+        rb_funcall(pool, rb_intern("dispose"), 0);
+    }
+}
+
 // We can add custom information to error messages using this function
 // if we think it matters
 static void raise_mysql_error(VALUE connection, MYSQL *db, int mysql_error_code) {
@@ -342,11 +349,7 @@ static void raise_mysql_error(VALUE connection, MYSQL *db, int mysql_error_code)
 		}
 	}
 
-	if ( Qnil != connection ) {
-        VALUE pool = rb_iv_get(connection, "@__pool");
-        rb_funcall(pool, rb_intern("dispose"), 0);
-	}
-
+    flush_pool(connection);
 	rb_raise(eMysqlError, error_message);
 }
 
@@ -643,6 +646,7 @@ static VALUE cCommand_execute_reader(int argc, VALUE *argv, VALUE self) {
 		// Whoops...  wrong number of types passed to set_types.  Close the reader and raise
 		// and error
 		rb_funcall(reader, rb_intern("close"), 0);
+        flush_pool(connection);
 		rb_raise(eMysqlError, "Field-count mismatch. Expected %d fields, but the query yielded %d", RARRAY(field_types)->len, field_count);
 	}
 
