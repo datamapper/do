@@ -1,5 +1,4 @@
-MySQL JDBC Driver
-=================
+= MySQL JDBC Driver
 
 This is a MySQL JDBC driver packaged as gem for convenient installation in JRuby.
 
@@ -12,8 +11,7 @@ If you want to load this driver directly:
 
 to make the driver accessible to JDBC and DataObjects code running in JRuby.
 
-Copyright and Licensing
------------------------
+== Copyright and Licensing
 
 This gem bundles the MySQL Connector/J JDBC Driver. MySQL Connector/J is
 available under the terms of the GNU Public License (GPL) v2.
