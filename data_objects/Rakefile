@@ -1,43 +1,38 @@
 require 'rubygems'
-require 'rake/clean'
-require 'rake/gempackagetask'
-require 'spec/rake/spectask'
 require 'pathname'
+require 'spec/rake/spectask'
+require 'lib/data_objects/version'
+
+ROOT = Pathname(__FILE__).dirname.expand_path
+
+AUTHOR = "Yehuda Katz"
+EMAIL  = "wycats@gmail.com"
+GEM_NAME = "data_objects"
+GEM_VERSION = DataObjects::VERSION
+GEM_DEPENDENCIES = ["addressable", ">=1.0.3"], ["extlib", GEM_VERSION]
+
+PROJECT_NAME = "dorb"
+PROJECT_URL  = "http://rubyforge.org/projects/dorb"
+PROJECT_DESCRIPTION = PROJECT_SUMMARY = "The Core DataObjects class"
+
+require ROOT + 'tasks/hoe'
+
+# Installation
 
 WINDOWS = (RUBY_PLATFORM =~ /mswin|mingw|cygwin/) rescue nil
 SUDO    = WINDOWS ? '' : ('sudo' unless ENV['SUDOLESS'])
 
-spec = Gem::Specification.new do |s|
-  s.name             = 'data_objects'
-  s.version          = '0.9.3'
-  s.platform         = Gem::Platform::RUBY
-  s.has_rdoc         = true
-  s.extra_rdoc_files = %w[ README LICENSE TODO ]
-  s.summary          = 'The Core DataObjects class'
-  s.description      = s.summary
-  s.author           = 'Yehuda Katz'
-  s.email            = 'wycats@gmail.com'
-  s.homepage         = 'http://rubyforge.org/projects/dorb'
-  s.require_path     = 'lib'
-  s.files            = FileList[ 'lib/**/*', 'spec/**/*.rb', 'Rakefile', *s.extra_rdoc_files ]
-end
-
-spec.add_dependency 'addressable', ">= 1.0.3"
-spec.add_dependency 'extlib', ">= #{spec.version}"
-
-Rake::GemPackageTask.new(spec) do |pkg|
-  pkg.gem_spec = spec
-end
-
-desc "Install #{spec.name} #{spec.version} (default ruby)"
+desc "Install #{GEM_NAME} #{GEM_VERSION} (default ruby)"
 task :install => [ :package ] do
-  sh %{#{SUDO} gem install --local pkg/#{spec.name}-#{spec.version} --no-update-sources}, :verbose => false
+  sh %{#{SUDO} gem install --local pkg/#{GEM_NAME}-#{GEM_VERSION} --no-update-sources}, :verbose => false
 end
 
-desc "Uninstall #{spec.name} #{spec.version} (default ruby)"
+desc "Uninstall #{GEM_NAME} #{GEM_VERSION} (default ruby)"
 task :uninstall => [ :clobber ] do
-  sh "#{SUDO} gem uninstall #{spec.name} -v#{spec.version} -I -x", :verbose => false
+  sh "#{SUDO} gem uninstall #{GEM_NAME} -v#{GEM_VERSION} -I -x", :verbose => false
 end
+
+# Specs
 
 desc 'Run specifications'
 Spec::Rake::SpecTask.new(:spec) do |t|
@@ -45,9 +40,11 @@ Spec::Rake::SpecTask.new(:spec) do |t|
   t.spec_files = Pathname.glob(Pathname.new(__FILE__).dirname + 'spec/**/*_spec.rb')
 end
 
+# JRuby
+
 namespace :jruby do
-  desc "Install #{spec.name} #{spec.version} with JRuby"
+  desc "Install #{GEM_NAME} #{GEM_VERSION} with JRuby"
   task :install => [ :package ] do
-    sh %{#{SUDO} jruby -S gem install --local pkg/#{spec.name}-#{spec.version} --no-update-sources}, :verbose => false
+    sh %{#{SUDO} jruby -S gem install --local pkg/#{GEM_NAME}-#{GEM_VERSION} --no-update-sources}, :verbose => false
   end
 end
