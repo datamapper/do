@@ -1,5 +1,4 @@
-PostgreSQL JDBC Driver
-======================
+= PostgreSQL JDBC Driver
 
 This is a PostgreSQL JDBC driver packaged as gem for convenient installation in JRuby.
 
@@ -12,8 +11,7 @@ If you want to load this driver directly:
 
 to make the driver accessible to JDBC and DataObjects code running in JRuby.
 
-Copyright and Licensing
------------------------
+== Copyright and Licensing
 
 This gem bundles the PostgreSQL JDBC Driver. PostgreSQL JDBC Driver is available
 under the terms of a BSD License.

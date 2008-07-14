@@ -1,0 +1,7 @@
+BSD-LICENSE
+History.txt
+Manifest.txt
+README.txt
+Rakefile
+lib/do_jdbc/postgres.rb
+lib/do_jdbc/postgres_version.rb
