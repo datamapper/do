@@ -1,14 +1,10 @@
 require 'rubygems'
-require 'rake/clean'
-require 'rake/gempackagetask'
 require 'spec/rake/spectask'
 require 'pathname'
-require Pathname(__FILE__).dirname.expand_path.parent + 'tasks/ext_helper'
 
-# House-keeping
-CLEAN.include '**/*.o', '**/*.so', '**/*.bundle', '**/*.a',
-  '**/*.log', '{ext,lib}/*.{bundle,so,obj,pdb,lib,def,exp}',
-  'ext/Makefile'
+ROOT = Pathname(__FILE__).dirname.expand_path
+
+require "lib/do_postgres/version"
 
 JRUBY   = (RUBY_PLATFORM =~ /java/) rescue nil
 WINDOWS = (RUBY_PLATFORM =~ /mswin|mingw|cygwin/) rescue nil
@@ -16,38 +12,31 @@ WINDOWS = (RUBY_PLATFORM =~ /mswin|mingw|cygwin/) rescue nil
           # is not entirely correct.
 SUDO    = (WINDOWS || JRUBY) ? '' : ('sudo' unless ENV['SUDOLESS'])
 
-spec = Gem::Specification.new do |s|
-  s.name              = 'do_postgres'
-  s.version           = '0.9.3'
-  s.platform          = Gem::Platform::RUBY
-  s.has_rdoc          = true
-  s.extra_rdoc_files  = %w[ README LICENSE TODO ]
-  s.summary           = 'A DataObject.rb driver for PostgreSQL'
-  s.description       = s.summary
-  s.author            = 'Yehuda Katz'
-  s.email             = 'wycats@gmail.com'
-  s.homepage          = 'http://rubyforge.org/projects/dorb'
-  s.rubyforge_project = 'dorb'
-  s.require_path      = 'lib'
-  s.extensions        = %w[ ext/extconf.rb ]
-  s.files             = FileList[ '{ext,lib,spec}/**/*.{c,h,rb}', 'Rakefile', *s.extra_rdoc_files ]
-  s.add_dependency('data_objects', "=#{s.version}")
-end
+AUTHOR = "Bernerd Schaefer"
+EMAIL  = "bj.schaefer@gmail.com"
+GEM_NAME = "do_postgres"
+GEM_VERSION = DataObjects::Postgres::VERSION
+GEM_DEPENDENCIES = [["data_objects", GEM_VERSION]]
+GEM_CLEAN = ['**/*.{o,so,bundle,log,a,gem,dSYM,obj,pdb,lib,def,exp,DS_Store}', 'ext/Makefile']
+GEM_EXTRAS = { :extensions => %w[ ext/extconf.rb ], :has_rdoc => false }
 
-Rake::GemPackageTask.new(spec) do |pkg|
-  pkg.gem_spec = spec
-end
+PROJECT_NAME = "dorb"
+PROJECT_URL  = "http://rubyforge.org/projects/dorb"
+PROJECT_DESCRIPTION = PROJECT_SUMMARY = "A DataObject.rb driver for MySQL"
 
-# Use of ext_helper to properly setup compile tasks and native gem generation
-setup_extension "#{spec.name}_ext", spec
+DRIVER = true
+
+require ROOT.parent + 'tasks/hoe'
+
+# Installation
 
 task :install => [ :package ] do
-  sh %{#{SUDO} gem install --local pkg/#{spec.name}-#{spec.version} --no-update-sources}, :verbose => false
+  sh %{#{SUDO} gem install --local pkg/#{GEM_NAME}-#{GEM_VERSION} --no-update-sources}, :verbose => false
 end
 
-desc "Uninstall #{spec.name} #{spec.version} (default ruby)"
+desc "Uninstall #{GEM_NAME} #{GEM_VERSION} (default ruby)"
 task :uninstall => [ :clobber ] do
-  sh "#{SUDO} gem uninstall #{spec.name} -v#{spec.version} -I -x", :verbose => false
+  sh "#{SUDO} gem uninstall #{GEM_NAME} -v#{GEM_VERSION} -I -x", :verbose => false
 end
 
 desc 'Run specifications'
