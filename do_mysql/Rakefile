@@ -1,8 +1,8 @@
 require 'rubygems'
 require 'spec/rake/spectask'
 require 'pathname'
-require Pathname(__FILE__).dirname.expand_path.parent + 'tasks/ext_helper'
-require Pathname(__FILE__).dirname.expand_path.parent + 'tasks/ext_helper_java'
+
+ROOT = Pathname(__FILE__).dirname.expand_path
 
 require "lib/do_mysql/version"
 
@@ -17,12 +17,16 @@ EMAIL  = "bauer.mail@gmail.com"
 GEM_NAME = "do_mysql"
 GEM_VERSION = DataObjects::Mysql::VERSION
 GEM_DEPENDENCIES = [["data_objects", GEM_VERSION]]
+GEM_CLEAN = ['**/*.{o,so,bundle,log,a,gem,dSYM,obj,pdb,lib,def,exp,DS_Store}', 'ext/Makefile']
+GEM_EXTRAS = { :extensions => %w[ ext/extconf.rb ], :has_rdoc => false }
 
 PROJECT_NAME = "dorb"
 PROJECT_URL  = "http://rubyforge.org/projects/dorb"
 PROJECT_DESCRIPTION = PROJECT_SUMMARY = "A DataObject.rb driver for MySQL"
 
-require 'tasks/hoe'
+DRIVER = true
+
+require ROOT.parent + 'tasks/hoe'
 
 # Installation
 

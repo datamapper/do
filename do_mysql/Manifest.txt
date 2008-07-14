@@ -7,8 +7,6 @@ TODO
 buildfile
 ext-java/src/main/java/DoMysqlExtService.java
 ext-java/src/main/java/do_mysql/MySqlDriverDefinition.java
-ext/conftest.dSYM/Contents/Info.plist
-ext/conftest.dSYM/Contents/Resources/DWARF/conftest
 ext/do_mysql_ext.c
 ext/extconf.rb
 lib/do_mysql.rb
@@ -20,4 +18,3 @@ spec/integration/quoting_spec.rb
 spec/spec.opts
 spec/spec_helper.rb
 spec/unit/transaction_spec.rb
-tasks/hoe.rb

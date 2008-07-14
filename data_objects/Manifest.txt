@@ -25,4 +25,3 @@ spec/spec.opts
 spec/spec_helper.rb
 spec/support/pooling_spec.rb
 spec/transaction_spec.rb
-tasks/hoe.rb

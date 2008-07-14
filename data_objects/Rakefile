@@ -10,12 +10,16 @@ EMAIL  = "wycats@gmail.com"
 GEM_NAME = "data_objects"
 GEM_VERSION = DataObjects::VERSION
 GEM_DEPENDENCIES = ["addressable", ">=1.0.3"], ["extlib", GEM_VERSION]
+GEM_CLEAN = "{coverage,doc,log}/", "profile_results.*", "**/.*.sw?", "*.gem", ".config", "**/.DS_Store"
+GEM_EXTRAS = {}
 
 PROJECT_NAME = "dorb"
 PROJECT_URL  = "http://rubyforge.org/projects/dorb"
 PROJECT_DESCRIPTION = PROJECT_SUMMARY = "The Core DataObjects class"
 
-require ROOT + 'tasks/hoe'
+DRIVER = false
+
+require ROOT.parent + 'tasks/hoe'
 
 # Installation
 

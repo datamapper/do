@@ -29,11 +29,12 @@ hoe = Hoe.new(GEM_NAME, GEM_VERSION) do |p|
 
   p.rubyforge_name = PROJECT_NAME if PROJECT_NAME
 
-  p.clean_globs |= ['**/*.o', '**/*.so', '**/*.bundle', '**/*.a',
-                    '**/*.log', '{ext,lib}/*.{bundle,so,obj,pdb,lib,def,exp}',
-                    'ext/Makefile', "**/.*.sw?", "*.gem", ".config", "**/.DS_Store"]
+  p.clean_globs |= GEM_CLEAN
+   # ['**/*.o', '**/*.so', '**/*.bundle', '**/*.a',
+   #                  '**/*.log', '{ext,lib}/*.{bundle,so,obj,pdb,lib,def,exp}',
+   #                  'ext/Makefile', "**/.*.sw?", "*.gem", ".config", "**/.DS_Store"]
 
-  p.spec_extras = { :extensions => %w[ ext/extconf.rb ], :has_rdoc => false }
+  p.spec_extras = GEM_EXTRAS if GEM_EXTRAS
 
 
   GEM_DEPENDENCIES.each do |dep|
@@ -43,5 +44,9 @@ hoe = Hoe.new(GEM_NAME, GEM_VERSION) do |p|
 end
 
 # Use of ext_helper to properly setup compile tasks and native gem generation
-setup_extension       "#{GEM_NAME}_ext", hoe.spec
-setup_extension_java  "#{GEM_NAME}_ext", hoe.spec
+if DRIVER
+  require Pathname(__FILE__).dirname.expand_path + 'ext_helper'
+  require Pathname(__FILE__).dirname.expand_path + 'ext_helper_java'
+  setup_extension       "#{GEM_NAME}_ext", hoe.spec
+  setup_extension_java  "#{GEM_NAME}_ext", hoe.spec
+end
