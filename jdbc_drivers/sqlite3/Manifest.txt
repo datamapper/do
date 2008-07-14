@@ -1,0 +1,7 @@
+BSD-LICENSE
+History.txt
+Manifest.txt
+README.txt
+Rakefile
+lib/do_jdbc/sqlite3.rb
+lib/do_jdbc/sqlite3_version.rb
