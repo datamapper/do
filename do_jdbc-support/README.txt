@@ -1,3 +1,3 @@
-== doppio
+= doppio
 
 Please see README.markdown.
