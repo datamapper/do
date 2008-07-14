@@ -1,0 +1,16 @@
+History.txt
+MIT-LICENSE
+Manifest.txt
+README.txt
+Rakefile
+TODO
+buildfile
+ext-java/src/main/java/DoDerbyExtService.java
+ext-java/src/main/java/do_derby/DerbyDriverDefinition.java
+lib/do_derby.rb
+lib/do_derby/version.rb
+spec/integration/do_derby_spec.rb
+spec/integration/logging_spec.rb
+spec/spec.opts
+spec/spec_helper.rb
+spec/unit/do_derby_spec.rb

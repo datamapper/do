@@ -1,10 +1,8 @@
-do_derby
-========
+= do_derby
 
 A Derby driver for DataObjects
 
-Installation
-------------
+== Installation
 
 To build the package manually:
 
