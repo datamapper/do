@@ -30,12 +30,7 @@ hoe = Hoe.new(GEM_NAME, GEM_VERSION) do |p|
   p.rubyforge_name = PROJECT_NAME if PROJECT_NAME
 
   p.clean_globs |= GEM_CLEAN
-   # ['**/*.o', '**/*.so', '**/*.bundle', '**/*.a',
-   #                  '**/*.log', '{ext,lib}/*.{bundle,so,obj,pdb,lib,def,exp}',
-   #                  'ext/Makefile', "**/.*.sw?", "*.gem", ".config", "**/.DS_Store"]
-
   p.spec_extras = GEM_EXTRAS if GEM_EXTRAS
-
 
   GEM_DEPENDENCIES.each do |dep|
     p.extra_deps << dep
