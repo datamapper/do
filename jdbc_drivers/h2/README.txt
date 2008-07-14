@@ -1,5 +1,4 @@
-H2 JDBC Driver
-==============
+= H2 JDBC Driver
 
 This is a H2 JDBC driver packaged as gem for convenient installation in JRuby.
 
@@ -12,8 +11,7 @@ If you want to load this driver directly:
 
 to make the driver accessible to JDBC and DataObjects code running in JRuby.
 
-Copyright and Licensing
------------------------
+== Copyright and Licensing
 
 This gem bundles the H2 database. H2 is dual licensed and available under a
 modified version of the MPL 1.1 (Mozilla Public License) or EPL 1.0 (Eclipse
