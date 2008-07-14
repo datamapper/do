@@ -565,6 +565,7 @@ static VALUE cReader_fields(VALUE self) {
 void Init_do_postgres_ext() {
 	rb_require("rubygems");
 	rb_require("date");
+	rb_require("bigdecimal");
 
 	// Get references classes needed for Date/Time parsing
 	rb_cDate = CONST_GET(rb_mKernel, "Date");
