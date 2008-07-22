@@ -5,8 +5,11 @@
 require 'pathname'
 require 'rubygems'
 require 'rake'
+require 'rake/clean'
 require Pathname('spec/rake/spectask')
 require Pathname('rake/rdoctask')
+
+CLEAN.include '**/{pkg,log,coverage}'
 
 DIR = Pathname(__FILE__).dirname.expand_path.to_s
 
