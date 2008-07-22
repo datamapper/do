@@ -206,6 +206,14 @@ describe DataObjects::Mysql::Reader do
 
   describe "Date, Time, and DateTime" do
 
+    it "should return nil when the time is 0" do
+      id = insert("INSERT INTO users (name, fired_at) VALUES ('James', 0);")
+      select("SELECT fired_at FROM users WHERE id = ?", [Time], id) do |reader|
+        reader.values.last.should be_nil
+      end
+      exec("DELETE FROM users WHERE id = ?", id)
+    end
+
     it "should return DateTimes using the current locale's Time Zone" do
       date = DateTime.now
       id = insert("INSERT INTO users (name, fired_at) VALUES (?, ?)", 'Sam', date)

@@ -172,6 +172,10 @@ static VALUE parse_time(const char *date) {
     usec = 0;
   }
 
+  if ( year + month + day + hour + min + sec + usec == 0 ) { // Mysql TIMESTAMPS can default to 0
+    return Qnil;
+  }
+
   return rb_funcall(rb_cTime, rb_intern("local"), 7, INT2NUM(year), INT2NUM(month), INT2NUM(day), INT2NUM(hour), INT2NUM(min), INT2NUM(sec), INT2NUM(usec));
 }
 
@@ -284,6 +288,7 @@ static void flush_pool(VALUE connection) {
 // if we think it matters
 static void raise_mysql_error(VALUE connection, MYSQL *db, int mysql_error_code) {
   char *error_message = (char *)mysql_error(db);
+  data_objects_debug(rb_str_new2(error_message));
 
   switch(mysql_error_code) {
     case CR_UNKNOWN_ERROR:
