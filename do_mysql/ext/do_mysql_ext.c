@@ -287,7 +287,12 @@ static void flush_pool(VALUE connection) {
 // We can add custom information to error messages using this function
 // if we think it matters
 static void raise_mysql_error(VALUE connection, MYSQL *db, int mysql_error_code) {
-  char *error_message = (char *)mysql_error(db);
+  char *mysql_error_message = (char *)mysql_error(db);
+  int length = strlen(mysql_error_message) + 25; // length of " (mysql_error_code=0000)"
+  char *error_message = (char *)calloc(length, sizeof(char));
+
+  sprintf(error_message, "%s (mysql_error_code=%04d)", mysql_error_message, mysql_error_code);
+
   data_objects_debug(rb_str_new2(error_message));
 
   switch(mysql_error_code) {
