@@ -23,6 +23,13 @@ projects = %w[data_objects do_mysql do_postgres do_sqlite3]
 desc 'Install the do gems'
 task :install => [ 'ci:install_all' ]
 
+desc 'Release all do gems'
+task :release_all do
+  projects.each do |dir|
+    Dir.chdir(dir){ sh "rake release VERSION=#{ENV["VERSION"]}" }
+  end
+end
+
 desc 'Run specifications'
 Spec::Rake::SpecTask.new(:spec) do |t|
   t.spec_opts << '--format specdoc' << '--color'
