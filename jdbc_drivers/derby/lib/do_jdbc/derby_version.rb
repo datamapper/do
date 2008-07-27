@@ -1,7 +1,7 @@
 module DataObjects
   module Jdbc
     module Derby
-      VERSION  = '0.9.4'
+      VERSION  = '10.4.1.3'
       JAR_NAME = "derby-#{DataObjects::Jdbc::Derby::VERSION}.jar"
     end
   end
