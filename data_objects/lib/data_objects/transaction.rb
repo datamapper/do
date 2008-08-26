@@ -1,4 +1,5 @@
 require 'digest'
+require 'digest/sha2'
 
 module DataObjects
 
@@ -23,7 +24,7 @@ module DataObjects
     #
     def initialize(uri)
       @connection = DataObjects::Connection.new(uri)
-      @id = Digest::SHA2.hexdigest("#{HOST}:#{$$}:#{Time.now.to_f}:#{@@counter += 1}")
+      @id = Digest::SHA256.hexdigest("#{HOST}:#{$$}:#{Time.now.to_f}:#{@@counter += 1}")
     end
 
     def close
