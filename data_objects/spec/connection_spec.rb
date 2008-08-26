@@ -49,7 +49,7 @@ describe DataObjects::Connection do
       uri.path.should == '/database'
     end
 
-    it "should accept a conneciton uri as a Addressable::URI" do
+    it "should accept a connection uri as a Addressable::URI" do
       c = DataObjects::Connection.new(Addressable::URI::parse('mock://localhost/database'))
       # relying on the fact that mock connection sets @uri
       uri = c.instance_variable_get("@uri")
@@ -58,17 +58,17 @@ describe DataObjects::Connection do
       uri.to_s.should == 'mock://localhost/database'
     end
 
-    it "should determine which DataObject adapter from the uri scheme" do
+    it "should determine which DataObject adapter to use from the uri scheme" do
       DataObjects::Mock::Connection.should_receive(:__new)
       DataObjects::Connection.new('mock://localhost/database')
     end
 
-    it "should determine which DataObject adapter from a JDBC URL scheme" do
+    it "should determine which DataObject adapter to use from a JDBC URL scheme" do
       DataObjects::Mock::Connection.should_receive(:__new)
       DataObjects::Connection.new('jdbc:mock://localhost/database')
     end
 
-    it "should aquire a connection" do
+    it "should acquire a connection" do
       uri = Addressable::URI.parse('mock://localhost/database')
       DataObjects::Mock::Connection.should_receive(:__new).with(uri)
 

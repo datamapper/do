@@ -9,7 +9,7 @@ class Object
   # because instances are keeped in memory reused.
   #
   # Classes that include Pooling module have re-defined new
-  # method that returns instances aquired from pool.
+  # method that returns instances acquired from pool.
   #
   # Term resource is used for any type of poolable objects
   # and should NOT be thought as DataMapper Resource or
@@ -43,18 +43,18 @@ class Object
       end
 
       # ==== Notes
-      # Instances of poolable resource are aquired from
+      # Instances of poolable resource are acquired from
       # pool. This quires a new instance from pool and
       # returns it.
       #
       # ==== Returns
-      # Resource instance aquired from the pool.
+      # Resource instance acquired from the pool.
       #
       # ==== Raises
       # ArgumentError:: when pool is exhausted and no instance
-      #                 can be aquired.
+      #                 can be acquired.
       def new
-        pool.aquire
+        pool.acquire
       end
 
       # ==== Notes
@@ -118,20 +118,20 @@ class Object
       end
 
       # ==== Notes
-      # Indicates if pool has resources to aquire.
+      # Indicates if pool has resources to acquire.
       #
       # ==== Returns
-      # <Boolean>:: true if pool has resources can be aquired,
+      # <Boolean>:: true if pool has resources can be acquired,
       #             false otherwise.
       def available?
         @reserved.size < size_limit
       end
 
       # ==== Notes
-      # Aquires last used available resource and returns it.
+      # Acquires last used available resource and returns it.
       # If no resources available, current implementation
       # throws an exception.
-      def aquire
+      def acquire
         @lock.synchronize do
           if available?
             instance = prepair_available_resource
@@ -145,10 +145,10 @@ class Object
       end
 
       # ==== Notes
-      # Releases previously aquired instance.
+      # Releases previously acquired instance.
       #
       # ==== Parameters
-      # instance <Anything>:: previosly aquired instance.
+      # instance <Anything>:: previosly acquired instance.
       #
       # ==== Raises
       # RuntimeError:: when given not pooled instance.
@@ -178,12 +178,12 @@ class Object
       end
 
       # ==== Notes
-      # Check if instance has been aquired from the pool.
+      # Check if instance has been acquired from the pool.
       #
       # ==== Returns
-      # <Boolean>:: true if given resource instance has been aquired from pool,
+      # <Boolean>:: true if given resource instance has been acquired from pool,
       #             false otherwise.
-      def aquired?(instance)
+      def acquired?(instance)
         @reserved.include?(instance)
       end
 
@@ -208,7 +208,7 @@ class Object
       # ==== Returns
       # <Boolean>:: true if instance should be released, false otherwise.
       def time_to_release?(instance)
-        (Time.now - instance.instance_variable_get("@__pool_aquire_timestamp")) > @expiration_period
+        (Time.now - instance.instance_variable_get("@__pool_acquire_timestamp")) > @expiration_period
       end
 
       protected
@@ -220,13 +220,13 @@ class Object
       def prepair_available_resource
         if @available.size > 0
           res = @available.pop
-          res.instance_variable_set("@__pool_aquire_timestamp", Time.now)
+          res.instance_variable_set("@__pool_acquire_timestamp", Time.now)
 
           res
         else
           res = @class_of_resources.allocate
           res.send(:initialize, *@initialization_args)
-          res.instance_variable_set("@__pool_aquire_timestamp", Time.now)
+          res.instance_variable_set("@__pool_acquire_timestamp", Time.now)
 
           res
         end
