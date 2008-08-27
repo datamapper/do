@@ -40,7 +40,7 @@ MYSQL    = {  :group    => 'mysql',
               :version  => DataObjects::Jdbc::MySQL::VERSION }
 POSTGRES = {  :group    => 'postgresql',
               :id       => 'postgresql',
-              :version  => DataObjects::Jdbc::Postgres::VERSION + "-504.jdbc3" }
+              :version  => DataObjects::Jdbc::Postgres::VERSION + "-603.jdbc3" }
               # TODO: handle minor vs major versions more elegantly
 SQLITE3  = {  :group    => 'org.xerial',
               :id       => 'sqlite-jdbc',
