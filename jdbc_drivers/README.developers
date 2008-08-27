@@ -1,6 +1,17 @@
 README for Developers
 =====================
 
-To update JDBC drivers from Maven Repository:
+#make sure RUBY_HOME is set
 
-    jruby -S buildr update_drivers
+# builder 1.3.2 is tied to version specific dependencies
+jruby -S gem install jruby-openssl -v 0.2
+jruby -S gem install hoe -v 1.6.0
+jruby -S gem install buildr
+
+# go to your extlib/pkg directory (git clone if you need to)
+# adjust the version to what .gem file you have
+jruby -S gem install extlib-0.9.x.gem
+
+
+# To update JDBC drivers from Maven Repository:
+jruby -S buildr do_jdbc:update_drivers
