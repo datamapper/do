@@ -6,4 +6,4 @@ README.txt
 Rakefile
 lib/do_jdbc/h2.rb
 lib/do_jdbc/h2_version.rb
-lib/h2-1.0.63.jar
+lib/h2-1.0.77.jar

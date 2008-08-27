@@ -5,4 +5,4 @@ README.txt
 Rakefile
 lib/do_jdbc/mysql.rb
 lib/do_jdbc/mysql_version.rb
-lib/mysql-connector-java-5.0.4-bin.jar
+lib/mysql-connector-java-5.0.8-bin.jar

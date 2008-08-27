@@ -5,4 +5,4 @@ README.txt
 Rakefile
 lib/do_jdbc/postgres.rb
 lib/do_jdbc/postgres_version.rb
-lib/do_jdbc/postgresql-8.3.603.jdbc3.jar
+lib/postgresql-8.3-603.jdbc3.jar

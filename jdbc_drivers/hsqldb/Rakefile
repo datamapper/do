@@ -12,8 +12,8 @@ AUTHOR = ""
 EMAIL  = ""
 GEM_NAME = "do_jdbc-hsqldb"
 GEM_VERSION = DataObjects::Jdbc::HSQLDB::VERSION
-GEM_DEPENDENCIES = [["data_objects", GEM_VERSION]]
-GEM_CLEAN = ['pkg']
+GEM_DEPENDENCIES = [["data_objects", ">=0.9.5"]]
+GEM_CLEAN = ['pkg', "**/.*.sw?", "*.gem", "*.gemspec", ".config", "**/.DS_Store"]
 GEM_EXTRAS = { :platform => 'java', :has_rdoc => false }
 
 PROJECT_NAME = "dorb"
@@ -23,6 +23,7 @@ PROJECT_DESCRIPTION = PROJECT_SUMMARY = "JDBC Driver for HSQLDB, packaged as a G
 DRIVER = true
 
 require ROOT.parent.parent + 'tasks/hoe'
+require ROOT.parent.parent + 'tasks/gemspec_jruby'
 
 warn "#{GEM_NAME} is only for use with JRuby" unless RUBY_PLATFORM =~ /java/
 
