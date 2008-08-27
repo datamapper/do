@@ -1,0 +1,8 @@
+History.txt
+LGPL-LICENSE
+Manifest.txt
+README.txt
+Rakefile
+lib/do_jdbc/sqlserver.rb
+lib/do_jdbc/sqlserver_version.rb
+lib/jtds-1.2.2.jar

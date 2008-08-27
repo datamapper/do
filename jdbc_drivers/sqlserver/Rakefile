@@ -1,0 +1,35 @@
+require 'rubygems'
+require 'rake'
+require 'pathname'
+require Pathname('lib/do_jdbc/sqlserver_version')
+
+
+ROOT = Pathname(__FILE__).dirname.expand_path
+
+JRUBY = (RUBY_PLATFORM =~ /java/) rescue nil
+
+AUTHOR = ""
+EMAIL  = ""
+GEM_NAME = "do_jdbc-sqlserver"
+GEM_VERSION = DataObjects::Jdbc::SqlServer::VERSION
+GEM_DEPENDENCIES = [["data_objects", ">=0.9.5"]]
+GEM_CLEAN = ['pkg', "**/.*.sw?", "*.gem", "*.gemspec", ".config", "**/.DS_Store"]
+GEM_EXTRAS = { :platform => 'java', :has_rdoc => false }
+
+PROJECT_NAME = "dorb"
+PROJECT_URL  = "http://rubyforge.org/projects/dorb"
+PROJECT_DESCRIPTION = PROJECT_SUMMARY = "JDBC Driver for Sql Server, packaged as a Gem"
+
+DRIVER = true
+
+require ROOT.parent.parent + 'tasks/hoe'
+require ROOT.parent.parent + 'tasks/gemspec_jruby'
+
+warn "#{GEM_NAME} is only for use with JRuby" unless RUBY_PLATFORM =~ /java/
+
+task :default => [ :install ]
+
+desc "Install #{GEM_NAME} #{GEM_VERSION}"
+task :install =>  [ :package ] do
+  sh %{jruby -S gem install --local pkg/#{GEM_NAME}-#{GEM_VERSION} --no-update-sources}, :verbose => false
+end
