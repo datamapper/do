@@ -13,6 +13,7 @@ hsqldb_dir   =  dir / 'hsqldb'   / 'lib'
 mysql_dir    =  dir / 'mysql'    / 'lib'
 postgres_dir =  dir / 'postgres' / 'lib'
 sqlite3_dir  =  dir / 'sqlite3'  / 'lib'
+sqlserver_dir =  dir / 'sqlserver' / 'lib'
 
 # get the version of each of the JDBC Drivers
 require derby_dir     / 'do_jdbc' / 'derby_version'
@@ -21,6 +22,7 @@ require hsqldb_dir    / 'do_jdbc' / 'hsqldb_version'
 require mysql_dir     / 'do_jdbc' / 'mysql_version'
 require postgres_dir  / 'do_jdbc' / 'postgres_version'
 require sqlite3_dir   / 'do_jdbc' / 'sqlite3_version'
+require sqlserver_dir / 'do_jdbc' / 'sqlserver_version'
 
 # define remote repository and artifacts
 repositories.remote << 'http://www.ibiblio.org/maven2/'
@@ -45,6 +47,9 @@ POSTGRES = {  :group    => 'postgresql',
 SQLITE3  = {  :group    => 'org.xerial',
               :id       => 'sqlite-jdbc',
               :version  => DataObjects::Jdbc::SQLite3::VERSION }
+SQLSERVER= {  :group    => 'net.sourceforge.jtds',
+                            :id       => 'jtds',
+                            :version  => DataObjects::Jdbc::SqlServer::VERSION }
 
 # Download the Maven Artifact, and return the Path of the JAR file in the local
 # ~/.m2/repo folder
@@ -71,12 +76,14 @@ define 'do_jdbc' do
     mysql_file_path     = download_and_get_path(MYSQL)
     postgres_file_path  = download_and_get_path(POSTGRES)
     sqlite_file_path  = download_and_get_path(SQLITE3)
+    sqlserver_file_path  = download_and_get_path(SQLSERVER)
     
-    copy_only_if_not_exist(derby_file_path,    derby_dir    / DataObjects::Jdbc::Derby::JAR_NAME)
-    copy_only_if_not_exist(h2_file_path,       h2_dir       / DataObjects::Jdbc::H2::JAR_NAME)
-    copy_only_if_not_exist(hsqldb_file_path,   hsqldb_dir   / DataObjects::Jdbc::HSQLDB::JAR_NAME)
-    copy_only_if_not_exist(mysql_file_path,    mysql_dir    / DataObjects::Jdbc::MySQL::JAR_NAME)
-    copy_only_if_not_exist(postgres_file_path, postgres_dir / DataObjects::Jdbc::Postgres::JAR_NAME)
-    copy_only_if_not_exist(sqlite_file_path,   sqlite3_dir  / DataObjects::Jdbc::SQLite3::JAR_NAME)
+    copy_only_if_not_exist(derby_file_path,       derby_dir     / DataObjects::Jdbc::Derby::JAR_NAME)
+    copy_only_if_not_exist(h2_file_path,          h2_dir        / DataObjects::Jdbc::H2::JAR_NAME)
+    copy_only_if_not_exist(hsqldb_file_path,      hsqldb_dir    / DataObjects::Jdbc::HSQLDB::JAR_NAME)
+    copy_only_if_not_exist(mysql_file_path,       mysql_dir     / DataObjects::Jdbc::MySQL::JAR_NAME)
+    copy_only_if_not_exist(postgres_file_path,    postgres_dir  / DataObjects::Jdbc::Postgres::JAR_NAME)
+    copy_only_if_not_exist(sqlite_file_path,      sqlite3_dir   / DataObjects::Jdbc::SQLite3::JAR_NAME)
+    copy_only_if_not_exist(sqlserver_file_path,   sqlserver_dir / DataObjects::Jdbc::SqlServer::JAR_NAME)
   end
 end
