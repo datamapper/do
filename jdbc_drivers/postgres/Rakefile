@@ -12,7 +12,7 @@ AUTHOR = ""
 EMAIL  = ""
 GEM_NAME = "do_jdbc-postgres"
 GEM_VERSION = DataObjects::Jdbc::Postgres::VERSION
-GEM_DEPENDENCIES = [["data_objects", ">=0.9.5"]]
+GEM_DEPENDENCIES = []
 GEM_CLEAN = ['pkg', "**/.*.sw?", "*.gem", "*.gemspec", ".config", "**/.DS_Store"]
 GEM_EXTRAS = { :platform => 'java', :has_rdoc => false }
 

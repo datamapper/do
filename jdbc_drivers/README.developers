@@ -1,7 +1,7 @@
 README for Developers
 =====================
 
-#make sure RUBY_HOME is set
+# make sure RUBY_HOME is set
 
 # builder 1.3.2 is tied to version specific dependencies
 jruby -S gem install jruby-openssl -v 0.2
@@ -9,9 +9,15 @@ jruby -S gem install hoe -v 1.6.0
 jruby -S gem install buildr
 
 # go to your extlib/pkg directory (git clone if you need to)
-# adjust the version to what .gem file you have
+# adjust the version number below to what .gem file you have
 jruby -S gem install extlib-0.9.x.gem
 
+# you'll also need to have data_objects installed
+jruby -S gem install data_object-0.9.x.gem
 
 # To update JDBC drivers from Maven Repository:
 jruby -S buildr do_jdbc:update_drivers
+
+# You can then go to the driver directory
+# you want and install the gem
+jruby -S rake
