@@ -4,7 +4,7 @@ require Pathname(__FILE__).dirname.expand_path.parent + 'spec_helper'
 #
 #
 # Create a postgres db named do_test that accepts connections
-# from localhost from your current user (without password) to enable this spec.
+# from localhost from the postgres user (without password) to enable this spec.
 #
 # You also need to allow passwordless access from localhost-
 # locate the following line in your pg_hba.conf file:
@@ -20,7 +20,7 @@ describe "DataObjects::Postgres::Connection" do
   include PostgresSpecHelpers
 
   it "should connect to the db" do
-    connection = DataObjects::Connection.new("postgres://localhost/do_test")
+    connection = DataObjects::Connection.new("postgres://postgres@localhost/do_test")
     connection.close
   end
 end

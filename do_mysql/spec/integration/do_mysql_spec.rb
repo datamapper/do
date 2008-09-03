@@ -115,9 +115,9 @@ describe DataObjects::Mysql::Connection do
 
   it "should delete itself from the pool" do
     pool = @connection.instance_variable_get(:@__pool)
-    count = pool.reserved_count
+    count = pool.size
     lambda { @connection.create_command("INSERT INTO non_exista (tester) VALUES (1)").execute_non_query }.should raise_error(MysqlError)
-    Extlib::Pooling.pools.detect { |p| p == pool }.instance_variable_get(:@reserved_count).should == count-1
+    Extlib::Pooling.pools.detect { |p| p == pool }.size.should == count-1
   end
 
   it "should not raise an error error executing a non query on a closed connection" do
