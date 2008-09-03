@@ -13,6 +13,8 @@ describe DataObjects::Reader do
     reader.should respond_to(:next!)
     reader.should respond_to(:values)
     reader.should respond_to(:fields)
+
+    connection.close
   end
 
 end

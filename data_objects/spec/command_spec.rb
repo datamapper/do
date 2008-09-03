@@ -6,6 +6,10 @@ describe DataObjects::Command do
     @command = DataObjects::Command.new(@connection, 'SQL STRING')
   end
 
+  after do
+    @connection.close
+  end
+
   it "should assign the connection object to @connection" do
     @command.instance_variable_get("@connection").should == @connection
   end

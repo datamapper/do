@@ -18,6 +18,7 @@ describe DataObjects::Result do
 
     # The id of the inserted row.
     result.should respond_to(:insert_id)
+    connection.close
   end
 
 end
