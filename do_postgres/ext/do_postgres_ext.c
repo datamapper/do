@@ -210,9 +210,9 @@ static VALUE parse_time(char *date) {
 
 	if (0 != strchr(date, '.')) {
 		// right padding usec with 0. e.g. '012' will become 12000 microsecond, since Time#local use microsecond
-	  sscanf(date, "%4d-%2d-%2d %2d:%2d:%2d.%s", &year, &month, &day, &hour, &min, &sec, subsec);
-      usec = atoi(subsec);
-      usec *= pow(10, (6 - strlen(subsec)));
+		sscanf(date, "%4d-%2d-%2d %2d:%2d:%2d.%s", &year, &month, &day, &hour, &min, &sec, subsec);
+			usec = atoi(subsec);
+			usec *= pow(10, (6 - strlen(subsec)));
 	} else {
 		sscanf(date, "%4d-%2d-%2d %2d:%2d:%2d", &year, &month, &day, &hour, &min, &sec);
 		usec = 0;
@@ -262,7 +262,7 @@ static VALUE infer_ruby_type(Oid type) {
 static VALUE typecast(char *value, char *type) {
 
 	if ( strcmp(type, "Class") == 0) {
-	  return rb_funcall(mDO, rb_intern("find_const"), 1, TAINTED_STRING(value));
+		return rb_funcall(mDO, rb_intern("find_const"), 1, TAINTED_STRING(value));
 	} else if ( strcmp(type, "Integer") == 0 || strcmp(type, "Fixnum") == 0 || strcmp(type, "Bignum") == 0 ) {
 		return rb_cstr2inum(value, 10);
 	} else if ( strcmp(type, "Float") == 0 ) {
@@ -393,6 +393,46 @@ static VALUE cCommand_quote_string(VALUE self, VALUE string) {
 	return result;
 }
 
+static PGresult* cCommand_execute_async(PGconn *db, char* str) {
+	int socket_fd;
+	int retval;
+	fd_set rset;
+	PGresult *response;
+
+	while ((response = PQgetResult(db)) != NULL) {
+		PQclear(response);
+	}
+
+	if (!PQsendQuery(db, str)) {
+		rb_raise(ePostgresError, PQerrorMessage(db));
+	}
+
+	socket_fd = PQsocket(db);
+
+	for(;;) {
+			FD_ZERO(&rset);
+			FD_SET(socket_fd, &rset);
+			retval = rb_thread_select(socket_fd + 1, &rset, NULL, NULL, NULL);
+			if (retval < 0) {
+					rb_sys_fail(0);
+			}
+
+			if (retval == 0) {
+					continue;
+			}
+
+			if (PQconsumeInput(db) == 0) {
+					rb_raise(ePostgresError, PQerrorMessage(db));
+			}
+
+			if (PQisBusy(db) == 0) {
+					break;
+			}
+	}
+
+	return PQgetResult(db);
+}
+
 static VALUE cCommand_execute_non_query(int argc, VALUE *argv[], VALUE self) {
 	PGconn *db = DATA_PTR(rb_iv_get(rb_iv_get(self, "@connection"), "@connection"));
 	PGresult *response;
@@ -404,7 +444,7 @@ static VALUE cCommand_execute_non_query(int argc, VALUE *argv[], VALUE self) {
 	VALUE query = build_query_from_args(self, argc, argv);
 	data_objects_debug(query);
 
-	response = PQexec(db, StringValuePtr(query));
+	response = cCommand_execute_async(db, StringValuePtr(query));
 
 	status = PQresultStatus(response);
 
@@ -441,7 +481,7 @@ static VALUE cCommand_execute_reader(int argc, VALUE *argv[], VALUE self) {
 	query = build_query_from_args(self, argc, argv);
 	data_objects_debug(query);
 
-	response = PQexec(db, StringValuePtr(query));
+	response = cCommand_execute_async(db, StringValuePtr(query));
 
 	if ( PQresultStatus(response) != PGRES_TUPLES_OK ) {
 		char *message = PQresultErrorMessage(response);
