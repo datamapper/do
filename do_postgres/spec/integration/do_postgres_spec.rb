@@ -23,6 +23,24 @@ describe "DataObjects::Postgres::Connection" do
     connection = DataObjects::Connection.new("postgres://postgres@localhost/do_test")
     connection.close
   end
+
+  it "should be able to send querues asynchronuously in parallel" do
+    threads = []
+
+    start = Time.now
+    4.times do |i|
+      threads << Thread.new do
+        connection = DataObjects::Connection.new("postgres://postgres@localhost/do_test")
+        command = connection.create_command("SELECT pg_sleep(1)")
+        result = command.execute_non_query
+      end
+    end
+
+    threads.each{|t| t.join }
+    finish = Time.now
+    (finish - start).should < 2
+  end
+
 end
 
 describe "DataObjects::Postgres::Command" do
