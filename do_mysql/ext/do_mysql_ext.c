@@ -4,9 +4,11 @@
 #include <math.h>
 #include <ctype.h>
 #include <time.h>
+#include <my_global.h>
 #include <mysql.h>
 #include <errmsg.h>
 #include <mysqld_error.h>
+#include <violite.h>
 
 #define RUBY_CLASS(name) rb_const_get(rb_cObject, rb_intern(name))
 #define RUBY_STRING(char_ptr) rb_str_new2(char_ptr)
@@ -590,11 +592,47 @@ static VALUE build_query_from_args(VALUE klass, int count, VALUE *args) {
   return query;
 }
 
+static MYSQL_RES* cCommand_execute_async(VALUE self, MYSQL* db, char* str, int len) {
+  int socket_fd;
+  int retval;
+  fd_set rset;
+
+  VALUE connection = rb_iv_get(self, "@connection");
+
+  retval = mysql_send_query(db, str, len);
+  CHECK_AND_RAISE(retval);
+
+  socket_fd = vio_fd(db->net.vio);
+
+  for(;;) {
+    FD_ZERO(&rset);
+    FD_SET(socket_fd, &rset);
+
+    retval = rb_thread_select(socket_fd + 1, &rset, NULL, NULL, NULL);
+
+    if (retval < 0) {
+        rb_sys_fail(0);
+    }
+
+    if (retval == 0) {
+        continue;
+    }
+
+    if (db->status == MYSQL_STATUS_READY) {
+      break;
+    }
+  }
+
+  retval = mysql_read_query_result(db);
+  CHECK_AND_RAISE(retval);
+
+  return mysql_store_result(db);
+}
+
 static VALUE cCommand_execute_non_query(int argc, VALUE *argv, VALUE self) {
   VALUE query;
 
   MYSQL_RES *response = 0;
-  int query_result = 0;
 
   my_ulonglong affected_rows;
   VALUE connection = rb_iv_get(self, "@connection");
@@ -607,10 +645,8 @@ static VALUE cCommand_execute_non_query(int argc, VALUE *argv, VALUE self) {
 
   data_objects_debug(query);
 
-  query_result = mysql_query(db, StringValuePtr(query));
-  CHECK_AND_RAISE(query_result);
+  response = cCommand_execute_async(self, db, RSTRING_PTR(query), RSTRING_LEN(query));
 
-  response = (MYSQL_RES *)mysql_store_result(db);
   affected_rows = mysql_affected_rows(db);
   mysql_free_result(response);
 
@@ -624,7 +660,6 @@ static VALUE cCommand_execute_reader(int argc, VALUE *argv, VALUE self) {
   VALUE query, reader;
   VALUE field_names, field_types;
 
-  int query_result = 0;
   int field_count;
   int i;
 
@@ -642,10 +677,7 @@ static VALUE cCommand_execute_reader(int argc, VALUE *argv, VALUE self) {
   query = build_query_from_args(self, argc, argv);
   data_objects_debug(query);
 
-  query_result = mysql_query(db, StringValuePtr(query));
-  CHECK_AND_RAISE(query_result);
-
-  response = (MYSQL_RES *)mysql_use_result(db);
+  response = cCommand_execute_async(self, db, RSTRING_PTR(query), RSTRING_LEN(query));
 
   if (!response) {
     return Qnil;
