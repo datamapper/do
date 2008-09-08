@@ -8,7 +8,6 @@
 #include <mysql.h>
 #include <errmsg.h>
 #include <mysqld_error.h>
-#include <violite.h>
 
 #define RUBY_CLASS(name) rb_const_get(rb_cObject, rb_intern(name))
 #define RUBY_STRING(char_ptr) rb_str_new2(char_ptr)
@@ -602,7 +601,7 @@ static MYSQL_RES* cCommand_execute_async(VALUE self, MYSQL* db, char* str, int l
   retval = mysql_send_query(db, str, len);
   CHECK_AND_RAISE(retval);
 
-  socket_fd = vio_fd(db->net.vio);
+  socket_fd = db->net.fd;
 
   for(;;) {
     FD_ZERO(&rset);
