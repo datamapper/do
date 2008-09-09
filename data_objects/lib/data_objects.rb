@@ -13,6 +13,10 @@ require File.expand_path(File.join(File.dirname(__FILE__), 'data_objects', 'read
 require File.expand_path(File.join(File.dirname(__FILE__), 'data_objects', 'field'))
 require File.expand_path(File.join(File.dirname(__FILE__), 'data_objects', 'quoting'))
 
+if RUBY_PLATFORM =~ /java/
+  require 'do_jdbc-support'
+end
+
 module DataObjects
   class LengthMismatchError < StandardError; end
 

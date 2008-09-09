@@ -10,8 +10,7 @@ TODO
 build.xml
 lib/do_jdbc-support.rb
 lib/do_jdbc-support/version.rb
-nbproject/project.properties
-nbproject/project.xml
+lib/do_jdbc_internal.jar
 src/java/AbstractDataObjectsExtService.java
 src/java/data_objects/Command.java
 src/java/data_objects/Connection.java
