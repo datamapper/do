@@ -3,7 +3,7 @@ require 'rake'
 require 'rake/rdoctask'
 require 'spec/rake/spectask'
 require 'pathname'
-require 'lib/do_jdbc-support/version.rb'
+require 'lib/do_jdbc/version.rb'
 
 ROOT = Pathname(__FILE__).dirname.expand_path
 

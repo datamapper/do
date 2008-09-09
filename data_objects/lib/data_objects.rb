@@ -14,7 +14,7 @@ require File.expand_path(File.join(File.dirname(__FILE__), 'data_objects', 'fiel
 require File.expand_path(File.join(File.dirname(__FILE__), 'data_objects', 'quoting'))
 
 if RUBY_PLATFORM =~ /java/
-  require 'do_jdbc-support'
+  require 'do_jdbc'
 end
 
 module DataObjects
