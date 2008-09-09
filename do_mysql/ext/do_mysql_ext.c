@@ -17,6 +17,14 @@
 #define CHECK_AND_RAISE(mysql_result_value) if (0 != mysql_result_value) { raise_mysql_error(connection, db, mysql_result_value); }
 #define PUTS(string) rb_funcall(rb_mKernel, rb_intern("puts"), 1, RUBY_STRING(string))
 
+#ifndef RSTRING_PTR
+#define RSTRING_PTR(s) (RSTRING(s)->ptr)
+#endif
+
+#ifndef RSTRING_LEN
+#define RSTRING_LEN(s) (RSTRING(s)->len)
+#endif
+
 #ifdef _WIN32
 #define do_int64 signed __int64
 #else
@@ -451,6 +459,9 @@ static VALUE cConnection_initialize(VALUE self, VALUE uri) {
   // If ssl? {
   //   mysql_ssl_set(db, key, cert, ca, capath, cipher)
   // }
+
+  my_bool reconnect = 1;
+  mysql_options(db, MYSQL_OPT_RECONNECT, &reconnect);
 
   result = (MYSQL *)mysql_real_connect(
     db,
