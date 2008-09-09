@@ -1,6 +1,5 @@
 require 'rubygems'
 require 'data_objects'
-require 'do_jdbc-support' if RUBY_PLATFORM =~ /java/  # generic, shared JDBC support code
 require 'do_mysql_ext'                                # the C/Java extension for this DO driver
 require 'do_mysql/transaction'
 
