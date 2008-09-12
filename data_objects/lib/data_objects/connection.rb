@@ -1,4 +1,3 @@
-require 'addressable/uri'
 require 'set'
 
 begin
@@ -10,7 +9,7 @@ module DataObjects
   class Connection
 
     def self.new(uri)
-      uri = uri.is_a?(String) ? Addressable::URI::parse(uri) : uri
+      uri = DataObjects::URI::parse(uri)
 
       if uri.scheme == 'jdbc'
         driver_name = uri.path.split(':').first

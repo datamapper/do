@@ -25,7 +25,6 @@ describe DataObjects::Connection do
       # relying on the fact that mock connection sets @uri
       uri = c.instance_variable_get("@uri")
 
-      uri.should be_kind_of(Addressable::URI)
       uri.scheme.should == 'mock'
       uri.host.should == 'localhost'
       uri.path.should == '/database'
@@ -34,10 +33,7 @@ describe DataObjects::Connection do
     it "should accept a connection uri as a Addressable::URI" do
       c = DataObjects::Connection.new(Addressable::URI::parse('mock://localhost/database'))
       # relying on the fact that mock connection sets @uri
-      uri = c.instance_variable_get("@uri")
-
-      uri.should be_kind_of(Addressable::URI)
-      uri.to_s.should == 'mock://localhost/database'
+      c.to_s.should == 'mock://localhost/database'
     end
 
     it "should return the Connection specified by the scheme" do
