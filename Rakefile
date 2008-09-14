@@ -9,9 +9,9 @@ require 'rake/clean'
 require Pathname('spec/rake/spectask')
 require Pathname('rake/rdoctask')
 
-CLEAN.include '**/{pkg,log,coverage}'
+ROOT = Pathname(__FILE__).dirname.expand_path
 
-DIR = Pathname(__FILE__).dirname.expand_path.to_s
+CLEAN.include '**/{pkg,log,coverage}'
 
 WINDOWS = (RUBY_PLATFORM =~ /mswin|mingw|cygwin/) rescue nil
 SUDO    = WINDOWS ? '' : ('sudo' unless ENV['SUDOLESS'])
@@ -33,7 +33,7 @@ end
 desc 'Run specifications'
 Spec::Rake::SpecTask.new(:spec) do |t|
   t.spec_opts << '--format specdoc' << '--color'
-  t.spec_files = Pathname.glob(Pathname.new(__FILE__).parent + '**/spec/**/*_spec.rb')
+  t.spec_files = Pathname.glob((ROOT + '**/spec/**/*_spec.rb').to_s)
 end
 
 task 'do:spec' => [ 'spec' ]
@@ -85,8 +85,8 @@ namespace :ci do
   task :define_tasks do
     gem_name = ENV['gem_name']
 
-    unless FileList["#{DIR}/#{gem_name}/ext/**/extconf.rb"].empty?
-      file "#{gem_name}/Makefile" => FileList["#{DIR}/#{gem_name}/ext/**/extconf.rb", "#{DIR}/#{gem_name}/ext/**/*.c", "#{DIR}/#{gem_name}/ext/**/*.h"] do
+    unless FileList[ROOT + "#{gem_name}/ext/**/extconf.rb"].empty?
+      file "#{gem_name}/Makefile" => FileList[ROOT + "#{gem_name}/ext/**/extconf.rb", ROOT + "#{gem_name}/ext/**/*.c", ROOT + "#{gem_name}/ext/**/*.h"] do
         system("cd #{gem_name} && ruby ext/extconf.rb")
         system("cd #{gem_name} && make all") || system("cd #{gem_name} && nmake all")
       end
@@ -95,7 +95,7 @@ namespace :ci do
 
     Spec::Rake::SpecTask.new("#{gem_name}:spec") do |t|
       t.spec_opts = ["--format", "specdoc", "--format", "html:rspec_report.html", "--diff"]
-      t.spec_files = Pathname.glob(ENV['FILES'] || DIR + "/#{gem_name}/spec/**/*_spec.rb")
+      t.spec_files = Pathname.glob(ENV['FILES'] || (ROOT + "#{gem_name}/spec/**/*_spec.rb").to_s)
       unless ENV['NO_RCOV']
         t.rcov = true
         t.rcov_opts << '--exclude' << "spec,gems,#{(projects - [gem_name]).join(',')}"
