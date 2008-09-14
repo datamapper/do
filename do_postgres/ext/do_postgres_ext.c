@@ -393,17 +393,21 @@ static VALUE cCommand_quote_string(VALUE self, VALUE string) {
 	return result;
 }
 
-static PGresult* cCommand_execute_async(PGconn *db, char* str) {
+static PGresult* cCommand_execute_async(PGconn *db, VALUE query) {
 	int socket_fd;
 	int retval;
 	fd_set rset;
 	PGresult *response;
+	char* str = StringValuePtr(query);
 
 	while ((response = PQgetResult(db)) != NULL) {
 		PQclear(response);
 	}
 
-	if (!PQsendQuery(db, str)) {
+	retval = PQsendQuery(db, str);
+	data_objects_debug(query);
+
+	if (!retval) {
 		rb_raise(ePostgresError, PQerrorMessage(db));
 	}
 
@@ -442,9 +446,8 @@ static VALUE cCommand_execute_non_query(int argc, VALUE *argv[], VALUE self) {
 	int insert_id;
 
 	VALUE query = build_query_from_args(self, argc, argv);
-	data_objects_debug(query);
 
-	response = cCommand_execute_async(db, StringValuePtr(query));
+	response = cCommand_execute_async(db, query);
 
 	status = PQresultStatus(response);
 
@@ -479,9 +482,8 @@ static VALUE cCommand_execute_reader(int argc, VALUE *argv[], VALUE self) {
 	PGresult *response;
 
 	query = build_query_from_args(self, argc, argv);
-	data_objects_debug(query);
 
-	response = cCommand_execute_async(db, StringValuePtr(query));
+	response = cCommand_execute_async(db, query);
 
 	if ( PQresultStatus(response) != PGRES_TUPLES_OK ) {
 		char *message = PQresultErrorMessage(response);

@@ -7,6 +7,10 @@ describe DataObjects::Postgres::Command do
     @connection = DataObjects::Connection.new("postgres://postgres@localhost/do_test")
   end
 
+  after(:each) do
+    @connection.close
+  end
+
   describe "Executing a Reader" do
 
     it "should log reader queries when the level is Debug (0)" do

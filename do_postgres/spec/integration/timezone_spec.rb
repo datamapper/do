@@ -13,6 +13,9 @@ describe "DataObjects::Postgres::Reader" do
     @connection.create_command("INSERT INTO users (name) VALUES ('Test')").execute_non_query
   end
 
+  after :all do
+    @connection.close
+  end
 
   it "should return DateTimes using the current locale's Time Zone for TIMESTAMP WITHOUT TIME ZONE fields" do
     date = DateTime.now

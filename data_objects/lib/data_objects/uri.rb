@@ -5,7 +5,8 @@ module DataObjects
 
   class URI
     def self.parse(uri)
-      uri = Addressable::URI::parse(uri) unless uri.is_a?(Addressable::URI)
+      return uri if uri.kind_of?(self)
+      uri = Addressable::URI::parse(uri) unless uri.kind_of?(Addressable::URI)
       self.new(uri.scheme, uri.user, uri.password, uri.host, uri.port, uri.specified_port, uri.path, uri.query, uri.fragment)
     end
 

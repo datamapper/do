@@ -8,6 +8,10 @@ describe DataObjects::Postgres::Command do
     @command = @connection.create_command("INSERT INTO users (name) VALUES (?)")
   end
 
+  after(:each) do
+    @connection.close
+  end
+
   it "should properly quote a string" do
     @command.quote_string("O'Hare").should == "'O''Hare'"
     @command.quote_string("Willy O'Hare & Johnny O'Toole").should == "'Willy O''Hare & Johnny O''Toole'"

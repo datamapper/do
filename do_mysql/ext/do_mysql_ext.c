@@ -602,14 +602,17 @@ static VALUE build_query_from_args(VALUE klass, int count, VALUE *args) {
   return query;
 }
 
-static MYSQL_RES* cCommand_execute_async(VALUE self, MYSQL* db, char* str, int len) {
+static MYSQL_RES* cCommand_execute_async(VALUE self, MYSQL* db, VALUE query) {
   int socket_fd;
   int retval;
   fd_set rset;
+  char* str = RSTRING_PTR(query);
+  int len   = RSTRING_LEN(query);
 
   VALUE connection = rb_iv_get(self, "@connection");
 
   retval = mysql_send_query(db, str, len);
+  data_objects_debug(query);
   CHECK_AND_RAISE(retval);
 
   socket_fd = db->net.fd;
@@ -653,9 +656,7 @@ static VALUE cCommand_execute_non_query(int argc, VALUE *argv, VALUE self) {
   MYSQL *db = DATA_PTR(mysql_connection);
   query = build_query_from_args(self, argc, argv);
 
-  data_objects_debug(query);
-
-  response = cCommand_execute_async(self, db, RSTRING_PTR(query), RSTRING_LEN(query));
+  response = cCommand_execute_async(self, db, query);
 
   affected_rows = mysql_affected_rows(db);
   mysql_free_result(response);
@@ -685,9 +686,8 @@ static VALUE cCommand_execute_reader(int argc, VALUE *argv, VALUE self) {
   MYSQL_FIELD *field;
 
   query = build_query_from_args(self, argc, argv);
-  data_objects_debug(query);
 
-  response = cCommand_execute_async(self, db, RSTRING_PTR(query), RSTRING_LEN(query));
+  response = cCommand_execute_async(self, db, query);
 
   if (!response) {
     return Qnil;
