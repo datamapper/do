@@ -17,6 +17,7 @@
 #define CONST_GET(scope, constant) (rb_funcall(scope, ID_CONST_GET, 1, rb_str_new2(constant)))
 #define POSTGRES_CLASS(klass, parent) (rb_define_class_under(mPostgres, klass, parent))
 #define DEBUG(value) data_objects_debug(value)
+#define RUBY_CLASS(name) rb_const_get(rb_cObject, rb_intern(name))
 
 #ifdef _WIN32
 #define do_int64 signed __int64
@@ -29,6 +30,8 @@ static ID ID_NEW_DATE;
 static ID ID_LOGGER;
 static ID ID_DEBUG;
 static ID ID_LEVEL;
+static ID ID_TO_S;
+static ID ID_PARSE;
 
 static VALUE mDO;
 static VALUE cDO_Quoting;
@@ -41,6 +44,7 @@ static VALUE rb_cDate;
 static VALUE rb_cDateTime;
 static VALUE rb_cRational;
 static VALUE rb_cBigDecimal;
+static VALUE rb_cCGI;
 
 static VALUE mPostgres;
 static VALUE cConnection;
@@ -283,65 +287,30 @@ static VALUE typecast(char *value, char *type) {
 
 }
 
+// Pull an option out of a querystring-formmated option list using CGI::parse
+static char * get_uri_option(VALUE querystring, char * key) {
+  VALUE options_hash, option_value;
+
+  char * value = NULL;
+
+  // Ensure that we're dealing with a string
+  querystring = rb_funcall(querystring, ID_TO_S, 0);
+
+  options_hash = rb_funcall(rb_cCGI, ID_PARSE, 1, querystring);
+
+  // TODO: rb_hash_aref always returns an array?
+  option_value = rb_ary_entry(rb_hash_aref(options_hash, RUBY_STRING(key)), 0);
+
+  if (Qnil != option_value) {
+    value = StringValuePtr(option_value);
+  }
+
+  return value;
+}
+
 /* ====== Public API ======= */
 
-static VALUE cConnection_initialize(VALUE self, VALUE uri) {
-	VALUE r_host, r_user, r_password, r_path, r_port;
-	char *host = NULL, *user = NULL, *password = NULL, *path;
-	char *database = "", *port = "5432";
 
-	PGconn *db;
-
-	r_host = rb_funcall(uri, rb_intern("host"), 0);
-	if ( Qnil != r_host && "localhost" != StringValuePtr(r_host) ) {
-		host = StringValuePtr(r_host);
-	}
-
-	r_user = rb_funcall(uri, rb_intern("user"), 0);
-	if (Qnil != r_user) {
-		user = StringValuePtr(r_user);
-	}
-
-	r_password = rb_funcall(uri, rb_intern("password"), 0);
-	if (Qnil != r_password) {
-		password = StringValuePtr(r_password);
-	}
-
-	r_path = rb_funcall(uri, rb_intern("path"), 0);
-	path = StringValuePtr(r_path);
-	if (Qnil != r_path) {
-		database = strtok(path, "/");
-	}
-
-	if (NULL == database || 0 == strlen(database)) {
-		rb_raise(ePostgresError, "Database must be specified");
-	}
-
-	r_port = rb_funcall(uri, rb_intern("port"), 0);
-	if (Qnil != r_port) {
-		r_port = rb_funcall(r_port, rb_intern("to_s"), 0);
-		port = StringValuePtr(r_port);
-	}
-
-	db = PQsetdbLogin(
-		host,
-		port,
-		NULL,
-		NULL,
-		database,
-		user,
-		password
-	);
-
-	if ( PQstatus(db) == CONNECTION_BAD ) {
-		rb_raise(ePostgresError, PQerrorMessage(db));
-	}
-
-	rb_iv_set(self, "@uri", uri);
-	rb_iv_set(self, "@connection", Data_Wrap_Struct(rb_cObject, 0, 0, db));
-
-	return Qtrue;
-}
 
 static VALUE cConnection_dispose(VALUE self) {
 	PGconn *db = DATA_PTR(rb_iv_get(self, "@connection"));
@@ -397,9 +366,8 @@ static PGresult* cCommand_execute_async(PGconn *db, VALUE query) {
 	int socket_fd;
 	int retval;
 	fd_set rset;
-	PGresult *response;
+	PGresult *response;          
 	char* str = StringValuePtr(query);
-
 	while ((response = PQgetResult(db)) != NULL) {
 		PQclear(response);
 	}
@@ -435,6 +403,89 @@ static PGresult* cCommand_execute_async(PGconn *db, VALUE query) {
 	}
 
 	return PQgetResult(db);
+}
+
+static VALUE cConnection_initialize(VALUE self, VALUE uri) { 
+  PGresult *result = NULL;
+	VALUE r_host, r_user, r_password, r_path, r_port, r_options, r_query;
+	char *host = NULL, *user = NULL, *password = NULL, *path;
+	char *database = "", *port = "5432";
+	char *search_path = NULL;
+  char *search_path_query = NULL;
+	PGconn *db;             
+	      
+	r_host = rb_funcall(uri, rb_intern("host"), 0);
+	if ( Qnil != r_host && "localhost" != StringValuePtr(r_host) ) {
+		host = StringValuePtr(r_host);
+	}
+
+	r_user = rb_funcall(uri, rb_intern("user"), 0);
+	if (Qnil != r_user) {
+		user = StringValuePtr(r_user);
+	}
+
+	r_password = rb_funcall(uri, rb_intern("password"), 0);
+	if (Qnil != r_password) {
+		password = StringValuePtr(r_password);
+	}
+
+	r_path = rb_funcall(uri, rb_intern("path"), 0);
+	path = StringValuePtr(r_path);
+	if (Qnil != r_path) {
+		database = strtok(path, "/");
+	}
+
+	if (NULL == database || 0 == strlen(database)) {
+		rb_raise(ePostgresError, "Database must be specified");
+	}
+
+	r_port = rb_funcall(uri, rb_intern("port"), 0);
+	if (Qnil != r_port) {
+		r_port = rb_funcall(r_port, rb_intern("to_s"), 0);
+		port = StringValuePtr(r_port);
+	}
+	
+  // Pull the querystring off the URI
+  r_options = rb_funcall(uri, rb_intern("query"), 0);
+  
+  search_path = get_uri_option(r_options, "search_path");
+
+	db = PQsetdbLogin(
+		host,
+		port,
+		NULL,
+		NULL,
+		database,
+		user,
+		password
+	);
+
+	if ( PQstatus(db) == CONNECTION_BAD ) {
+		rb_raise(ePostgresError, PQerrorMessage(db));
+	}
+	
+	if (search_path != NULL) {
+    search_path_query = (char *) malloc(256 * sizeof(char));    
+    memset(search_path_query, 0, 256); 
+    sprintf(search_path_query, "set search_path to %s;", search_path);
+    r_query = rb_str_new(search_path_query, strlen(search_path_query) + 1);  
+    result = cCommand_execute_async(db, r_query);    
+    // printf("status = %s\n", PQresStatus(PQresultStatus(result)));
+    // printf("result msg: %s\n", PQresultErrorMessage(result));
+    
+    if (PQresultStatus(result) != PGRES_COMMAND_OK) {
+      free(search_path_query);
+      rb_raise(ePostgresError, PQresultErrorMessage(result));
+    }
+    
+    free(search_path_query); 
+  }
+
+	rb_iv_set(self, "@uri", uri);
+	rb_iv_set(self, "@connection", Data_Wrap_Struct(rb_cObject, 0, 0, db));
+ 
+
+	return Qtrue;
 }
 
 static VALUE cCommand_execute_non_query(int argc, VALUE *argv[], VALUE self) {
@@ -608,6 +659,7 @@ void Init_do_postgres_ext() {
 	rb_require("rubygems");
 	rb_require("date");
 	rb_require("bigdecimal");
+	rb_require("cgi");
 
 	// Get references classes needed for Date/Time parsing
 	rb_cDate = CONST_GET(rb_mKernel, "Date");
@@ -615,6 +667,8 @@ void Init_do_postgres_ext() {
 	rb_cTime = CONST_GET(rb_mKernel, "Time");
 	rb_cRational = CONST_GET(rb_mKernel, "Rational");
 	rb_cBigDecimal = CONST_GET(rb_mKernel, "BigDecimal");
+	
+	rb_cCGI = RUBY_CLASS("CGI");
 
 	rb_funcall(rb_mKernel, rb_intern("require"), 1, rb_str_new2("data_objects"));
 
@@ -622,6 +676,8 @@ void Init_do_postgres_ext() {
 	ID_LOGGER = rb_intern("logger");
 	ID_DEBUG = rb_intern("debug");
 	ID_LEVEL = rb_intern("level");
+	ID_TO_S = rb_intern("to_s");
+	ID_PARSE = rb_intern("parse");
 
 	// Get references to the DataObjects module and its classes
 	mDO = CONST_GET(rb_mKernel, "DataObjects");
