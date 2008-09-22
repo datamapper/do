@@ -22,5 +22,5 @@ if RUBY_PLATFORM =~ /java/
   end
 
 else
-  warn "do-derby is only for use with JRuby"
+  warn "do_derby is only for use with JRuby"
 end

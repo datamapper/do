@@ -18,7 +18,7 @@ define 'do_mysql' do
   define 'ext-java' do
     package :jar
         
-    jdbc_support_jar = file('../../do_jdbc-support/lib/do_jdbc_internal.jar')
+    jdbc_support_jar = file('../../do_jdbc/lib/do_jdbc_internal.jar')
     jdbc_support = artifact('data_objects:jdbc:jar:1.0').from(jdbc_support_jar)
     
     compile.with JDBC_SUPPORT

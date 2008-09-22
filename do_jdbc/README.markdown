@@ -1,4 +1,4 @@
-do\_jdbc-support 'Doppio'
+do\_jdbc 'Doppio'
 =========================
 
 *Native JDBC Support for DataObjects*
@@ -29,7 +29,7 @@ then build, test Doppio:
 
  	jruby -S rake java_compile
 	jruby -S rake package
-	jruby -S gem install pkg/do_jdbc-support-0.9.5.gem
+	jruby -S gem install pkg/do_jdbc-0.9.5.gem
 
 Licensing and Copyright
 -----------------------

@@ -42,7 +42,44 @@ end
 # Specs
 
 desc 'Run specifications'
-Spec::Rake::SpecTask.new(:spec => [ :compile ]) do |t|
-  t.spec_opts << '--options' << 'spec/spec.opts' if File.exists?('spec/spec.opts')
-  t.spec_files = Pathname.glob((ROOT + 'spec/**/*_spec.rb').to_s)
+Spec::Rake::SpecTask.new(:spec) do |t|
+  t.spec_opts << '--format' << 'specdoc' << '--colour'
+  t.spec_opts << '--loadby' << 'random'
+  t.spec_files = Pathname.glob(ENV['FILES'] || 'spec/**/*_spec.rb')
+
+  begin
+    t.rcov = ENV.has_key?('NO_RCOV') ? ENV['NO_RCOV'] != 'true' : true
+    t.rcov_opts << '--exclude' << 'spec'
+    t.rcov_opts << '--text-summary'
+    t.rcov_opts << '--sort' << 'coverage' << '--sort-reverse'
+  rescue Exception
+    # rcov not installed
+  end
 end
+
+namespace :ci do
+
+  task :prepare do
+    rm_rf ROOT + "ci"
+    mkdir_p ROOT + "ci"
+    mkdir_p ROOT + "ci/doc"
+    mkdir_p ROOT + "ci/cyclomatic"
+    mkdir_p ROOT + "ci/token"
+  end
+
+  task :publish do
+    out = ENV['CC_BUILD_ARTIFACTS'] || "out"
+    mkdir_p out unless File.directory? out
+
+    mv "ci/rspec_report.html", "#{out}/rspec_report.html"
+    mv "ci/coverage", "#{out}/coverage"
+  end
+
+  task :spec => :prepare do
+    Rake::Task[:spec].invoke
+    mv ROOT + "coverage", ROOT + "ci/coverage"
+  end
+
+end
+
+task :ci => ["ci:spec"]

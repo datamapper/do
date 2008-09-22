@@ -14,8 +14,8 @@ require 'fileutils'
 $:.unshift File.expand_path(File.join(File.dirname(__FILE__), '..', '..', 'data_objects', 'lib'))
 require 'data_objects'
 
-$:.unshift File.expand_path(File.join(File.dirname(__FILE__), '..', '..', 'do_jdbc-support', 'lib'))
-require 'do_jdbc-support'
+$:.unshift File.expand_path(File.join(File.dirname(__FILE__), '..', '..', 'do_jdbc', 'lib'))
+require 'do_jdbc'
 
 # put the pre-compiled extension in the path to be found
 $:.unshift File.expand_path(File.join(File.dirname(__FILE__), '..', 'lib'))

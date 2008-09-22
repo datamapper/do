@@ -16,8 +16,8 @@ $:.unshift File.expand_path(File.join(File.dirname(__FILE__), '..', '..', 'data_
 require 'data_objects'
 
 if JRUBY
-  $:.unshift File.expand_path(File.join(File.dirname(__FILE__), '..', '..', 'do_jdbc-support', 'lib'))
-  require 'do_jdbc-support'
+  $:.unshift File.expand_path(File.join(File.dirname(__FILE__), '..', '..', 'do_jdbc', 'lib'))
+  require 'do_jdbc'
 end
 
 # put the pre-compiled extension in the path to be found
