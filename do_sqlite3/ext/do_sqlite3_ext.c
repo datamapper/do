@@ -378,6 +378,7 @@ static VALUE cCommand_execute_reader(int argc, VALUE *argv, VALUE self) {
 	Data_Get_Struct(rb_iv_get(conn_obj, "@connection"), sqlite3, db);
 
 	query = build_query_from_args(self, argc, argv);
+	
 	data_objects_debug(query);
 
 	status = sqlite3_prepare_v2(db, StringValuePtr(query), -1, &sqlite3_reader, 0);
