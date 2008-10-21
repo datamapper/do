@@ -5,6 +5,8 @@ README.txt
 Rakefile
 TODO
 ext/do_sqlite3_ext.c
+ext/do_sqlite3_ext.so
+ext/sqlite3.dll
 ext/extconf.rb
 lib/do_sqlite3.rb
 lib/do_sqlite3/transaction.rb

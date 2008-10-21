@@ -17,8 +17,17 @@ EMAIL  = "bj.schaefer@gmail.com"
 GEM_NAME = "do_sqlite3"
 GEM_VERSION = DataObjects::Sqlite3::VERSION
 GEM_DEPENDENCIES = [["data_objects", GEM_VERSION]]
-GEM_CLEAN = ['**/*.{o,so,bundle,log,a,gem,dSYM,obj,pdb,lib,def,exp,DS_Store}', 'ext/Makefile']
-GEM_EXTRAS = { :extensions => %w[ ext/extconf.rb ], :has_rdoc => false }
+
+clean = %w(o bundle log a gem dSYM obj pdb lib def exp DS_Store)
+
+unless ENV["WINDOWS"]
+  clean << "so" 
+  GEM_EXTRAS = { :extensions => %w[ ext/extconf.rb ], :has_rdoc => false }
+else
+  GEM_EXTRAS = {}
+end
+
+GEM_CLEAN = ["**/*.{#{clean.join(",")}}", 'ext/Makefile']
 
 PROJECT_NAME = "dorb"
 PROJECT_URL  = "http://rubyforge.org/projects/dorb"
