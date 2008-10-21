@@ -22,7 +22,7 @@ GEM_EXTRAS = { :extensions => %w[ ext/extconf.rb ], :has_rdoc => false }
 
 PROJECT_NAME = "dorb"
 PROJECT_URL  = "http://rubyforge.org/projects/dorb"
-PROJECT_DESCRIPTION = PROJECT_SUMMARY = "A DataObject.rb driver for MySQL"
+PROJECT_DESCRIPTION = PROJECT_SUMMARY = "A DataObject.rb driver for Sqlite3"
 
 DRIVER = true
 
