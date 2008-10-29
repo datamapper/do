@@ -156,6 +156,10 @@ static VALUE parse_date_time(char *date) {
 
 	int tokens_read, max_tokens;
 
+  if ( strcmp(date, "") == 0 ) {
+    return Qnil;
+  }
+
 	if (0 != strchr(date, '.')) {
 		// This is a datetime with sub-second precision
 		tokens_read = sscanf(date, "%4d-%2d-%2d%*c%2d:%2d:%2d.%d%3d:%2d", &year, &month, &day, &hour, &min, &sec, &usec, &hour_offset, &minute_offset);

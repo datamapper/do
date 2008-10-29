@@ -136,6 +136,14 @@ describe "DataObjects::Sqlite3::Result" do
     end
   end
 
+  it "should not blow up when an empty string for a timestamp is used" do
+    id = insert("INSERT INTO users (name, age, type, created_at) VALUES (?, ?, ?, ?)", 'Sam', 30, Person, "")
+
+    select("SELECT created_at FROM users WHERE id = ?", [DateTime], id) do |reader|
+      reader.values.last.should == nil
+    end
+  end
+
   it "should return DateTimes using the same timezone that was used to insert it" do
     pending "improved support for timezone checking"
 
