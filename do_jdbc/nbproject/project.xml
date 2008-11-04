@@ -9,9 +9,7 @@
                 <root id="lib.dir"/>
                 <root id="src.java.dir"/>
             </source-roots>
-            <test-roots>
-                <root id="test.spec.dir"/>
-            </test-roots>
+            <test-roots/>
         </data>
     </configuration>
 </project>
