@@ -1,5 +1,4 @@
 #include <ruby.h>
-#include <version.h>
 #include <string.h>
 #include <math.h>
 #include <ctype.h>
@@ -23,6 +22,10 @@
 
 #ifndef RSTRING_LEN
 #define RSTRING_LEN(s) (RSTRING(s)->len)
+#endif
+
+#ifndef RARRAY_LEN
+#define RARRAY_LEN(a) RARRAY(a)->len
 #endif
 
 #ifdef _WIN32
@@ -59,7 +62,9 @@ static VALUE cDO_Reader;
 // References to Ruby classes that we'll need
 static VALUE rb_cDate;
 static VALUE rb_cDateTime;
+#ifndef RUBY_19_COMPATIBILITY
 static VALUE rb_cRational;
+#endif
 static VALUE rb_cBigDecimal;
 static VALUE rb_cCGI;
 
@@ -542,7 +547,7 @@ static VALUE cCommand_set_types(VALUE self, VALUE array) {
   VALUE type_strings = rb_ary_new();
   int i;
 
-  for (i = 0; i < RARRAY(array)->len; i++) {
+  for (i = 0; i < RARRAY_LEN(array); i++) {
     rb_ary_push(type_strings, RUBY_STRING(rb_class2name(rb_ary_entry(array, i))));
   }
 
@@ -703,15 +708,15 @@ static VALUE cCommand_execute_reader(int argc, VALUE *argv, VALUE self) {
   field_names = rb_ary_new();
   field_types = rb_iv_get(self, "@field_types");
 
-  if ( field_types == Qnil || 0 == RARRAY(field_types)->len ) {
+  if ( field_types == Qnil || 0 == RARRAY_LEN(field_types) ) {
     field_types = rb_ary_new();
     guess_default_field_types = 1;
-  } else if (RARRAY(field_types)->len != field_count) {
+  } else if (RARRAY_LEN(field_types) != field_count) {
     // Whoops...  wrong number of types passed to set_types.  Close the reader and raise
     // and error
     rb_funcall(reader, rb_intern("close"), 0);
     flush_pool(connection);
-    rb_raise(eMysqlError, "Field-count mismatch. Expected %d fields, but the query yielded %d", RARRAY(field_types)->len, field_count);
+    rb_raise(eMysqlError, "Field-count mismatch. Expected %ld fields, but the query yielded %d", RARRAY_LEN(field_types), field_count);
   }
 
   for(i = 0; i < field_count; i++) {
@@ -786,7 +791,7 @@ static VALUE cReader_next(VALUE self) {
 
   for (i = 0; i < reader->field_count; i++) {
     // The field_type data could be cached in a c-array
-    field_type = RSTRING(rb_ary_entry(ruby_field_type_strings, i))->ptr;
+    field_type = RSTRING_PTR(rb_ary_entry(ruby_field_type_strings, i));
     rb_ary_push(row, typecast(result[i], field_type));
   }
 
@@ -824,7 +829,11 @@ void Init_do_mysql_ext() {
   ID_TO_TIME = rb_intern("to_time");
   ID_NEW = rb_intern("new");
   ID_NEW_RATIONAL = rb_intern("new!");
-  ID_NEW_DATE = RUBY_VERSION_CODE < 186 ? rb_intern("new0") : rb_intern("new!");
+#ifdef RUBY_LESS_THAN_186
+  ID_NEW_DATE = rb_intern("new0");
+#else
+  ID_NEW_DATE = rb_intern("new!");
+#endif
   ID_CONST_GET = rb_intern("const_get");
   ID_UTC = rb_intern("utc");
   ID_ESCAPE_SQL = rb_intern("escape_sql");

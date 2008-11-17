@@ -63,4 +63,11 @@ unless RUBY_PLATFORM =~ /mswin|mingw/
 end
 
 $CFLAGS << ' -Wall ' unless RUBY_PLATFORM =~ /mswin/
+
+if RUBY_VERSION < '1.8.6'
+  $CFLAGS << ' -DRUBY_LESS_THAN_186'
+elsif RUBY_VERSION >= '1.9.0'
+  $CFLAGS << ' -DRUBY_19_COMPATIBILITY'
+end
+
 create_makefile('do_mysql_ext')

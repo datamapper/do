@@ -1,7 +1,7 @@
 require 'rubygems'
 require 'data_objects'
-require 'do_mysql_ext'                                # the C/Java extension for this DO driver
-require 'do_mysql/transaction'
+require 'do_mysql_ext' # the C/Java extension for this DO driver
+require 'do_mysql' / 'transaction'
 
 if RUBY_PLATFORM =~ /java/
   require 'do_jdbc/mysql'   # the JDBC driver, packaged as a gem
