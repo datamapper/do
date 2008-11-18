@@ -1,3 +1,3 @@
 module DataObjects
-  VERSION = "0.9.6" unless defined?(DataObjects::VERSION)
+  VERSION = "0.9.7" unless defined?(DataObjects::VERSION)
 end
