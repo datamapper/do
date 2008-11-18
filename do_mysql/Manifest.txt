@@ -1,3 +1,4 @@
+.gitignore
 History.txt
 LICENSE
 Manifest.txt
@@ -7,6 +8,7 @@ TODO
 buildfile
 ext-java/src/main/java/DoMysqlExtService.java
 ext-java/src/main/java/do_mysql/MySqlDriverDefinition.java
+ext/.gitignore
 ext/do_mysql_ext.c
 ext/extconf.rb
 lib/do_mysql.rb
