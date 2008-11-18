@@ -1,5 +1,4 @@
 #include <ruby.h>
-#include <version.h>
 #include <string.h>
 #include <math.h>
 #include <time.h>
@@ -17,6 +16,18 @@
 #define SQLITE3_CLASS(klass, parent) (rb_define_class_under(mSqlite3, klass, parent))
 
 #define TRUE_CLASS CONST_GET(rb_mKernel, "TrueClass")
+
+#ifndef RSTRING_PTR
+#define RSTRING_PTR(s) (RSTRING(s)->ptr)
+#endif
+
+#ifndef RSTRING_LEN
+#define RSTRING_LEN(s) (RSTRING(s)->len)
+#endif
+
+#ifndef RARRAY_LEN
+#define RARRAY_LEN(a) RARRAY(a)->len
+#endif
 
 #ifdef _WIN32
 #define do_int64 signed __int64
@@ -39,7 +50,11 @@ static VALUE cDO_Reader;
 
 static VALUE rb_cDate;
 static VALUE rb_cDateTime;
+
+#ifndef RUBY_19_COMPATIBILITY
 static VALUE rb_cRational;
+#endif
+
 static VALUE rb_cBigDecimal;
 
 static VALUE mSqlite3;
@@ -404,13 +419,13 @@ static VALUE cCommand_execute_reader(int argc, VALUE *argv, VALUE self) {
 	// 	field_types = rb_ary_new();
 	// }
 
-	if ( field_types == Qnil || 0 == RARRAY(field_types)->len ) {
+	if ( field_types == Qnil || 0 == RARRAY_LEN(field_types) ) {
 		field_types = rb_ary_new();
-	} else if (RARRAY(field_types)->len != field_count) {
+	} else if (RARRAY_LEN(field_types) != field_count) {
 		// Whoops...  wrong number of types passed to set_types.  Close the reader and raise
 		// and error
 		rb_funcall(reader, rb_intern("close"), 0);
-		rb_raise(eSqlite3Error, "Field-count mismatch. Expected %d fields, but the query yielded %d", RARRAY(field_types)->len, field_count);
+		rb_raise(eSqlite3Error, "Field-count mismatch. Expected %ld fields, but the query yielded %d", RARRAY_LEN(field_types), field_count);
 	}
 
 
@@ -454,7 +469,7 @@ static VALUE cReader_next(VALUE self) {
 	field_count = NUM2INT(rb_iv_get(self, "@field_count"));
 
 	field_types = rb_iv_get(self, "@field_types");
-	ft_length = RARRAY(field_types)->len;
+	ft_length = RARRAY_LEN(field_types);
 
 	result = sqlite3_step(reader);
 
@@ -469,7 +484,7 @@ static VALUE cReader_next(VALUE self) {
 			value = native_typecast(sqlite3_column_value(reader, i), sqlite3_column_type(reader, i));
 		}
 		else {
-			value = ruby_typecast(sqlite3_column_value(reader, i), rb_class2name(RARRAY(field_types)->ptr[i]), sqlite3_column_type(reader, i));
+			value = ruby_typecast(sqlite3_column_value(reader, i), rb_class2name(RARRAY_PTR(field_types)[i]), sqlite3_column_type(reader, i));
 		}
 		rb_ary_push(arr, value);
 	}
@@ -508,7 +523,11 @@ void Init_do_sqlite3_ext() {
 
 	rb_funcall(rb_mKernel, rb_intern("require"), 1, rb_str_new2("data_objects"));
 
-	ID_NEW_DATE = RUBY_VERSION_CODE < 186 ? rb_intern("new0") : rb_intern("new!");
+#ifdef RUBY_LESS_THAN_186
+	ID_NEW_DATE = rb_intern("new0");
+#else
+	ID_NEW_DATE = rb_intern("new!");
+#endif
 	ID_LOGGER = rb_intern("logger");
 	ID_DEBUG = rb_intern("debug");
 	ID_LEVEL = rb_intern("level");
