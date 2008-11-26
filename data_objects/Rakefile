@@ -19,7 +19,9 @@ PROJECT_DESCRIPTION = PROJECT_SUMMARY = "The Core DataObjects class"
 
 DRIVER = false
 
-require ROOT.parent + 'tasks/hoe'
+if (tasks_dir = ROOT.parent + 'tasks').directory?
+  require tasks_dir + 'hoe'
+end
 
 # Installation
 

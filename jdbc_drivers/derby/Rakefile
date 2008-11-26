@@ -22,8 +22,10 @@ PROJECT_DESCRIPTION = PROJECT_SUMMARY = "JDBC Driver for Derby, packaged as a Ge
 
 DRIVER = true
 
-require ROOT.parent.parent + 'tasks/hoe'
-require ROOT.parent.parent + 'tasks/gemspec_jruby'
+if (tasks_dir = ROOT.parent.parent + 'tasks').directory?
+  require tasks_dir + 'hoe'
+  require tasks_dir + 'gemspec_jruby'
+end
 
 warn "#{GEM_NAME} is only for use with JRuby" unless RUBY_PLATFORM =~ /java/
 

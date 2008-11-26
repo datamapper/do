@@ -35,7 +35,9 @@ PROJECT_DESCRIPTION = PROJECT_SUMMARY = "A DataObject.rb driver for Sqlite3"
 
 DRIVER = true
 
-require ROOT.parent + 'tasks/hoe'
+if (tasks_dir = ROOT.parent + 'tasks').directory?
+  require tasks_dir + 'hoe'
+end
 
 # Installation
 

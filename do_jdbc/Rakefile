@@ -24,7 +24,9 @@ PROJECT_DESCRIPTION = PROJECT_SUMMARY = "A DataObjects.rb driver for JDBC"
 
 DRIVER = true
 
-require ROOT.parent + 'tasks/hoe'
+if (tasks_dir = ROOT.parent + 'tasks').directory?
+  require tasks_dir + 'hoe'
+end
 
 task :default => [ :java_compile ]
 
