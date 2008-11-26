@@ -9,5 +9,5 @@ end
 
 require 'rubygems'
 require 'data_objects'
-require File.expand_path(File.join(File.dirname(__FILE__), 'do_sqlite3_ext.bundle'))
-require File.expand_path(File.join(File.dirname(__FILE__), 'do_sqlite3', 'transaction'))
+require 'do_sqlite3_ext'
+require 'do_sqlite3/transaction'
