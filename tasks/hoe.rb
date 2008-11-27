@@ -19,7 +19,7 @@ Run 'rubyforge setup' to prepare your env for access to Rubyforge
   RUBYFORGE_USERNAME.replace @config["username"]
 end
 
-hoe = Hoe.new(GEM_NAME, GEM_VERSION) do |p|
+HOE = Hoe.new(GEM_NAME, GEM_VERSION) do |p|
 
   p.developer(AUTHOR, EMAIL)
 
@@ -42,6 +42,6 @@ end
 if DRIVER
   require Pathname(__FILE__).dirname.expand_path + 'ext_helper'
   require Pathname(__FILE__).dirname.expand_path + 'ext_helper_java'
-  setup_extension       "#{GEM_NAME}_ext", hoe.spec
-  setup_extension_java  "#{GEM_NAME}_ext", hoe.spec
+  setup_extension       "#{GEM_NAME}_ext", HOE.spec
+  setup_extension_java  "#{GEM_NAME}_ext", HOE.spec
 end
