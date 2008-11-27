@@ -18,10 +18,10 @@ GEM_NAME = "do_sqlite3"
 GEM_VERSION = DataObjects::Sqlite3::VERSION
 GEM_DEPENDENCIES = [["data_objects", GEM_VERSION]]
 
+# TODO: remove duplicates from here that are already listed in .gitignore
 clean = %w(o bundle log a gem dSYM obj pdb lib def exp DS_Store)
 
 unless ENV["WINDOWS"]
-  clean << "so" 
   GEM_EXTRAS = { :extensions => %w[ ext/extconf.rb ], :has_rdoc => false }
 else
   GEM_EXTRAS = {}
@@ -37,6 +37,12 @@ DRIVER = true
 
 if (tasks_dir = ROOT.parent + 'tasks').directory?
   require tasks_dir + 'hoe'
+
+  # use .gitignore to identify files to clean up
+  File.read(ROOT.parent + '.gitignore').split(/\s+/).each do |pattern|
+    next if pattern.include?('/') && !pattern.gsub!(/\A(?:\.\/)?#{ROOT.basename}(?:\/|\z)/, './')
+    GEM_CLEAN.concat(Dir.glob(pattern.include?('/') ? pattern : "**/#{pattern}"))
+  end
 end
 
 # Installation

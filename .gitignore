@@ -4,6 +4,7 @@
 pkg/*
 .DS_Store
 *.o
+*.so
 *.bundle
 Makefile
 **/*.db
