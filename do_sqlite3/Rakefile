@@ -165,7 +165,7 @@ if (tasks_dir = ROOT.parent + 'tasks').directory?
 
       # The extension.  This is a task so it's rebuilt each time it is run, so we're sure to have a windows
       # compiled extension.
-      task "lib/do_sqlite3_ext.so" => ["build:externals"] + FileList["ext/extconf.rb", "ext/*.c", "ext/*.h"] do
+      task "lib/do_sqlite3_ext.so" => [:clean, "build:externals"] + FileList["ext/extconf.rb", "ext/*.c", "ext/*.h"] do
         when_writing "Creating compiled extension" do
           cd('ext') do
             ruby " -I #{CROSS}/lib/ruby/1.8/i386-mingw32/ extconf.rb -- --with-sqlite3-dir=#{SQLITE_DIR}"

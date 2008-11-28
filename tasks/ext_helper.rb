@@ -16,9 +16,6 @@ def setup_extension(extension_name, gem_spec = nil)
   # verify if the extension is in a folder
   unless File.directory?("ext/#{extension_name}")
     # the extension is in the root of ext.
-    file "lib/#{ext_name}" => ['lib', "ext/#{ext_name}"] do
-      cp "ext/#{ext_name}", "lib/#{ext_name}"
-    end
 
     # getting this file is part of the compile task
     desc "Compile Extension for current Ruby (= compile:mri)"
@@ -26,9 +23,9 @@ def setup_extension(extension_name, gem_spec = nil)
 
     namespace :compile do
       desc 'Compile C Extension for Ruby 1.8 (MRI)'
-      task :mri => ["lib/#{ext_name}"]
+      task :mri => [:clean, "rake:compile:lib/#{ext_name}"]
 
-      file "ext/#{ext_name}" => FileList["ext/Makefile", "ext/*.c", "ext/*.h"] do
+      task "ext/#{ext_name}" => FileList["ext/Makefile", "ext/*.c", "ext/*.h"] do
         # Visual C make utility is named 'nmake', MinGW conforms GCC 'make' standard.
         make_cmd = RUBY_PLATFORM =~ /mswin/ ? 'nmake' : 'make'
         Dir.chdir('ext') do
@@ -40,6 +37,9 @@ def setup_extension(extension_name, gem_spec = nil)
         Dir.chdir('ext') do
           ruby 'extconf.rb'
         end
+      end
+      task "lib/#{ext_name}" => ['lib', "ext/#{ext_name}"] do
+        cp "ext/#{ext_name}", "lib/#{ext_name}"
       end
     end
   else
