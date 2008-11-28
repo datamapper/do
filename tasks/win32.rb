@@ -21,7 +21,7 @@ end
 STASH = "#{CCROOT}/stash"
 CROSS = "#{CCROOT}/cross"
 
-RUBY_VERSION = '1.8.6-p287'
+RUBY_CC_VERSION = '1.8.6-p287'
 
 namespace :build do
   # contains downloaded files for cross compilation
@@ -39,32 +39,32 @@ namespace :build do
     task :ruby => "#{CROSS}/bin/ruby.exe"
 
     # download ruby
-    file "#{STASH}/ruby-#{RUBY_VERSION}.tar.gz" => STASH do
-      download_file(STASH, "ftp://ftp.ruby-lang.org/pub/ruby/1.8/ruby-#{RUBY_VERSION}.tar.gz")
+    file "#{STASH}/ruby-#{RUBY_CC_VERSION}.tar.gz" => STASH do
+      download_file(STASH, "ftp://ftp.ruby-lang.org/pub/ruby/1.8/ruby-#{RUBY_CC_VERSION}.tar.gz")
     end
 
     # extract ruby
-    file "#{CROSS}/ruby-#{RUBY_VERSION}" => [CROSS, "#{STASH}/ruby-#{RUBY_VERSION}.tar.gz"] do
+    file "#{CROSS}/ruby-#{RUBY_CC_VERSION}" => [CROSS, "#{STASH}/ruby-#{RUBY_CC_VERSION}.tar.gz"] do
       when_writing "extracting ruby" do
         cd(CROSS) do
-          sh "tar zxvf #{STASH}/ruby-#{RUBY_VERSION}.tar.gz"
+          sh "tar zxvf #{STASH}/ruby-#{RUBY_CC_VERSION}.tar.gz"
         end
       end
     end
 
     # compile ruby
-    file "#{CROSS}/bin/ruby.exe" => "#{CROSS}/ruby-#{RUBY_VERSION}/Makefile" do
+    file "#{CROSS}/bin/ruby.exe" => "#{CROSS}/ruby-#{RUBY_CC_VERSION}/Makefile" do
       when_writing "cross-compiling ruby" do
-        cd "#{CROSS}/ruby-#{RUBY_VERSION}" do
+        cd "#{CROSS}/ruby-#{RUBY_CC_VERSION}" do
           sh "make"
           sh "make install"
         end
       end
     end
 
-    file "#{CROSS}/ruby-#{RUBY_VERSION}/Makefile" => ["#{CROSS}/ruby-#{RUBY_VERSION}/Makefile.in.bak"] do
+    file "#{CROSS}/ruby-#{RUBY_CC_VERSION}/Makefile" => ["#{CROSS}/ruby-#{RUBY_CC_VERSION}/Makefile.in.bak"] do
       when_writing "Configuring ruby compilation" do
-        cd "#{CROSS}/ruby-#{RUBY_VERSION}" do
+        cd "#{CROSS}/ruby-#{RUBY_CC_VERSION}" do
           buildopts = if File.exists?('/usr/bin/i586-mingw32msvc-gcc')
             '--host=i586-mingw32msvc --target=i386-mingw32 --build=i686-linux'
           else
@@ -85,9 +85,9 @@ namespace :build do
       end
     end
 
-    file "#{CROSS}/ruby-#{RUBY_VERSION}/Makefile.in.bak" => "#{CROSS}/ruby-#{RUBY_VERSION}" do
+    file "#{CROSS}/ruby-#{RUBY_CC_VERSION}/Makefile.in.bak" => "#{CROSS}/ruby-#{RUBY_CC_VERSION}" do
       when_writing "correcting Makefile.in" do
-        cd "#{CROSS}/ruby-#{RUBY_VERSION}" do
+        cd "#{CROSS}/ruby-#{RUBY_CC_VERSION}" do
           cp "Makefile.in", "Makefile.in.bak"
           str = ''
           File.open("Makefile.in", 'rb') do |f|
@@ -111,7 +111,7 @@ namespace :build do
     # compilation fails without this.
     task :correct_makefile_in do
       when_writing "correcting Makefile.in" do
-        makefile_in = "#{CROSS}/ruby-#{RUBY_VERSION}/Makefile.in"
+        makefile_in = "#{CROSS}/ruby-#{RUBY_CC_VERSION}/Makefile.in"
       end
     end
   end
