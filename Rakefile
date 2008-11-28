@@ -46,6 +46,6 @@ desc 'Install the do gems'
 task :install do
   projects.each do |gem_name|
     cd(File.join(File.dirname(__FILE__), gem_name))
-    sh("rake install")
+    sh('rake install; true')
   end
 end
