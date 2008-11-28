@@ -15,3 +15,5 @@ nbproject
 *.dSYM
 stash
 cross
+coverage
+do_*/lib/do_*_ext.jar
