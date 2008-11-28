@@ -9,6 +9,7 @@ pkg/*
 Makefile
 **/*.db
 nbproject
+!do_jdbc/nbproject
 *.*~
 *.*#
 *.rbc
