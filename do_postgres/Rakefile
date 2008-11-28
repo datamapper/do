@@ -7,10 +7,11 @@ ROOT = Pathname(__FILE__).dirname.expand_path
 require "lib/do_postgres/version"
 
 JRUBY   = (RUBY_PLATFORM =~ /java/) rescue nil
-WINDOWS = (RUBY_PLATFORM =~ /mswin|mingw|cygwin/) rescue nil
-          # don't use SUDO with JRuby, for the moment, although this behaviour
-          # is not entirely correct.
+WINDOWS = (RUBY_PLATFORM =~ /mswin|mingw|bccwin|cygwin/) rescue nil
+
 SUDO    = (WINDOWS || JRUBY) ? '' : ('sudo' unless ENV['SUDOLESS'])
+# RCov is run by default, except on the JRuby platform, or if NO_RCOV env is true
+RUN_RCOV = JRUBY ? false : (ENV.has_key?('NO_RCOV') ? ENV['NO_RCOV'] != 'true' : true)
 
 AUTHOR = "Bernerd Schaefer"
 EMAIL  = "bj.schaefer@gmail.com"
@@ -48,7 +49,7 @@ Spec::Rake::SpecTask.new(:spec) do |t|
   t.spec_files = Pathname.glob(ENV['FILES'] || 'spec/**/*_spec.rb')
 
   begin
-    t.rcov = ENV.has_key?('NO_RCOV') ? ENV['NO_RCOV'] != 'true' : true
+    t.rcov = RUN_RCOV
     t.rcov_opts << '--exclude' << 'spec'
     t.rcov_opts << '--text-summary'
     t.rcov_opts << '--sort' << 'coverage' << '--sort-reverse'

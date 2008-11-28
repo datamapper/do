@@ -13,13 +13,16 @@ ROOT = Pathname(__FILE__).dirname.expand_path
 
 CLEAN.include '**/{pkg,log,coverage}'
 
-WINDOWS = (RUBY_PLATFORM =~ /mswin|mingw|cygwin/) rescue nil
-SUDO    = WINDOWS ? '' : ('sudo' unless ENV['SUDOLESS'])
+WINDOWS = (RUBY_PLATFORM =~ /mswin|mingw|bccwin|cygwin/) rescue nil
+JRUBY   = (RUBY_PLATFORM =~ /java/) rescue nil
 
-# projects = %w[data_objects do_jdbc do_mysql do_postgres do_sqlite3]
-# Took out do_jdbc since it doesn't build yet.
+# sudo is used by default, except on Windows, or if SUDOLESS env is true
+SUDO = WINDOWS ? '' : ('sudo' unless ENV['SUDOLESS'])
+# RCov is run by default, except on the JRuby platform, or if NO_RCOV env is true
+RUN_RCOV = JRUBY ? false : (ENV.has_key?('NO_RCOV') ? ENV['NO_RCOV'] != 'true' : true)
+
 projects = %w[data_objects do_mysql do_postgres do_sqlite3]
-projects += %w[do_jdbc do_derby do_hsqldb] if RUBY_PLATFORM =~ /java/
+projects += %w[do_jdbc do_derby do_hsqldb] if JRUBY
 
 desc 'Release all do gems'
 task :release do

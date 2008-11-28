@@ -25,8 +25,13 @@ end
 
 # Installation
 
-WINDOWS = (RUBY_PLATFORM =~ /mswin|mingw|cygwin/) rescue nil
-SUDO    = WINDOWS ? '' : ('sudo' unless ENV['SUDOLESS'])
+WINDOWS = (RUBY_PLATFORM =~ /mswin|mingw|bccwin|cygwin/) rescue nil
+JRUBY   = (RUBY_PLATFORM =~ /java/) rescue nil
+
+# sudo is used by default, except on Windows, or if SUDOLESS env is true
+SUDO = WINDOWS ? '' : ('sudo' unless ENV['SUDOLESS'])
+# RCov is run by default, except on the JRuby platform, or if NO_RCOV env is true
+RUN_RCOV = JRUBY ? false : (ENV.has_key?('NO_RCOV') ? ENV['NO_RCOV'] != 'true' : true)
 
 desc "Install #{GEM_NAME} #{GEM_VERSION} (default ruby)"
 task :install => [ :package ] do
@@ -46,7 +51,7 @@ Spec::Rake::SpecTask.new(:spec) do |t|
   t.spec_files = Pathname.glob(ENV['FILES'] || 'spec/**/*_spec.rb')
 
   begin
-    t.rcov = ENV.has_key?('NO_RCOV') ? ENV['NO_RCOV'] != 'true' : true
+    t.rcov = RUN_RCOV
     t.rcov_opts << '--exclude' << 'spec'
     t.rcov_opts << '--text-summary'
     t.rcov_opts << '--sort' << 'coverage' << '--sort-reverse'
