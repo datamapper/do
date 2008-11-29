@@ -373,7 +373,7 @@ static VALUE cCommand_execute_non_query(int argc, VALUE *argv, VALUE self) {
 	status = sqlite3_exec(db, StringValuePtr(query), 0, 0, &error_message);
 
 	if ( status != SQLITE_OK ) {
-		rb_raise(eSqlite3Error, sqlite3_errmsg(db));
+		rb_raise(eSqlite3Error, "%s\nQuery: %s", sqlite3_errmsg(db), StringValuePtr(query));
 	}
 
 	affected_rows = sqlite3_changes(db);
@@ -397,13 +397,13 @@ static VALUE cCommand_execute_reader(int argc, VALUE *argv, VALUE self) {
 	Data_Get_Struct(rb_iv_get(conn_obj, "@connection"), sqlite3, db);
 
 	query = build_query_from_args(self, argc, argv);
-	
+
 	data_objects_debug(query);
 
 	status = sqlite3_prepare_v2(db, StringValuePtr(query), -1, &sqlite3_reader, 0);
 
 	if ( status != SQLITE_OK ) {
-		rb_raise(eSqlite3Error, sqlite3_errmsg(db));
+		rb_raise(eSqlite3Error, "%s\nQuery: %s", sqlite3_errmsg(db), StringValuePtr(query));
 	}
 
 	field_count = sqlite3_column_count(sqlite3_reader);

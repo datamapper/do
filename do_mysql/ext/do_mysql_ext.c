@@ -13,7 +13,7 @@
 #define TAINTED_STRING(name) rb_tainted_str_new2(name)
 #define DRIVER_CLASS(klass, parent) (rb_define_class_under(mDOMysql, klass, parent))
 #define CONST_GET(scope, constant) (rb_funcall(scope, ID_CONST_GET, 1, rb_str_new2(constant)))
-#define CHECK_AND_RAISE(mysql_result_value) if (0 != mysql_result_value) { raise_mysql_error(connection, db, mysql_result_value); }
+#define CHECK_AND_RAISE(mysql_result_value, str) if (0 != mysql_result_value) { raise_mysql_error(connection, db, mysql_result_value, str); }
 #define PUTS(string) rb_funcall(rb_mKernel, rb_intern("puts"), 1, RUBY_STRING(string))
 
 #ifndef RSTRING_PTR
@@ -300,12 +300,18 @@ static void flush_pool(VALUE connection) {
 
 // We can add custom information to error messages using this function
 // if we think it matters
-static void raise_mysql_error(VALUE connection, MYSQL *db, int mysql_error_code) {
+static void raise_mysql_error(VALUE connection, MYSQL *db, int mysql_error_code, char* str) {
   char *mysql_error_message = (char *)mysql_error(db);
   int length = strlen(mysql_error_message) + 25; // length of " (mysql_error_code=0000)"
-  char *error_message = (char *)calloc(length, sizeof(char));
+  char *error_message;
 
-  sprintf(error_message, "%s (mysql_error_code=%04d)", mysql_error_message, mysql_error_code);
+  if(str) {
+    error_message = (char *)calloc(length + strlen(str) + 8, sizeof(char));
+    sprintf(error_message, "%s (mysql_error_code=%04d)\nQuery: %s", mysql_error_message, mysql_error_code, str);
+  } else {
+    error_message = (char *)calloc(length, sizeof(char));
+    sprintf(error_message, "%s (mysql_error_code=%04d)", mysql_error_message, mysql_error_code);
+  }
 
   data_objects_debug(rb_str_new2(error_message));
 
@@ -480,7 +486,7 @@ static VALUE cConnection_initialize(VALUE self, VALUE uri) {
   );
 
   if (NULL == result) {
-    raise_mysql_error(Qnil, db, -1);
+    raise_mysql_error(Qnil, db, -1, NULL);
   }
 
   if (NULL == charset) {
@@ -491,7 +497,7 @@ static VALUE cConnection_initialize(VALUE self, VALUE uri) {
   // Set the connections character set
   charset_error = mysql_set_character_set(db, charset);
   if (0 != charset_error) {
-    raise_mysql_error(Qnil, db, charset_error);
+    raise_mysql_error(Qnil, db, charset_error, NULL);
   }
 
   rb_iv_set(self, "@uri", uri);
@@ -618,7 +624,7 @@ static MYSQL_RES* cCommand_execute_async(VALUE self, MYSQL* db, VALUE query) {
 
   retval = mysql_send_query(db, str, len);
   data_objects_debug(query);
-  CHECK_AND_RAISE(retval);
+  CHECK_AND_RAISE(retval, str);
 
   socket_fd = db->net.fd;
 
@@ -642,7 +648,7 @@ static MYSQL_RES* cCommand_execute_async(VALUE self, MYSQL* db, VALUE query) {
   }
 
   retval = mysql_read_query_result(db);
-  CHECK_AND_RAISE(retval);
+  CHECK_AND_RAISE(retval, str);
 
   return mysql_store_result(db);
 }
