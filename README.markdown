@@ -11,28 +11,22 @@ test drivers directly from this repository.
 Introduction
 ------------
 
-To connect and send queries to databases, DataObjects relies on native
-extensions. Native extensions have been written in both C (for the Ruby MRI
-platform) and Java (for the JRuby platform). Individual drivers may include
-extensions for both Ruby MRI and JRuby, or one or the other.
+To connect to and query the database, DataObjects relies on native extensions.
+Native extensions have been written in both C (for the MRI/Ruby 1.8.6 platform)
+and Java (for the JRuby platform). Individual drivers may include extensions for
+both Ruby MRI and JRuby, or one or the other.
 
 C extensions have been written using according to each vendor API. Java drivers
 use the standard JDBC API. Although there are dialectical differences between
 the Java drivers, the JDBC API ensures a reasonable amount of commonality. As
-such, the Java extensions rely on a common do\_jdbc\_support gem, which wraps
-code that is common to all of the Java extensions.
+such, the Java extensions rely on a common do\_jdbc gem, which wraps code that
+is common to all of the Java extensions.
 
 Installation
 ------------
 
 To install a driver from the repository `cd` into the driver directory and use
 the provided `rake install` task to install for the default platform.
-
-If a driver includes extensions for both MRI or JRuby platforms, you can be
-explicit about which platform you wish to install the extension for as follows:
-
-    rake install:mri
-    jruby -S rake install:jruby
 
 Copyright and Licensing
 -----------------------
