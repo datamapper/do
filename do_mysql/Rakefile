@@ -31,15 +31,20 @@ if (tasks_dir = ROOT.parent + 'tasks').directory?
   require tasks_dir + 'hoe'
 end
 
-# Installation
-
-task :install => [ :package ] do
-  sh %{#{SUDO} gem install --local pkg/#{GEM_NAME}-#{GEM_VERSION} --no-update-sources}, :verbose => false
+def sudo_gem(cmd)
+  sh "#{SUDO} #{RUBY} -S gem #{cmd}", :verbose => false
 end
 
-desc "Uninstall #{GEM_NAME} #{GEM_VERSION} (default ruby)"
+# Installation
+
+desc "Install #{GEM_NAME} #{GEM_VERSION}"
+task :install => [ :package ] do
+  sudo_gem "install pkg/#{GEM_NAME}-#{GEM_VERSION} --no-update-sources"
+end
+
+desc "Uninstall #{GEM_NAME} #{GEM_VERSION}"
 task :uninstall => [ :clobber ] do
-  sh "#{SUDO} gem uninstall #{GEM_NAME} -v#{GEM_VERSION} -I -x", :verbose => false
+  sudo_gem "uninstall #{GEM_NAME} -v#{GEM_VERSION} -I -x"
 end
 
 # Specs

@@ -24,9 +24,18 @@ PROJECT_DESCRIPTION = PROJECT_SUMMARY = "A DataObjects.rb driver for JDBC"
 
 DRIVER = true
 
+# By default, sudo is used, except if SUDOLESS env is true
+SUDO = 'sudo' unless ENV['SUDOLESS']
+
 if (tasks_dir = ROOT.parent + 'tasks').directory?
   require tasks_dir + 'hoe'
 end
+
+def sudo_gem(cmd)
+  sh "#{SUDO} #{RUBY} -S gem #{cmd}", :verbose => false
+end
+
+# Installation
 
 task :default => [ :java_compile ]
 
@@ -56,11 +65,12 @@ task :filelist do
   puts FileList['pkg/**/*'].inspect
 end
 
+desc "Install #{GEM_NAME} #{GEM_VERSION}"
 task :install => [ :package ] do
-  sh %{jruby -S gem install pkg/#{GEM_NAME}-#{GEM_VERSION} --no-update-sources}, :verbose => false
+  sudo_gem "install pkg/#{GEM_NAME}-#{GEM_VERSION} --no-update-sources"
 end
 
-desc "Uninstall #{GEM_NAME} #{GEM_VERSION} (default ruby)"
+desc "Uninstall #{GEM_NAME} #{GEM_VERSION}"
 task :uninstall => [ :clobber ] do
-  sh "jruby -S gem uninstall #{GEM_NAME} -v#{GEM_VERSION} -I -x", :verbose => false
+  sudo_gem "uninstall #{GEM_NAME} -v#{GEM_VERSION} -I -x"
 end
