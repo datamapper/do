@@ -21,18 +21,19 @@ describe DataObjects::Mysql do
 
   it "should connect successfully via TCP" do
     pending "Problems parsing regular connection URIs vs. JDBC URLs" if JRUBY
-    connection = DataObjects::Connection.new("mysql://root@127.0.0.1:3306/do_mysql_test")
+    connection = DataObjects::Connection.new("mysql://#{MYSQL.user}:#{MYSQL.pass}@#{MYSQL.host}:#{MYSQL.port}/#{MYSQL.database}")
     connection.should_not be_using_socket
     connection.close
   end
 
-  it "should be able to send querues asynchronuously in parallel" do
+  it "should be able to send queries asynchronously in parallel" do
+    pending "Problems parsing regular connection URIs vs. JDBC URLs" if JRUBY
     threads = []
 
     start = Time.now
     4.times do |i|
       threads << Thread.new do
-        connection = DataObjects::Connection.new("mysql://root@127.0.0.1:3306/do_mysql_test")
+        connection = DataObjects::Connection.new("mysql://#{MYSQL.user}:#{MYSQL.pass}@#{MYSQL.host}:#{MYSQL.port}/#{MYSQL.database}")
         command = connection.create_command("SELECT sleep(1)")
         result = command.execute_non_query
       end
@@ -49,24 +50,24 @@ describe DataObjects::Mysql do
 #  It's not really a requirement, since all architectures that support MySQL also supports TCP connectsion, ne?
 #
 #  it "should connect successfully via the socket file" do
-#    @connection = DataObjects::Mysql::Connection.new("mysql://root@localhost:3306/do_mysql_test/?socket=#{SOCKET_PATH}")
+#    @connection = DataObjects::Mysql::Connection.new("mysql://#{MYSQL.user}@#{MYSQL.hostname}:#{MYSQL.port}/#{MYSQL.database}/?socket=#{SOCKET_PATH}")
 #    @connection.should be_using_socket
 #  end
 
   it "should return the current character set" do
     pending "Problems parsing regular connection URIs vs. JDBC URLs" if JRUBY
-    connection = DataObjects::Connection.new("mysql://root@localhost:3306/do_mysql_test")
+    connection = DataObjects::Connection.new("mysql://#{MYSQL.user}@#{MYSQL.hostname}:#{MYSQL.port}/#{MYSQL.database}")
     connection.character_set.should == "utf8"
     connection.close
   end
 
   it "should support changing the character set" do
     pending "Problems parsing regular connection URIs vs. JDBC URLs" if JRUBY
-    connection = DataObjects::Connection.new("mysql://root@localhost:3306/do_mysql_test/?charset=latin1")
+    connection = DataObjects::Connection.new("mysql://#{MYSQL.user}@#{MYSQL.hostname}:#{MYSQL.port}/#{MYSQL.database}/?charset=latin1")
     connection.character_set.should == "latin1"
     connection.close
 
-    connection = DataObjects::Connection.new("mysql://root@localhost:3306/do_mysql_test/?charset=utf8")
+    connection = DataObjects::Connection.new("mysql://#{MYSQL.user}@#{MYSQL.hostname}:#{MYSQL.port}/#{MYSQL.database}/?charset=utf8")
     connection.character_set.should == "utf8"
     connection.close
   end
@@ -78,25 +79,25 @@ describe DataObjects::Mysql do
     end
 
     # Missing database name
-    connecting_with("mysql://root@localhost:3306/").should raise_error(MysqlError)
+    connecting_with("mysql://#{MYSQL.user}@#{MYSQL.hostname}:#{MYSQL.port}/").should raise_error(MysqlError)
 
     # Wrong port
-    connecting_with("mysql://root@localhost:666/").should raise_error(MysqlError)
+    connecting_with("mysql://#{MYSQL.user}@#{MYSQL.hostname}:666/").should raise_error(MysqlError)
 
     # Bad Username
-    connecting_with("mysql://baduser@localhost:3306/").should raise_error(MysqlError)
+    connecting_with("mysql://baduser@#{MYSQL.hostname}:#{MYSQL.port}/").should raise_error(MysqlError)
 
     # Bad Password
-    connecting_with("mysql://root:wrongpassword@localhost:3306/").should raise_error(MysqlError)
+    connecting_with("mysql://#{MYSQL.user}:wrongpassword@#{MYSQL.hostname}:#{MYSQL.port}/").should raise_error(MysqlError)
 
     # Bad Database Name
-    connecting_with("mysql://root@localhost:3306/bad_database").should raise_error(MysqlError)
+    connecting_with("mysql://#{MYSQL.user}@#{MYSQL.hostname}:#{MYSQL.port}/bad_database").should raise_error(MysqlError)
 
     #
     # Again, should socket even be speced if we don't support it across all platforms?
     #
     # Invalid Socket Path
-    #connecting_with("mysql://root@localhost:3306/do_mysql_test/?socket=/invalid/path/mysql.sock").should raise_error(MysqlError)
+    #connecting_with("mysql://#{MYSQL.user}@#{MYSQL.hostname}:#{MYSQL.port}/MYSQL.database/?socket=/invalid/path/mysql.sock").should raise_error(MysqlError)
   end
 end
 
@@ -120,6 +121,7 @@ describe DataObjects::Mysql::Connection do
   end
 
   it "should close the connection when executing a bad query" do
+    pending "blows up in JRuby" if JRUBY
     lambda { @connection.create_command("INSERT INTO non_exista (tester) VALUES (1)").execute_non_query }.should raise_error(MysqlError)
     @connection.instance_variable_get(:@connection).should == nil
   end
@@ -224,6 +226,7 @@ describe DataObjects::Mysql::Reader do
   describe "Date, Time, and DateTime" do
 
     it "should return nil when the time is 0" do
+      pending "blows up in JRuby" if JRUBY
       id = insert("INSERT INTO users (name, fired_at) VALUES ('James', 0);")
       select("SELECT fired_at FROM users WHERE id = ?", [Time], id) do |reader|
         reader.values.last.should be_nil
