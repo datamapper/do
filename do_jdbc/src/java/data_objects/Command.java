@@ -74,7 +74,7 @@ public class Command extends RubyObject {
 
     // inherit initialize
 
-    @JRubyMethod(optional = 1)
+    @JRubyMethod(rest = true)
     public static IRubyObject execute_non_query(IRubyObject recv, IRubyObject[] args) {
         Ruby runtime = recv.getRuntime();
         IRubyObject connection = api.getInstanceVariable(recv, "@connection");
@@ -151,7 +151,7 @@ public class Command extends RubyObject {
         return result;
     }
 
-    @JRubyMethod(optional = 1)
+    @JRubyMethod(rest = true)
     public static IRubyObject execute_reader(IRubyObject recv, IRubyObject[] args) {
         Ruby runtime = recv.getRuntime();
         IRubyObject connection = api.getInstanceVariable(recv, "@connection");
