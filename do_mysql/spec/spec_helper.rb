@@ -7,6 +7,7 @@ gem 'rspec', '>=1.1.3'
 require 'spec'
 
 require 'date'
+require 'ostruct'
 require 'pathname'
 require 'fileutils'
 
@@ -31,9 +32,20 @@ DataObjects::Mysql.logger = DataObjects::Logger.new(log_path, 0)
 
 at_exit { DataObjects.logger.flush }
 
+MYSQL = OpenStruct.new
+MYSQL.user = ENV['DO_MYSQL_USER'] || 'root'
+MYSQL.pass = ENV['DO_MYSQL_PASS'] || ''
+MYSQL.host = ENV['DO_MYSQL_HOST'] || '127.0.0.1'
+MYSQL.hostname = ENV['DO_MYSQL_HOSTNAME'] || 'localhost'
+MYSQL.port     = ENV['DO_MYSQL_PORT'] || '3306'
+MYSQL.database = ENV['DO_MYSQL_DATABASE'] || 'do_mysql_test'
+MYSQL.socket   = ENV['DO_MYSQL_SOCKET'] || '/tmp/mysql.sock'
+
 # use different, JDBC-style URLs for JRuby, for the time-being
-DO_MYSQL_SPEC_URI      = Addressable::URI::parse(ENV["DO_MYSQL_SPEC_URI"]      || "mysql://root@127.0.0.1:3306/do_mysql_test")
-DO_MYSQL_SPEC_JDBC_URI = Addressable::URI::parse(ENV["DO_MYSQL_SPEC_JDBC_URI"] || "jdbc:mysql://localhost:3306/do_mysql_test?user=root")
+DO_MYSQL_SPEC_URI = Addressable::URI::parse(ENV["DO_MYSQL_SPEC_URI"] ||
+                    "mysql://#{MYSQL.user}:#{MYSQL.pass}@#{MYSQL.host}:#{MYSQL.port}/#{MYSQL.database}")
+DO_MYSQL_SPEC_JDBC_URI = Addressable::URI::parse(ENV["DO_MYSQL_SPEC_JDBC_URI"] ||
+                        "jdbc:mysql://#{MYSQL.hostname}:#{MYSQL.port}/#{MYSQL.database}?user=#{MYSQL.user}&password=#{MYSQL.pass}")
 
 module MysqlSpecHelpers
   def insert(query, *args)
