@@ -11,10 +11,15 @@ module DataObjects
     def self.new(uri)
       uri = DataObjects::URI::parse(uri)
 
-      if uri.scheme == 'jdbc'
+      case uri.scheme.to_sym
+      when :java
+        warn 'JNDI URLs (connection strings) are only for use with JRuby' unless RUBY_PLATFORM =~ /java/
+        # TODO: handle jndi connection strings
+      when :jdbc
+        warn 'JDBC URLs (connection strings) are only for use with JRuby' unless RUBY_PLATFORM =~ /java/
         driver_name = uri.path.split(':').first
       else
-        driver_name = uri.scheme.capitalize
+        driver_name = uri.scheme
       end
 
       DataObjects.const_get(driver_name.capitalize)::Connection.new(uri)
