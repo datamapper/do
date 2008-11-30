@@ -8,8 +8,8 @@ end
 module DataObjects
   class Connection
 
-    def self.new(uri)
-      uri = DataObjects::URI::parse(uri)
+    def self.new(uri_s)
+      uri = DataObjects::URI::parse(uri_s)
 
       case uri.scheme.to_sym
       when :java
@@ -18,11 +18,18 @@ module DataObjects
       when :jdbc
         warn 'JDBC URLs (connection strings) are only for use with JRuby' unless RUBY_PLATFORM =~ /java/
         driver_name = uri.path.split(':').first
+        conn_uri = uri_s # NOTE: for now, do not reformat this JDBC connection
+                         # string -- or, in other words, do not let
+                         # DataObjects::URI#to_s be called -- as it is not
+                         # correctly handling JDBC URLs, and in doing so, causing
+                         # java.sql.DriverManager.getConnection to throw a
+                         # 'No suitable driver found for...' exception.
       else
         driver_name = uri.scheme
+        conn_uri = uri
       end
 
-      DataObjects.const_get(driver_name.capitalize)::Connection.new(uri)
+      DataObjects.const_get(driver_name.capitalize)::Connection.new(conn_uri)
     end
 
     def self.inherited(target)
