@@ -1,4 +1,4 @@
-*.log
+*.log*
 ./doc
 ./cov
 pkg/*
@@ -18,3 +18,5 @@ stash
 cross
 coverage
 do_*/lib/do_*_ext.jar
+do_*/**/target
+do_*/pkg
