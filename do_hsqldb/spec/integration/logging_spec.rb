@@ -1,10 +1,10 @@
 require 'pathname'
 require Pathname(__FILE__).dirname.expand_path.parent + 'spec_helper'
 
-describe DataObjects::Jdbc::Command do
+describe DataObjects::Hsqldb::Command do
 
   before(:each) do
-    @connection = DataObjects::Jdbc::Connection.new("jdbc:hsqldb:mem")
+    @connection = DataObjects::Hsqldb::Connection.new("jdbc:hsqldb:mem")
   end
 
   describe "Executing a Reader" do

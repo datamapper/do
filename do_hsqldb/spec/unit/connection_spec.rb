@@ -1,7 +1,7 @@
 require 'pathname'
 require Pathname(__FILE__).dirname.expand_path.parent + 'spec_helper'
 
-describe "DataObjects::Jdbc::Connection" do
+describe "DataObjects::Hsqldb::Connection" do
 
   it "should inherit from DataObjects::Connection" do
     #@connection = mock
@@ -16,7 +16,7 @@ describe "DataObjects::Jdbc::Connection" do
 
     pending "Needs mocks to work"
 
-    connection = DataObjects::Jdbc::const_get('Connection').new("jdbc://test/")
+    connection = DataObjects::Hsqldb::const_get('Connection').new("jdbc://test/")
 
     connection.should respond_to(:initialize)
     connection.should respond_to(:real_close)

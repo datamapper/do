@@ -1,7 +1,7 @@
 require 'pathname'
 require Pathname(__FILE__).dirname.expand_path.parent + 'spec_helper'
 
-describe "DataObjects::Jdbc::Command" do
+describe "DataObjects::Hsqldb::Command" do
 
   it "should inherit from DataObjects::Command" do
     pending

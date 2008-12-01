@@ -1,7 +1,7 @@
 require 'pathname'
 require Pathname(__FILE__).dirname.expand_path.parent + 'spec_helper'
 
-describe "DataObjects::Jdbc::Connection" do
+describe "DataObjects::Hsqldb::Connection" do
   include JdbcSpecHelpers
 
   it "should connect to the database" do
@@ -16,7 +16,7 @@ describe "DataObjects::Jdbc::Connection" do
 
 end
 
-describe "DataObjects::Jdbc::Command" do
+describe "DataObjects::Hsqldb::Command" do
   include JdbcSpecHelpers
 
   before(:all) do
@@ -26,7 +26,7 @@ describe "DataObjects::Jdbc::Command" do
   it "should be able to create a command" do
     command = @connection.create_command("SELECT id, name FROM users")
     command.set_types [Integer, String]
-    command.should be_kind_of(DataObjects::Jdbc::Command)
+    command.should be_kind_of(DataObjects::Hsqldb::Command)
     command.instance_variable_get("@types").should == [Integer, String]
   end
 
@@ -45,7 +45,7 @@ describe "DataObjects::Jdbc::Command" do
     it "should execute and return a Result" do
       command = @connection.create_command("INSERT INTO invoices (invoice_number) VALUES ('1234')")
       result = command.execute_non_query
-      result.should be_kind_of(DataObjects::Jdbc::Result)
+      result.should be_kind_of(DataObjects::Hsqldb::Result)
     end
 
   end
@@ -65,7 +65,7 @@ describe "DataObjects::Jdbc::Command" do
     it "should execute and return a Reader" do
       command = @connection.create_command("SELECT * FROM invoices")
       reader = command.execute_reader
-      reader.should be_kind_of(DataObjects::Jdbc::Reader)
+      reader.should be_kind_of(DataObjects::Hsqldb::Reader)
       reader.close.should == true
     end
 

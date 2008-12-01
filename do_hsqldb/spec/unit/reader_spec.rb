@@ -1,7 +1,7 @@
 require 'pathname'
 require Pathname(__FILE__).dirname.expand_path.parent + 'spec_helper'
 
-describe "DataObjects::Jdbc::Reader" do
+describe "DataObjects::Hsqldb::Reader" do
 
   it "should inherit from DataObjects::Reader" do
     pending
@@ -15,7 +15,7 @@ describe "DataObjects::Jdbc::Reader" do
     #connection = DataObjects::Connection.new('mock://localhost')
     #command = connection.create_command("SELECT * FROM example")
     #reader = command.execute_reader
-    reader = DataObjects::Jdbc::const_get('Reader').new
+    reader = DataObjects::Hsqldb::const_get('Reader').new
 
     reader.should respond_to(:close)
     reader.should respond_to(:next!)
