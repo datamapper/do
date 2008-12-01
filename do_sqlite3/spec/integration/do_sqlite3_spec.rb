@@ -28,13 +28,13 @@ describe "DataObjects::Sqlite3::Result" do
 
   it "should raise an error for a bad query" do
     command = @connection.create_command("INSER INTO table_which_doesnt_exist (id) VALUES (1)")
-    lambda { command.execute_non_query }.should raise_error('near "INSER": syntax error')
+    lambda { command.execute_non_query }.should raise_error(Sqlite3Error, /near "INSER": syntax error/)
 
     command = @connection.create_command("INSERT INTO table_which_doesnt_exist (id) VALUES (1)")
-    lambda { command.execute_non_query }.should raise_error("no such table: table_which_doesnt_exist")
+    lambda { command.execute_non_query }.should raise_error(Sqlite3Error, /no such table: table_which_doesnt_exist/)
 
     command = @connection.create_command("SELECT * FROM table_which_doesnt_exist")
-    lambda { command.execute_reader }.should raise_error("no such table: table_which_doesnt_exist")
+    lambda { command.execute_reader }.should raise_error(Sqlite3Error, /no such table: table_which_doesnt_exist/)
   end
 
   it "should return the affected rows and insert_id" do
@@ -52,14 +52,14 @@ describe "DataObjects::Sqlite3::Result" do
     command = @connection.create_command("SELECT * FROM users")
     reader = command.execute_reader
 
-    lambda { reader.values }.should raise_error
+    lambda { reader.values }.should raise_error(Sqlite3Error, /Reader is not initialized/)
 
     while ( reader.next! )
       lambda { reader.values }.should_not raise_error
       reader.values.should be_a_kind_of(Array)
     end
 
-    lambda { reader.values }.should raise_error
+    lambda { reader.values }.should raise_error(Sqlite3Error, /Reader is not initialized/)
 
     reader.close
   end
@@ -73,7 +73,7 @@ describe "DataObjects::Sqlite3::Result" do
 
     reader.next!
 
-    lambda { reader.values }.should raise_error
+    lambda { reader.values }.should raise_error(Sqlite3Error, /Reader is not initialized/)
 
     reader.close
   end
@@ -107,7 +107,7 @@ describe "DataObjects::Sqlite3::Result" do
   end
 
   it "should raise an error when you pass too many or too few types for the expected result set" do
-    lambda { select("SELECT name, id FROM users", [String, Integer, String]) }.should raise_error(Sqlite3Error)
+    lambda { select("SELECT name, id FROM users", [String, Integer, String]) }.should raise_error(Sqlite3Error, /Field-count mismatch. Expected 3 fields, but the query yielded 2/)
   end
 
   it "should do a custom typecast reader with Class" do
