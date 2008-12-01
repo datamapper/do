@@ -1,19 +1,18 @@
 require 'rubygems'
 require 'data_objects'
-require 'do_postgres_ext'
-require 'do_postgres/transaction'
 
 if RUBY_PLATFORM =~ /java/
-  require 'do_jdbc/postgres'   # the JDBC driver, packaged as a gem
+  require 'do_hsqldb_ext'    # the Java extension for this DO driver
+  require 'do_jdbc/hsqldb'   # the JDBC driver, packaged as a gem
 
   # Another way of loading the JDBC Class. This seems to be more relaible
   # than Class.forName() within the data_objects.Connection Java class,
   # which is currently not working as expected.
   require 'java'
-  import 'org.postgresql.Driver'
+  import 'org.hsqldb.jdbcDriver'
 
   module DataObjects
-    module Mysql
+    module Hsqldb
       class Connection
         def self.pool_size
           20
@@ -22,4 +21,6 @@ if RUBY_PLATFORM =~ /java/
     end
   end
 
+else
+  warn "do_hsqldb is only for use with JRuby"
 end

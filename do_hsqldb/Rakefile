@@ -1,0 +1,54 @@
+require 'rubygems'
+require 'rake'
+require 'spec/rake/spectask'
+require 'pathname'
+require 'lib/do_hsqldb/version'
+
+ROOT = Pathname(__FILE__).dirname.expand_path
+
+JRUBY = (RUBY_PLATFORM =~ /java/) rescue nil
+
+AUTHOR = "Alex Coles"
+EMAIL  = "alex@alexcolesportfolio.com"
+GEM_NAME = "do_hsqldb"
+GEM_VERSION = DataObjects::Hsqldb::VERSION
+GEM_DEPENDENCIES = ["data_objects", GEM_VERSION], ["do_jdbc", GEM_VERSION], ["do_jdbc-hsqldb", GEM_VERSION]
+GEM_CLEAN = ['test.db.*','test/reports', 'lib/**/*.jar','manifest.mf']
+GEM_EXTRAS = { :platform => 'java', :has_rdoc => false }
+
+PROJECT_NAME = "dorb"
+PROJECT_URL  = "http://rubyforge.org/projects/dorb"
+PROJECT_DESCRIPTION = PROJECT_SUMMARY = "A DataObjects.rb driver for Derby"
+
+DRIVER = true
+
+# By default, sudo is used, except if SUDOLESS env is true
+SUDO = 'sudo' unless ENV['SUDOLESS']
+
+if (tasks_dir = ROOT.parent + 'tasks').directory?
+  require tasks_dir + 'hoe'
+end
+
+def sudo_gem(cmd)
+  sh "#{SUDO} #{RUBY} -S gem #{cmd}", :verbose => false
+end
+
+# Installation
+
+task :default => [ :compile, :spec ]
+
+desc "Install #{GEM_NAME} #{GEM_VERSION}"
+task :install => [ :package ] do
+  sudo_gem "install pkg/#{GEM_NAME}-#{GEM_VERSION} --no-update-sources"
+end
+
+desc "Uninstall #{GEM_NAME} #{GEM_VERSION}"
+task :uninstall => [ :clobber ] do
+  sudo_gem "uninstall #{GEM_NAME} -v#{GEM_VERSION} -I -x"
+end
+
+desc "Run specifications"
+Spec::Rake::SpecTask.new('spec') do |t|
+  t.spec_opts << '--options' << 'spec/spec.opts' if File.exists?('spec/spec.opts')
+  t.spec_files = Pathname.glob((ROOT + 'spec/**/*_spec.rb').to_s)
+end
