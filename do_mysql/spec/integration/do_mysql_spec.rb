@@ -227,11 +227,21 @@ describe DataObjects::Mysql::Reader do
 
     it "should return nil when the time is 0" do
       pending "blows up in JRuby" if JRUBY
-      id = insert("INSERT INTO users (name, fired_at) VALUES ('James', 0);")
-      select("SELECT fired_at FROM users WHERE id = ?", [Time], id) do |reader|
-        reader.values.last.should be_nil
+
+      # skip the test if the strict dates/times setting is turned on
+      strict_time = select("SHOW VARIABLES LIKE 'sql_mode'") do |reader|
+        reader.values.last.split(',').any? do |mode|
+          %w[ NO_ZERO_IN_DATE NO_ZERO_DATE ].include?(mode.strip.upcase)
+        end
       end
-      exec("DELETE FROM users WHERE id = ?", id)
+
+      unless strict_time
+        id = insert("INSERT INTO users (name, fired_at) VALUES ('James', 0);")
+        select("SELECT fired_at FROM users WHERE id = ?", [Time], id) do |reader|
+          reader.values.last.should be_nil
+        end
+        exec("DELETE FROM users WHERE id = ?", id)
+      end
     end
 
     it "should return DateTimes using the current locale's Time Zone" do
