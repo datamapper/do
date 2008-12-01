@@ -4,7 +4,11 @@ require Pathname(__FILE__).dirname.expand_path.parent + 'spec_helper'
 describe DataObjects::Sqlite3::Command do
 
   before(:each) do
-    @connection = DataObjects::Connection.new("sqlite3://#{File.expand_path(File.dirname(__FILE__))}/test.db")
+    if JRUBY                                    # NOTE the sqlite not sqlite3
+      @connection = DataObjects::Connection.new("jdbc:sqlite:test.db")
+    else
+      @connection = DataObjects::Connection.new("sqlite3://#{File.expand_path(File.dirname(__FILE__))}/test.db")
+    end
     @command = @connection.create_command("INSERT INTO users (name) VALUES (?)")
   end
 

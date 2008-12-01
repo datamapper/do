@@ -15,7 +15,11 @@ describe "DataObjects::Sqlite3::Result" do
   include Sqlite3SpecHelpers
 
   before(:all) do
-    @connection = DataObjects::Connection.new("sqlite3://#{File.expand_path(File.dirname(__FILE__))}/test.db")
+    if JRUBY                                    # note the sqlite not sqlite3!
+      @connection = DataObjects::Connection.new("jdbc:sqlite:test.db")
+    else
+      @connection = DataObjects::Connection.new("sqlite3://#{File.expand_path(File.dirname(__FILE__))}/test.db")
+    end
   end
 
   after :all do

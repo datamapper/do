@@ -17,7 +17,13 @@ module DataObjects
         # TODO: handle jndi connection strings
       when :jdbc
         warn 'JDBC URLs (connection strings) are only for use with JRuby' unless RUBY_PLATFORM =~ /java/
-        driver_name = uri.path.split(':').first
+
+        driver_name = if uri.path.split(':').first == 'sqlite'
+          'sqlite3'
+        else
+          uri.path.split(':').first
+        end
+
         conn_uri = uri_s # NOTE: for now, do not reformat this JDBC connection
                          # string -- or, in other words, do not let
                          # DataObjects::URI#to_s be called -- as it is not

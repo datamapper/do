@@ -1,4 +1,5 @@
 $TESTING=true
+JRUBY = RUBY_PLATFORM =~ /java/
 
 require 'rubygems'
 require 'spec'
@@ -9,6 +10,11 @@ require 'pathname'
 # DO NOT USE installed gem of data_objects!
 $:.unshift File.expand_path(File.join(File.dirname(__FILE__), '..', '..', 'data_objects', 'lib'))
 require 'data_objects'
+
+if JRUBY
+  $:.unshift File.expand_path(File.join(File.dirname(__FILE__), '..', '..', 'do_jdbc', 'lib'))
+  require 'do_jdbc'
+end
 
 # put the pre-compiled extension in the path to be found
 $:.unshift File.expand_path(File.join(File.dirname(__FILE__), '..', 'lib'))
