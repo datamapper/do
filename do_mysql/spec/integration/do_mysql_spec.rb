@@ -20,14 +20,12 @@ describe DataObjects::Mysql do
   end
 
   it "should connect successfully via TCP" do
-    pending "Problems parsing regular connection URIs vs. JDBC URLs" if JRUBY
     connection = DataObjects::Connection.new("mysql://#{MYSQL.user}:#{MYSQL.pass}@#{MYSQL.host}:#{MYSQL.port}/#{MYSQL.database}")
     connection.should_not be_using_socket
     connection.close
   end
 
   it "should be able to send queries asynchronously in parallel" do
-    pending "Problems parsing regular connection URIs vs. JDBC URLs" if JRUBY
     threads = []
 
     start = Time.now
@@ -55,34 +53,32 @@ describe DataObjects::Mysql do
 #  end
 
   it "should return the current character set" do
-    pending "Problems parsing regular connection URIs vs. JDBC URLs" if JRUBY
-    connection = DataObjects::Connection.new("mysql://#{MYSQL.user}@#{MYSQL.hostname}:#{MYSQL.port}/#{MYSQL.database}")
+    connection = DataObjects::Connection.new("mysql://#{MYSQL.user}:#{MYSQL.pass}@#{MYSQL.hostname}:#{MYSQL.port}/#{MYSQL.database}")
     connection.character_set.should == "utf8"
     connection.close
   end
 
   it "should support changing the character set" do
-    pending "Problems parsing regular connection URIs vs. JDBC URLs" if JRUBY
-    connection = DataObjects::Connection.new("mysql://#{MYSQL.user}@#{MYSQL.hostname}:#{MYSQL.port}/#{MYSQL.database}/?charset=latin1")
+    connection = DataObjects::Connection.new("mysql://#{MYSQL.user}:#{MYSQL.pass}@#{MYSQL.hostname}:#{MYSQL.port}/#{MYSQL.database}?charset=latin1")
+                 # N.B. query parameter after forward slash causes problems with JDBC
     connection.character_set.should == "latin1"
     connection.close
 
-    connection = DataObjects::Connection.new("mysql://#{MYSQL.user}@#{MYSQL.hostname}:#{MYSQL.port}/#{MYSQL.database}/?charset=utf8")
+    connection = DataObjects::Connection.new("mysql://#{MYSQL.user}:#{MYSQL.pass}@#{MYSQL.hostname}:#{MYSQL.port}/#{MYSQL.database}?charset=utf8")
     connection.character_set.should == "utf8"
     connection.close
   end
 
   it "should raise an error when opened with an invalid server uri" do
-    pending "Problems parsing regular connection URIs vs. JDBC URLs" if JRUBY
     def connecting_with(uri)
       lambda { DataObjects::Connection.new(uri) }
     end
 
     # Missing database name
-    connecting_with("mysql://#{MYSQL.user}@#{MYSQL.hostname}:#{MYSQL.port}/").should raise_error(MysqlError)
+    connecting_with("mysql://#{MYSQL.user}:#{MYSQL.pass}@#{MYSQL.hostname}:#{MYSQL.port}/").should raise_error(MysqlError)
 
     # Wrong port
-    connecting_with("mysql://#{MYSQL.user}@#{MYSQL.hostname}:666/").should raise_error(MysqlError)
+    connecting_with("mysql://#{MYSQL.user}:#{MYSQL.pass}@#{MYSQL.hostname}:666/").should raise_error(MysqlError)
 
     # Bad Username
     connecting_with("mysql://baduser@#{MYSQL.hostname}:#{MYSQL.port}/").should raise_error(MysqlError)
@@ -91,7 +87,7 @@ describe DataObjects::Mysql do
     connecting_with("mysql://#{MYSQL.user}:wrongpassword@#{MYSQL.hostname}:#{MYSQL.port}/").should raise_error(MysqlError)
 
     # Bad Database Name
-    connecting_with("mysql://#{MYSQL.user}@#{MYSQL.hostname}:#{MYSQL.port}/bad_database").should raise_error(MysqlError)
+    connecting_with("mysql://#{MYSQL.user}:#{MYSQL.pass}@#{MYSQL.hostname}:#{MYSQL.port}/bad_database").should raise_error(MysqlError)
 
     #
     # Again, should socket even be speced if we don't support it across all platforms?

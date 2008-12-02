@@ -4,11 +4,7 @@ require Pathname(__FILE__).dirname.expand_path.parent + 'spec_helper'
 describe DataObjects::Mysql::Command do
 
   before(:each) do
-    @connection = if JRUBY
-      DataObjects::Connection.new(DO_MYSQL_SPEC_JDBC_URI)
-    else
-      DataObjects::Connection.new(DO_MYSQL_SPEC_URI)
-    end
+    @connection = DataObjects::Connection.new(DO_MYSQL_SPEC_URI)
   end
 
   after(:each) do

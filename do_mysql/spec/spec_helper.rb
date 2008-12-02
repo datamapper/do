@@ -41,11 +41,8 @@ MYSQL.port     = ENV['DO_MYSQL_PORT'] || '3306'
 MYSQL.database = ENV['DO_MYSQL_DATABASE'] || 'do_mysql_test'
 MYSQL.socket   = ENV['DO_MYSQL_SOCKET'] || '/tmp/mysql.sock'
 
-# use different, JDBC-style URLs for JRuby, for the time-being
 DO_MYSQL_SPEC_URI = Addressable::URI::parse(ENV["DO_MYSQL_SPEC_URI"] ||
                     "mysql://#{MYSQL.user}:#{MYSQL.pass}@#{MYSQL.host}:#{MYSQL.port}/#{MYSQL.database}")
-DO_MYSQL_SPEC_JDBC_URI = Addressable::URI::parse(ENV["DO_MYSQL_SPEC_JDBC_URI"] ||
-                        "jdbc:mysql://#{MYSQL.hostname}:#{MYSQL.port}/#{MYSQL.database}?user=#{MYSQL.user}&password=#{MYSQL.pass}")
 
 module MysqlSpecHelpers
   def insert(query, *args)
@@ -70,13 +67,8 @@ module MysqlSpecHelpers
   end
 
   def setup_test_environment
-    if JRUBY # use different, JDBC-style URLs for JRuby, for the time-being
-      @connection = DataObjects::Connection.new(DO_MYSQL_SPEC_JDBC_URI)
-      @secondary_connection = DataObjects::Connection.new(DO_MYSQL_SPEC_JDBC_URI)
-    elsif
-      @connection = DataObjects::Connection.new(DO_MYSQL_SPEC_URI)
-      @secondary_connection = DataObjects::Connection.new(DO_MYSQL_SPEC_URI)
-    end
+    @connection = DataObjects::Connection.new(DO_MYSQL_SPEC_URI)
+    @secondary_connection = DataObjects::Connection.new(DO_MYSQL_SPEC_URI)
 
     @connection.create_command(<<-EOF).execute_non_query
       DROP TABLE IF EXISTS `invoices`
