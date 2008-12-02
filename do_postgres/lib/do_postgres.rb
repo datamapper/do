@@ -13,7 +13,7 @@ if RUBY_PLATFORM =~ /java/
   import 'org.postgresql.Driver'
 
   module DataObjects
-    module Mysql
+    module Postgres
       class Connection
         def self.pool_size
           20

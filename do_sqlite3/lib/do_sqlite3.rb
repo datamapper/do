@@ -21,7 +21,7 @@ if RUBY_PLATFORM =~ /java/
   import 'org.sqlite.JDBC'
 
   module DataObjects
-    module Mysql
+    module Sqlite3
       class Connection
         def self.pool_size
           20
