@@ -117,21 +117,21 @@ public class Connection extends RubyObject {
         try {
             // uri.getUserInfo() gave always null, so do it manually
             if (connectionUri.toString().contains("@")) {
-                String userInfo = 
+                String userInfo =
                     connectionUri.toString().replaceFirst(".*://", "").replaceFirst("@.*", "");
                 String jdbcUri = connectionUri.toString().replaceFirst(userInfo + "@", "");
                 if(!userInfo.contains(":")) {
                     userInfo += ":";
                 }
-                
-                conn = DriverManager.getConnection(jdbcUri, 
-                                                   userInfo.substring(0, userInfo.indexOf(":")), 
+
+                conn = DriverManager.getConnection(jdbcUri,
+                                                   userInfo.substring(0, userInfo.indexOf(":")),
                                                    userInfo.substring(userInfo.indexOf(":") + 1));
             }
             else {
                 conn = DriverManager.getConnection(connectionUri.toString());
             }
-            
+
         } catch (SQLException ex) {
             //Logger.getLogger(Connection.class.getName()).log(Level.SEVERE, null, ex);
             throw runtime.newRuntimeError("Can't connect: " + connectionUri.toString() + "\n\t" + ex.getLocalizedMessage());
@@ -183,8 +183,13 @@ public class Connection extends RubyObject {
             throws URISyntaxException {
         java.net.URI uri;
         String fullUri = api.callMethod(connectionUri, "to_s").asJavaString();
-        // since we nned a jdbc uri, prefix given uri with 'jdbc:'
-        uri = new java.net.URI("jdbc:" + fullUri);
+        if (!fullUri.startsWith("jdbc:")) {
+            // since we need a jdbc uri, prefix given uri with 'jdbc:'
+            uri = new java.net.URI("jdbc:" + fullUri);
+        } else {
+            // if its already a JDBC url, we pass it through
+            uri = new java.net.URI(fullUri);
+        }
         return uri;
     }
 
