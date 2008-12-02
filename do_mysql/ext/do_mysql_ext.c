@@ -157,6 +157,15 @@ static VALUE seconds_to_offset(long seconds_offset) {
   return rb_funcall(rb_cRational, rb_intern("new!"), 2, rb_ll2inum(num), rb_ll2inum(den));
 }
 
+static VALUE timezone_to_offset(int hour_offset, int minute_offset) {
+  do_int64 seconds = 0;
+
+  seconds += hour_offset * 3600;
+  seconds += minute_offset * 60;
+
+  return seconds_to_offset(seconds);
+}
+
 static VALUE parse_date(const char *date) {
   int year, month, day;
   int jd, ajd;
