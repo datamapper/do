@@ -1,8 +1,0 @@
-BSD-LICENSE
-History.txt
-Manifest.txt
-README.txt
-Rakefile
-lib/do_jdbc/postgres.rb
-lib/do_jdbc/postgres_version.rb
-lib/postgresql-8.3-603.jdbc3.jar

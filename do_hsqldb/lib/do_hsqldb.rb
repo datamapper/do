@@ -1,14 +1,17 @@
 require 'rubygems'
+gem 'data_objects'    
 require 'data_objects'
 
 if RUBY_PLATFORM =~ /java/
-  require 'do_hsqldb_ext'    # the Java extension for this DO driver
-  require 'do_jdbc/hsqldb'   # the JDBC driver, packaged as a gem
+  require 'do_jdbc'
+  require 'java'
+  gem 'jdbc-hsqldb'
+  require 'jdbc/hsqldb'     # the JDBC driver, packaged as a gem
+  require 'do_hsqldb_ext'   # the Java extension for this DO driver
 
-  # Another way of loading the JDBC Class. This seems to be more relaible
+  # Another way of loading the JDBC Class. This seems to be more reliable
   # than Class.forName() within the data_objects.Connection Java class,
   # which is currently not working as expected.
-  require 'java'
   import 'org.hsqldb.jdbcDriver'
 
   module DataObjects

@@ -1,8 +1,0 @@
-APACHE-LICENSE-2.0
-History.txt
-Manifest.txt
-README.txt
-Rakefile
-lib/derby-10.4.1.3.jar
-lib/do_jdbc/derby.rb
-lib/do_jdbc/derby_version.rb

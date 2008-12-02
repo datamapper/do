@@ -7,17 +7,21 @@ if RUBY_PLATFORM.match(/mingw|mswin/i)
 end
 
 require 'rubygems'
+gem 'data_objects'    
 require 'data_objects'
+if RUBY_PLATFORM =~ /java/
+  require 'do_jdbc'
+  require 'java'
+  gem 'jdbc-sqlite3'
+  require 'jdbc/sqlite3' # the JDBC driver, packaged as a gem
+end
 require 'do_sqlite3_ext'
 require 'do_sqlite3/transaction'
 
 if RUBY_PLATFORM =~ /java/
-  require 'do_jdbc/sqlite3'   # the JDBC driver, packaged as a gem
-
-  # Another way of loading the JDBC Class. This seems to be more relaible
+  # Another way of loading the JDBC Class. This seems to be more reliable
   # than Class.forName() within the data_objects.Connection Java class,
   # which is currently not working as expected.
-  require 'java'
   import 'org.sqlite.JDBC'
 
   module DataObjects

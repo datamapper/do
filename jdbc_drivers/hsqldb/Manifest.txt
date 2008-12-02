@@ -1,8 +1,0 @@
-HSQLDB-LICENSE
-History.txt
-Manifest.txt
-README.txt
-Rakefile
-lib/do_jdbc/hsqldb.rb
-lib/do_jdbc/hsqldb_version.rb
-lib/hsqldb-1.8.0.7.jar

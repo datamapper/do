@@ -1,6 +1,10 @@
 README for Developers
 =====================
 
+ ** NOTE ** These instructions are deprecated. We now use the drivers bundled
+    as Gems provided by the ActiveRecord-JDBC project. Only drivers that that
+    project does not yet provide should be provided in this directory.
+
 # make sure RUBY_HOME is set
 
 # builder 1.3.2 is tied to version specific dependencies
