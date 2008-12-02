@@ -320,9 +320,11 @@ describe "Pooled object", "on initialization" do
   end
 
   it "does not flush pool" do
-    # using pool here initializes the pool first
-    # so we use instance variable directly
-    DisposableResource.instance_variable_get("@__pool").should_not_receive(:flush!)
+    # use a mocked pool instead of hooking the instance variable.
+    # on previous code it assumed @__pool was already set
+    pool = mock('Pool')
+    pool.should_not_receive(:flush!)
+    DisposableResource.instance_variable_set("@_pool", pool)
     DisposableResource.initialize_pool(23)
   end
 
