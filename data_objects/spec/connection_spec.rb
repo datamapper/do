@@ -40,8 +40,22 @@ describe DataObjects::Connection do
       c = DataObjects::Connection.new(Addressable::URI.parse('mock://localhost/database'))
       c.should be_kind_of(DataObjects::Mock::Connection)
 
-      c = DataObjects::Connection.new(Addressable::URI.parse('jdbc:mock://localhost/database'))
-      c.should be_kind_of(DataObjects::Mock::Connection)
+      c = DataObjects::Connection.new(Addressable::URI.parse('mock:jndi://jdbc/database'))
+      #c.should be_kind_of(DataObjects::Mock::Connection)
+    end
+
+    it "should return the Connection using username" do
+      c = DataObjects::Connection.new(Addressable::URI.parse('mock://root@localhost/database'))
+      c.instance_variable_get(:@uri).user.should == 'root'
+      c.instance_variable_get(:@uri).password.should be_nil
+
+      c = DataObjects::Connection.new(Addressable::URI.parse('mock://root:@localhost/database'))
+      c.instance_variable_get(:@uri).user.should == 'root'
+      c.instance_variable_get(:@uri).password.should == ''
+
+      c = DataObjects::Connection.new(Addressable::URI.parse('mock://root:pwd@localhost/database'))
+      c.instance_variable_get(:@uri).user.should == 'root'
+      c.instance_variable_get(:@uri).password.should == 'pwd'
     end
   end
 end

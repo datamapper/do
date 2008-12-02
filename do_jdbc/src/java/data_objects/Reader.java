@@ -123,22 +123,24 @@ public class Reader extends RubyObject {
 
         for (int i = 0; i < RubyNumeric.fix2int(field_count.convertToInteger()); i++) {
             int col = i + 1;
-            RubyType type;
+            // RubyType type;
 
-            if (fieldTypesCount > 0) {
+            //            if (fieldTypesCount > 0) {
                 // use the specified type
-                String typeName = field_types.convertToArray().get(i).toString();
-                type = RubyType.getRubyType(typeName);
-            } else {
+            //  String typeName = field_types.convertToArray().get(i).toString();
+            //  type = RubyType.getRubyType(typeName.toUpperCase());
+            //} else {
                 // infer the type
-                type = DataObjectsUtils.jdbcTypeToRubyType(rs.getMetaData().getColumnType(col),
+
+            // assume the mapping from jdbc type to ruby type to be complete
+            RubyType type = DataObjectsUtils.jdbcTypeToRubyType(rs.getMetaData().getColumnType(col),
                     rs.getMetaData().getScale(col));
-            }
+                //}
 
             // -- debugging what's coming out
-            System.out.println("JDBC TypeName" + rs.getMetaData().getColumnTypeName(col));
-            System.out.println("JDBC Metadata" + rs.getMetaData().getScale(col));
-            System.out.println("Ruby Type" + type);
+            //System.out.println("JDBC TypeName " + rs.getMetaData().getColumnTypeName(col));
+            //System.out.println("JDBC Metadata scale " + rs.getMetaData().getScale(col));
+            //System.out.println("Ruby Type " + type);
 
             value = get_typecast_rs_value(runtime, rs, col, type);
             row.push_m(new IRubyObject[]{value});

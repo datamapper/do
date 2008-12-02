@@ -115,10 +115,26 @@ public class Connection extends RubyObject {
         java.sql.Connection conn;
 
         try {
-            conn = DriverManager.getConnection(connectionUri.toString());
+            // uri.getUserInfo() gave always null, so do it manually
+            if (connectionUri.toString().contains("@")) {
+                String userInfo = 
+                    connectionUri.toString().replaceFirst(".*://", "").replaceFirst("@.*", "");
+                String jdbcUri = connectionUri.toString().replaceFirst(userInfo + "@", "");
+                if(!userInfo.contains(":")) {
+                    userInfo += ":";
+                }
+                
+                conn = DriverManager.getConnection(jdbcUri, 
+                                                   userInfo.substring(0, userInfo.indexOf(":")), 
+                                                   userInfo.substring(userInfo.indexOf(":") + 1));
+            }
+            else {
+                conn = DriverManager.getConnection(connectionUri.toString());
+            }
+            
         } catch (SQLException ex) {
             //Logger.getLogger(Connection.class.getName()).log(Level.SEVERE, null, ex);
-            throw runtime.newRuntimeError("Can't connect:" + connectionUri + ex.getLocalizedMessage());
+            throw runtime.newRuntimeError("Can't connect: " + connectionUri.toString() + "\n\t" + ex.getLocalizedMessage());
         }
 
         IRubyObject rubyconn1 = wrappedConnection(recv, conn);
@@ -167,7 +183,8 @@ public class Connection extends RubyObject {
             throws URISyntaxException {
         java.net.URI uri;
         String fullUri = api.callMethod(connectionUri, "to_s").asJavaString();
-        uri = new java.net.URI(fullUri);
+        // since we nned a jdbc uri, prefix given uri with 'jdbc:'
+        uri = new java.net.URI("jdbc:" + fullUri);
         return uri;
     }
 

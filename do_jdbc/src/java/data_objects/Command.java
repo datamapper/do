@@ -74,7 +74,7 @@ public class Command extends RubyObject {
 
     // inherit initialize
 
-    @JRubyMethod(rest = true)
+    @JRubyMethod(optional = 1, rest = true)
     public static IRubyObject execute_non_query(IRubyObject recv, IRubyObject[] args) {
         Ruby runtime = recv.getRuntime();
         IRubyObject connection = api.getInstanceVariable(recv, "@connection");
@@ -83,19 +83,18 @@ public class Command extends RubyObject {
         IRubyObject insert_key = runtime.getNil();
         RubyClass resultClass = Result.createResultClass(runtime, moduleName, errorName, driver);
 
-        // escape all parameters given and pass them to query
-        String querySql = buildQueryFromArgs(recv, args);
-
         java.sql.Connection javaConn = (java.sql.Connection) wrappedJdbcConnection.dataGetStruct();
         int affectedCount = 0;
-        Statement sqlStatement = null;
+        PreparedStatement sqlStatement = null;
         java.sql.ResultSet keys = null;
         boolean supportsGeneratedKeys = driver.supportsJdbcGeneratedKeys();
 
-        debug(runtime, querySql);
         try {
-            sqlStatement = javaConn.createStatement();
-            javaConn.setAutoCommit(true); // hangs with autocommit set to false
+            sqlStatement = javaConn.prepareStatement(api.getInstanceVariable(recv, "@text").asJavaString());
+            
+            prepareStatementFromArgs(sqlStatement, recv, args);
+
+            //javaConn.setAutoCommit(true); // hangs with autocommit set to false
             // sqlStatement.setMaxRows();
 
             if (supportsGeneratedKeys) {
@@ -112,20 +111,24 @@ public class Command extends RubyObject {
                 // (Derby only supplies getGeneratedKeys() for auto-incremented
                 // columns)
                 //
-                affectedCount = sqlStatement.executeUpdate(querySql, Statement.RETURN_GENERATED_KEYS);
+                affectedCount = sqlStatement.executeUpdate();
+                // apparently the prepared statements always provide the 
+                // generated keys
                 keys = sqlStatement.getGeneratedKeys();
+            
             } else {
                 // If there is no support, then a custom method canb e defined
                 // to return a ResultSet with keys
-                affectedCount = sqlStatement.executeUpdate(querySql);
+                affectedCount = sqlStatement.executeUpdate();
                 keys = driver.getGeneratedKeys(javaConn);
             }
             if (keys != null) {
                 insert_key = unmarshal_id_result(runtime, keys);
             }
 
-            sqlStatement.close();
-            sqlStatement = null;
+            // not needed as it will be closed in the finally clause
+            //            sqlStatement.close();
+            //            sqlStatement = null;
         } catch (SQLException sqle) {
             // TODO: log sqle.printStackTrace();
             throw DataObjectsUtils.newDriverError(runtime, errorName, sqle.getLocalizedMessage());
@@ -151,21 +154,18 @@ public class Command extends RubyObject {
         return result;
     }
 
-    @JRubyMethod(rest = true)
+    @JRubyMethod(optional = 1, rest = true)
     public static IRubyObject execute_reader(IRubyObject recv, IRubyObject[] args) {
         Ruby runtime = recv.getRuntime();
         IRubyObject connection = api.getInstanceVariable(recv, "@connection");
         IRubyObject wrappedJdbcConnection = api.getInstanceVariable(connection, "@connection");
         RubyClass readerClass = Reader.createReaderClass(runtime, moduleName, errorName, driver);
 
-        // escape all parameters given and pass them to query
-        String querySql = buildQueryFromArgs(recv, args);
-
         java.sql.Connection javaConn = (java.sql.Connection) wrappedJdbcConnection.dataGetStruct();
         boolean inferTypes = false;
         int columnCount = 0;
         int rowCount = 0;
-        Statement sqlStatement = null;
+        PreparedStatement sqlStatement = null;
         ResultSet resultSet = null;
         ResultSetMetaData metaData = null;
 
@@ -174,11 +174,12 @@ public class Command extends RubyObject {
                 new IRubyObject[] { }, Block.NULL_BLOCK);
 
         // execute the query
-        debug(runtime, querySql);
         try {
-            sqlStatement = javaConn.createStatement();
+            sqlStatement = javaConn.prepareStatement(api.getInstanceVariable(recv, "@text").asJavaString());
             //sqlStatement.setMaxRows();
-            resultSet = sqlStatement.executeQuery(querySql);
+            prepareStatementFromArgs(sqlStatement, recv, args);
+            
+            resultSet = sqlStatement.executeQuery();
             metaData = resultSet.getMetaData();
             columnCount = metaData.getColumnCount();
 
@@ -239,6 +240,9 @@ public class Command extends RubyObject {
             api.setInstanceVariable(reader, "@types", field_types);
 
             // keep the statement open
+
+            // TODO why keep it open ???
+
             //sqlStatement.close();
             //sqlStatement = null;
         } catch (SQLException sqle) {
@@ -309,15 +313,23 @@ public class Command extends RubyObject {
      * @param args
      * @return the query as a java.lang.String
      */
-    private static String buildQueryFromArgs(IRubyObject recv, IRubyObject[] args) {
-        Ruby runtime = recv.getRuntime();
-        String query = api.getInstanceVariable(recv, "@text").asJavaString();
-
-        if (args.length > 0) {
-            RubyArray escape_args = runtime.newArray(args);
-            query = api.callMethod(recv, "escape_sql", escape_args).convertToString().asJavaString();
+    private static void prepareStatementFromArgs(PreparedStatement statement, IRubyObject recv, IRubyObject[] args) {
+        int index = 1;
+        try {
+            for(IRubyObject arg: args){
+                if(arg.getType().equals(RubyType.FIXNUM)) {
+                    statement.setInt(index++, Integer.parseInt(arg.toString()));
+                }
+                else {
+                    statement.setString(index++, arg.toString());
+                }
+            }
+        } catch (SQLException sqle) {
+            // TODO: log sqle.printStackTrace();
+            //throw DataObjectsUtils.newDriverError(runtime, errorName, sqle.getLocalizedMessage());
+            sqle.printStackTrace();
         }
-        return query;
+        debug(recv.getRuntime(), statement.toString());
     }
 
     /**
