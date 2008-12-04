@@ -111,7 +111,16 @@ public class Command extends RubyObject {
                 // (Derby only supplies getGeneratedKeys() for auto-incremented
                 // columns)
                 //
-                affectedCount = sqlStatement.executeUpdate();
+                try {
+                    affectedCount = sqlStatement.executeUpdate();
+                } catch (SQLException sqle) {
+                    // This is to handle the edge case of SELECT sleep(1):
+                    // an executeUpdate() will throw a SQLException if a SELECT
+                    // is passed, so we try the same query again with execute()
+                    affectedCount = 0;
+                    sqlStatement.execute();
+                }
+
                 // apparently the prepared statements always provide the 
                 // generated keys
                 keys = sqlStatement.getGeneratedKeys();
