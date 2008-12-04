@@ -8,6 +8,10 @@ import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.StringTokenizer;
+import javax.naming.InitialContext;
+import javax.naming.NamingException;
+import javax.sql.DataSource;
+import javax.sql.XADataSource;
 import org.jruby.Ruby;
 import org.jruby.RubyClass;
 import org.jruby.RubyModule;
@@ -115,8 +119,21 @@ public class Connection extends RubyObject {
         java.sql.Connection conn;
 
         try {
-            // uri.getUserInfo() gave always null, so do it manually
-            if (connectionUri.toString().contains("@")) {
+            final String JNDI_PROTO = "jndi://";
+            if (connectionUri.getPath() != null && connectionUri.getPath().startsWith(JNDI_PROTO)) {
+            String jndiName = connectionUri.getPath().substring(JNDI_PROTO.length());
+            try {
+                InitialContext context = new InitialContext();
+                DataSource dataSource = (DataSource) context.lookup(jndiName);
+                // TODO maybe allow username and password here as well !??!
+                conn = dataSource.getConnection();
+            }
+            catch (NamingException ex) {
+                throw runtime.newRuntimeError("Can't lookup datasource: " + connectionUri.toString() + "\n\t" + ex.getLocalizedMessage());
+            }
+        }
+        // uri.getUserInfo() gave always null, so do it manually
+        else if (connectionUri.toString().contains("@")) {
                 String userInfo =
                     connectionUri.toString().replaceFirst(".*://", "").replaceFirst("@.*", "");
                 String jdbcUri = connectionUri.toString().replaceFirst(userInfo + "@", "");
