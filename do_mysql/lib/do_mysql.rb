@@ -1,5 +1,5 @@
 require 'rubygems'
-gem 'data_objects'    
+gem 'data_objects'
 require 'data_objects'
 if RUBY_PLATFORM =~ /java/
   require 'do_jdbc'
@@ -22,6 +22,17 @@ if RUBY_PLATFORM =~ /java/
         def self.pool_size
           20
         end
+
+        def using_socket?
+          @using_socket
+        end
+        
+        def character_set
+          # JDBC API does not provide an easy way to get the current character set
+          # For now, we code the character_set used as utf8
+          "utf8"
+        end
+
       end
     end
   end

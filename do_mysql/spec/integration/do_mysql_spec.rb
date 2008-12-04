@@ -59,6 +59,10 @@ describe DataObjects::Mysql do
   end
 
   it "should support changing the character set" do
+    pending "JDBC API does not provide an easy way to get the current character set" if JRUBY
+    # current character set can be retrieved with the following query:
+    # "SHOW VARIABLES LIKE character_set_database"
+
     connection = DataObjects::Connection.new("mysql://#{MYSQL.user}:#{MYSQL.pass}@#{MYSQL.hostname}:#{MYSQL.port}/#{MYSQL.database}?charset=latin1")
                  # N.B. query parameter after forward slash causes problems with JDBC
     connection.character_set.should == "latin1"
