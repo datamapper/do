@@ -14,9 +14,13 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
     public ResultSet getGeneratedKeys(Connection connection) {
         return null;
     }
-    
+
     public String quoteString(String str) {
-        return null;
+        StringBuffer quotedValue = new StringBuffer(str.length() + 2);
+        quotedValue.append("\'");
+        quotedValue.append(str);
+        quotedValue.append("\'");
+        return quotedValue.toString();
     }
 
 }

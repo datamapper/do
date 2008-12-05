@@ -91,7 +91,7 @@ public class Command extends RubyObject {
 
         try {
             sqlStatement = javaConn.prepareStatement(api.getInstanceVariable(recv, "@text").asJavaString());
-            
+
             prepareStatementFromArgs(sqlStatement, recv, args);
 
             //javaConn.setAutoCommit(true); // hangs with autocommit set to false
@@ -121,10 +121,10 @@ public class Command extends RubyObject {
                     sqlStatement.execute();
                 }
 
-                // apparently the prepared statements always provide the 
+                // apparently the prepared statements always provide the
                 // generated keys
                 keys = sqlStatement.getGeneratedKeys();
-            
+
             } else {
                 // If there is no support, then a custom method canb e defined
                 // to return a ResultSet with keys
@@ -187,7 +187,7 @@ public class Command extends RubyObject {
             sqlStatement = javaConn.prepareStatement(api.getInstanceVariable(recv, "@text").asJavaString());
             //sqlStatement.setMaxRows();
             prepareStatementFromArgs(sqlStatement, recv, args);
-            
+
             resultSet = sqlStatement.executeQuery();
             metaData = resultSet.getMetaData();
             columnCount = metaData.getColumnCount();
@@ -280,12 +280,8 @@ public class Command extends RubyObject {
 
     @JRubyMethod(required = 1)
     public static IRubyObject quote_string(IRubyObject recv, IRubyObject value) {
-        String toQuote = value.asJavaString();
-        StringBuffer quotedValue = new StringBuffer(toQuote.length() + 2);
-        quotedValue.append("\'");
-        quotedValue.append(toQuote);
-        quotedValue.append("\'");
-        return recv.getRuntime().newString(quotedValue.toString());
+        String quoted = driver.quoteString(value.asJavaString());
+        return recv.getRuntime().newString(quoted);
     }
 
     // ---------------------------------------------------------- HELPER METHODS
