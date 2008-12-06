@@ -1,5 +1,6 @@
 if RUBY_PLATFORM =~ /java/
   require 'java'
+  require 'bigdecimal'
   require 'do_jdbc_internal'
   require 'rubygems'    
   gem 'data_objects'    
