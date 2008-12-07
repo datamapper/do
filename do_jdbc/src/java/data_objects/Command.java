@@ -90,12 +90,25 @@ public class Command extends RubyObject {
         boolean supportsGeneratedKeys = driver.supportsJdbcGeneratedKeys();
 
         try {
-            sqlStatement = javaConn.prepareStatement(api.getInstanceVariable(recv, "@text").asJavaString());
+            sqlStatement =
+            javaConn.prepareStatement(api.getInstanceVariable(recv, "@text").asJavaString(),
+                        supportsGeneratedKeys ?
+                        Statement.RETURN_GENERATED_KEYS :
+                        Statement.NO_GENERATED_KEYS);
 
             prepareStatementFromArgs(sqlStatement, recv, args);
 
             //javaConn.setAutoCommit(true); // hangs with autocommit set to false
             // sqlStatement.setMaxRows();
+            try {
+                affectedCount = sqlStatement.executeUpdate();
+            } catch (SQLException sqle) {
+                // This is to handle the edge case of SELECT sleep(1):
+                // an executeUpdate() will throw a SQLException if a SELECT
+                // is passed, so we try the same query again with execute()
+                affectedCount = 0;
+                sqlStatement.execute();
+            }
 
             if (supportsGeneratedKeys) {
                 // Derby, H2, and MySQL all support getGeneratedKeys(), but only
@@ -111,15 +124,6 @@ public class Command extends RubyObject {
                 // (Derby only supplies getGeneratedKeys() for auto-incremented
                 // columns)
                 //
-                try {
-                    affectedCount = sqlStatement.executeUpdate();
-                } catch (SQLException sqle) {
-                    // This is to handle the edge case of SELECT sleep(1):
-                    // an executeUpdate() will throw a SQLException if a SELECT
-                    // is passed, so we try the same query again with execute()
-                    affectedCount = 0;
-                    sqlStatement.execute();
-                }
 
                 // apparently the prepared statements always provide the
                 // generated keys
@@ -128,7 +132,6 @@ public class Command extends RubyObject {
             } else {
                 // If there is no support, then a custom method canb e defined
                 // to return a ResultSet with keys
-                affectedCount = sqlStatement.executeUpdate();
                 keys = driver.getGeneratedKeys(javaConn);
             }
             if (keys != null) {
@@ -322,11 +325,13 @@ public class Command extends RubyObject {
     private static void prepareStatementFromArgs(PreparedStatement statement, IRubyObject recv, IRubyObject[] args) {
         int index = 1;
         try {
-            for(IRubyObject arg: args){
-                if(arg.getType().equals(RubyType.FIXNUM)) {
+            for (IRubyObject arg : args) {
+                if (arg.getType().equals(RubyType.FIXNUM)) {
                     statement.setInt(index++, Integer.parseInt(arg.toString()));
-                }
-                else {
+                } else if (arg.getType().toString().equals("NilClass")) {
+                    statement.setNull(index++, Types.NULL);
+                } else {
+                    System.out.println(arg.getType());
                     statement.setString(index++, arg.toString());
                 }
             }
