@@ -339,20 +339,19 @@ static VALUE build_query_from_args(VALUE klass, int count, VALUE *args[]) {
 static VALUE cCommand_quote_string(VALUE self, VALUE string) {
   PGconn *db = DATA_PTR(rb_iv_get(rb_iv_get(self, "@connection"), "@connection"));
 
-  size_t length;
-  const char *source = StringValuePtr(string);
+  const char *source = RSTRING_PTR(string);
+  int source_len     = RSTRING_LEN(string);
+
   char *escaped;
   int quoted_length = 0;
   VALUE result;
 
-  length = strlen(source);
-
   // Allocate space for the escaped version of 'string'
   // http://www.postgresql.org/docs/8.3/static/libpq-exec.html#LIBPQ-EXEC-ESCAPE-STRING
-  escaped = (char *)calloc(strlen(source) * 2 + 3, sizeof(char));
+  escaped = (char *)calloc(source_len * 2 + 3, sizeof(char));
 
   // Escape 'source' using the current charset in use on the conection 'db'
-  quoted_length = PQescapeStringConn(db, escaped + 1, source, length, NULL);
+  quoted_length = PQescapeStringConn(db, escaped + 1, source, source_len, NULL);
 
   // Wrap the escaped string in single-quotes, this is DO's convention
   escaped[quoted_length + 1] = escaped[0] = '\'';
