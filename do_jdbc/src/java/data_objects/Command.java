@@ -77,13 +77,12 @@ public class Command extends RubyObject {
     @JRubyMethod(optional = 1, rest = true)
     public static IRubyObject execute_non_query(IRubyObject recv, IRubyObject[] args) {
         Ruby runtime = recv.getRuntime();
-        IRubyObject connection = api.getInstanceVariable(recv, "@connection");
-        IRubyObject url = api.getInstanceVariable(connection, "@uri");
-        IRubyObject wrappedJdbcConnection = api.getInstanceVariable(connection, "@connection");
+        IRubyObject connection_instance = api.getInstanceVariable(recv, "@connection");
+        IRubyObject wrapped_jdbc_connection = api.getInstanceVariable(connection_instance, "@connection");
         IRubyObject insert_key = runtime.getNil();
         RubyClass resultClass = Result.createResultClass(runtime, moduleName, errorName, driver);
 
-        java.sql.Connection javaConn = (java.sql.Connection) wrappedJdbcConnection.dataGetStruct();
+        java.sql.Connection conn = (java.sql.Connection) wrapped_jdbc_connection.dataGetStruct();
         int affectedCount = 0;
         PreparedStatement sqlStatement = null;
         java.sql.ResultSet keys = null;
@@ -91,7 +90,7 @@ public class Command extends RubyObject {
 
         try {
             sqlStatement =
-            javaConn.prepareStatement(api.getInstanceVariable(recv, "@text").asJavaString(),
+            conn.prepareStatement(api.getInstanceVariable(recv, "@text").asJavaString(),
                         supportsGeneratedKeys ?
                         Statement.RETURN_GENERATED_KEYS :
                         Statement.NO_GENERATED_KEYS);
@@ -132,7 +131,7 @@ public class Command extends RubyObject {
             } else {
                 // If there is no support, then a custom method canb e defined
                 // to return a ResultSet with keys
-                keys = driver.getGeneratedKeys(javaConn);
+                keys = driver.getGeneratedKeys(conn);
             }
             if (keys != null) {
                 insert_key = unmarshal_id_result(runtime, keys);
@@ -169,11 +168,11 @@ public class Command extends RubyObject {
     @JRubyMethod(optional = 1, rest = true)
     public static IRubyObject execute_reader(IRubyObject recv, IRubyObject[] args) {
         Ruby runtime = recv.getRuntime();
-        IRubyObject connection = api.getInstanceVariable(recv, "@connection");
-        IRubyObject wrappedJdbcConnection = api.getInstanceVariable(connection, "@connection");
+        IRubyObject connection_instance = api.getInstanceVariable(recv, "@connection");
+        IRubyObject wrapped_jdbc_connection = api.getInstanceVariable(connection_instance, "@connection");
         RubyClass readerClass = Reader.createReaderClass(runtime, moduleName, errorName, driver);
 
-        java.sql.Connection javaConn = (java.sql.Connection) wrappedJdbcConnection.dataGetStruct();
+        java.sql.Connection conn = (java.sql.Connection) wrapped_jdbc_connection.dataGetStruct();
         boolean inferTypes = false;
         int columnCount = 0;
         int rowCount = 0;
@@ -187,7 +186,7 @@ public class Command extends RubyObject {
 
         // execute the query
         try {
-            sqlStatement = javaConn.prepareStatement(api.getInstanceVariable(recv, "@text").asJavaString());
+            sqlStatement = conn.prepareStatement(api.getInstanceVariable(recv, "@text").asJavaString());
             //sqlStatement.setMaxRows();
             prepareStatementFromArgs(sqlStatement, recv, args);
 
