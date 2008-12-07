@@ -7,6 +7,7 @@ gem 'rspec', '>=1.1.3'
 require 'spec'
 
 require 'date'
+require 'ostruct'
 require 'pathname'
 require 'fileutils'
 require 'bigdecimal'
@@ -30,10 +31,21 @@ FileUtils.mkdir_p(File.dirname(log_path))
 
 DataObjects::Postgres.logger = DataObjects::Logger.new(log_path, 0)
 
+POSTGRES = OpenStruct.new
+POSTGRES.user = ENV['DO_PG_USER'] || 'postgres'
+POSTGRES.pass = ENV['DO_PG_PASS'] || ''
+POSTGRES.host = ENV['DO_PG_HOST'] || '127.0.0.1'
+POSTGRES.hostname = ENV['DO_PG_HOSTNAME'] || 'localhost'
+POSTGRES.port     = ENV['DO_PG_PORT'] || '5432'
+POSTGRES.database = ENV['DO_PG_DATABASE'] || 'do_test'
+
+DO_POSTGRES_SPEC_URI = Addressable::URI::parse(ENV["DO_PG_SPEC_URI"] ||
+                    "postgres://#{POSTGRES.user}:#{POSTGRES.pass}@#{POSTGRES.hostname}:#{POSTGRES.port}/#{POSTGRES.database}")
+
 module PostgresSpecHelpers
 
   def ensure_users_table_and_return_connection
-    connection = DataObjects::Connection.new("postgres://postgres@localhost/do_test")
+    connection = DataObjects::Connection.new(DO_POSTGRES_SPEC_URI)
     connection.create_command("DROP TABLE users").execute_non_query rescue nil
     connection.create_command("DROP TABLE companies").execute_non_query rescue nil
     connection.create_command(<<-EOF).execute_non_query

@@ -20,7 +20,7 @@ describe "DataObjects::Postgres::Connection" do
   include PostgresSpecHelpers
 
   it "should connect to the db" do
-    connection = DataObjects::Connection.new("postgres://postgres@localhost/do_test")
+    connection = DataObjects::Connection.new(DO_POSTGRES_SPEC_URI)
     connection.close
   end
 
@@ -30,7 +30,7 @@ describe "DataObjects::Postgres::Connection" do
     start = Time.now
     4.times do |i|
       threads << Thread.new do
-        connection = DataObjects::Connection.new("postgres://postgres@localhost/do_test")
+        connection = DataObjects::Connection.new(DO_POSTGRES_SPEC_URI)
         command = connection.create_command("SELECT pg_sleep(1)")
         result = command.execute_non_query
       end

@@ -4,7 +4,7 @@ require Pathname(__FILE__).dirname.expand_path.parent + 'spec_helper'
 describe DataObjects::Postgres::Command do
 
   before(:each) do
-    @connection = DataObjects::Connection.new("postgres://postgres@localhost/do_test")
+    @connection = DataObjects::Connection.new(DO_POSTGRES_SPEC_URI)
     @command = @connection.create_command("INSERT INTO users (name) VALUES (?)")
   end
 
