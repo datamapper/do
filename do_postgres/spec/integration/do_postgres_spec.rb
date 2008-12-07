@@ -219,11 +219,25 @@ describe "DataObjects::Postgres::Reader" do
     reader.values.should == user.values
   end
 
-  it "should typecast a time field" do
-    pending "Time fields have no date information, and don't work with Time"
+  it "should not typecast a time field" do
     command = @connection.create_command("SELECT born_at FROM users LIMIT 1")
     reader = command.execute_reader
     reader.next!
-    reader.values[0].should be_a_kind_of(Time)
+    reader.values[0].should be_a_kind_of(String)
   end
+
+  it "should typecast a timestamp field without time zone" do
+    command = @connection.create_command("SELECT created_at FROM users LIMIT 1")
+    reader = command.execute_reader
+    reader.next!
+    reader.values[0].should be_a_kind_of(DateTime)
+  end
+
+  it "should typecast a timestamp field with time zone" do
+    command = @connection.create_command("SELECT fired_at FROM users LIMIT 1")
+    reader = command.execute_reader
+    reader.next!
+    reader.values[0].should be_a_kind_of(DateTime)
+  end
+
 end

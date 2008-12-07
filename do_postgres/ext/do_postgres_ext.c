@@ -245,14 +245,9 @@ static VALUE infer_ruby_type(Oid type) {
       ruby_type = "TrueClass";
       break;
     }
+    case TIMESTAMPTZOID:
     case TIMESTAMPOID: {
       ruby_type = "DateTime";
-      break;
-    }
-    // case TIMESTAMPTZOID
-    // case TIMETZOID
-    case TIMEOID: {
-      ruby_type = "Time";
       break;
     }
     case DATEOID: {
@@ -420,6 +415,9 @@ static VALUE cConnection_initialize(VALUE self, VALUE uri) {
   char *database = "", *port = "5432";
   char *search_path = NULL;
   char *search_path_query = NULL;
+  char *backslash_off = "SET backslash_quote = off";
+  char *standard_strings_on = "SET standard_conforming_strings = on";
+
   PGconn *db;
 
   r_host = rb_funcall(uri, rb_intern("host"), 0);
@@ -478,8 +476,6 @@ static VALUE cConnection_initialize(VALUE self, VALUE uri) {
     sprintf(search_path_query, "set search_path to %s;", search_path);
     r_query = rb_str_new(search_path_query, strlen(search_path_query) + 1);
     result = cCommand_execute_async(db, r_query);
-    // printf("status = %s\n", PQresStatus(PQresultStatus(result)));
-    // printf("result msg: %s\n", PQresultErrorMessage(result));
 
     if (PQresultStatus(result) != PGRES_COMMAND_OK) {
       free(search_path_query);
@@ -489,9 +485,22 @@ static VALUE cConnection_initialize(VALUE self, VALUE uri) {
     free(search_path_query);
   }
 
+  r_query = rb_str_new(backslash_off, strlen(backslash_off) + 1);
+  result = cCommand_execute_async(db, r_query);
+
+  if (PQresultStatus(result) != PGRES_COMMAND_OK) {
+    rb_raise(ePostgresError, PQresultErrorMessage(result));
+  }
+
+  r_query = rb_str_new(standard_strings_on, strlen(standard_strings_on) + 1);
+  result = cCommand_execute_async(db, r_query);
+
+  if (PQresultStatus(result) != PGRES_COMMAND_OK) {
+    rb_raise(ePostgresError, PQresultErrorMessage(result));
+  }
+
   rb_iv_set(self, "@uri", uri);
   rb_iv_set(self, "@connection", Data_Wrap_Struct(rb_cObject, 0, 0, db));
-
 
   return Qtrue;
 }
