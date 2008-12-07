@@ -4,8 +4,8 @@ require 'data_objects'
 if RUBY_PLATFORM =~ /java/
   require 'do_jdbc'
   require 'java'
-  gem 'jdbc-sqlite3'
-  require 'jdbc/sqlite3' # the JDBC driver, packaged as a gem
+  gem 'jdbc-postgres'
+  require 'jdbc/postgres' # the JDBC driver, packaged as a gem
 end
 require 'do_postgres_ext'
 require 'do_postgres/transaction'

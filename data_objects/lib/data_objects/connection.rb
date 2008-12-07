@@ -20,6 +20,8 @@ module DataObjects
 
         driver_name = if uri.path.split(':').first == 'sqlite'
           'sqlite3'
+        elsif uri.path.split(':').first == 'postgresql'
+          'postgres'
         else
           uri.path.split(':').first
         end
