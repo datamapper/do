@@ -24,7 +24,7 @@ describe "DataObjects::Postgres::Connection" do
     connection.close
   end
 
-  it "should be able to send querues asynchronuously in parallel" do
+  it "should be able to send queries asynchronously in parallel" do
     threads = []
 
     start = Time.now
