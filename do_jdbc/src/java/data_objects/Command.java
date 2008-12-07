@@ -236,9 +236,10 @@ public class Command extends RubyObject {
 
             // for each field
             for (int i = 0; i < columnCount; i++) {
-                RubyString field_name = runtime.newString("");//metaData.getColumnName(i));
+                RubyString field_name = runtime.newString(metaData.getColumnName(i + 1));
                 // infer the type if no types passed
                 field_names.push_m(new IRubyObject[] { field_name });
+
                 if (inferTypes) {
                     // TODO: do something
                 }

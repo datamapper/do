@@ -123,19 +123,19 @@ public class Reader extends RubyObject {
 
         for (int i = 0; i < RubyNumeric.fix2int(field_count.convertToInteger()); i++) {
             int col = i + 1;
-            // RubyType type;
+            RubyType type;
 
-            //            if (fieldTypesCount > 0) {
+            if (fieldTypesCount > 0) {
                 // use the specified type
-            //  String typeName = field_types.convertToArray().get(i).toString();
-            //  type = RubyType.getRubyType(typeName.toUpperCase());
-            //} else {
+                String typeName = field_types.convertToArray().get(i).toString();
+                type = RubyType.getRubyType(typeName.toUpperCase());
+            } else {
                 // infer the type
 
-            // assume the mapping from jdbc type to ruby type to be complete
-            RubyType type = DataObjectsUtils.jdbcTypeToRubyType(rs.getMetaData().getColumnType(col),
-                    rs.getMetaData().getScale(col));
-                //}
+                // assume the mapping from jdbc type to ruby type to be complete
+                type = DataObjectsUtils.jdbcTypeToRubyType(rs.getMetaData().getColumnType(col),
+                        rs.getMetaData().getScale(col));
+            }
 
             // -- debugging what's coming out
             //System.out.println("JDBC TypeName " + rs.getMetaData().getColumnTypeName(col));
