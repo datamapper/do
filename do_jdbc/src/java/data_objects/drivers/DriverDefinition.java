@@ -26,8 +26,8 @@ public interface DriverDefinition {
      * @return
      */
     public ResultSet getGeneratedKeys(Connection connection);
-    
-    
+
+
     public String quoteString(String str);
 
 }
