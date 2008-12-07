@@ -200,11 +200,15 @@ public class Connection extends RubyObject {
             throws URISyntaxException {
         java.net.URI uri;
         String fullUri = api.callMethod(connectionUri, "to_s").asJavaString();
-        if (!fullUri.startsWith("jdbc:")) {
-            // since we need a jdbc uri, prefix given uri with 'jdbc:'
+        if (fullUri.startsWith("postgres:")) {
+            // PostgreSQL uris require their own handling, and need to be of the
+            // form 'jdbc:postgresql' NOT 'jdbc:postgres'.
+            uri = new java.net.URI("jdbc:" + fullUri.replaceFirst("postgres", "postgresql"));
+        } else if (!fullUri.startsWith("jdbc:")) {
+            // Generally, to create a JDBC uri, prefix the given uri with 'jdbc:'.
             uri = new java.net.URI("jdbc:" + fullUri);
         } else {
-            // if its already a JDBC url, we pass it through
+            // If its already a JDBC uri, we pass it through.
             uri = new java.net.URI(fullUri);
         }
         return uri;
