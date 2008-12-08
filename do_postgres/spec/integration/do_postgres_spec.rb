@@ -61,7 +61,8 @@ describe "DataObjects::Postgres::Command" do
   it "should set types" do
     command = @connection.create_command("SELECT id, name FROM users")
     command.set_types [Integer, String]
-    command.instance_variable_get("@field_types").should == [Integer, String]
+    # NOTE: should we really be testing for the presence of instance variables?
+    command.instance_variable_get(JRUBY ? "@types" : "@field_types").should == [Integer, String]
   end
 
   it "should execute a non query" do

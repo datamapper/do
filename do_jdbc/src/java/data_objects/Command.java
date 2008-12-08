@@ -79,7 +79,7 @@ public class Command extends RubyObject {
         Ruby runtime = recv.getRuntime();
         IRubyObject connection_instance = api.getInstanceVariable(recv, "@connection");
         IRubyObject wrapped_jdbc_connection = api.getInstanceVariable(connection_instance, "@connection");
-        IRubyObject insert_key = runtime.getNil();
+        IRubyObject insert_key = runtime.newFixnum(0);
         RubyClass resultClass = Result.createResultClass(runtime, moduleName, errorName, driver);
 
         java.sql.Connection conn = (java.sql.Connection) wrapped_jdbc_connection.dataGetStruct();

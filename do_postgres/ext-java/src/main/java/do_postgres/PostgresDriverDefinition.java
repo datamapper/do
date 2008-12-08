@@ -6,7 +6,7 @@ public class PostgresDriverDefinition extends AbstractDriverDefinition {
 
     public boolean supportsJdbcGeneratedKeys()
     {
-        return true;
+        return false;
     }
 
 }

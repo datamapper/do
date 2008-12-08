@@ -12,6 +12,7 @@ public enum RubyType {
     TIME       ("Time"),
     TRUE_CLASS ("TrueClass"),
     FIXNUM     ("Fixnum"),
+    INTEGER    ("Integer"),
     BIGNUM     ("Bignum"),
     FLOAT      ("Float"),
     BIG_DECIMAL("BigDecimal");
