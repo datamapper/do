@@ -86,21 +86,24 @@ public class Command extends RubyObject {
         int affectedCount = 0;
         PreparedStatement sqlStatement = null;
         java.sql.ResultSet keys = null;
+        String sqlText = api.getInstanceVariable(recv, "@text").asJavaString();
         boolean supportsGeneratedKeys = driver.supportsJdbcGeneratedKeys();
 
         try {
             sqlStatement =
-            conn.prepareStatement(api.getInstanceVariable(recv, "@text").asJavaString(),
-                        supportsGeneratedKeys ?
-                        Statement.RETURN_GENERATED_KEYS :
-                        Statement.NO_GENERATED_KEYS);
+                    conn.prepareStatement(sqlText,
+                    supportsGeneratedKeys ? Statement.RETURN_GENERATED_KEYS : Statement.NO_GENERATED_KEYS);
 
             prepareStatementFromArgs(sqlStatement, recv, args);
 
             //javaConn.setAutoCommit(true); // hangs with autocommit set to false
             // sqlStatement.setMaxRows();
             try {
-                affectedCount = sqlStatement.executeUpdate();
+                if (sqlText.contains("RETURNING")) {
+                    keys = sqlStatement.executeQuery();
+                } else {
+                    affectedCount = sqlStatement.executeUpdate();
+                }
             } catch (SQLException sqle) {
                 // This is to handle the edge case of SELECT sleep(1):
                 // an executeUpdate() will throw a SQLException if a SELECT
@@ -109,29 +112,31 @@ public class Command extends RubyObject {
                 sqlStatement.execute();
             }
 
-            if (supportsGeneratedKeys) {
-                // Derby, H2, and MySQL all support getGeneratedKeys(), but only
-                // to varying extents.
-                //
-                // However, javaConn.getMetaData().supportsGetGeneratedKeys()
-                // currently returns FALSE for the Derby driver, as its support
-                // is limited. As such, we use supportsJdbcGeneratedKeys() from
-                // our own driver definition.
-                //
-                // See http://issues.apache.org/jira/browse/DERBY-242
-                // See http://issues.apache.org/jira/browse/DERBY-2631
-                // (Derby only supplies getGeneratedKeys() for auto-incremented
-                // columns)
-                //
+            if (keys == null) {
+                if (supportsGeneratedKeys) {
+                    // Derby, H2, and MySQL all support getGeneratedKeys(), but only
+                    // to varying extents.
+                    //
+                    // However, javaConn.getMetaData().supportsGetGeneratedKeys()
+                    // currently returns FALSE for the Derby driver, as its support
+                    // is limited. As such, we use supportsJdbcGeneratedKeys() from
+                    // our own driver definition.
+                    //
+                    // See http://issues.apache.org/jira/browse/DERBY-242
+                    // See http://issues.apache.org/jira/browse/DERBY-2631
+                    // (Derby only supplies getGeneratedKeys() for auto-incremented
+                    // columns)
+                    //
 
-                // apparently the prepared statements always provide the
-                // generated keys
-                keys = sqlStatement.getGeneratedKeys();
+                    // apparently the prepared statements always provide the
+                    // generated keys
+                    keys = sqlStatement.getGeneratedKeys();
 
-            } else {
-                // If there is no support, then a custom method canb e defined
-                // to return a ResultSet with keys
-                keys = driver.getGeneratedKeys(conn);
+                } else {
+                    // If there is no support, then a custom method canb e defined
+                    // to return a ResultSet with keys
+                    keys = driver.getGeneratedKeys(conn);
+                }
             }
             if (keys != null) {
                 insert_key = unmarshal_id_result(runtime, keys);
