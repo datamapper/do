@@ -58,6 +58,7 @@ module PostgresSpecHelpers
         created_at timestamp without time zone DEFAULT now(),
         born_at time without time zone DEFAULT now(),
         fired_at timestamp with time zone DEFAULT now(),
+        amount numeric(10,2) DEFAULT 11.1,
         company_id integer DEFAULT 1
       )
       WITH (OIDS=FALSE);

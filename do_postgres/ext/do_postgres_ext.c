@@ -254,6 +254,10 @@ static VALUE infer_ruby_type(Oid type) {
       ruby_type = "Date";
       break;
     }
+    case NUMERICOID: {
+      ruby_type = "BigDecimal";
+      break;
+    }
   }
   return rb_str_new2(ruby_type);
 }
@@ -633,7 +637,7 @@ static VALUE cReader_next(VALUE self) {
     ruby_type = RARRAY(field_types)->ptr[i];
 
     if ( TYPE(ruby_type) == T_STRING ) {
-      type = RSTRING(ruby_type)->ptr;
+      type = StringValuePtr(ruby_type);
     }
     else {
       type = rb_class2name(ruby_type);

@@ -241,4 +241,11 @@ describe "DataObjects::Postgres::Reader" do
     reader.values[0].should be_a_kind_of(DateTime)
   end
 
+  it "should typecast a numeric field to a big decimal" do
+    command = @connection.create_command("SELECT amount FROM users LIMIT 1")
+    reader = command.execute_reader
+    reader.next!
+    reader.values[0].should be_a_kind_of(BigDecimal)
+  end
+
 end
