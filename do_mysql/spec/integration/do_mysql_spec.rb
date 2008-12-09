@@ -120,33 +120,14 @@ describe DataObjects::Mysql::Connection do
     lambda { @connection.create_command("SELECT * FROM non_existant_table").execute_reader }.should raise_error(MysqlError)
   end
 
-  it "should close the connection when executing a bad query" do
-    pending "blows up in JRuby" if JRUBY
-    lambda { @connection.create_command("INSERT INTO non_exista (tester) VALUES (1)").execute_non_query }.should raise_error(MysqlError)
-    @connection.instance_variable_get(:@connection).should == nil
-  end
-
-  it "should flush the pool when executing a bad query" do
-    pool = @connection.instance_variable_get(:@__pool)
-    lambda { @connection.create_command("INSERT INTO non_exista (tester) VALUES (1)").execute_non_query }.should raise_error(MysqlError)
-    Extlib::Pooling.pools.detect { |p| p == pool }.instance_variable_get(:@available).size.should == 0
-  end
-
-  it "should delete itself from the pool" do
-    pool = @connection.instance_variable_get(:@__pool)
-    count = pool.size
-    lambda { @connection.create_command("INSERT INTO non_exista (tester) VALUES (1)").execute_non_query }.should raise_error(MysqlError)
-    Extlib::Pooling.pools.detect { |p| p == pool }.size.should == count-1
-  end
-
-  it "should not raise an error error executing a non query on a closed connection" do
+  it "should not raise a connection closed error after an incorrect query" do
     lambda { @connection.create_command("INSERT INTO non_existant_table (tester) VALUES (1)").execute_non_query }.should raise_error(MysqlError)
-    lambda { @connection.create_command("INSERT INTO non_existant_table (tester) VALUES (1)").execute_non_query }.should raise_error(MysqlError, "This connection has already been closed.")
+    lambda { @connection.create_command("INSERT INTO non_existant_table (tester) VALUES (1)").execute_non_query }.should_not raise_error(MysqlError, "This connection has already been closed.")
   end
 
-  it "should not raise an error executing a reader on a closed connection" do
+  it "should not raise a connection closed error after an incorrect reader" do
     lambda { @connection.create_command("SELECT * FROM non_existant_table").execute_reader }.should raise_error(MysqlError)
-    lambda { @connection.create_command("SELECT * FROM non_existant_table").execute_reader }.should raise_error(MysqlError, "This connection has already been closed.")
+    lambda { @connection.create_command("SELECT * FROM non_existant_table").execute_reader }.should_not raise_error(MysqlError, "This connection has already been closed.")
   end
 
 end
