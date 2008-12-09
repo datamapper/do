@@ -656,6 +656,12 @@ static MYSQL_RES* cCommand_execute_async(VALUE self, MYSQL* db, VALUE query) {
 
   VALUE connection = rb_iv_get(self, "@connection");
 
+  retval = mysql_ping(db);
+  if(retval == CR_SERVER_GONE_ERROR) {
+    CHECK_AND_RAISE(retval, "Mysql server has gone away. \
+                             Please report this issue to the Datamapper project. \
+                             Specify your at least your MySQL version when filing a ticket");
+  }
   retval = mysql_send_query(db, str, len);
   data_objects_debug(query);
   CHECK_AND_RAISE(retval, str);
