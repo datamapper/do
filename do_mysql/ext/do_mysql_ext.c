@@ -10,7 +10,7 @@
 
 #define RUBY_CLASS(name) rb_const_get(rb_cObject, rb_intern(name))
 #define RUBY_STRING(char_ptr) rb_str_new2(char_ptr)
-#define TAINTED_STRING(name) rb_tainted_str_new2(name)
+#define TAINTED_STRING(name, length) rb_tainted_str_new(name, length)
 #define DRIVER_CLASS(klass, parent) (rb_define_class_under(mDOMysql, klass, parent))
 #define CONST_GET(scope, constant) (rb_funcall(scope, ID_CONST_GET, 1, rb_str_new2(constant)))
 #define CHECK_AND_RAISE(mysql_result_value, str) if (0 != mysql_result_value) { raise_mysql_error(connection, db, mysql_result_value, str); }
@@ -296,20 +296,20 @@ static VALUE parse_date_time(const char *date) {
 }
 
 // Convert C-string to a Ruby instance of Ruby type "type"
-static VALUE typecast(const char* value, char* type) {
+static VALUE typecast(const char* value, unsigned long length, char* type) {
   if (NULL == value)
     return Qnil;
 
   if ( strcmp(type, "Class") == 0) {
-    return rb_funcall(mDO, rb_intern("find_const"), 1, TAINTED_STRING(value));
+    return rb_funcall(mDO, rb_intern("find_const"), 1, TAINTED_STRING(value, length));
   } else if ( strcmp(type, "Integer") == 0 || strcmp(type, "Fixnum") == 0 || strcmp(type, "Bignum") == 0 ) {
     return rb_cstr2inum(value, 10);
   } else if (0 == strcmp("String", type)) {
-    return TAINTED_STRING(value);
+    return TAINTED_STRING(value, length);
   } else if (0 == strcmp("Float", type) ) {
     return rb_float_new(rb_cstr_to_dbl(value, Qfalse));
   } else if (0 == strcmp("BigDecimal", type) ) {
-    return rb_funcall(rb_cBigDecimal, ID_NEW, 1, TAINTED_STRING(value));
+    return rb_funcall(rb_cBigDecimal, ID_NEW, 1, TAINTED_STRING(value, length));
   } else if (0 == strcmp("TrueClass", type) || 0 == strcmp("FalseClass", type)) {
     return (0 == value || 0 == strcmp("0", value)) ? Qfalse : Qtrue;
   } else if (0 == strcmp("Date", type)) {
@@ -319,7 +319,7 @@ static VALUE typecast(const char* value, char* type) {
   } else if (0 == strcmp("Time", type)) {
     return parse_time(value);
   } else {
-    return TAINTED_STRING(value);
+    return TAINTED_STRING(value, length);
   }
 }
 
@@ -815,6 +815,7 @@ static VALUE cReader_next(VALUE self) {
 
   MYSQL_RES *reader;
   MYSQL_ROW result;
+  unsigned long *lengths;
 
   int i;
   char *field_type;
@@ -828,6 +829,7 @@ static VALUE cReader_next(VALUE self) {
   ruby_field_type_strings = rb_iv_get(self, "@field_types");
   row = rb_ary_new();
   result = (MYSQL_ROW)mysql_fetch_row(reader);
+  lengths = mysql_fetch_lengths(reader);
 
   rb_iv_set(self, "@state", result ? Qtrue : Qfalse);
 
@@ -837,7 +839,7 @@ static VALUE cReader_next(VALUE self) {
   for (i = 0; i < reader->field_count; i++) {
     // The field_type data could be cached in a c-array
     field_type = RSTRING_PTR(rb_ary_entry(ruby_field_type_strings, i));
-    rb_ary_push(row, typecast(result[i], field_type));
+    rb_ary_push(row, typecast(result[i], lengths[i], field_type));
   }
 
   rb_iv_set(self, "@values", row);

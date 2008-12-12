@@ -13,7 +13,7 @@
 #define ID_ESCAPE rb_intern("escape_sql")
 
 #define RUBY_STRING(char_ptr) rb_str_new2(char_ptr)
-#define TAINTED_STRING(name) rb_tainted_str_new2(name)
+#define TAINTED_STRING(name, length) rb_tainted_str_new(name, length)
 #define CONST_GET(scope, constant) (rb_funcall(scope, ID_CONST_GET, 1, rb_str_new2(constant)))
 #define POSTGRES_CLASS(klass, parent) (rb_define_class_under(mPostgres, klass, parent))
 #define DEBUG(value) data_objects_debug(value)
@@ -262,16 +262,16 @@ static VALUE infer_ruby_type(Oid type) {
   return rb_str_new2(ruby_type);
 }
 
-static VALUE typecast(char *value, char *type) {
+static VALUE typecast(char *value, long length, char *type) {
 
   if ( strcmp(type, "Class") == 0) {
-    return rb_funcall(mDO, rb_intern("find_const"), 1, TAINTED_STRING(value));
+    return rb_funcall(mDO, rb_intern("find_const"), 1, TAINTED_STRING(value, length));
   } else if ( strcmp(type, "Integer") == 0 || strcmp(type, "Fixnum") == 0 || strcmp(type, "Bignum") == 0 ) {
     return rb_cstr2inum(value, 10);
   } else if ( strcmp(type, "Float") == 0 ) {
     return rb_float_new(rb_cstr_to_dbl(value, Qfalse));
   } else if (0 == strcmp("BigDecimal", type) ) {
-    return rb_funcall(rb_cBigDecimal, ID_NEW, 1, TAINTED_STRING(value));
+    return rb_funcall(rb_cBigDecimal, ID_NEW, 1, TAINTED_STRING(value, length));
   } else if ( strcmp(type, "TrueClass") == 0 ) {
     return *value == 't' ? Qtrue : Qfalse;
   } else if ( strcmp(type, "Date") == 0 ) {
@@ -281,7 +281,7 @@ static VALUE typecast(char *value, char *type) {
   } else if ( strcmp(type, "Time") == 0 ) {
     return parse_time(value);
   } else {
-    return TAINTED_STRING(value);
+    return TAINTED_STRING(value, length);
   }
 
 }
@@ -645,7 +645,7 @@ static VALUE cReader_next(VALUE self) {
 
     // Always return nil if the value returned from Postgres is null
     if (!PQgetisnull(reader, position, i)) {
-      value = typecast(PQgetvalue(reader, position, i), type);
+      value = typecast(PQgetvalue(reader, position, i), PQgetlength(reader, position, i), type);
     } else {
       value = Qnil;
     }
