@@ -248,4 +248,25 @@ describe "DataObjects::Postgres::Reader" do
     reader.values[0].should be_a_kind_of(BigDecimal)
   end
 
+  it "should return the current character set" do
+    connection = DataObjects::Connection.new("postgres://#{POSTGRES.user}:#{POSTGRES.pass}@#{POSTGRES.hostname}:#{POSTGRES.port}/#{POSTGRES.database}")
+    connection.character_set.should == "utf8"
+    connection.close
+  end
+
+  it "should support changing the character set" do
+    pending "JDBC API does not provide an easy way to get the current character set" if JRUBY
+    # current character set can be retrieved with the following query:
+    # "SHOW VARIABLES LIKE character_set_database"
+
+    connection = DataObjects::Connection.new("postgres://#{POSTGRES.user}:#{POSTGRES.pass}@#{POSTGRES.hostname}:#{POSTGRES.port}/#{POSTGRES.database}?charset=latin1")
+                 # N.B. query parameter after forward slash causes problems with JDBC
+    connection.character_set.should == "latin1"
+    connection.close
+
+    connection = DataObjects::Connection.new("postgres://#{POSTGRES.user}:#{POSTGRES.pass}@#{POSTGRES.hostname}:#{POSTGRES.port}/#{POSTGRES.database}?charset=utf8")
+    connection.character_set.should == "utf8"
+    connection.close
+  end
+
 end

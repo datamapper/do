@@ -63,6 +63,21 @@ static void data_objects_debug(VALUE string) {
   }
 }
 
+static char * get_uri_option(VALUE query_hash, char * key) {
+  VALUE query_value;
+  char * value = NULL;
+
+  if(!rb_obj_is_kind_of(query_hash, rb_cHash)) { return NULL; }
+
+  query_value = rb_hash_aref(query_hash, RUBY_STRING(key));
+
+  if (Qnil != query_value) {
+    value = StringValuePtr(query_value);
+  }
+
+  return value;
+}
+
 /* ====== Time/Date Parsing Helper Functions ====== */
 static void reduce( do_int64 *numerator, do_int64 *denominator ) {
   do_int64 a, b, c;
@@ -286,31 +301,7 @@ static VALUE typecast(char *value, long length, char *type) {
 
 }
 
-// Pull an option out of a querystring-formmated option list using CGI::parse
-static char * get_uri_option(VALUE querystring, char * key) {
-  VALUE options_hash, option_value;
-
-  char * value = NULL;
-
-  // Ensure that we're dealing with a string
-  querystring = rb_funcall(querystring, ID_TO_S, 0);
-
-  options_hash = rb_funcall(rb_cCGI, ID_PARSE, 1, querystring);
-
-  // TODO: rb_hash_aref always returns an array?
-  option_value = rb_ary_entry(rb_hash_aref(options_hash, RUBY_STRING(key)), 0);
-
-  if (Qnil != option_value) {
-    value = StringValuePtr(option_value);
-  }
-
-  return value;
-}
-
 /* ====== Public API ======= */
-
-
-
 static VALUE cConnection_dispose(VALUE self) {
   PGconn *db = DATA_PTR(rb_iv_get(self, "@connection"));
   PQfinish(db);
@@ -414,9 +405,10 @@ static PGresult* cCommand_execute_async(PGconn *db, VALUE query) {
 
 static VALUE cConnection_initialize(VALUE self, VALUE uri) {
   PGresult *result = NULL;
-  VALUE r_host, r_user, r_password, r_path, r_port, r_options, r_query;
+  VALUE r_host, r_user, r_password, r_path, r_port, r_query, r_options;
   char *host = NULL, *user = NULL, *password = NULL, *path;
   char *database = "", *port = "5432";
+  char *encoding = NULL;
   char *search_path = NULL;
   char *search_path_query = NULL;
   char *backslash_off = "SET backslash_quote = off";
@@ -456,9 +448,9 @@ static VALUE cConnection_initialize(VALUE self, VALUE uri) {
   }
 
   // Pull the querystring off the URI
-  r_options = rb_funcall(uri, rb_intern("query"), 0);
+  r_query = rb_funcall(uri, rb_intern("query"), 0);
 
-  search_path = get_uri_option(r_options, "search_path");
+  search_path = get_uri_option(r_query, "search_path");
 
   db = PQsetdbLogin(
     host,
@@ -489,24 +481,50 @@ static VALUE cConnection_initialize(VALUE self, VALUE uri) {
     free(search_path_query);
   }
 
-  r_query = rb_str_new(backslash_off, strlen(backslash_off) + 1);
-  result = cCommand_execute_async(db, r_query);
+  r_options = rb_str_new(backslash_off, strlen(backslash_off) + 1);
+  result = cCommand_execute_async(db, r_options);
 
   if (PQresultStatus(result) != PGRES_COMMAND_OK) {
     rb_raise(ePostgresError, PQresultErrorMessage(result));
   }
 
-  r_query = rb_str_new(standard_strings_on, strlen(standard_strings_on) + 1);
-  result = cCommand_execute_async(db, r_query);
+  r_options = rb_str_new(standard_strings_on, strlen(standard_strings_on) + 1);
+  result = cCommand_execute_async(db, r_options);
 
   if (PQresultStatus(result) != PGRES_COMMAND_OK) {
     rb_raise(ePostgresError, PQresultErrorMessage(result));
   }
+
+  encoding = get_uri_option(r_query, "encoding");
+  if (!encoding) { encoding = get_uri_option(r_query, "charset"); }
+  if (!encoding) { encoding = "utf8"; }
+
+#ifdef HAVE_PQSETCLIENTENCODING
+  if(PQsetClientEncoding(db, encoding)) {
+    rb_raise(ePostgresError, "Couldn't set encoding: %s", encoding);
+  }
+#endif
 
   rb_iv_set(self, "@uri", uri);
   rb_iv_set(self, "@connection", Data_Wrap_Struct(rb_cObject, 0, 0, db));
 
   return Qtrue;
+}
+
+static VALUE cConnection_character_set(VALUE self) {
+  VALUE connection_container = rb_iv_get(self, "@connection");
+  PGconn *db;
+
+  const char *encoding;
+
+  if (Qnil == connection_container)
+    return Qfalse;
+
+  db = DATA_PTR(connection_container);
+
+  encoding = pg_encoding_to_char(PQclientEncoding(db));
+
+  return rb_funcall(RUBY_STRING(encoding), rb_intern("downcase"), 0);
 }
 
 static VALUE cCommand_execute_non_query(int argc, VALUE *argv[], VALUE self) {
@@ -714,6 +732,7 @@ void Init_do_postgres_ext() {
   cConnection = POSTGRES_CLASS("Connection", cDO_Connection);
   rb_define_method(cConnection, "initialize", cConnection_initialize, 1);
   rb_define_method(cConnection, "dispose", cConnection_dispose, 0);
+  rb_define_method(cConnection, "character_set", cConnection_character_set , 0);
 
   cCommand = POSTGRES_CLASS("Command", cDO_Command);
   rb_include_module(cCommand, cDO_Quoting);

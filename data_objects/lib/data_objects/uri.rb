@@ -8,7 +8,7 @@ module DataObjects
     def self.parse(uri)
       return uri if uri.kind_of?(self)
       uri = Addressable::URI::parse(uri) unless uri.kind_of?(Addressable::URI)
-      self.new(uri.scheme, uri.user, uri.password, uri.host, uri.port, uri.path, uri.query, uri.fragment)
+      self.new(uri.scheme, uri.user, uri.password, uri.host, uri.port, uri.path, uri.query_values, uri.fragment)
     end
 
     def to_s
@@ -22,7 +22,11 @@ module DataObjects
       string << "#{host}"        if host
       string << ":#{port}"       if port
       string << path.to_s
-      string << "?#{query}"      if query
+      if query
+        string << "?" << query.map do |key, value|
+          "#{key}=#{value}"
+        end.join("&")
+      end
       string << "##{fragment}"   if fragment
       string
     end

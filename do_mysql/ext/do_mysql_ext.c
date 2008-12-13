@@ -419,37 +419,31 @@ static void raise_mysql_error(VALUE connection, MYSQL *db, int mysql_error_code,
   rb_raise(eMysqlError, error_message);
 }
 
-// Pull an option out of a querystring-formmated option list using CGI::parse
-static char * get_uri_option(VALUE querystring, char * key) {
-  VALUE options_hash, option_value;
-
+static char * get_uri_option(VALUE query_hash, char * key) {
+  VALUE query_value;
   char * value = NULL;
 
-  // Ensure that we're dealing with a string
-  querystring = rb_funcall(querystring, ID_TO_S, 0);
+  if(!rb_obj_is_kind_of(query_hash, rb_cHash)) { return NULL; }
 
-  options_hash = rb_funcall(rb_cCGI, ID_PARSE, 1, querystring);
+  query_value = rb_hash_aref(query_hash, RUBY_STRING(key));
 
-  // TODO: rb_hash_aref always returns an array?
-  option_value = rb_ary_entry(rb_hash_aref(options_hash, RUBY_STRING(key)), 0);
-
-  if (Qnil != option_value) {
-    value = StringValuePtr(option_value);
+  if (Qnil != query_value) {
+    value = StringValuePtr(query_value);
   }
 
   return value;
 }
 
 static VALUE cConnection_initialize(VALUE self, VALUE uri) {
-  VALUE r_host, r_user, r_password, r_path, r_options, r_port;
+  VALUE r_host, r_user, r_password, r_path, r_query, r_port;
 
   char *host = "localhost", *user = "root", *password = NULL, *path;
   char *database = "", *socket = NULL;
-  char *charset = NULL;
+  char *encoding = NULL;
 
   int port = 3306;
   unsigned long client_flags = 0;
-  int charset_error;
+  int encoding_error;
 
   MYSQL *db = 0, *result;
   db = (MYSQL *)mysql_init(NULL);
@@ -471,7 +465,6 @@ static VALUE cConnection_initialize(VALUE self, VALUE uri) {
     password = StringValuePtr(r_password);
   }
 
-
   r_path = rb_funcall(uri, rb_intern("path"), 0);
   path = StringValuePtr(r_path);
   if (Qnil != r_path) {
@@ -483,11 +476,11 @@ static VALUE cConnection_initialize(VALUE self, VALUE uri) {
   }
 
   // Pull the querystring off the URI
-  r_options = rb_funcall(uri, rb_intern("query"), 0);
+  r_query = rb_funcall(uri, rb_intern("query"), 0);
 
   // Check to see if we're on the db machine.  If so, try to use the socket
   if (0 == strcasecmp(host, "localhost")) {
-    socket = get_uri_option(r_options, "socket");
+    socket = get_uri_option(r_query, "socket");
     if (NULL != socket) {
       rb_iv_set(self, "@using_socket", Qtrue);
     }
@@ -498,7 +491,9 @@ static VALUE cConnection_initialize(VALUE self, VALUE uri) {
     port = NUM2INT(r_port);
   }
 
-  charset = get_uri_option(r_options, "charset");
+  encoding = get_uri_option(r_query, "encoding");
+  if (!encoding) { encoding = get_uri_option(r_query, "charset"); }
+  if (!encoding) { encoding = "utf8"; }
 
   // If ssl? {
   //   mysql_ssl_set(db, key, cert, ca, capath, cipher)
@@ -522,15 +517,10 @@ static VALUE cConnection_initialize(VALUE self, VALUE uri) {
     raise_mysql_error(Qnil, db, -1, NULL);
   }
 
-  if (NULL == charset) {
-    charset = (char*)calloc(5, sizeof(char));
-    strcpy(charset, "utf8");
-  }
-
   // Set the connections character set
-  charset_error = mysql_set_character_set(db, charset);
-  if (0 != charset_error) {
-    raise_mysql_error(Qnil, db, charset_error, NULL);
+  encoding_error = mysql_set_character_set(db, encoding);
+  if (0 != encoding_error) {
+    raise_mysql_error(Qnil, db, encoding_error, NULL);
   }
 
   rb_iv_set(self, "@uri", uri);
@@ -543,16 +533,16 @@ static VALUE cConnection_character_set(VALUE self) {
   VALUE connection_container = rb_iv_get(self, "@connection");
   MYSQL *db;
 
-  const char *charset;
+  const char *encoding;
 
   if (Qnil == connection_container)
     return Qfalse;
 
   db = DATA_PTR(connection_container);
 
-  charset = mysql_character_set_name(db);
+  encoding = mysql_character_set_name(db);
 
-  return RUBY_STRING(charset);
+  return RUBY_STRING(encoding);
 }
 
 static VALUE cConnection_is_using_socket(VALUE self) {
@@ -624,7 +614,7 @@ static VALUE cCommand_quote_string(VALUE self, VALUE string) {
   // Thanks to http://www.browardphp.com/mysql_manual_en/manual_MySQL_APIs.html#mysql_real_escape_string
   escaped = (char *)calloc(source_len * 2 + 3, sizeof(char));
 
-  // Escape 'source' using the current charset in use on the conection 'db'
+  // Escape 'source' using the current encoding in use on the conection 'db'
   quoted_length = mysql_real_escape_string(db, escaped + 1, source, source_len);
 
   // Wrap the escaped string in single-quotes, this is DO's convention
