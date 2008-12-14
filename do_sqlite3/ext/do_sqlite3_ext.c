@@ -35,6 +35,10 @@
 #define do_int64 signed long long int
 #endif
 
+#ifndef HAVE_SQLITE3_PREPARE_V2
+#define sqlite3_prepare_v2 sqlite3_prepare
+#endif
+
 // To store rb_intern values
 static ID ID_NEW_DATE;
 static ID ID_LOGGER;
@@ -64,32 +68,6 @@ static VALUE cResult;
 static VALUE cReader;
 
 static VALUE eSqlite3Error;
-
-
-/****** Typecasting ******/
-static VALUE native_typecast(sqlite3_value *value, int type) {
-  VALUE ruby_value = Qnil;
-
-  switch(type) {
-    case SQLITE_NULL: {
-      ruby_value = Qnil;
-      break;
-    }
-    case SQLITE_INTEGER: {
-      ruby_value = LL2NUM(sqlite3_value_int64(value));
-      break;
-    }
-    case SQLITE3_TEXT: {
-      ruby_value = rb_str_new2((char*)sqlite3_value_text(value));
-      break;
-    }
-    case SQLITE_FLOAT: {
-      ruby_value = rb_float_new(sqlite3_value_double(value));
-      break;
-    }
-  }
-  return ruby_value;
-}
 
 // Find the greatest common denominator and reduce the provided numerator and denominator.
 // This replaces calles to Rational.reduce! which does the same thing, but really slowly.
@@ -265,34 +243,54 @@ static VALUE parse_time(char *date) {
   return rb_funcall(rb_cTime, rb_intern("local"), 7, INT2NUM(year), INT2NUM(month), INT2NUM(day), INT2NUM(hour), INT2NUM(min), INT2NUM(sec), INT2NUM(usec));
 }
 
-static VALUE ruby_typecast(sqlite3_value *value, char *type, int original_type) {
+static VALUE typecast(sqlite3_stmt *stmt, int i, VALUE ruby_class) {
+  char *ruby_type;
   VALUE ruby_value = Qnil;
-
+  int original_type = sqlite3_column_type(stmt, i);
   if ( original_type == SQLITE_NULL ) {
     return ruby_value;
-  } else if ( strcmp(type, "Class") == 0) {
-    ruby_value = rb_funcall(mDO, rb_intern("find_const"), 1, TAINTED_STRING((char*)sqlite3_value_text(value)));
-  } else if ( strcmp(type, "Object") == 0 ) {
-    ruby_value = rb_marshal_load(rb_str_new2((char*)sqlite3_value_text(value)));
-  } else if ( strcmp(type, "TrueClass") == 0 ) {
-    ruby_value = strcmp((char*)sqlite3_value_text(value), "t") == 0 ? Qtrue : Qfalse;
-  } else if ( strcmp(type, "Integer") == 0 || strcmp(type, "Fixnum") == 0 || strcmp(type, "Bignum") == 0 ) {
-    ruby_value = LL2NUM(sqlite3_value_int64(value));
-  } else if ( strcmp(type, "BigDecimal") == 0 ) {
-    ruby_value = rb_funcall(rb_cBigDecimal, ID_NEW, 1, TAINTED_STRING((char*)sqlite3_value_text(value)));
-  } else if ( strcmp(type, "String") == 0 ) {
-    ruby_value = TAINTED_STRING((char*)sqlite3_value_text(value));
-  } else if ( strcmp(type, "Float") == 0 ) {
-    ruby_value = rb_float_new(sqlite3_value_double(value));
-  } else if ( strcmp(type, "Date") == 0 ) {
-    ruby_value = parse_date((char*)sqlite3_value_text(value));
-  } else if ( strcmp(type, "DateTime") == 0 ) {
-    ruby_value = parse_date_time((char*)sqlite3_value_text(value));
-  } else if ( strcmp(type, "Time") == 0 ) {
-    ruby_value = parse_time((char*)sqlite3_value_text(value));
   }
 
-  return ruby_value;
+  if(ruby_class == Qnil) {
+    switch(original_type) {
+      case SQLITE_INTEGER: {
+        ruby_type = "Integer";
+        break;
+      }
+      case SQLITE_FLOAT: {
+        ruby_type = "Float";
+        break;
+      }
+      default: {
+        ruby_type = "String";
+        break;
+      }
+    }
+  } else {
+    ruby_type = rb_class2name(ruby_class);
+  }
+
+  if ( strcmp(ruby_type, "Class") == 0) {
+    return rb_funcall(mDO, rb_intern("find_const"), 1, TAINTED_STRING((char*)sqlite3_column_text(stmt, i)));
+  } else if ( strcmp(ruby_type, "Object") == 0 ) {
+    return rb_marshal_load(rb_str_new2((char*)sqlite3_column_text(stmt, i)));
+  } else if ( strcmp(ruby_type, "TrueClass") == 0 ) {
+    return strcmp((char*)sqlite3_column_text(stmt, i), "t") == 0 ? Qtrue : Qfalse;
+  } else if ( strcmp(ruby_type, "Integer") == 0 || strcmp(ruby_type, "Fixnum") == 0 || strcmp(ruby_type, "Bignum") == 0 ) {
+    return LL2NUM(sqlite3_column_int64(stmt, i));
+  } else if ( strcmp(ruby_type, "BigDecimal") == 0 ) {
+    return rb_funcall(rb_cBigDecimal, ID_NEW, 1, TAINTED_STRING((char*)sqlite3_column_text(stmt, i)));
+  } else if ( strcmp(ruby_type, "Float") == 0 ) {
+    return rb_float_new(sqlite3_column_double(stmt, i));
+  } else if ( strcmp(ruby_type, "Date") == 0 ) {
+    return parse_date((char*)sqlite3_column_text(stmt, i));
+  } else if ( strcmp(ruby_type, "DateTime") == 0 ) {
+    return parse_date_time((char*)sqlite3_column_text(stmt, i));
+  } else if ( strcmp(ruby_type, "Time") == 0 ) {
+    return parse_time((char*)sqlite3_column_text(stmt, i));
+  } else {
+    return TAINTED_STRING((char*)sqlite3_column_text(stmt, i));
+  }
 }
 
 
@@ -428,8 +426,6 @@ static VALUE cCommand_execute_reader(int argc, VALUE *argv, VALUE self) {
     rb_raise(eSqlite3Error, "Field-count mismatch. Expected %ld fields, but the query yielded %d", RARRAY_LEN(field_types), field_count);
   }
 
-
-
   for ( i = 0; i < field_count; i++ ) {
     rb_ary_push(field_names, rb_str_new2((char *)sqlite3_column_name(sqlite3_reader, i)));
   }
@@ -480,12 +476,7 @@ static VALUE cReader_next(VALUE self) {
   }
 
   for ( i = 0; i < field_count; i++ ) {
-    if ( ft_length == 0 ) {
-      value = native_typecast(sqlite3_column_value(reader, i), sqlite3_column_type(reader, i));
-    }
-    else {
-      value = ruby_typecast(sqlite3_column_value(reader, i), rb_class2name(RARRAY_PTR(field_types)[i]), sqlite3_column_type(reader, i));
-    }
+    value = typecast(reader, i, rb_ary_entry(field_types, i));
     rb_ary_push(arr, value);
   }
 
