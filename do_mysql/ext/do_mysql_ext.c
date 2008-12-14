@@ -77,53 +77,59 @@ static VALUE cReader;
 static VALUE eMysqlError;
 
 // Figures out what we should cast a given mysql field type to
-static char * ruby_type_from_mysql_type(MYSQL_FIELD *field) {
+static VALUE infer_ruby_type(MYSQL_FIELD *field) {
 
-  char* ruby_type_name;
+  char* ruby_type;
 
   switch(field->type) {
     case MYSQL_TYPE_NULL: {
-      ruby_type_name = NULL;
+      ruby_type = NULL;
       break;
     }
     case MYSQL_TYPE_TINY: {
-      ruby_type_name = "TrueClass";
+      ruby_type = "TrueClass";
       break;
     }
+    case MYSQL_TYPE_BIT:
     case MYSQL_TYPE_SHORT:
     case MYSQL_TYPE_LONG:
     case MYSQL_TYPE_INT24:
     case MYSQL_TYPE_LONGLONG:
     case MYSQL_TYPE_YEAR: {
-      ruby_type_name = "Fixnum";
+      ruby_type = "Fixnum";
       break;
     }
     case MYSQL_TYPE_DECIMAL:
+    case MYSQL_TYPE_NEWDECIMAL: {
+      ruby_type = "BigDecimal";
+      break;
+    }
     case MYSQL_TYPE_FLOAT:
     case MYSQL_TYPE_DOUBLE: {
-      ruby_type_name = "BigDecimal";
+      ruby_type = "Float";
       break;
     }
     case MYSQL_TYPE_TIMESTAMP:
     case MYSQL_TYPE_DATETIME: {
-      ruby_type_name = "DateTime";
+      ruby_type = "DateTime";
       break;
     }
     case MYSQL_TYPE_TIME: {
-      ruby_type_name = "DateTime";
+      ruby_type = "DateTime";
       break;
     }
-    case MYSQL_TYPE_DATE: {
-      ruby_type_name = "Date";
+    case MYSQL_TYPE_DATE:
+    case MYSQL_TYPE_NEWDATE: {
+      ruby_type = "Date";
       break;
     }
     default: {
-      // printf("Falling to default: %s - %d\n", field->name, field->type);
-      ruby_type_name = "String";
+      ruby_type = "String";
+      break;
     }
   }
 
-  return ruby_type_name;
+  return rb_str_new2(ruby_type);
 }
 
 // Find the greatest common denominator and reduce the provided numerator and denominator.
@@ -712,7 +718,7 @@ static VALUE cCommand_execute_reader(int argc, VALUE *argv, VALUE self) {
   VALUE query, reader;
   VALUE field_names, field_types;
 
-  int field_count;
+  unsigned int field_count;
   int i;
 
   char guess_default_field_types = 0;
@@ -734,7 +740,7 @@ static VALUE cCommand_execute_reader(int argc, VALUE *argv, VALUE self) {
     return Qnil;
   }
 
-  field_count = (int)mysql_field_count(db);
+  field_count = mysql_field_count(db);
 
   reader = rb_funcall(cReader, ID_NEW, 0);
   rb_iv_set(reader, "@reader", Data_Wrap_Struct(rb_cObject, 0, 0, response));
@@ -759,8 +765,7 @@ static VALUE cCommand_execute_reader(int argc, VALUE *argv, VALUE self) {
     rb_ary_push(field_names, RUBY_STRING(field->name));
 
     if (1 == guess_default_field_types) {
-      VALUE field_ruby_type_name = RUBY_STRING(ruby_type_from_mysql_type(field));
-      rb_ary_push(field_types, field_ruby_type_name);
+      rb_ary_push(field_types, infer_ruby_type(field));
     }
   }
 
@@ -828,7 +833,7 @@ static VALUE cReader_next(VALUE self) {
 
   for (i = 0; i < reader->field_count; i++) {
     // The field_type data could be cached in a c-array
-    field_type = RSTRING_PTR(rb_ary_entry(ruby_field_type_strings, i));
+    field_type = StringValuePtr(rb_ary_entry(ruby_field_type_strings, i));
     rb_ary_push(row, typecast(result[i], lengths[i], field_type));
   }
 
