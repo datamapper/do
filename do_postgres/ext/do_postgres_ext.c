@@ -245,15 +245,22 @@ static VALUE parse_time(char *date) {
 static VALUE infer_ruby_type(Oid type) {
   char *ruby_type = "String";
   switch(type) {
+    case BITOID:
+    case VARBITOID:
     case INT2OID:
     case INT4OID:
     case INT8OID: {
-      ruby_type = "Fixnum";
+      ruby_type = "Integer";
       break;
     }
     case FLOAT4OID:
     case FLOAT8OID: {
       ruby_type = "Float";
+      break;
+    }
+    case NUMERICOID:
+    case CASHOID: {
+      ruby_type = "BigDecimal";
       break;
     }
     case BOOLOID: {
@@ -267,10 +274,6 @@ static VALUE infer_ruby_type(Oid type) {
     }
     case DATEOID: {
       ruby_type = "Date";
-      break;
-    }
-    case NUMERICOID: {
-      ruby_type = "BigDecimal";
       break;
     }
   }
