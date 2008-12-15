@@ -19,6 +19,18 @@
 #define DEBUG(value) data_objects_debug(value)
 #define RUBY_CLASS(name) rb_const_get(rb_cObject, rb_intern(name))
 
+#ifndef RSTRING_PTR
+#define RSTRING_PTR(s) (RSTRING(s)->ptr)
+#endif
+
+#ifndef RSTRING_LEN
+#define RSTRING_LEN(s) (RSTRING(s)->len)
+#endif
+
+#ifndef RARRAY_LEN
+#define RARRAY_LEN(a) RARRAY(a)->len
+#endif
+
 #ifdef _WIN32
 #define do_int64 signed __int64
 #else
