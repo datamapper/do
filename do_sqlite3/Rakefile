@@ -1,17 +1,12 @@
+require 'pathname'
 require 'rubygems'
 require 'spec/rake/spectask'
-require 'pathname'
+require 'lib/do_sqlite3/version'
 
-ROOT = Pathname(__FILE__).dirname.expand_path
-
-require "lib/do_sqlite3/version"
-
-JRUBY   = (RUBY_PLATFORM =~ /java/) rescue nil
-WINDOWS = (RUBY_PLATFORM =~ /mswin|mingw|bccwin|cygwin/) rescue nil
-
+ROOT    = Pathname(__FILE__).dirname.expand_path
+JRUBY   = RUBY_PLATFORM =~ /java/
+WINDOWS = Gem.win_platform?
 SUDO    = (WINDOWS || JRUBY) ? '' : ('sudo' unless ENV['SUDOLESS'])
-# RCov is run by default, except on the JRuby platform, or if NO_RCOV env is true
-RUN_RCOV = JRUBY ? false : (ENV.has_key?('NO_RCOV') ? ENV['NO_RCOV'] != 'true' : true)
 
 AUTHOR = "Bernerd Schaefer"
 EMAIL  = "bj.schaefer@gmail.com"
@@ -39,6 +34,9 @@ PROJECT_URL  = "http://rubyforge.org/projects/dorb"
 PROJECT_DESCRIPTION = PROJECT_SUMMARY = "A DataObject.rb driver for Sqlite3"
 
 DRIVER = true
+
+# RCov is run by default, except on the JRuby platform, or if NO_RCOV env is true
+RUN_RCOV = JRUBY ? false : (ENV.has_key?('NO_RCOV') ? ENV['NO_RCOV'] != 'true' : true)
 
 if (tasks_dir = ROOT.parent + 'tasks').directory?
   require tasks_dir + 'hoe'

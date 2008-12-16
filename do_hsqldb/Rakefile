@@ -1,12 +1,13 @@
+require 'pathname'
 require 'rubygems'
 require 'rake'
 require 'spec/rake/spectask'
-require 'pathname'
 require 'lib/do_hsqldb/version'
 
-ROOT = Pathname(__FILE__).dirname.expand_path
-
-JRUBY = (RUBY_PLATFORM =~ /java/) rescue nil
+ROOT    = Pathname(__FILE__).dirname.expand_path
+JRUBY   = RUBY_PLATFORM =~ /java/
+WINDOWS = Gem.win_platform?
+SUDO    = (WINDOWS || JRUBY) ? '' : ('sudo' unless ENV['SUDOLESS'])
 
 AUTHOR = "Alex Coles"
 EMAIL  = "alex@alexcolesportfolio.com"
@@ -21,9 +22,6 @@ PROJECT_URL  = "http://rubyforge.org/projects/dorb"
 PROJECT_DESCRIPTION = PROJECT_SUMMARY = "A DataObjects.rb driver for Derby"
 
 DRIVER = true
-
-# By default, sudo is used, except if SUDOLESS env is true
-SUDO = 'sudo' unless ENV['SUDOLESS']
 
 if (tasks_dir = ROOT.parent + 'tasks').directory?
   require tasks_dir + 'hoe'
