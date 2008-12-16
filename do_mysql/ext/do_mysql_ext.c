@@ -833,7 +833,7 @@ static VALUE cReader_next(VALUE self) {
 
   for (i = 0; i < reader->field_count; i++) {
     // The field_type data could be cached in a c-array
-    field_type = StringValuePtr(rb_ary_entry(ruby_field_type_strings, i));
+    field_type = RSTRING_PTR(rb_ary_entry(ruby_field_type_strings, i));
     rb_ary_push(row, typecast(result[i], lengths[i], field_type));
   }
 
