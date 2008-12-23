@@ -66,7 +66,6 @@ static VALUE rb_cDateTime;
 static VALUE rb_cRational;
 #endif
 static VALUE rb_cBigDecimal;
-static VALUE rb_cCGI;
 
 // Classes that we'll build in Init
 static VALUE mDOMysql;
@@ -889,7 +888,6 @@ void Init_do_mysql_ext() {
   rb_cDateTime = RUBY_CLASS("DateTime");
   rb_cRational = RUBY_CLASS("Rational");
   rb_cBigDecimal = RUBY_CLASS("BigDecimal");
-  rb_cCGI = RUBY_CLASS("CGI");
 
   // Get references to the DataObjects module and its classes
   mDO = CONST_GET(rb_mKernel, "DataObjects");
