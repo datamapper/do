@@ -56,7 +56,6 @@ static VALUE rb_cDate;
 static VALUE rb_cDateTime;
 static VALUE rb_cRational;
 static VALUE rb_cBigDecimal;
-static VALUE rb_cCGI;
 
 static VALUE mPostgres;
 static VALUE cConnection;
@@ -721,8 +720,6 @@ void Init_do_postgres_ext() {
   rb_cTime = CONST_GET(rb_mKernel, "Time");
   rb_cRational = CONST_GET(rb_mKernel, "Rational");
   rb_cBigDecimal = CONST_GET(rb_mKernel, "BigDecimal");
-
-  rb_cCGI = RUBY_CLASS("CGI");
 
   rb_funcall(rb_mKernel, rb_intern("require"), 1, rb_str_new2("data_objects"));
 
