@@ -11,7 +11,7 @@
 #define ID_ESCAPE rb_intern("escape_sql")
 
 #define RUBY_STRING(char_ptr) rb_str_new2(char_ptr)
-#define TAINTED_STRING(name) rb_tainted_str_new2(name)
+#define TAINTED_STRING(name, length) rb_tainted_str_new(name, length)
 #define CONST_GET(scope, constant) (rb_funcall(scope, ID_CONST_GET, 1, rb_str_new2(constant)))
 #define SQLITE3_CLASS(klass, parent) (rb_define_class_under(mSqlite3, klass, parent))
 
@@ -247,8 +247,13 @@ static VALUE typecast(sqlite3_stmt *stmt, int i, VALUE ruby_class) {
   char *ruby_type;
   VALUE ruby_value = Qnil;
   int original_type = sqlite3_column_type(stmt, i);
+  int length        = sqlite3_column_bytes(stmt, i);
   if ( original_type == SQLITE_NULL ) {
     return ruby_value;
+  }
+
+  if ( original_type == SQLITE_BLOB ) {
+    return TAINTED_STRING((char*)sqlite3_column_blob(stmt, i), length);
   }
 
   if(ruby_class == Qnil) {
@@ -271,7 +276,7 @@ static VALUE typecast(sqlite3_stmt *stmt, int i, VALUE ruby_class) {
   }
 
   if ( strcmp(ruby_type, "Class") == 0) {
-    return rb_funcall(mDO, rb_intern("find_const"), 1, TAINTED_STRING((char*)sqlite3_column_text(stmt, i)));
+    return rb_funcall(mDO, rb_intern("find_const"), 1, TAINTED_STRING((char*)sqlite3_column_text(stmt, i), length));
   } else if ( strcmp(ruby_type, "Object") == 0 ) {
     return rb_marshal_load(rb_str_new2((char*)sqlite3_column_text(stmt, i)));
   } else if ( strcmp(ruby_type, "TrueClass") == 0 ) {
@@ -279,7 +284,7 @@ static VALUE typecast(sqlite3_stmt *stmt, int i, VALUE ruby_class) {
   } else if ( strcmp(ruby_type, "Integer") == 0 || strcmp(ruby_type, "Fixnum") == 0 || strcmp(ruby_type, "Bignum") == 0 ) {
     return LL2NUM(sqlite3_column_int64(stmt, i));
   } else if ( strcmp(ruby_type, "BigDecimal") == 0 ) {
-    return rb_funcall(rb_cBigDecimal, ID_NEW, 1, TAINTED_STRING((char*)sqlite3_column_text(stmt, i)));
+    return rb_funcall(rb_cBigDecimal, ID_NEW, 1, TAINTED_STRING((char*)sqlite3_column_text(stmt, i), length));
   } else if ( strcmp(ruby_type, "Float") == 0 ) {
     return rb_float_new(sqlite3_column_double(stmt, i));
   } else if ( strcmp(ruby_type, "Date") == 0 ) {
@@ -289,7 +294,7 @@ static VALUE typecast(sqlite3_stmt *stmt, int i, VALUE ruby_class) {
   } else if ( strcmp(ruby_type, "Time") == 0 ) {
     return parse_time((char*)sqlite3_column_text(stmt, i));
   } else {
-    return TAINTED_STRING((char*)sqlite3_column_text(stmt, i));
+    return TAINTED_STRING((char*)sqlite3_column_text(stmt, i), length);
   }
 }
 
@@ -327,7 +332,7 @@ static VALUE cCommand_set_types(VALUE self, VALUE array) {
 }
 
 static VALUE cCommand_quote_boolean(VALUE self, VALUE value) {
-  return TAINTED_STRING(value == Qtrue ? "'t'" : "'f'");
+  return rb_tainted_str_new2(value == Qtrue ? "'t'" : "'f'");
 }
 
 static VALUE cCommand_quote_string(VALUE self, VALUE string) {
@@ -337,7 +342,7 @@ static VALUE cCommand_quote_string(VALUE self, VALUE string) {
   // Wrap the escaped string in single-quotes, this is DO's convention
   escaped_with_quotes = sqlite3_mprintf("%Q", source);
 
-  return TAINTED_STRING(escaped_with_quotes);
+  return rb_tainted_str_new2(escaped_with_quotes);
 }
 
 static VALUE build_query_from_args(VALUE klass, int count, VALUE *args) {
@@ -500,8 +505,6 @@ static VALUE cReader_fields(VALUE self) {
 }
 
 void Init_do_sqlite3_ext() {
-
-  rb_require("rubygems");
   rb_require("bigdecimal");
   rb_require("date");
 

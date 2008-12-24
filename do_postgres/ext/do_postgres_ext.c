@@ -43,7 +43,6 @@ static ID ID_LOGGER;
 static ID ID_DEBUG;
 static ID ID_LEVEL;
 static ID ID_TO_S;
-static ID ID_PARSE;
 
 static VALUE mDO;
 static VALUE cDO_Quoting;
@@ -709,10 +708,8 @@ static VALUE cReader_fields(VALUE self) {
 }
 
 void Init_do_postgres_ext() {
-  rb_require("rubygems");
   rb_require("date");
   rb_require("bigdecimal");
-  rb_require("cgi");
 
   // Get references classes needed for Date/Time parsing
   rb_cDate = CONST_GET(rb_mKernel, "Date");
@@ -728,7 +725,6 @@ void Init_do_postgres_ext() {
   ID_DEBUG = rb_intern("debug");
   ID_LEVEL = rb_intern("level");
   ID_TO_S = rb_intern("to_s");
-  ID_PARSE = rb_intern("parse");
 
   // Get references to the DataObjects module and its classes
   mDO = CONST_GET(rb_mKernel, "DataObjects");

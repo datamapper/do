@@ -38,7 +38,6 @@
 static ID ID_TO_I;
 static ID ID_TO_F;
 static ID ID_TO_S;
-static ID ID_PARSE;
 static ID ID_TO_TIME;
 static ID ID_NEW;
 static ID ID_NEW_RATIONAL;
@@ -856,17 +855,14 @@ static VALUE cReader_fields(VALUE self) {
 }
 
 void Init_do_mysql_ext() {
-  rb_require("rubygems");
   rb_require("bigdecimal");
   rb_require("date");
-  rb_require("cgi");
 
   rb_funcall(rb_mKernel, rb_intern("require"), 1, RUBY_STRING("data_objects"));
 
   ID_TO_I = rb_intern("to_i");
   ID_TO_F = rb_intern("to_f");
   ID_TO_S = rb_intern("to_s");
-  ID_PARSE = rb_intern("parse");
   ID_TO_TIME = rb_intern("to_time");
   ID_NEW = rb_intern("new");
   ID_NEW_RATIONAL = rb_intern("new!");
