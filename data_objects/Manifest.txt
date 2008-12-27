@@ -13,7 +13,6 @@ lib/data_objects/logger.rb
 lib/data_objects/quoting.rb
 lib/data_objects/reader.rb
 lib/data_objects/result.rb
-lib/data_objects/support/pooling.rb
 lib/data_objects/transaction.rb
 lib/data_objects/uri.rb
 lib/data_objects/version.rb
@@ -25,5 +24,4 @@ spec/reader_spec.rb
 spec/result_spec.rb
 spec/spec.opts
 spec/spec_helper.rb
-spec/support/pooling_spec.rb
 spec/transaction_spec.rb
