@@ -438,6 +438,52 @@ static char * get_uri_option(VALUE query_hash, char * key) {
   return value;
 }
 
+static MYSQL_RES* cCommand_execute_async(VALUE self, MYSQL* db, VALUE query) {
+  int socket_fd;
+  int retval;
+  fd_set rset;
+  char* str = RSTRING_PTR(query);
+  int len   = RSTRING_LEN(query);
+
+  VALUE connection = rb_iv_get(self, "@connection");
+
+  retval = mysql_ping(db);
+  if(retval == CR_SERVER_GONE_ERROR) {
+    CHECK_AND_RAISE(retval, "Mysql server has gone away. \
+                             Please report this issue to the Datamapper project. \
+                             Specify your at least your MySQL version when filing a ticket");
+  }
+  retval = mysql_send_query(db, str, len);
+  data_objects_debug(query);
+  CHECK_AND_RAISE(retval, str);
+
+  socket_fd = db->net.fd;
+
+  for(;;) {
+    FD_ZERO(&rset);
+    FD_SET(socket_fd, &rset);
+
+    retval = rb_thread_select(socket_fd + 1, &rset, NULL, NULL, NULL);
+
+    if (retval < 0) {
+        rb_sys_fail(0);
+    }
+
+    if (retval == 0) {
+        continue;
+    }
+
+    if (db->status == MYSQL_STATUS_READY) {
+      break;
+    }
+  }
+
+  retval = mysql_read_query_result(db);
+  CHECK_AND_RAISE(retval, str);
+
+  return mysql_store_result(db);
+}
+
 static VALUE cConnection_initialize(VALUE self, VALUE uri) {
   VALUE r_host, r_user, r_password, r_path, r_query, r_port;
 
@@ -526,6 +572,10 @@ static VALUE cConnection_initialize(VALUE self, VALUE uri) {
   if (0 != encoding_error) {
     raise_mysql_error(Qnil, db, encoding_error, NULL);
   }
+
+  // Disable sql_auto_is_null
+  cCommand_execute_async(self, db, rb_str_new2("SET sql_auto_is_null = 0"));
+  cCommand_execute_async(self, db, rb_str_new2("SET SESSION sql_mode = STRICT_ALL_TABLES"));
 
   rb_iv_set(self, "@uri", uri);
   rb_iv_set(self, "@connection", Data_Wrap_Struct(rb_cObject, 0, 0, db));
@@ -639,52 +689,6 @@ static VALUE build_query_from_args(VALUE klass, int count, VALUE *args) {
     query = rb_funcall(klass, ID_ESCAPE_SQL, 1, array);
   }
   return query;
-}
-
-static MYSQL_RES* cCommand_execute_async(VALUE self, MYSQL* db, VALUE query) {
-  int socket_fd;
-  int retval;
-  fd_set rset;
-  char* str = RSTRING_PTR(query);
-  int len   = RSTRING_LEN(query);
-
-  VALUE connection = rb_iv_get(self, "@connection");
-
-  retval = mysql_ping(db);
-  if(retval == CR_SERVER_GONE_ERROR) {
-    CHECK_AND_RAISE(retval, "Mysql server has gone away. \
-                             Please report this issue to the Datamapper project. \
-                             Specify your at least your MySQL version when filing a ticket");
-  }
-  retval = mysql_send_query(db, str, len);
-  data_objects_debug(query);
-  CHECK_AND_RAISE(retval, str);
-
-  socket_fd = db->net.fd;
-
-  for(;;) {
-    FD_ZERO(&rset);
-    FD_SET(socket_fd, &rset);
-
-    retval = rb_thread_select(socket_fd + 1, &rset, NULL, NULL, NULL);
-
-    if (retval < 0) {
-        rb_sys_fail(0);
-    }
-
-    if (retval == 0) {
-        continue;
-    }
-
-    if (db->status == MYSQL_STATUS_READY) {
-      break;
-    }
-  }
-
-  retval = mysql_read_query_result(db);
-  CHECK_AND_RAISE(retval, str);
-
-  return mysql_store_result(db);
 }
 
 static VALUE cCommand_execute_non_query(int argc, VALUE *argv, VALUE self) {
