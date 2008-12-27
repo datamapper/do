@@ -45,6 +45,7 @@ module DataObjects
         when Array then quote_array(value)
         when Range then quote_range(value)
         when Symbol then quote_symbol(value)
+        when Regexp then quote_regexp(value)
         else
           if value.respond_to?(:to_sql)
             value.to_sql
@@ -92,6 +93,10 @@ module DataObjects
 
     def quote_range(value)
       "#{quote_value(value.first)} AND #{quote_value(value.last)}"
+    end
+
+    def quote_regexp(value)
+      quote_string(value.source)
     end
   end
 
