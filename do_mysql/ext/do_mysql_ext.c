@@ -336,91 +336,17 @@ static void data_objects_debug(VALUE string) {
   }
 }
 
-// We can add custom information to error messages using this function
-// if we think it matters
 static void raise_mysql_error(VALUE connection, MYSQL *db, int mysql_error_code, char* str) {
   char *mysql_error_message = (char *)mysql_error(db);
-  int length = strlen(mysql_error_message) + 25; // length of " (mysql_error_code=0000)"
-  char *error_message;
 
+  if(mysql_error_code == 1) {
+    mysql_error_code = mysql_errno(db);
+  }
   if(str) {
-    error_message = (char *)calloc(length + strlen(str) + 8, sizeof(char));
-    sprintf(error_message, "%s (mysql_error_code=%04d)\nQuery: %s", mysql_error_message, mysql_error_code, str);
+    rb_raise(eMysqlError, "%s (mysql_errno=%04d, sql_state=%s)\nQuery: %s", mysql_error_message, mysql_error_code, mysql_sqlstate(db), str);
   } else {
-    error_message = (char *)calloc(length, sizeof(char));
-    sprintf(error_message, "%s (mysql_error_code=%04d)", mysql_error_message, mysql_error_code);
+    rb_raise(eMysqlError, "%s (mysql_errno=%04d, sql_state=%s)", mysql_error_message, mysql_error_code, mysql_sqlstate(db));
   }
-
-  data_objects_debug(rb_str_new2(error_message));
-
-  switch(mysql_error_code) {
-    case CR_UNKNOWN_ERROR:
-    case CR_SOCKET_CREATE_ERROR:
-    case CR_CONNECTION_ERROR:
-    case CR_CONN_HOST_ERROR:
-    case CR_IPSOCK_ERROR:
-    case CR_UNKNOWN_HOST:
-    case CR_SERVER_GONE_ERROR:
-    case CR_VERSION_ERROR:
-    case CR_OUT_OF_MEMORY:
-    case CR_WRONG_HOST_INFO:
-    case CR_LOCALHOST_CONNECTION:
-    case CR_TCP_CONNECTION:
-    case CR_SERVER_HANDSHAKE_ERR:
-    case CR_SERVER_LOST:
-    case CR_COMMANDS_OUT_OF_SYNC:
-    case CR_NAMEDPIPE_CONNECTION:
-    case CR_NAMEDPIPEWAIT_ERROR:
-    case CR_NAMEDPIPEOPEN_ERROR:
-    case CR_NAMEDPIPESETSTATE_ERROR:
-    case CR_CANT_READ_CHARSET:
-    case CR_NET_PACKET_TOO_LARGE:
-    case CR_EMBEDDED_CONNECTION:
-    case CR_PROBE_SLAVE_STATUS:
-    case CR_PROBE_SLAVE_HOSTS:
-    case CR_PROBE_SLAVE_CONNECT:
-    case CR_PROBE_MASTER_CONNECT:
-    case CR_SSL_CONNECTION_ERROR:
-    case CR_MALFORMED_PACKET:
-    case CR_WRONG_LICENSE:
-    case CR_NULL_POINTER:
-    case CR_NO_PREPARE_STMT:
-    case CR_PARAMS_NOT_BOUND:
-    case CR_DATA_TRUNCATED:
-    case CR_NO_PARAMETERS_EXISTS:
-    case CR_INVALID_PARAMETER_NO:
-    case CR_INVALID_BUFFER_USE:
-    case CR_UNSUPPORTED_PARAM_TYPE:
-    case CR_SHARED_MEMORY_CONNECTION:
-    case CR_SHARED_MEMORY_CONNECT_REQUEST_ERROR:
-    case CR_SHARED_MEMORY_CONNECT_ANSWER_ERROR:
-    case CR_SHARED_MEMORY_CONNECT_FILE_MAP_ERROR:
-    case CR_SHARED_MEMORY_CONNECT_MAP_ERROR:
-    case CR_SHARED_MEMORY_FILE_MAP_ERROR:
-    case CR_SHARED_MEMORY_MAP_ERROR:
-    case CR_SHARED_MEMORY_EVENT_ERROR:
-    case CR_SHARED_MEMORY_CONNECT_ABANDONED_ERROR:
-    case CR_SHARED_MEMORY_CONNECT_SET_ERROR:
-    case CR_CONN_UNKNOW_PROTOCOL:
-    case CR_INVALID_CONN_HANDLE:
-    case CR_SECURE_AUTH:
-    case CR_FETCH_CANCELED:
-    case CR_NO_DATA:
-    case CR_NO_STMT_METADATA:
-#if MYSQL_VERSION_ID >= 50000
-    case CR_NO_RESULT_SET:
-    case CR_NOT_IMPLEMENTED:
-#endif
-    {
-      break;
-    }
-    default: {
-      // Hmmm
-      break;
-    }
-  }
-
-  rb_raise(eMysqlError, error_message);
 }
 
 static char * get_uri_option(VALUE query_hash, char * key) {
@@ -726,8 +652,9 @@ static VALUE cCommand_execute_reader(int argc, VALUE *argv, VALUE self) {
   char guess_default_field_types = 0;
   VALUE connection = rb_iv_get(self, "@connection");
   VALUE mysql_connection = rb_iv_get(connection, "@connection");
-  if (Qnil == mysql_connection)
+  if (Qnil == mysql_connection) {
     rb_raise(eMysqlError, "This connection has already been closed.");
+  }
 
   MYSQL *db = DATA_PTR(mysql_connection);
 
