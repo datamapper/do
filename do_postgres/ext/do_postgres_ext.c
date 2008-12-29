@@ -1,11 +1,18 @@
+#include <libpq-fe.h>
+#include <postgres.h>
+#include <mb/pg_wchar.h>
+#include <catalog/pg_type.h>
+
+/* Undefine constants Postgres also defines */
+#undef PACKAGE_BUGREPORT
+#undef PACKAGE_NAME
+#undef PACKAGE_STRING
+#undef PACKAGE_TARNAME
+#undef PACKAGE_VERSION
 #include <ruby.h>
 #include <version.h>
 #include <string.h>
 #include <math.h>
-#include <time.h>
-#include <locale.h>
-#include <libpq-fe.h>
-#include "type-oids.h"
 
 #define ID_CONST_GET rb_intern("const_get")
 #define ID_PATH rb_intern("path")
@@ -564,8 +571,9 @@ static VALUE cCommand_execute_non_query(int argc, VALUE *argv[], VALUE self) {
   }
   else {
     char *message = PQresultErrorMessage(response);
+    char *sqlstate = PQresultErrorField(response, PG_DIAG_SQLSTATE);
     PQclear(response);
-    rb_raise(ePostgresError, "%sQuery: %s\n", message, StringValuePtr(query));
+    rb_raise(ePostgresError, "(sql_state=%s) %sQuery: %s\n", sqlstate, message, StringValuePtr(query));
   }
 
   PQclear(response);
@@ -758,4 +766,3 @@ void Init_do_postgres_ext() {
   rb_define_method(cReader, "fields", cReader_fields, 0);
 
 }
-

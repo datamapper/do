@@ -18,15 +18,18 @@ def config_value(type)
 end
 
 def pg_config(type)
-  IO.popen("pg_config --#{type}dir").readline.chomp rescue nil
+  IO.popen("pg_config --#{type}").readline.chomp rescue nil
 end
 
 def have_build_env
   (have_library('pq') || have_library('libpq')) &&
-    have_header('libpq-fe.h') && have_header('libpq/libpq-fs.h')
+  have_header('libpq-fe.h') && have_header('libpq/libpq-fs.h') &&
+  have_header('postgres.h') && have_header('mb/pg_wchar.h') &&
+  have_header('catalog/pg_type.h')
 end
 
-dir_config('pgsql', config_value('include'), config_value('lib'))
+dir_config('pgsql', config_value('includedir-server'), config_value('libdir'))
+dir_config('pgsql', config_value('includedir'), config_value('libdir'))
 
 required_libraries = []
 desired_functions = %w(PQsetClientEncoding pg_encoding_to_char PQfreemem)
