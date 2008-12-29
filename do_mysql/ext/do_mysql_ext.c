@@ -343,9 +343,9 @@ static void raise_mysql_error(VALUE connection, MYSQL *db, int mysql_error_code,
     mysql_error_code = mysql_errno(db);
   }
   if(str) {
-    rb_raise(eMysqlError, "%s (mysql_errno=%04d, sql_state=%s)\nQuery: %s", mysql_error_message, mysql_error_code, mysql_sqlstate(db), str);
+    rb_raise(eMysqlError, "(mysql_errno=%04d, sql_state=%s) %s\nQuery: %s", mysql_error_code, mysql_sqlstate(db), mysql_error_message, str);
   } else {
-    rb_raise(eMysqlError, "%s (mysql_errno=%04d, sql_state=%s)", mysql_error_message, mysql_error_code, mysql_sqlstate(db));
+    rb_raise(eMysqlError, "(mysql_errno=%04d, sql_state=%s) %s", mysql_error_code, mysql_sqlstate(db), mysql_error_message);
   }
 }
 
@@ -501,7 +501,7 @@ static VALUE cConnection_initialize(VALUE self, VALUE uri) {
 
   // Disable sql_auto_is_null
   cCommand_execute_async(self, db, rb_str_new2("SET sql_auto_is_null = 0"));
-  cCommand_execute_async(self, db, rb_str_new2("SET SESSION sql_mode = STRICT_ALL_TABLES"));
+  cCommand_execute_async(self, db, rb_str_new2("SET SESSION sql_mode = 'ANSI,NO_AUTO_VALUE_ON_ZERO,NO_DIR_IN_CREATE,NO_ENGINE_SUBSTITUTION,NO_UNSIGNED_SUBTRACTION,ONLY_FULL_GROUP_BY,TRADITIONAL'"));
 
   rb_iv_set(self, "@uri", uri);
   rb_iv_set(self, "@connection", Data_Wrap_Struct(rb_cObject, 0, 0, db));
