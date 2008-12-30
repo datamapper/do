@@ -501,18 +501,18 @@ static VALUE cConnection_initialize(VALUE self, VALUE uri) {
     free(search_path_query);
   }
 
-  r_options = rb_str_new(backslash_off, strlen(backslash_off) + 1);
+  r_options = rb_str_new2(backslash_off);
   result = cCommand_execute_async(db, r_options);
 
   if (PQresultStatus(result) != PGRES_COMMAND_OK) {
-    rb_raise(ePostgresError, PQresultErrorMessage(result));
+    rb_warn(PQresultErrorMessage(result));
   }
 
-  r_options = rb_str_new(standard_strings_on, strlen(standard_strings_on) + 1);
+  r_options = rb_str_new2(standard_strings_on);
   result = cCommand_execute_async(db, r_options);
 
   if (PQresultStatus(result) != PGRES_COMMAND_OK) {
-    rb_raise(ePostgresError, PQresultErrorMessage(result));
+    rb_warn(PQresultErrorMessage(result));
   }
 
   encoding = get_uri_option(r_query, "encoding");

@@ -61,7 +61,7 @@ module PostgresSpecHelpers
         amount numeric(10,2) DEFAULT 11.1,
         company_id integer DEFAULT 1
       )
-      WITH (OIDS=FALSE);
+      WITHOUT OIDS;
     EOF
 
     connection.create_command(<<-EOF).execute_non_query
@@ -69,7 +69,7 @@ module PostgresSpecHelpers
         id serial NOT NULL,
         "name" character varying
       )
-      WITH (OIDS=FALSE);
+      WITHOUT OIDS;
     EOF
 
     return connection
