@@ -104,6 +104,7 @@ public class Command extends RubyObject {
 
             //javaConn.setAutoCommit(true); // hangs with autocommit set to false
             // sqlStatement.setMaxRows();
+            long startTime = System.currentTimeMillis();
             try {
                 if (sqlText.contains("RETURNING")) {
                     keys = sqlStatement.executeQuery();
@@ -117,6 +118,9 @@ public class Command extends RubyObject {
                 affectedCount = 0;
                 sqlStatement.execute();
             }
+            long endTime = System.currentTimeMillis();
+
+            debug(recv.getRuntime(), sqlStatement.toString(), Long.valueOf(endTime - startTime));
 
             if (keys == null) {
                 if (supportsGeneratedKeys) {
@@ -202,7 +206,12 @@ public class Command extends RubyObject {
             //sqlStatement.setMaxRows();
             prepareStatementFromArgs(sqlStatement, recv, args);
 
+            long startTime = System.currentTimeMillis();
             resultSet = sqlStatement.executeQuery();
+            long endTime = System.currentTimeMillis();
+
+            debug(recv.getRuntime(), sqlStatement.toString(), Long.valueOf(endTime - startTime));
+
             metaData = resultSet.getMetaData();
             columnCount = metaData.getColumnCount();
 
@@ -450,11 +459,10 @@ public class Command extends RubyObject {
             //throw DataObjectsUtils.newDriverError(runtime, errorName, sqle.getLocalizedMessage());
             sqle.printStackTrace();
         }
-        debug(recv.getRuntime(), ps.toString());
     }
 
     /**
-     * 
+     *
      * @param ps the PreparedStatement for which the parameter should be set
      * @param recv
      * @param arg a parameter value
@@ -488,13 +496,31 @@ public class Command extends RubyObject {
      * @param logMessage
      */
     private static void debug(Ruby runtime, String logMessage) {
+        debug(runtime, logMessage, null);
+    }
+
+    /**
+     * Output a log message
+     *
+     * @param runtime
+     * @param logMessage
+     * @param executionTime
+     */
+    private static void debug(Ruby runtime, String logMessage, Long executionTime) {
         RubyModule driverModule = (RubyModule) runtime.getModule(DATA_OBJECTS_MODULE_NAME).getConstant(moduleName);
         IRubyObject logger = api.callMethod(driverModule, "logger");
         int level = RubyNumeric.fix2int(api.callMethod(logger, "level"));
 
         if (level == 0) {
+            StringBuffer msgSb = new StringBuffer();
+
+            if (executionTime != null) {
+                msgSb.append("(").append(executionTime).append(") ");
+            }
             // FIXME: replaceFirst is mysql specific !!
-            api.callMethod(logger, "debug", runtime.newString(logMessage.replaceFirst(".*].-\\s*", "")));
+            msgSb.append(logMessage.replaceFirst(".*].-\\s*", ""));
+
+            api.callMethod(logger, "debug", runtime.newString(msgSb.toString()));
         }
     }
 
