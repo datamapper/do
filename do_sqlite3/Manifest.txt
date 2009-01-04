@@ -5,6 +5,9 @@ Manifest.txt
 README.txt
 Rakefile
 TODO
+buildfile
+ext-java/src/main/java/DoSqlite3ExtService.java
+ext-java/src/main/java/do_sqlite3/Sqlite3DriverDefinition.java
 ext/do_sqlite3_ext/do_sqlite3_ext.c
 ext/do_sqlite3_ext/extconf.rb
 lib/do_sqlite3.rb

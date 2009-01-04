@@ -25,3 +25,4 @@ spec/result_spec.rb
 spec/spec.opts
 spec/spec_helper.rb
 spec/transaction_spec.rb
+spec/uri_spec.rb
