@@ -6,8 +6,10 @@ if RUBY_PLATFORM =~ /java/
   gem 'jdbc-mysql'
   require 'jdbc/mysql' # the JDBC driver, packaged as a gem
 end
-require 'do_mysql_ext' # the C/Java extension for this DO driver
-require 'do_mysql' / 'transaction'
+
+require File.expand_path(File.join(File.dirname(__FILE__), 'do_mysql_ext'))
+require File.expand_path(File.join(File.dirname(__FILE__), 'do_mysql', 'version'))
+require File.expand_path(File.join(File.dirname(__FILE__), 'do_mysql', 'transaction'))
 
 if RUBY_PLATFORM =~ /java/
   # Another way of loading the JDBC Class. This seems to be more reliable

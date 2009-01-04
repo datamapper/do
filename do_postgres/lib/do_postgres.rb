@@ -6,8 +6,10 @@ if RUBY_PLATFORM =~ /java/
   gem 'jdbc-postgres'
   require 'jdbc/postgres' # the JDBC driver, packaged as a gem
 end
-require 'do_postgres_ext'
-require 'do_postgres/transaction'
+
+require File.expand_path(File.join(File.dirname(__FILE__), 'do_postgres_ext'))
+require File.expand_path(File.join(File.dirname(__FILE__), 'do_postgres', 'version'))
+require File.expand_path(File.join(File.dirname(__FILE__), 'do_postgres', 'transaction'))
 
 if RUBY_PLATFORM =~ /java/
   # Another way of loading the JDBC Class. This seems to be more reliable
