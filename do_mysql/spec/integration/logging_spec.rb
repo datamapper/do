@@ -17,7 +17,7 @@ describe DataObjects::Mysql::Command do
       command = @connection.create_command("SELECT * FROM widgets WHERE name = ?")
       @mock_logger = mock('MockLogger', :level => 0)
       DataObjects::Mysql.should_receive(:logger).and_return(@mock_logger)
-      @mock_logger.should_receive(:debug).with("SELECT * FROM widgets WHERE name = 'Scott'")
+      @mock_logger.should_receive(:debug).with(/\([\d.]+\) SELECT \* FROM widgets WHERE name = 'Scott'/)
 
       command.execute_reader('Scott').close # Readers must be closed!
     end
@@ -36,7 +36,7 @@ describe DataObjects::Mysql::Command do
       command = @connection.create_command("INSERT INTO invoices (invoice_number) VALUES (?)")
       @mock_logger = mock('MockLogger', :level => 0)
       DataObjects::Mysql.should_receive(:logger).and_return(@mock_logger)
-      @mock_logger.should_receive(:debug).with("INSERT INTO invoices (invoice_number) VALUES (1234)")
+      @mock_logger.should_receive(:debug).with(/\([\d.]+\) INSERT INTO invoices \(invoice_number\) VALUES \(1234\)/)
       command.execute_non_query(1234)
     end
 

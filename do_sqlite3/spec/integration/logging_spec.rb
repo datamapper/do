@@ -21,7 +21,7 @@ describe DataObjects::Sqlite3::Command do
       command = @connection.create_command("SELECT * FROM users")
       @mock_logger = mock('MockLogger', :level => 0)
       DataObjects::Sqlite3.should_receive(:logger).and_return(@mock_logger)
-      @mock_logger.should_receive(:debug).with("SELECT * FROM users")
+      @mock_logger.should_receive(:debug).with(/\([\d.]+\) SELECT \* FROM users/)
       command.execute_reader
     end
 
@@ -39,7 +39,7 @@ describe DataObjects::Sqlite3::Command do
       command = @connection.create_command("INSERT INTO users (name) VALUES (?)")
       @mock_logger = mock('MockLogger', :level => 0)
       DataObjects::Sqlite3.should_receive(:logger).and_return(@mock_logger)
-      @mock_logger.should_receive(:debug).with("INSERT INTO users (name) VALUES ('Blah')")
+      @mock_logger.should_receive(:debug).with(/\([\d.]+\) INSERT INTO users \(name\) VALUES \('Blah'\)/)
       command.execute_non_query('Blah')
     end
 

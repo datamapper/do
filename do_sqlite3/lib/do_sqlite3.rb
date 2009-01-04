@@ -7,7 +7,6 @@ if RUBY_PLATFORM.match(/mingw|mswin/i)
 end
 
 require 'rubygems'
-gem 'data_objects'    
 require 'data_objects'
 if RUBY_PLATFORM =~ /java/
   require 'do_jdbc'

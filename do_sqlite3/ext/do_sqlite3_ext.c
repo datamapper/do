@@ -94,14 +94,33 @@ static int jd_from_date(int year, int month, int day) {
   return floor(365.25 * (year + 4716)) + floor(30.6001 * (month + 1)) + day + b - 1524;
 }
 
-static void data_objects_debug(VALUE string) {
+static void data_objects_debug(VALUE string, struct timeval* start) {
+  struct timeval stop;
+  char *message;
+
+  char *query = RSTRING_PTR(string);
+  int length  = RSTRING_LEN(string);
+  char total_time[32];
+  do_int64 duration = 0;
+
   VALUE logger = rb_funcall(mSqlite3, ID_LOGGER, 0);
   int log_level = NUM2INT(rb_funcall(logger, ID_LEVEL, 0));
 
   if (0 == log_level) {
-    rb_funcall(logger, ID_DEBUG, 1, string);
+    gettimeofday(&stop, NULL);
+
+    duration = (stop.tv_sec - start->tv_sec) * 1000000 + stop.tv_usec - start->tv_usec;
+    if(stop.tv_usec < start->tv_usec) {
+      duration += 1000000;
+    }
+
+    snprintf(total_time, 32, "%.6f", duration / 1000000.0);
+    message = (char *)calloc(length + strlen(total_time) + 4, sizeof(char));
+    snprintf(message, length + strlen(total_time) + 4, "(%s) %s", total_time, query);
+    rb_funcall(logger, ID_DEBUG, 1, rb_str_new(message, length + strlen(total_time) + 3));
   }
 }
+
 
 static VALUE parse_date(char *date) {
   int year, month, day;
@@ -366,18 +385,20 @@ static VALUE cCommand_execute_non_query(int argc, VALUE *argv, VALUE self) {
   int insert_id;
   VALUE conn_obj;
   VALUE query;
+  struct timeval start;
 
   query = build_query_from_args(self, argc, argv);
-  data_objects_debug(query);
 
   conn_obj = rb_iv_get(self, "@connection");
   Data_Get_Struct(rb_iv_get(conn_obj, "@connection"), sqlite3, db);
 
+  gettimeofday(&start, NULL);
   status = sqlite3_exec(db, StringValuePtr(query), 0, 0, &error_message);
 
   if ( status != SQLITE_OK ) {
     rb_raise(eSqlite3Error, "%s\nQuery: %s", sqlite3_errmsg(db), StringValuePtr(query));
   }
+  data_objects_debug(query, &start);
 
   affected_rows = sqlite3_changes(db);
   insert_id = sqlite3_last_insert_rowid(db);
@@ -395,15 +416,16 @@ static VALUE cCommand_execute_reader(int argc, VALUE *argv, VALUE self) {
   VALUE conn_obj;
   VALUE query;
   VALUE field_names, field_types;
+  struct timeval start;
 
   conn_obj = rb_iv_get(self, "@connection");
   Data_Get_Struct(rb_iv_get(conn_obj, "@connection"), sqlite3, db);
 
   query = build_query_from_args(self, argc, argv);
 
-  data_objects_debug(query);
-
+  gettimeofday(&start, NULL);
   status = sqlite3_prepare_v2(db, StringValuePtr(query), -1, &sqlite3_reader, 0);
+  data_objects_debug(query, &start);
 
   if ( status != SQLITE_OK ) {
     rb_raise(eSqlite3Error, "%s\nQuery: %s", sqlite3_errmsg(db), StringValuePtr(query));

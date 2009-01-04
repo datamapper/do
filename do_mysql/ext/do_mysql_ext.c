@@ -327,15 +327,32 @@ static VALUE typecast(const char* value, unsigned long length, char* type) {
   }
 }
 
-static void data_objects_debug(VALUE string) {
+static void data_objects_debug(VALUE string, struct timeval* start) {
+  struct timeval stop;
+  char *message;
+
+  char *query = RSTRING_PTR(string);
+  int length  = RSTRING_LEN(string);
+  char total_time[32];
+  do_int64 duration = 0;
+
   VALUE logger = rb_funcall(mDOMysql, ID_LOGGER, 0);
   int log_level = NUM2INT(rb_funcall(logger, ID_LEVEL, 0));
 
   if (0 == log_level) {
-    rb_funcall(logger, ID_DEBUG, 1, string);
+    gettimeofday(&stop, NULL);
+
+    duration = (stop.tv_sec - start->tv_sec) * 1000000 + stop.tv_usec - start->tv_usec;
+    if(stop.tv_usec < start->tv_usec) {
+      duration += 1000000;
+    }
+
+    snprintf(total_time, 32, "%.6f", duration / 1000000.0);
+    message = (char *)calloc(length + strlen(total_time) + 4, sizeof(char));
+    snprintf(message, length + strlen(total_time) + 4, "(%s) %s", total_time, query);
+    rb_funcall(logger, ID_DEBUG, 1, rb_str_new(message, length + strlen(total_time) + 3));
   }
 }
-
 static void raise_mysql_error(VALUE connection, MYSQL *db, int mysql_error_code, char* str) {
   char *mysql_error_message = (char *)mysql_error(db);
 
@@ -368,6 +385,7 @@ static MYSQL_RES* cCommand_execute_async(VALUE self, MYSQL* db, VALUE query) {
   int socket_fd;
   int retval;
   fd_set rset;
+  struct timeval start;
   char* str = RSTRING_PTR(query);
   int len   = RSTRING_LEN(query);
 
@@ -380,8 +398,9 @@ static MYSQL_RES* cCommand_execute_async(VALUE self, MYSQL* db, VALUE query) {
                              Specify your at least your MySQL version when filing a ticket");
   }
   retval = mysql_send_query(db, str, len);
-  data_objects_debug(query);
+
   CHECK_AND_RAISE(retval, str);
+  gettimeofday(&start, NULL);
 
   socket_fd = db->net.fd;
 
@@ -406,6 +425,8 @@ static MYSQL_RES* cCommand_execute_async(VALUE self, MYSQL* db, VALUE query) {
 
   retval = mysql_read_query_result(db);
   CHECK_AND_RAISE(retval, str);
+
+  data_objects_debug(query, &start);
 
   return mysql_store_result(db);
 }

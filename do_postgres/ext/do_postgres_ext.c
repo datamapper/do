@@ -71,12 +71,30 @@ static VALUE cReader;
 
 static VALUE ePostgresError;
 
-static void data_objects_debug(VALUE string) {
+static void data_objects_debug(VALUE string, struct timeval* start) {
+  struct timeval stop;
+  char *message;
+
+  char *query = RSTRING_PTR(string);
+  int length  = RSTRING_LEN(string);
+  char total_time[32];
+  do_int64 duration = 0;
+
   VALUE logger = rb_funcall(mPostgres, ID_LOGGER, 0);
   int log_level = NUM2INT(rb_funcall(logger, ID_LEVEL, 0));
 
   if (0 == log_level) {
-    rb_funcall(logger, ID_DEBUG, 1, string);
+    gettimeofday(&stop, NULL);
+
+    duration = (stop.tv_sec - start->tv_sec) * 1000000 + stop.tv_usec - start->tv_usec;
+    if(stop.tv_usec < start->tv_usec) {
+      duration += 1000000;
+    }
+
+    snprintf(total_time, 32, "%.6f", duration / 1000000.0);
+    message = (char *)calloc(length + strlen(total_time) + 4, sizeof(char));
+    snprintf(message, length + strlen(total_time) + 4, "(%s) %s", total_time, query);
+    rb_funcall(logger, ID_DEBUG, 1, rb_str_new(message, length + strlen(total_time) + 3));
   }
 }
 
@@ -376,13 +394,14 @@ static PGresult* cCommand_execute_async(PGconn *db, VALUE query) {
   int retval;
   fd_set rset;
   PGresult *response;
+  struct timeval start;
   char* str = StringValuePtr(query);
+
   while ((response = PQgetResult(db)) != NULL) {
     PQclear(response);
   }
 
   retval = PQsendQuery(db, str);
-  data_objects_debug(query);
 
   if (!retval) {
     if(PQstatus(db) != CONNECTION_OK) {
@@ -397,6 +416,7 @@ static PGresult* cCommand_execute_async(PGconn *db, VALUE query) {
     }
   }
 
+  gettimeofday(&start, NULL);
   socket_fd = PQsocket(db);
 
   for(;;) {
@@ -420,6 +440,7 @@ static PGresult* cCommand_execute_async(PGconn *db, VALUE query) {
       }
   }
 
+  data_objects_debug(query, &start);
   return PQgetResult(db);
 }
 
@@ -487,10 +508,9 @@ static VALUE cConnection_initialize(VALUE self, VALUE uri) {
   }
 
   if (search_path != NULL) {
-    search_path_query = (char *) malloc(256 * sizeof(char));
-    memset(search_path_query, 0, 256);
-    sprintf(search_path_query, "set search_path to %s;", search_path);
-    r_query = rb_str_new(search_path_query, strlen(search_path_query) + 1);
+    search_path_query = (char *)calloc(256, sizeof(char));
+    snprintf(search_path_query, 256, "set search_path to %s;", search_path);
+    r_query = rb_str_new2(search_path_query);
     result = cCommand_execute_async(db, r_query);
 
     if (PQresultStatus(result) != PGRES_COMMAND_OK) {
