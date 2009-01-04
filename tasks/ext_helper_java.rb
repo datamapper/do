@@ -6,8 +6,6 @@ def setup_extension_java(extension_name, gem_spec = nil)
   directory 'lib'
 
   unless File.directory?("ext/#{extension_name}")
-    desc 'Compile Extension for current Ruby (= compile:jruby)'
-    task :compile => [ 'compile:jruby' ] if JRUBY
 
     namespace :compile do
       desc "Compile Java Extension for JRuby"

@@ -39,9 +39,7 @@ HOE = Hoe.new(GEM_NAME, GEM_VERSION) do |p|
 end
 
 # Use of ext_helper to properly setup compile tasks and native gem generation
-if DRIVER
-  require Pathname(__FILE__).dirname.expand_path + 'ext_helper'
+if JAVA_DRIVER
   require Pathname(__FILE__).dirname.expand_path + 'ext_helper_java'
-  setup_extension       "#{GEM_NAME}_ext", HOE.spec
   setup_extension_java  "#{GEM_NAME}_ext", HOE.spec
 end

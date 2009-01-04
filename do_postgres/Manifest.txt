@@ -6,8 +6,8 @@ README.txt
 Rakefile
 TODO
 autobuild.rb
-ext/do_postgres_ext.c
-ext/extconf.rb
+ext/do_postgres_ext/do_postgres_ext.c
+ext/do_postgres_ext/extconf.rb
 lib/do_postgres.rb
 lib/do_postgres/transaction.rb
 lib/do_postgres/version.rb

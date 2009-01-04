@@ -20,7 +20,7 @@ PROJECT_NAME = "dorb"
 PROJECT_URL  = "http://rubyforge.org/projects/dorb"
 PROJECT_DESCRIPTION = PROJECT_SUMMARY = "The Core DataObjects class"
 
-DRIVER = false
+JAVA_DRIVER = false
 
 # RCov is run by default, except on the JRuby platform, or if NO_RCOV env is true
 RUN_RCOV = JRUBY ? false : (ENV.has_key?('NO_RCOV') ? ENV['NO_RCOV'] != 'true' : true)

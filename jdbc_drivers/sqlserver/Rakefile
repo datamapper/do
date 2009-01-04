@@ -20,7 +20,7 @@ PROJECT_NAME = "dorb"
 PROJECT_URL  = "http://rubyforge.org/projects/dorb"
 PROJECT_DESCRIPTION = PROJECT_SUMMARY = "JDBC Driver for Sql Server, packaged as a Gem"
 
-DRIVER = true
+JAVA_DRIVER = true
 
 if (tasks_dir = ROOT.parent.parent + 'tasks').directory?
   require tasks_dir + 'hoe'

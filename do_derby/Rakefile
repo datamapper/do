@@ -21,7 +21,7 @@ PROJECT_NAME = "dorb"
 PROJECT_URL  = "http://rubyforge.org/projects/dorb"
 PROJECT_DESCRIPTION = PROJECT_SUMMARY = "A DataObjects.rb driver for Derby"
 
-DRIVER = true
+JAVA_DRIVER = true
 
 if (tasks_dir = ROOT.parent + 'tasks').directory?
   require tasks_dir + 'hoe'
