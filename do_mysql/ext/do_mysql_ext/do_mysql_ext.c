@@ -522,7 +522,7 @@ static VALUE cConnection_initialize(VALUE self, VALUE uri) {
 
   // Disable sql_auto_is_null
   cCommand_execute_async(self, db, rb_str_new2("SET sql_auto_is_null = 0"));
-  cCommand_execute_async(self, db, rb_str_new2("SET SESSION sql_mode = 'ANSI,NO_AUTO_VALUE_ON_ZERO,NO_DIR_IN_CREATE,NO_ENGINE_SUBSTITUTION,NO_UNSIGNED_SUBTRACTION,ONLY_FULL_GROUP_BY,TRADITIONAL'"));
+  cCommand_execute_async(self, db, rb_str_new2("SET SESSION sql_mode = 'ANSI,NO_AUTO_VALUE_ON_ZERO,NO_DIR_IN_CREATE,NO_ENGINE_SUBSTITUTION,NO_UNSIGNED_SUBTRACTION,TRADITIONAL'"));
 
   rb_iv_set(self, "@uri", uri);
   rb_iv_set(self, "@connection", Data_Wrap_Struct(rb_cObject, 0, 0, db));
