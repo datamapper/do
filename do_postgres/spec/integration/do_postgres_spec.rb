@@ -178,6 +178,7 @@ describe "DataObjects::Postgres::Reader" do
     command = @connection.create_command("SELECT created_on FROM users WHERE created_on is not null LIMIT 1")
     reader = command.execute_reader
     reader.next!
+    # do_jdbc currently returning Time
     reader.values[0].should be_a_kind_of(Date)
   end
 

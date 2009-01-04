@@ -21,18 +21,21 @@ describe DataObjects::Mysql::Command, "Quoting" do
   end
 
   it "should quote DateTime instances properly" do
+    pending "DO under JRuby does not handle quoting "if JRUBY
     command = @connection.create_command("SELECT * FROM widgets WHERE release_datetime >= ?")
     dt = DateTime.now
     command.quote_datetime(dt).should == "'#{dt.strftime('%Y-%m-%d %H:%M:%S')}'"
   end
 
   it "should quote Time instances properly" do
+    pending "DO under JRuby does not handle quoting "if JRUBY
     command = @connection.create_command("SELECT * FROM widgets WHERE release_timestamp >= ?")
     dt = Time.now
     command.quote_time(dt).should == "'#{dt.strftime('%Y-%m-%d %H:%M:%S')}'"
   end
 
   it "should quote Date instances properly" do
+    pending "DO under JRuby does not handle quoting "if JRUBY
     command = @connection.create_command("SELECT * FROM widgets WHERE release_date >= ?")
     dt = Date.today
     command.quote_date(dt).should == "'#{dt.strftime('%Y-%m-%d')}'"

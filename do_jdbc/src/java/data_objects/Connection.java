@@ -151,7 +151,7 @@ public class Connection extends RubyObject {
 
         } catch (SQLException ex) {
             //Logger.getLogger(Connection.class.getName()).log(Level.SEVERE, null, ex);
-            throw runtime.newRuntimeError("Can't connect: " + connectionUri.toString() + "\n\t" + ex.getLocalizedMessage());
+            throw DataObjectsUtils.newDriverError(runtime, errorName, "Can't connect: " + connectionUri.toString() + "\n\t" +  ex.getLocalizedMessage());
         }
 
         IRubyObject rubyconn1 = wrappedConnection(recv, conn);
