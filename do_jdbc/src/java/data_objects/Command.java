@@ -1,6 +1,7 @@
 package data_objects;
 
 import data_objects.drivers.DriverDefinition;
+import java.math.BigDecimal;
 import java.sql.CallableStatement;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -334,6 +335,8 @@ public class Command extends RubyObject {
                     statement.setInt(index++, Integer.parseInt(arg.toString()));
                 } else if (arg.getType().toString().equals("NilClass")) {
                     statement.setNull(index++, Types.NULL);
+                } else if (arg.getMetaClass().toString().equals(RubyType.BIG_DECIMAL)) {
+                    statement.setBigDecimal(index++, BigDecimal.valueOf(RubyNumeric.fix2long(arg)));
                 } else {
                     System.out.println(arg.getType());
                     statement.setString(index++, arg.toString());
