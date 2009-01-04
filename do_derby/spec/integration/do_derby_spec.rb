@@ -148,15 +148,26 @@ describe "DataObjects::Derby::Reader" do
   it "should fetch the proper number of rows" do
     ids = [
       insert("INSERT INTO users (name) VALUES ('Slappy Wilson')"),
-      insert("INSERT INTO users (name) VALUES ('Jumpy Jones')")
+      insert("INSERT INTO users (name) VALUES ('Jumpy Jones')"),
+      insert("INSERT INTO users (name) VALUES ('John Jackson')")
     ]
                                             # do_jdbc rewrites "?" as "(?,?)"
                                             # to correspond to the JDBC API
     select("SELECT * FROM users WHERE id IN ?", nil, ids) do |reader|
       # select already calls next once for us
+      reader.next!
       reader.next!.should == true
       reader.next!.should be_nil
     end
+  end
+
+  it "should contain tainted strings" do
+    id = insert("INSERT INTO users (name) VALUES ('Cuppy Canes')")
+
+    select("SELECT name FROM users WHERE id = ?", nil, id) do |reader|
+      reader.values.first.should be_tainted
+    end
+
   end
 
   it "should return DB nulls as nil" do
@@ -171,6 +182,103 @@ describe "DataObjects::Derby::Reader" do
     select("SELECT name FROM users WHERE id = ?", [String], id) do |reader|
       reader.values.first.should == ''
     end
+  end
+
+  describe "Date, Time, and DateTime" do
+
+    it "should return nil when the time is 0" do
+      pending "work out string representation of 0 time"
+      id = insert("INSERT INTO users (name, fired_at) VALUES ('James', '1980-10-25-13.01.23.123456')")
+      select("SELECT fired_at FROM users WHERE id = ?", [Time], id) do |reader|
+        reader.values.last.should be_nil
+      end
+      exec("DELETE FROM users WHERE id = ?", id)
+    end
+
+    it "should return DateTimes using the current locale's Time Zone" do
+      date = DateTime.now
+      id = insert("INSERT INTO users (name, fired_at) VALUES (?, ?)", 'Sam', date)
+      select("SELECT fired_at FROM users WHERE id = ?", [DateTime], id) do |reader|
+        reader.values.last.to_s.should == date.to_s
+      end
+      exec("DELETE FROM users WHERE id = ?", id)
+    end
+
+    now = DateTime.now
+
+    dates = [
+      now.new_offset( (-11 * 3600).to_r / 86400), # GMT -11:00
+      now.new_offset( (-9 * 3600 + 10 * 60).to_r / 86400), # GMT -9:10, contrived
+      now.new_offset( (-8 * 3600).to_r / 86400), # GMT -08:00
+      now.new_offset( (+3 * 3600).to_r / 86400), # GMT +03:00
+      now.new_offset( (+5 * 3600 + 30 * 60).to_r / 86400)  # GMT +05:30 (New Delhi)
+    ]
+
+    dates.each do |date|
+      it "should return #{date.to_s} offset to the current locale's Time Zone if they were inserted using a different timezone" do
+        pending "We don't support non-local date input yet"
+
+        dates.each do |date|
+          id = insert("INSERT INTO users (name, fired_at) VALUES (?, ?)", 'Sam', date)
+
+          select("SELECT fired_at FROM users WHERE id = ?", [DateTime], id) do |reader|
+            reader.values.last.to_s.should == now.to_s
+          end
+
+          exec("DELETE FROM users WHERE id = ?", id)
+        end
+      end
+    end
+
+  end
+
+
+  describe "executing a non-query" do
+    it "should return a Result" do
+      command = @connection.create_command("INSERT INTO invoices (invoice_number) VALUES ('1234')")
+      result = command.execute_non_query
+      result.should be_kind_of(DataObjects::Derby::Result)
+    end
+
+    it "should be able to determine the affected_rows" do
+      command = @connection.create_command("INSERT INTO invoices (invoice_number) VALUES ('1234')")
+      result = command.execute_non_query
+      result.to_i.should == 1
+    end
+
+    it "should yield the last inserted id" do
+      pending "Deleting table data does not reset auto-increment column to 1"
+      connection.create_command("DELETE FROM invoices").execute_non_query
+
+      result = @connection.create_command("INSERT INTO invoices (invoice_number) VALUES ('1234')").execute_non_query
+      result.insert_id.should == 1
+
+      result = @connection.create_command("INSERT INTO invoices (invoice_number) VALUES ('3456')").execute_non_query
+      result.insert_id.should == 2
+    end
+
+    it "should be able to determine the affected_rows" do
+      [
+        "DELETE FROM invoices",
+        "INSERT INTO invoices (invoice_number) VALUES ('1234')",
+        "INSERT INTO invoices (invoice_number) VALUES ('1234')"
+      ].each { |q| @connection.create_command(q).execute_non_query }
+
+      result = @connection.create_command("UPDATE invoices SET invoice_number = '3456'").execute_non_query
+      result.to_i.should == 2
+    end
+
+    it "should raise an error when executing an invalid query" do
+      command = @connection.create_command("UPDwhoopsATE invoices SET invoice_number = '3456'")
+
+      lambda { command.execute_non_query }.should raise_error(Exception)
+    end
+
+    #it "should raise an error when inserting the wrong typed data" do
+    #   command = @connection.create_command("UPDATE invoices SET invoice_number = ?")
+    #   command.execute_non_query(1)
+    #end
+
   end
 
 end
