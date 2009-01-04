@@ -140,7 +140,7 @@ public final class DataObjectsUtils {
     public static IRubyObject parse_time(Ruby runtime, Time tm) {
         RubyTime time = RubyTime.newTime(runtime, tm.getTime());
         time.extend(new IRubyObject[] {runtime.getModule("TimeFormatter")});
-        return time;
+        return (time.getUSec() != 0) ? time : runtime.getNil();
     }
 
     // private constructor
