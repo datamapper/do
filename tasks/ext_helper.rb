@@ -14,36 +14,36 @@ def setup_extension(extension_name, gem_spec = nil)
   directory 'lib'
 
   # verify if the extension is in a folder
-  unless File.directory?("ext/#{extension_name}")
+  ext_dir = File.join('ext', extension_name)
+  unless File.directory?(ext_dir)
     # the extension is in the root of ext.
+    ext_dir = 'ext'
+  end
 
-    # getting this file is part of the compile task
-    desc "Compile Extension for current Ruby (= compile:mri)"
-    task :compile => [ 'compile:mri' ] unless JRUBY
+  # getting this file is part of the compile task
+  desc "Compile Extension for current Ruby (= compile:mri)"
+  task :compile => [ 'compile:mri' ] unless JRUBY
 
-    namespace :compile do
-      desc 'Compile C Extension for Ruby 1.8 (MRI)'
-      task :mri => [:clean, "rake:compile:lib/#{ext_name}"]
+  namespace :compile do
+    desc 'Compile C Extension for Ruby 1.8 (MRI)'
+    task :mri => [:clean, "rake:compile:lib/#{ext_name}"]
 
-      task "ext/#{ext_name}" => FileList["ext/Makefile", "ext/*.c", "ext/*.h"] do
-        # Visual C make utility is named 'nmake', MinGW conforms GCC 'make' standard.
-        make_cmd = RUBY_PLATFORM =~ /mswin/ ? 'nmake' : 'make'
-        Dir.chdir('ext') do
-          sh make_cmd
-        end
-      end
-
-      file "ext/Makefile" => "ext/extconf.rb" do
-        Dir.chdir('ext') do
-          ruby 'extconf.rb'
-        end
-      end
-      task "lib/#{ext_name}" => ['lib', "ext/#{ext_name}"] do
-        cp "ext/#{ext_name}", "lib/#{ext_name}"
+    task "#{ext_dir}/#{ext_name}" => FileList["#{ext_dir}/Makefile", "#{ext_dir}/*.c", "#{ext_dir}/*.h"] do
+      # Visual C make utility is named 'nmake', MinGW conforms GCC 'make' standard.
+      make_cmd = RUBY_PLATFORM =~ /mswin/ ? 'nmake' : 'make'
+      Dir.chdir(ext_dir) do
+        sh make_cmd
       end
     end
-  else
-    raise "Pending: Multiple extensions not implemented yet."
+
+    file "#{ext_dir}/Makefile" => "#{ext_dir}/extconf.rb" do
+      Dir.chdir(ext_dir) do
+        ruby 'extconf.rb'
+      end
+    end
+    task "lib/#{ext_name}" => ['lib', "#{ext_dir}/#{ext_name}"] do
+      cp "#{ext_dir}/#{ext_name}", "lib/#{ext_name}"
+    end
   end
 
   unless Rake::Task.task_defined?('native')
