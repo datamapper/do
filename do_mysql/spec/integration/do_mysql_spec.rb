@@ -213,7 +213,6 @@ describe DataObjects::Mysql::Reader do
   describe "Date, Time, and DateTime" do
 
     it "should return nil when the time is 0" do
-      pending "blows up in JRuby" if JRUBY
 
       # skip the test if the strict dates/times setting is turned on
       strict_time = select("SHOW VARIABLES LIKE 'sql_mode'") do |reader|
