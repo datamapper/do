@@ -150,7 +150,8 @@ describe "DataObjects::Derby::Reader" do
       insert("INSERT INTO users (name) VALUES ('Slappy Wilson')"),
       insert("INSERT INTO users (name) VALUES ('Jumpy Jones')")
     ]
-
+                                            # do_jdbc rewrites "?" as "(?,?)"
+                                            # to correspond to the JDBC API
     select("SELECT * FROM users WHERE id IN ?", nil, ids) do |reader|
       # select already calls next once for us
       reader.next!.should == true

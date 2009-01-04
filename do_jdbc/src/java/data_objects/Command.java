@@ -9,6 +9,8 @@ import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Types;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.jruby.Ruby;
 import org.jruby.RubyArray;
 import org.jruby.RubyClass;
@@ -16,6 +18,7 @@ import org.jruby.RubyModule;
 import org.jruby.RubyNumeric;
 import org.jruby.RubyObject;
 import org.jruby.RubyObjectAdapter;
+import org.jruby.RubyRange;
 import org.jruby.RubyString;
 import org.jruby.anno.JRubyClass;
 import org.jruby.anno.JRubyMethod;
@@ -89,7 +92,7 @@ public class Command extends RubyObject {
         int affectedCount = 0;
         PreparedStatement sqlStatement = null;
         java.sql.ResultSet keys = null;
-        String sqlText = api.getInstanceVariable(recv, "@text").asJavaString();
+        String sqlText = prepareSqlTextForPs(api.getInstanceVariable(recv, "@text").asJavaString(), recv, args);
         boolean supportsGeneratedKeys = driver.supportsJdbcGeneratedKeys();
 
         try {
@@ -194,7 +197,8 @@ public class Command extends RubyObject {
 
         // execute the query
         try {
-            sqlStatement = conn.prepareStatement(api.getInstanceVariable(recv, "@text").asJavaString());
+            String sqlText = prepareSqlTextForPs(api.getInstanceVariable(recv, "@text").asJavaString(), recv, args);
+            sqlStatement = conn.prepareStatement(sqlText);
             //sqlStatement.setMaxRows();
             prepareStatementFromArgs(sqlStatement, recv, args);
 
@@ -310,7 +314,7 @@ public class Command extends RubyObject {
         try {
             if (rs.next()) {
                 if (rs.getMetaData().getColumnCount() > 0) {
-                    // Need to do check for other types here, as keys could be
+                    // TODO: Need to do check for other types here, as keys could be
                     // of type Integer, Long or String
                     return runtime.newFixnum(rs.getLong(1));
                 }
@@ -324,31 +328,121 @@ public class Command extends RubyObject {
     }
 
     /**
+     * Assist with the formatting of SQL Text Strings for PreparedStatements.
      *
+     * In many cases, DO SQL Text syntax matches exactly with the syntax for
+     * JDBC PreparedStatement SQL Text. However, there are differences when
+     * RubyArrays and RubyRanges are passed as parameters. DO handles these
+     * parameters with a single "?", whereas for JDBC these will need to be
+     * converted appropriately to "(?,?)" or "(? AND ?)".
+     *
+     * This method appropriately converts the question mark syntax from
+     * DataObjects-style to JDBC PreparedStatement-style.
+     *
+     * @param doSqlText
      * @param recv
      * @param args
-     * @return the query as a java.lang.String
+     * @return a SQL Text java.lang.String formatted for preparing a PreparedStatement
      */
-    private static void prepareStatementFromArgs(PreparedStatement statement, IRubyObject recv, IRubyObject[] args) {
+    private static String prepareSqlTextForPs(String doSqlText, IRubyObject recv, IRubyObject[] args) {
+
+        if (args.length == 0) return doSqlText;
+
+        String psSqlText = doSqlText;
+
+        for (int i = 0; i < args.length; i++) {
+            if (args[i] instanceof RubyArray) {
+                // replace "?" with "(?,?)"
+
+                // calculate replacement string, depending on the length of the
+                // RubyArray - i.e. should it be "(?)" or "(?,?,?)
+                StringBuffer replaceSb = new StringBuffer("(");
+                int arrayLength = args[i].convertToArray().getLength();
+                for (int j = 0; j < arrayLength; j++) {
+                    replaceSb.append("?");
+                    if (j < arrayLength - 1) replaceSb.append(",");
+                }
+                replaceSb.append(")");
+
+                Pattern pp = Pattern.compile("\\?");
+                Matcher pm = pp.matcher(doSqlText);
+                StringBuffer sb = new StringBuffer();
+
+                int count = 0;
+                while (pm.find()) {
+                    if (count == i) pm.appendReplacement(sb, replaceSb.toString());
+                }
+                pm.appendTail(sb);
+                psSqlText = sb.toString();
+
+            } else if (args[i] instanceof RubyRange) {
+                // replace "?" with "(?,?)"
+
+                Pattern pp = Pattern.compile("\\?");
+                Matcher pm = pp.matcher(doSqlText);
+                StringBuffer sb = new StringBuffer();
+
+                int count = 0;
+                while (pm.find()) {
+                    if (count == i) pm.appendReplacement(sb, "(? AND ?)");
+                }
+                pm.appendTail(sb);
+                psSqlText = sb.toString();
+
+            } else {
+                // do nothing
+            }
+        }
+
+        return psSqlText;
+    }
+
+    /**
+     * Assist with setting the parameter values on a PreparedStatement
+     *
+     * @param ps the PreparedStatement for which parameters should be set
+     * @param recv
+     * @param args an array of parameter values
+     */
+    private static void prepareStatementFromArgs(PreparedStatement ps, IRubyObject recv, IRubyObject[] args) {
         int index = 1;
         try {
             for (IRubyObject arg : args) {
-                if (arg.getType().equals(RubyType.FIXNUM) || arg.getType().toString().equals(RubyType.FIXNUM.toString())) {
-                    statement.setInt(index++, Integer.parseInt(arg.toString()));
-                } else if (arg.getType().toString().equals("NilClass")) {
-                    statement.setNull(index++, Types.NULL);
-                } else if (arg.getType().toString().equals("Array")) {
-                    //statement.setArray(index++, arg);
-                } else if (arg.getType().toString().equals("Date")) {
-                    statement.setDate(index++, java.sql.Date.valueOf(arg.toString()));
-                } else if (arg.getType().toString().equals("Time")) {
-                    statement.setTime(index++, java.sql.Time.valueOf(arg.toString()));
-                } else if (arg.getType().toString().equals("DateTime")) {
-                    statement.setTimestamp(index++, java.sql.Timestamp.valueOf(arg.toString().replace('T', ' ').replaceFirst("[-+]..:..$", "")));
-                } else if (arg.getMetaClass().toString().equals(RubyType.BIG_DECIMAL)) {
-                    statement.setBigDecimal(index++, BigDecimal.valueOf(RubyNumeric.fix2long(arg)));
+
+                // Handle multiple valued arguments, i.e. arrays + ranges
+
+                if (arg instanceof RubyArray) {
+                    // Handle a RubyArray passed into a query
+                    //
+                    // NOTE: This should not call ps.setArray(i,v) as this is
+                    // designed to work with the SQL Array type, and in most cases
+                    // is not what we want.
+                    // Instead, this functionality is for breaking down a Ruby
+                    // array of ["a","b","c"] into SQL "('a','b','c')":
+                    //
+                    // So, in this case, we actually want to augment the number of
+                    // ? params in the PreparedStatement query appropriately.
+
+                    RubyArray array_value = arg.convertToArray();
+
+                    for (int j = 0; j < array_value.getLength(); j++) {
+                        setPreparedStatementParam(ps, recv, array_value.eltInternal(j), index++);
+                    }
+
+                } else if (arg instanceof RubyRange) {
+                    // Handle a RubyRange passed into a query
+                    //
+                    // NOTE: see above - need to augment the number of ? params
+                    // in the PreparedStatement: (? AND ?)
+
+                    RubyRange range_value = (RubyRange) arg;
+
+                    setPreparedStatementParam(ps, recv, range_value.first(), index++);
+                    setPreparedStatementParam(ps, recv, range_value.last(), index++);
+
                 } else {
-                    statement.setString(index++, arg.toString());
+                    // Otherwise, handle each argument
+                    setPreparedStatementParam(ps, recv, arg, index++);
                 }
             }
         } catch (SQLException sqle) {
@@ -356,7 +450,35 @@ public class Command extends RubyObject {
             //throw DataObjectsUtils.newDriverError(runtime, errorName, sqle.getLocalizedMessage());
             sqle.printStackTrace();
         }
-        debug(recv.getRuntime(), statement.toString());
+        debug(recv.getRuntime(), ps.toString());
+    }
+
+    /**
+     * 
+     * @param ps the PreparedStatement for which the parameter should be set
+     * @param recv
+     * @param arg a parameter value
+     * @param idx the index of the parameter
+     * @throws java.sql.SQLException
+     */
+    private static void setPreparedStatementParam(PreparedStatement ps, IRubyObject recv, IRubyObject arg, int idx)
+            throws SQLException {
+
+        if (arg.getType().equals(RubyType.FIXNUM) || arg.getType().toString().equals(RubyType.FIXNUM.toString())) {
+            ps.setInt(idx, Integer.parseInt(arg.toString()));
+        } else if (arg.getType().toString().equals("NilClass")) {
+            ps.setNull(idx, Types.NULL);
+        } else if (arg.getType().toString().equals("Date")) {
+            ps.setDate(idx, java.sql.Date.valueOf(arg.toString()));
+        } else if (arg.getType().toString().equals("Time")) {
+            ps.setTime(idx, java.sql.Time.valueOf(arg.toString()));
+        } else if (arg.getType().toString().equals("DateTime")) {
+            ps.setTimestamp(idx, java.sql.Timestamp.valueOf(arg.toString().replace('T', ' ').replaceFirst("[-+]..:..$", "")));
+        } else if (arg.getMetaClass().toString().equals(RubyType.BIG_DECIMAL)) {
+            ps.setBigDecimal(idx, BigDecimal.valueOf(RubyNumeric.fix2long(arg)));
+        } else {
+            ps.setString(idx, arg.toString());
+        }
     }
 
     /**
@@ -371,7 +493,7 @@ public class Command extends RubyObject {
         int level = RubyNumeric.fix2int(api.callMethod(logger, "level"));
 
         if (level == 0) {
-            // replaceFirst is mysql specific !!
+            // FIXME: replaceFirst is mysql specific !!
             api.callMethod(logger, "debug", runtime.newString(logMessage.replaceFirst(".*].-\\s*", "")));
         }
     }
