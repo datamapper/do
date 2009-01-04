@@ -8,9 +8,15 @@ import java.sql.Types;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+
+import org.joda.time.DateTime;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
+
 import org.jruby.Ruby;
 import org.jruby.RubyClass;
 import org.jruby.RubyTime;
+import org.jruby.anno.JRubyMethod;
 import org.jruby.exceptions.RaiseException;
 import org.jruby.runtime.builtin.IRubyObject;
 
@@ -120,20 +126,24 @@ public final class DataObjectsUtils {
     }
 
     public static IRubyObject parse_date(Ruby runtime, Date dt) {
-        return RubyTime.newTime(runtime, 10000000000L);
+        RubyTime time = RubyTime.newTime(runtime, dt.getTime());
+        time.extend(new IRubyObject[] {runtime.getModule("DateFormatter")});
+        return time;
     }
 
     public static IRubyObject parse_date_time(Ruby runtime, Timestamp ts) {
-        return RubyTime.newTime(runtime, 10000000000L);
+        RubyTime time = RubyTime.newTime(runtime, ts.getTime());
+        time.extend(new IRubyObject[] {runtime.getModule("DatetimeFormatter")});
+        return time;
     }
 
     public static IRubyObject parse_time(Ruby runtime, Time tm) {
-        //java.util.Calendar.getInstance().
-        return RubyTime.newTime(runtime, 10000000000L);
+        RubyTime time = RubyTime.newTime(runtime, tm.getTime());
+        time.extend(new IRubyObject[] {runtime.getModule("TimeFormatter")});
+        return time;
     }
 
     // private constructor
     private DataObjectsUtils() {
     }
-
 }

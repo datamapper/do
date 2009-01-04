@@ -32,6 +32,7 @@ import static data_objects.DataObjects.DATA_OBJECTS_MODULE_NAME;
  * Command Class
  *
  * @author alexbcoles
+ * @author mkristian
  */
 @JRubyClass(name = "Command")
 public class Command extends RubyObject {
@@ -43,21 +44,22 @@ public class Command extends RubyObject {
     private static String errorName;
 
     private final static ObjectAllocator COMMAND_ALLOCATOR = new ObjectAllocator() {
-        public IRubyObject allocate(Ruby runtime, RubyClass klass) {
-            Command instance = new Command(runtime, klass);
-            return instance;
-        }
-    };
+            public IRubyObject allocate(Ruby runtime, RubyClass klass) {
+                Command instance = new Command(runtime, klass);
+                return instance;
+            }
+        };
 
     public static RubyClass createCommandClass(final Ruby runtime,
-            final String moduleName, final String errorName,
-            final DriverDefinition driverDefinition) {
+                                               final String moduleName,
+                                               final String errorName,
+                                               final DriverDefinition driverDefinition) {
         RubyModule doModule = runtime.getModule(DATA_OBJECTS_MODULE_NAME);
         RubyModule quotingModule = (RubyModule) doModule.getConstant("Quoting");
         RubyClass superClass = doModule.getClass(RUBY_CLASS_NAME);
         RubyModule driverModule = (RubyModule) doModule.getConstant(moduleName);
         RubyClass commandClass = runtime.defineClassUnder("Command",
-                superClass, COMMAND_ALLOCATOR, driverModule);
+                                                          superClass, COMMAND_ALLOCATOR, driverModule);
         Command.api = JavaEmbedUtils.newObjectAdapter();
         Command.driver = driverDefinition;
         Command.moduleName = moduleName;
@@ -92,7 +94,7 @@ public class Command extends RubyObject {
 
         try {
             sqlStatement =
-                    conn.prepareStatement(sqlText,
+                conn.prepareStatement(sqlText,
                     supportsGeneratedKeys ? Statement.RETURN_GENERATED_KEYS : Statement.NO_GENERATED_KEYS);
 
             prepareStatementFromArgs(sqlStatement, recv, args);
@@ -166,8 +168,8 @@ public class Command extends RubyObject {
         IRubyObject affected_rows = runtime.newFixnum(affectedCount);
 
         IRubyObject result = api.callMethod(resultClass, "new", new IRubyObject[] {
-            recv, affected_rows, insert_key
-        });
+                recv, affected_rows, insert_key
+            });
         return result;
     }
 
@@ -188,7 +190,7 @@ public class Command extends RubyObject {
 
         // instantiate a new reader
         IRubyObject reader = readerClass.newInstance(runtime.getCurrentContext(),
-                new IRubyObject[] { }, Block.NULL_BLOCK);
+                                                     new IRubyObject[] { }, Block.NULL_BLOCK);
 
         // execute the query
         try {
@@ -236,9 +238,9 @@ public class Command extends RubyObject {
                     // and raise an error.
                     api.callMethod(reader, "close");
                     throw DataObjectsUtils.newDriverError(runtime, errorName,
-                            String.format("Field-count mismatch. Expected %1$d fields, but the query yielded %2$d",
-                            fieldTypesCount,
-                            columnCount));
+                                                          String.format("Field-count mismatch. Expected %1$d fields, but the query yielded %2$d",
+                                                                        fieldTypesCount,
+                                                                        columnCount));
                 }
             }
 
@@ -331,14 +333,21 @@ public class Command extends RubyObject {
         int index = 1;
         try {
             for (IRubyObject arg : args) {
-                if (arg.getType().equals(RubyType.FIXNUM)) {
+                if (arg.getType().equals(RubyType.FIXNUM) || arg.getType().toString().equals(RubyType.FIXNUM.toString())) {
                     statement.setInt(index++, Integer.parseInt(arg.toString()));
                 } else if (arg.getType().toString().equals("NilClass")) {
                     statement.setNull(index++, Types.NULL);
+                } else if (arg.getType().toString().equals("Array")) {
+                    //statement.setArray(index++, arg);
+                } else if (arg.getType().toString().equals("Date")) {
+                    statement.setDate(index++, java.sql.Date.valueOf(arg.toString()));
+                } else if (arg.getType().toString().equals("Time")) {
+                    statement.setTime(index++, java.sql.Time.valueOf(arg.toString()));
+                } else if (arg.getType().toString().equals("DateTime")) {
+                    statement.setTimestamp(index++, java.sql.Timestamp.valueOf(arg.toString().replace('T', ' ').replaceFirst("[-+]..:..$", "")));
                 } else if (arg.getMetaClass().toString().equals(RubyType.BIG_DECIMAL)) {
                     statement.setBigDecimal(index++, BigDecimal.valueOf(RubyNumeric.fix2long(arg)));
                 } else {
-                    System.out.println(arg.getType());
                     statement.setString(index++, arg.toString());
                 }
             }
@@ -362,7 +371,8 @@ public class Command extends RubyObject {
         int level = RubyNumeric.fix2int(api.callMethod(logger, "level"));
 
         if (level == 0) {
-            api.callMethod(logger, "debug", runtime.newString(logMessage));
+            // replaceFirst is mysql specific !!
+            api.callMethod(logger, "debug", runtime.newString(logMessage.replaceFirst(".*].-\\s*", "")));
         }
     }
 
