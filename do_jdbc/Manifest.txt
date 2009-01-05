@@ -9,6 +9,9 @@ Rakefile
 TODO
 build.xml
 lib/do_jdbc.rb
+lib/do_jdbc/date_formatter.rb
+lib/do_jdbc/datetime_formatter.rb
+lib/do_jdbc/time_formatter.rb
 lib/do_jdbc/version.rb
 lib/do_jdbc_internal.jar
 src/java/AbstractDataObjectsExtService.java

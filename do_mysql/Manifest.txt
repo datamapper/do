@@ -14,6 +14,7 @@ ext/do_mysql_ext/extconf.rb
 lib/do_mysql.rb
 lib/do_mysql/transaction.rb
 lib/do_mysql/version.rb
+lib/do_mysql_ext.jar
 spec/integration/do_mysql_spec.rb
 spec/integration/logging_spec.rb
 spec/integration/quoting_spec.rb

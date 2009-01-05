@@ -23,13 +23,13 @@ end
 # TODO: remove duplicates from here that are already listed in .gitignore
 clean = %w(o bundle log a gem dSYM obj pdb lib def exp DS_Store)
 
-if WINDOWS
-  GEM_EXTRAS = { :has_rdoc => false }
+GEM_EXTRAS = if (WINDOWS || JRUBY)
+  { :has_rdoc => false }
 else
-  GEM_EXTRAS = { :extensions => 'ext/do_sqlite3_ext/extconf.rb', :has_rdoc => false }
+  { :extensions => 'ext/do_sqlite3_ext/extconf.rb', :has_rdoc => false }
 end
 
-GEM_CLEAN = ["**/*.{#{clean.join(",")}}", 'ext/Makefile']
+GEM_CLEAN = ['**/test.db',"**/*.{#{clean.join(",")}}", 'ext/Makefile', 'ext-java/target']
 
 PROJECT_NAME = "dorb"
 PROJECT_URL  = "http://rubyforge.org/projects/dorb"

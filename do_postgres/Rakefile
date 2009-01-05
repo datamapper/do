@@ -18,8 +18,13 @@ GEM_DEPENDENCIES = if JRUBY
 else
   [["data_objects", GEM_VERSION]]
 end
-GEM_CLEAN = ['**/*.{o,so,bundle,log,a,gem,dSYM,obj,pdb,lib,def,exp,DS_Store}', 'ext/Makefile']
-GEM_EXTRAS = { :has_rdoc => false, :extensions => 'ext/do_postgres_ext/extconf.rb' }
+GEM_CLEAN = ['**/*.{o,so,bundle,log,a,gem,dSYM,obj,pdb,lib,def,exp,DS_Store}',
+  'ext/Makefile', 'ext-java/target']
+GEM_EXTRAS = if JRUBY
+  { :has_rdoc => false }
+else
+  { :has_rdoc => false, :extensions => 'ext/do_postgres_ext/extconf.rb' }
+end
 
 PROJECT_NAME = "dorb"
 PROJECT_URL  = "http://rubyforge.org/projects/dorb"
