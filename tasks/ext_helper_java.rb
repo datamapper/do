@@ -1,9 +1,12 @@
 #
 # A version of setup_extension for building Java extensions
 #
-def setup_extension_java(extension_name, gem_spec = nil)
+def setup_extension_java(extension_name, gem_spec = nil, opts = {})
   ext_name = "#{extension_name}.jar"
   directory 'lib'
+  opts = { 
+    :source_dir => 'ext-java/src/main/java'
+    }.merge!(opts)
 
   desc 'Compile Extension for current Ruby (= compile:jruby)'
   task :compile => [ 'compile:jruby' ] if JRUBY
@@ -17,7 +20,6 @@ def setup_extension_java(extension_name, gem_spec = nil)
 
       if extension_name == 'do_jdbc_internal'
         classpath_arg = java_classpath_arg
-        source_dir = 'src/java'
       else
         unless File.exists?('../do_jdbc/lib/do_jdbc_internal.jar')
           # Check for the presence of do_jdbc_internal.jar in the do_jdbc project
@@ -32,10 +34,9 @@ def setup_extension_java(extension_name, gem_spec = nil)
         end
 
         classpath_arg = java_classpath_arg '../do_jdbc/lib/do_jdbc_internal.jar'
-        source_dir = 'ext-java/src/main/java'
       end
 
-      sh "javac -target 1.5 -source 1.5 -Xlint:unchecked -d pkg/classes #{classpath_arg} #{FileList["#{source_dir}/**/*.java"].join(' ')}"
+      sh "javac -target 1.5 -source 1.5 -Xlint:unchecked -d pkg/classes #{classpath_arg} #{FileList["#{opts[:source_dir]}/**/*.java"].join(' ')}"
       sh "jar cf lib/#{ext_name} -C #{pkg_classes} ."
     end
 
