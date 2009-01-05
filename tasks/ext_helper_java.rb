@@ -4,7 +4,7 @@
 def setup_extension_java(extension_name, gem_spec = nil, opts = {})
   ext_name = "#{extension_name}.jar"
   directory 'lib'
-  opts = { 
+  opts = {
     :source_dir => 'ext-java/src/main/java'
     }.merge!(opts)
 
