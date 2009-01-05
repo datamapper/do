@@ -7,7 +7,7 @@ if RUBY_PLATFORM =~ /java/
   require 'jdbc/mysql' # the JDBC driver, packaged as a gem
 end
 
-require File.expand_path(File.join(File.dirname(__FILE__), 'do_mysql_ext'))
+require 'do_mysql_ext'
 require File.expand_path(File.join(File.dirname(__FILE__), 'do_mysql', 'version'))
 require File.expand_path(File.join(File.dirname(__FILE__), 'do_mysql', 'transaction'))
 
