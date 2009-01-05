@@ -1,7 +1,7 @@
 #
-# A version of setup_extension for building Java extensions
+# setup_java_extension create relevant tasks for building Java extensions
 #
-def setup_extension_java(extension_name, gem_spec = nil, opts = {})
+def setup_java_extension(extension_name, gem_spec = nil, opts = {})
   ext_name = "#{extension_name}.jar"
   directory 'lib'
   opts = {

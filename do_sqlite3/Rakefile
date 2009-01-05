@@ -43,7 +43,7 @@ if (tasks_dir = ROOT.parent + 'tasks').directory?
   require tasks_dir + 'hoe'
   require tasks_dir + 'ext_helper_java'
 
-  setup_extension_java  "#{GEM_NAME}_ext", HOE.spec
+  setup_java_extension  "#{GEM_NAME}_ext", HOE.spec
 
   # use .gitignore to identify files to clean up
   File.read(ROOT.parent + '.gitignore').split(/\s+/).each do |pattern|
@@ -188,6 +188,6 @@ rescue LoadError
   warn "To cross-compile, install rake-compiler (gem install rake-compiler)"
   if tasks_dir.directory?
     require tasks_dir + 'ext_helper'
-    setup_extension('do_sqlite3_ext', HOE.spec)
+    setup_c_extension('do_sqlite3_ext', HOE.spec)
   end
 end

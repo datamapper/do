@@ -1,12 +1,12 @@
 require 'rbconfig'
 
 #
-# setup_extension create relevant tasks, wraps them into 'compile'
+# setup_c_extension create relevant tasks, wraps them into 'compile'
 # also will set a task named 'native' that will change the supplied
 # Gem::Specification and inject into the pre-compiled binaries. if no gem_spec
 # is supplied, no native task get defined.
 #
-def setup_extension(extension_name, gem_spec = nil)
+def setup_c_extension(extension_name, gem_spec = nil)
   # use the DLEXT for the true extension name
   ext_name = "#{extension_name}.#{RbConfig::CONFIG['DLEXT']}"
 
