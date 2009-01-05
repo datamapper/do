@@ -38,7 +38,7 @@ This code is licensed under the **GNU Public License (GPL) v2**, and under an
 **MIT License**. Please see GPL-LICENSE and MIT-LICENSE for the text of those
 license documents.
 
-Copyright (c) 2008 Alexander Coles, Ikonoklastik Productions
+Copyright (c) 2008-2009 Alexander Coles, Ikonoklastik Productions
 
 Support
 -------
