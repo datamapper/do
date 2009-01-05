@@ -189,4 +189,3 @@ rescue LoadError
     setup_extension('do_sqlite3_ext', HOE.spec)
   end
 end
-

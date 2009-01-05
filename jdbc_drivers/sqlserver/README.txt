@@ -15,5 +15,5 @@ to make the driver accessible to JDBC and DataObjects code running in JRuby.
 
 This gem bundles the jtds JDBC Driver, http://jtds.sourceforge.net/
 
-The jtds JDBC Driver is available under the terms of the LGPL License. See 
+The jtds JDBC Driver is available under the terms of the LGPL License. See
 http://www.gnu.org/copyleft/lesser.html for more details.

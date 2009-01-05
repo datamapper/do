@@ -1,5 +1,5 @@
 require 'rubygems'
-gem 'data_objects'    
+gem 'data_objects'
 require 'data_objects'
 
 if RUBY_PLATFORM =~ /java/

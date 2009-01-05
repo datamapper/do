@@ -27,7 +27,7 @@ if RUBY_PLATFORM =~ /java/
         def using_socket?
           @using_socket
         end
-        
+
         def character_set
           # JDBC API does not provide an easy way to get the current character set
           # For now, we code the character_set used as utf8

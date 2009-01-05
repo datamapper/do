@@ -2,7 +2,7 @@ desc "Generate gemspec"
 task :gemspec do |x|
   # Clean up extraneous files before checking manifest
   %x[jruby -S rake clean]
-  
+
   # Check the manifest before generating the gemspec
   manifest = %x[jruby -S rake check_manifest]
   manifest.gsub!("(in #{ROOT})\n", "")
