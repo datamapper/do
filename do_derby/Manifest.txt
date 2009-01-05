@@ -1,9 +1,8 @@
 History.txt
-MIT-LICENSE
+LICENSE
 Manifest.txt
 README.txt
 Rakefile
-TODO
 buildfile
 ext-java/src/main/java/DoDerbyExtService.java
 ext-java/src/main/java/do_derby/DerbyDriverDefinition.java

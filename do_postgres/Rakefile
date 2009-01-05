@@ -28,7 +28,7 @@ end
 
 PROJECT_NAME = "dorb"
 PROJECT_URL  = "http://rubyforge.org/projects/dorb"
-PROJECT_DESCRIPTION = PROJECT_SUMMARY = "A DataObject.rb driver for MySQL"
+PROJECT_DESCRIPTION = PROJECT_SUMMARY = "A DataObject.rb driver for PostgreSQL"
 
 JAVA_DRIVER = true
 

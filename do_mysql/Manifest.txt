@@ -4,7 +4,6 @@ LICENSE
 Manifest.txt
 README.txt
 Rakefile
-TODO
 buildfile
 ext-java/src/main/java/DoMysqlExtService.java
 ext-java/src/main/java/do_mysql/MySqlDriverDefinition.java

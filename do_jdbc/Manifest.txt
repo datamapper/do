@@ -6,7 +6,6 @@ Manifest.txt
 README.markdown
 README.txt
 Rakefile
-TODO
 build.xml
 lib/do_jdbc.rb
 lib/do_jdbc/date_formatter.rb

@@ -4,7 +4,6 @@ LICENSE
 Manifest.txt
 README.txt
 Rakefile
-TODO
 autobuild.rb
 buildfile
 ext-java/src/main/java/DoPostgresExtService.java

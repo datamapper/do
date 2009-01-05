@@ -19,7 +19,7 @@ GEM_EXTRAS = { :platform => 'java', :has_rdoc => false }
 
 PROJECT_NAME = "dorb"
 PROJECT_URL  = "http://rubyforge.org/projects/dorb"
-PROJECT_DESCRIPTION = PROJECT_SUMMARY = "A DataObjects.rb driver for Derby"
+PROJECT_DESCRIPTION = PROJECT_SUMMARY = "A DataObjects.rb driver for HSQLDB"
 
 JAVA_DRIVER = true
 

@@ -4,7 +4,6 @@ LICENSE
 Manifest.txt
 README.txt
 Rakefile
-TODO
 lib/data_objects.rb
 lib/data_objects/command.rb
 lib/data_objects/connection.rb
