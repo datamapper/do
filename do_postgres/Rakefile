@@ -35,15 +35,17 @@ if (tasks_dir = ROOT.parent + 'tasks').directory?
 end
 
 # compile the extension
-begin
-  gem('rake-compiler')
-  require 'rake/extensiontask'
-  Rake::ExtensionTask.new('do_postgres_ext', HOE.spec)
-rescue LoadError
-  warn "To cross-compile, install rake-compiler (gem install rake-compiler)"
-  if tasks_dir.directory?
-    require tasks_dir + 'ext_helper'
-    setup_extension('do_postgres_ext', HOE.spec)
+unless JRUBY
+  begin
+    gem('rake-compiler')
+    require 'rake/extensiontask'
+    Rake::ExtensionTask.new('do_postgres_ext', HOE.spec)
+  rescue LoadError
+    warn "To cross-compile, install rake-compiler (gem install rake-compiler)"
+    if tasks_dir.directory?
+      require tasks_dir + 'ext_helper'
+      setup_extension('do_postgres_ext', HOE.spec)
+    end
   end
 end
 
