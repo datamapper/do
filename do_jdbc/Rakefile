@@ -27,7 +27,8 @@ if (tasks_dir = ROOT.parent + 'tasks').directory?
   require tasks_dir + 'hoe'
   require tasks_dir + 'ext_helper_java'
 
-  setup_extension_java  "#{GEM_NAME}_internal", HOE.spec, :source_dir => 'src/java'
+  setup_extension_java  "#{GEM_NAME}_internal", HOE.spec,
+    :source_dir => 'src/java', :add_buildr_task => false
 end
 
 def sudo_gem(cmd)

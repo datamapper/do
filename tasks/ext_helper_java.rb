@@ -5,7 +5,8 @@ def setup_extension_java(extension_name, gem_spec = nil, opts = {})
   ext_name = "#{extension_name}.jar"
   directory 'lib'
   opts = {
-    :source_dir => 'ext-java/src/main/java'
+    :source_dir => 'ext-java/src/main/java',
+    :add_buildr_task => true
     }.merge!(opts)
 
   desc 'Compile Extension for current Ruby (= compile:jruby)'
@@ -40,19 +41,21 @@ def setup_extension_java(extension_name, gem_spec = nil, opts = {})
       sh "jar cf lib/#{ext_name} -C #{pkg_classes} ."
     end
 
-    desc "Compile Java Extension for JRuby (with buildr)"
-    task :jruby_buildr do
-      begin
-        # gem 'buildr', '~>1.3'
-        # FIXME: this is throwing RSpec activation errors, as buildr relies on
-        # an older version of Rake.
+    if opts[:add_buildr_task]
+      desc "Compile Java Extension for JRuby (with buildr)"
+      task :jruby_buildr do
+        begin
+          # gem 'buildr', '~>1.3'
+          # FIXME: this is throwing RSpec activation errors, as buildr relies on
+          # an older version of Rake.
 
-        sh %{#{RUBY} -S buildr package}
+          sh %{#{RUBY} -S buildr package}
 
-        buildr_output = extension_name.gsub(/_(ext)$/, '-\1-java-1.0.jar')
-        cp "ext-java/target/#{buildr_output}", "lib/#{ext_name}"
-      rescue LoadError
-        puts "#{spec.name} requires the buildr gem to compile the Java extension"
+          buildr_output = extension_name.gsub(/_(ext)$/, '-\1-java-1.0.jar')
+          cp "ext-java/target/#{buildr_output}", "lib/#{ext_name}"
+        rescue LoadError
+          puts "#{spec.name} requires the buildr gem to compile the Java extension"
+        end
       end
     end
 
