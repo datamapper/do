@@ -15,8 +15,9 @@ def setup_extension_java(extension_name, gem_spec = nil)
       pkg_classes = File.join(*%w(pkg classes))
       mkdir_p pkg_classes
 
-      if extension_name == "do_jdbc_internal"
+      if extension_name == 'do_jdbc_internal'
         classpath_arg = java_classpath_arg
+        source_dir = 'src/java'
       else
         unless File.exists?('../do_jdbc/lib/do_jdbc_internal.jar')
           # Check for the presence of do_jdbc_internal.jar in the do_jdbc project
@@ -31,9 +32,10 @@ def setup_extension_java(extension_name, gem_spec = nil)
         end
 
         classpath_arg = java_classpath_arg '../do_jdbc/lib/do_jdbc_internal.jar'
+        source_dir = 'ext-java/src/main/java'
       end
 
-      sh "javac -target 1.5 -source 1.5 -Xlint:unchecked -d pkg/classes #{classpath_arg} #{FileList['ext-java/src/main/java/**/*.java'].join(' ')}"
+      sh "javac -target 1.5 -source 1.5 -Xlint:unchecked -d pkg/classes #{classpath_arg} #{FileList["#{source_dir}/**/*.java"].join(' ')}"
       sh "jar cf lib/#{ext_name} -C #{pkg_classes} ."
     end
 

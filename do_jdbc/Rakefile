@@ -22,10 +22,13 @@ PROJECT_NAME = "dorb"
 PROJECT_URL  = "http://rubyforge.org/projects/dorb"
 PROJECT_DESCRIPTION = PROJECT_SUMMARY = "JDBC support for DataObjects.rb drivers"
 
-JAVA_DRIVER = true
+JAVA_DRIVER = false
 
 if (tasks_dir = ROOT.parent + 'tasks').directory?
   require tasks_dir + 'hoe'
+  require tasks_dir + 'ext_helper_java'
+  
+  setup_extension_java  "#{GEM_NAME}_internal", HOE.spec
 end
 
 def sudo_gem(cmd)
@@ -34,29 +37,7 @@ end
 
 # Installation
 
-task :default => [ :java_compile ]
-
-def java_classpath_arg # myriad of ways to discover JRuby classpath
-  #begin
-  #  jruby_cpath = Java::java.lang.System.getProperty('java.class.path')
-  #rescue => e
-  #end
-  #unless jruby_cpath
-    jruby_cpath = ENV['JRUBY_PARENT_CLASSPATH'] || ENV['JRUBY_HOME'] &&
-      FileList["#{ENV['JRUBY_HOME']}/lib/*.jar"].join(File::PATH_SEPARATOR)
-  #end
-  jruby_cpath ? "-cp #{jruby_cpath}" : ""
-end
-
-desc "Compile the native Java code."
-task :java_compile do
-  pkg_classes = File.join(*%w(pkg classes))
-  jar_name = File.join(*%w(lib do_jdbc_internal.jar))
-  mkdir_p pkg_classes
-  sh "javac -target 1.5 -source 1.5 -Xlint:unchecked -d pkg/classes #{java_classpath_arg} #{FileList['src/java/**/*.java'].join(' ')}"
-  sh "jar cf #{jar_name} -C #{pkg_classes} ."
-end
-file "lib/do_jdbc_internal.jar" => :java_compile
+task :default => [ :compile ]
 
 task :filelist do
   puts FileList['pkg/**/*'].inspect
