@@ -22,12 +22,11 @@ PROJECT_NAME = "dorb"
 PROJECT_URL  = "http://rubyforge.org/projects/dorb"
 PROJECT_DESCRIPTION = PROJECT_SUMMARY = "JDBC support for DataObjects.rb drivers"
 
-JAVA_DRIVER = false
 
 if (tasks_dir = ROOT.parent + 'tasks').directory?
   require tasks_dir + 'hoe'
   require tasks_dir + 'ext_helper_java'
-  
+
   setup_extension_java  "#{GEM_NAME}_internal", HOE.spec
 end
 
