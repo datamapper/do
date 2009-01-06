@@ -25,6 +25,7 @@ describe "DataObjects::Postgres::Connection" do
   end
 
   it "should be able to send queries asynchronously in parallel" do
+    pending "Asynchronous queries behaving oddly in JRuby" if JRUBY
     threads = []
 
     start = Time.now
