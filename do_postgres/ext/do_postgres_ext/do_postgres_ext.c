@@ -13,6 +13,8 @@
 #include <version.h>
 #include <string.h>
 #include <math.h>
+#include <ctype.h>
+#include <time.h>
 
 #define ID_CONST_GET rb_intern("const_get")
 #define ID_PATH rb_intern("path")
