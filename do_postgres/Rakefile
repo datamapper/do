@@ -21,9 +21,15 @@ end
 GEM_CLEAN = ['**/*.{o,so,bundle,log,a,gem,dSYM,obj,pdb,lib,def,exp,DS_Store}',
   'ext/Makefile', 'ext-java/target']
 GEM_EXTRAS = if JRUBY
-  { :has_rdoc => false }
+  { 
+    :has_rdoc => false,
+    :platform => 'java'
+  }
 else
-  { :has_rdoc => false, :extensions => 'ext/do_postgres_ext/extconf.rb' }
+  { 
+    :has_rdoc => false,
+    :extensions => 'ext/do_postgres_ext/extconf.rb' 
+  }
 end
 
 PROJECT_NAME = "dorb"
@@ -39,6 +45,11 @@ if (tasks_dir = ROOT.parent + 'tasks').directory?
   require tasks_dir + 'ext_helper_java'
 
   setup_java_extension  "#{GEM_NAME}_ext", HOE.spec
+end
+
+if JRUBY
+  HOE.spec.files += ['lib/do_mysql_ext.jar']
+  HOE.spec.require_paths = Dir['lib']
 end
 
 # compile the extension

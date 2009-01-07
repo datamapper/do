@@ -24,9 +24,15 @@ end
 clean = %w(o bundle log a gem dSYM obj pdb lib def exp DS_Store)
 
 GEM_EXTRAS = if (WINDOWS || JRUBY)
-  { :has_rdoc => false }
+  { 
+    :has_rdoc => false,
+    :platform => 'java'
+  }
 else
-  { :extensions => 'ext/do_sqlite3_ext/extconf.rb', :has_rdoc => false }
+  { 
+    :has_rdoc => false,
+    :extensions => 'ext/do_sqlite3_ext/extconf.rb'
+  }
 end
 
 GEM_CLEAN = ['**/test.db',"**/*.{#{clean.join(",")}}", 'ext/Makefile', 'ext-java/target']
@@ -50,6 +56,11 @@ if (tasks_dir = ROOT.parent + 'tasks').directory?
     next if pattern.include?('/') && !pattern.gsub!(/\A(?:\.\/)?#{ROOT.basename}(?:\/|\z)/, './')
     GEM_CLEAN.concat(Dir.glob(pattern.include?('/') ? pattern : "**/#{pattern}"))
   end
+end
+
+if JRUBY
+  HOE.spec.files += ['lib/do_mysql_ext.jar']
+  HOE.spec.require_paths = Dir['lib']
 end
 
 def sudo_gem(cmd)
