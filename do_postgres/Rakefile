@@ -48,7 +48,7 @@ if (tasks_dir = ROOT.parent + 'tasks').directory?
 end
 
 if JRUBY
-  HOE.spec.files += ['lib/do_mysql_ext.jar']
+  HOE.spec.files += ['lib/do_postgres_ext.jar']
   HOE.spec.require_paths = Dir['lib']
 end
 
