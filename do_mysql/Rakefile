@@ -18,7 +18,7 @@ GEM_DEPENDENCIES = if JRUBY
 else
   [["data_objects", GEM_VERSION]]
 end
-GEM_CLEAN = ['**/*.{o,so,bundle,log,a,gem,dSYM,obj,pdb,lib,def,exp,DS_Store}',
+GEM_CLEAN = ['**/*.{o,so,bundle,jar,log,a,gem,dSYM,obj,pdb,lib,def,exp,DS_Store}',
   'ext/Makefile', 'ext-java/target']
 GEM_EXTRAS = if JRUBY
   {

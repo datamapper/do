@@ -21,15 +21,19 @@ else
 end
 
 # TODO: remove duplicates from here that are already listed in .gitignore
-clean = %w(o bundle log a gem dSYM obj pdb lib def exp DS_Store)
+clean = %w(o bundle jar log a gem dSYM obj pdb lib def exp DS_Store)
 
-GEM_EXTRAS = if (WINDOWS || JRUBY)
-  { 
+GEM_EXTRAS = if WINDOWS
+  {
+    :has_rdoc => false
+  }
+elsif JRUBY
+  {
     :has_rdoc => false,
     :platform => 'java'
   }
 else
-  { 
+  {
     :has_rdoc => false,
     :extensions => 'ext/do_sqlite3_ext/extconf.rb'
   }
