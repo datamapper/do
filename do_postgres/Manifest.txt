@@ -13,7 +13,6 @@ ext/do_postgres_ext/extconf.rb
 lib/do_postgres.rb
 lib/do_postgres/transaction.rb
 lib/do_postgres/version.rb
-lib/do_postgres_ext.jar
 script/timezone_spec_runner.rb
 script/timezones.txt
 spec/integration/do_postgres_spec.rb

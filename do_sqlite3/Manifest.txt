@@ -12,7 +12,6 @@ ext/do_sqlite3_ext/extconf.rb
 lib/do_sqlite3.rb
 lib/do_sqlite3/transaction.rb
 lib/do_sqlite3/version.rb
-lib/do_sqlite3_ext.jar
 spec/integration/do_sqlite3_spec.rb
 spec/integration/logging_spec.rb
 spec/integration/quoting_spec.rb
