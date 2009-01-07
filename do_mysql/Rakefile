@@ -53,7 +53,9 @@ if JRUBY
 end
 
 # compile the extension
-unless JRUBY
+if JRUBY
+  Rake::Task['compile:jruby'].invoke
+else
   begin
     gem('rake-compiler')
     require 'rake/extensiontask'

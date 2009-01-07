@@ -33,6 +33,12 @@ def sudo_gem(cmd)
   sh "#{SUDO} #{RUBY} -S gem #{cmd}", :verbose => false
 end
 
+# compile the extension
+if JRUBY
+  Rake::Task['compile:jruby'].invoke
+else
+end
+
 # Installation
 
 task :default => [ :compile, :spec ]
