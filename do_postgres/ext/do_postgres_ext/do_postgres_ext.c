@@ -737,6 +737,13 @@ static VALUE cReader_fields(VALUE self) {
   return rb_iv_get(self, "@fields");
 }
 
+static VALUE cReader_field_count(VALUE self) {
+  return rb_iv_get(self, "@field_count");
+}
+static VALUE cReader_row_count(VALUE self) {
+  return rb_iv_get(self, "@row_count");
+}
+
 void Init_do_postgres_ext() {
   rb_require("date");
   rb_require("bigdecimal");
@@ -786,5 +793,7 @@ void Init_do_postgres_ext() {
   rb_define_method(cReader, "next!", cReader_next, 0);
   rb_define_method(cReader, "values", cReader_values, 0);
   rb_define_method(cReader, "fields", cReader_fields, 0);
+  rb_define_method(cReader, "row_count", cReader_row_count, 0);
+  rb_define_method(cReader, "field_count", cReader_field_count, 0);
 
 }
