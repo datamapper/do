@@ -6,6 +6,8 @@ package data_objects;
  */
 public enum RubyType {
 
+    CLASS      ("Class"),
+    OBJECT     ("Object"),
     STRING     ("String"),
     DATE       ("Date"),
     DATE_TIME  ("DateTime"),

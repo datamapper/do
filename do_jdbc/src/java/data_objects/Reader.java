@@ -1,6 +1,8 @@
 package data_objects;
 
 import data_objects.drivers.DriverDefinition;
+import java.io.IOException;
+import java.io.InputStream;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -13,12 +15,14 @@ import org.jruby.RubyModule;
 import org.jruby.RubyNumeric;
 import org.jruby.RubyObject;
 import org.jruby.RubyObjectAdapter;
+import org.jruby.RubyProc;
 import org.jruby.RubyString;
 import org.jruby.anno.JRubyClass;
 import org.jruby.anno.JRubyMethod;
 import org.jruby.javasupport.JavaEmbedUtils;
 import org.jruby.runtime.ObjectAllocator;
 import org.jruby.runtime.builtin.IRubyObject;
+import org.jruby.runtime.marshal.UnmarshalStream;
 
 import static data_objects.DataObjects.DATA_OBJECTS_MODULE_NAME;
 
@@ -138,6 +142,7 @@ public class Reader extends RubyObject {
             }
 
             // -- debugging what's coming out
+            //System.out.println("Column Name: " + rs.getMetaData().getColumnName(col));
             //System.out.println("JDBC TypeName " + rs.getMetaData().getColumnTypeName(col));
             //System.out.println("JDBC Metadata scale " + rs.getMetaData().getScale(col));
             //System.out.println("Ruby Type " + type);
@@ -178,8 +183,21 @@ public class Reader extends RubyObject {
     private static IRubyObject get_typecast_rs_value(Ruby runtime, ResultSet rs,
             int col, RubyType type) throws SQLException {
         switch (type) {
+            case CLASS:
+                return runtime.getClass(rs.getString(col));
+            case OBJECT:
+                InputStream strm = rs.getAsciiStream(col);
+                IRubyObject obj = runtime.getNil();
+                try {
+                    UnmarshalStream ums = new UnmarshalStream(runtime, strm, RubyProc.NEVER);
+                    obj = ums.unmarshalObject();
+                } catch (IOException ioe) {
+                    // TODO: log this
+                }
+                return obj;
             case FIXNUM:
             case BIGNUM:
+            case INTEGER:
                 long lng = rs.getLong(col);
                 return RubyNumeric.int2fix(runtime, lng);
             case BIG_DECIMAL:

@@ -113,8 +113,6 @@ describe "DataObjects::Sqlite3::Result" do
   it "should do a custom typecast reader with Class" do
     class Person; end
 
-    pending "causing NPE" if JRUBY
-
     id = insert("INSERT INTO users (name, age, type) VALUES (?, ?, ?)", 'Sam', 30, Person)
 
     select("SELECT name, age, type FROM users WHERE id = ?", [String, Integer, Class], id) do |reader|
