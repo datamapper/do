@@ -18,6 +18,7 @@ describe DataObjects::Sqlite3::Command do
   describe "Executing a Reader" do
 
     it "should log reader queries when the level is Debug (0)" do
+      pending "SQLiteJDBC does not implement java.sql.Statement#toString" if JRUBY
       command = @connection.create_command("SELECT * FROM users")
       @mock_logger = mock('MockLogger', :level => 0)
       DataObjects::Sqlite3.should_receive(:logger).and_return(@mock_logger)
@@ -36,6 +37,7 @@ describe DataObjects::Sqlite3::Command do
 
   describe "Executing a Non-Query" do
     it "should log non-query statements when the level is Debug (0)" do
+      pending "SQLiteJDBC does not implement java.sql.Statement#toString" if JRUBY
       command = @connection.create_command("INSERT INTO users (name) VALUES (?)")
       @mock_logger = mock('MockLogger', :level => 0)
       DataObjects::Sqlite3.should_receive(:logger).and_return(@mock_logger)
