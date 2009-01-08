@@ -13,7 +13,7 @@ SUDO    = (WINDOWS || JRUBY) ? '' : ('sudo' unless ENV['SUDOLESS'])
 RUN_RCOV = JRUBY ? false : (ENV.has_key?('NO_RCOV') ? ENV['NO_RCOV'] != 'true' : true)
 
 projects = %w[data_objects]
-projects += %w[do_jdbc do_derby do_hsqldb] if JRUBY
+projects += %w[do_jdbc do_derby do_h2 do_hsqldb] if JRUBY
 projects += %w[do_mysql do_postgres do_sqlite3]
 
 def rake(cmd)
