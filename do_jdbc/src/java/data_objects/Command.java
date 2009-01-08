@@ -96,9 +96,21 @@ public class Command extends RubyObject {
         boolean supportsGeneratedKeys = driver.supportsJdbcGeneratedKeys();
 
         try {
-            sqlStatement =
-                conn.prepareStatement(sqlText,
-                    supportsGeneratedKeys ? Statement.RETURN_GENERATED_KEYS : Statement.NO_GENERATED_KEYS);
+            if (supportsGeneratedKeys) {
+                sqlStatement =
+                        conn.prepareStatement(sqlText, Statement.RETURN_GENERATED_KEYS);
+            } else {
+                // If java.sql.PreparedStatement#getGeneratedKeys() is not supported,
+                // then it is important to call java.sql.Connection#prepareStatement(String)
+                // -- with just a single parameter -- rather java.sql.Connection#
+                // prepareStatement(String, int) (and passing in Statement.NO_GENERATED_KEYS).
+                // Some less-than-complete JDBC drivers do not implement all of
+                // the overloaded prepareStatement methods: the main culprit
+                // being SQLiteJDBC which currently throws an ugly (and cryptic)
+                // "NYI" SQLException if Connection#prepareStatement(String, int)
+                // is called.
+                sqlStatement = conn.prepareStatement(sqlText);
+            }
 
             prepareStatementFromArgs(sqlStatement, recv, args);
 
