@@ -93,12 +93,12 @@ public class Command extends RubyObject {
         PreparedStatement sqlStatement = null;
         java.sql.ResultSet keys = null;
         String sqlText = prepareSqlTextForPs(api.getInstanceVariable(recv, "@text").asJavaString(), recv, args);
-        boolean supportsGeneratedKeys = driver.supportsJdbcGeneratedKeys();
 
         try {
-            if (supportsGeneratedKeys) {
+            if (driver.supportsConnectionPrepareStatementMethodWithGKFlag()) {
                 sqlStatement =
-                        conn.prepareStatement(sqlText, Statement.RETURN_GENERATED_KEYS);
+                        conn.prepareStatement(sqlText,
+                            driver.supportsJdbcGeneratedKeys() ? Statement.RETURN_GENERATED_KEYS : Statement.NO_GENERATED_KEYS);
             } else {
                 // If java.sql.PreparedStatement#getGeneratedKeys() is not supported,
                 // then it is important to call java.sql.Connection#prepareStatement(String)
@@ -135,7 +135,7 @@ public class Command extends RubyObject {
             debug(recv.getRuntime(), sqlStatement.toString(), Long.valueOf(endTime - startTime));
 
             if (keys == null) {
-                if (supportsGeneratedKeys) {
+                if (driver.supportsJdbcGeneratedKeys()) {
                     // Derby, H2, and MySQL all support getGeneratedKeys(), but only
                     // to varying extents.
                     //
@@ -155,7 +155,7 @@ public class Command extends RubyObject {
                     keys = sqlStatement.getGeneratedKeys();
 
                 } else {
-                    // If there is no support, then a custom method canb e defined
+                    // If there is no support, then a custom method can be defined
                     // to return a ResultSet with keys
                     keys = driver.getGeneratedKeys(conn);
                 }

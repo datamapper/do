@@ -11,6 +11,10 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
 
     public abstract boolean supportsJdbcGeneratedKeys();
 
+    public boolean supportsConnectionPrepareStatementMethodWithGKFlag() {
+        return true;
+    }
+
     public ResultSet getGeneratedKeys(Connection connection) {
         return null;
     }

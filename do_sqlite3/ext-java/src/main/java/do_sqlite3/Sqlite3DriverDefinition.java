@@ -6,6 +6,11 @@ public class Sqlite3DriverDefinition extends AbstractDriverDefinition {
 
     public boolean supportsJdbcGeneratedKeys()
     {
+        return true;
+    }
+
+    public boolean supportsConnectionPrepareStatementMethodWithGKFlag()
+    {
         return false;
     }
 
