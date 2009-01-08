@@ -305,7 +305,7 @@ static VALUE typecast(const char* value, unsigned long length, char* type) {
     return Qnil;
 
   if ( strcmp(type, "Class") == 0) {
-    return rb_funcall(mDO, rb_intern("find_const"), 1, TAINTED_STRING(value, length));
+    return rb_funcall(rb_cObject, rb_intern("full_const_get"), 1, TAINTED_STRING(value, length));
   } else if ( strcmp(type, "Integer") == 0 || strcmp(type, "Fixnum") == 0 || strcmp(type, "Bignum") == 0 ) {
     return rb_cstr2inum(value, 10);
   } else if (0 == strcmp("String", type)) {

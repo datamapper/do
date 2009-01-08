@@ -295,7 +295,7 @@ static VALUE typecast(sqlite3_stmt *stmt, int i, VALUE ruby_class) {
   }
 
   if ( strcmp(ruby_type, "Class") == 0) {
-    return rb_funcall(mDO, rb_intern("find_const"), 1, TAINTED_STRING((char*)sqlite3_column_text(stmt, i), length));
+    return rb_funcall(rb_cObject, rb_intern("full_const_get"), 1, TAINTED_STRING((char*)sqlite3_column_text(stmt, i), length));
   } else if ( strcmp(ruby_type, "Object") == 0 ) {
     return rb_marshal_load(rb_str_new2((char*)sqlite3_column_text(stmt, i)));
   } else if ( strcmp(ruby_type, "TrueClass") == 0 ) {
