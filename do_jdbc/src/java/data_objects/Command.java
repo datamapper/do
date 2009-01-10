@@ -89,6 +89,9 @@ public class Command extends RubyObject {
         RubyClass resultClass = Result.createResultClass(runtime, moduleName, errorName, driver);
 
         java.sql.Connection conn = (java.sql.Connection) wrapped_jdbc_connection.dataGetStruct();
+        // affectedCount == 1 means 1 updated row
+        // or 1 row in result set that represents returned key (insert...returning),
+        // other values represents numer of updated rows
         int affectedCount = 0;
         PreparedStatement sqlStatement = null;
         java.sql.ResultSet keys = null;
@@ -162,6 +165,7 @@ public class Command extends RubyObject {
             }
             if (keys != null) {
                 insert_key = unmarshal_id_result(runtime, keys);
+                affectedCount = (affectedCount > 0) ? affectedCount : 1;
             }
 
             // not needed as it will be closed in the finally clause
