@@ -130,11 +130,23 @@ describe "DataObjects::Postgres::Reader" do
     lambda { command.execute_reader }.should raise_error
   end
 
-  it "should open and close a reader" do
+  it "should open and close a reader with given types of columns" do
+    command = @connection.create_command("SELECT id, name FROM users LIMIT 3")
+    command.set_types [Integer, String ]
+    reader = command.execute_reader
+    reader.close.should == true
+  end
+
+  it "should open and close a reader without given types of columns" do
+    command = @connection.create_command("SELECT * FROM users LIMIT 3")
+    reader = command.execute_reader
+    reader.close.should == true
+  end
+
+   it "should raise error on wrong number of columns calling set_types" do
     command = @connection.create_command("SELECT * FROM users LIMIT 3")
     command.set_types [Integer, String]
-    reader = command.execute_reader
-    reader.close
+    lambda { reader = command.execute_reader }.should raise_error
   end
 
   it "should typecast a value from the postgres type" do
@@ -142,6 +154,12 @@ describe "DataObjects::Postgres::Reader" do
     reader = command.execute_reader
     reader.field_count.should == 4
     reader.row_count.should == 3
+    reader.close
+  end
+
+  it "should typecast a value from the postgres type" do
+    command = @connection.create_command("SELECT id, name, registered, money FROM users ORDER BY id DESC LIMIT 3")
+    reader = command.execute_reader
     while ( reader.next!)
       reader.values[0].should be_a_kind_of(Integer)
       reader.values[1].should be_a_kind_of(String)
