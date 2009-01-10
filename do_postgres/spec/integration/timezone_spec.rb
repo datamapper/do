@@ -40,6 +40,7 @@ describe "DataObjects::Postgres::Reader" do
   end
 
   it "should return DateTimes using the current locale's Time Zone if they were inserted using a different timezone" do
+    pending "We don't support non-local date input yet"
     now = DateTime.now
     dates = [
       now,

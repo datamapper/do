@@ -14,7 +14,7 @@ describe DataObjects::Hsqldb::Command do
       @mock_logger = mock('MockLogger', :level => 0)
       DataObjects::Hsqldb.expects(:logger).returns(@mock_logger)
       @mock_logger.expects(:debug) #.with("SELECT * FROM widgets WHERE name = 'Scott'")
-      command.execute_reader('Scott')
+      command.execute_reader('Scott').close
     end
 
     it "shouldn't log reader queries when the level isn't Debug (0)" do
@@ -22,7 +22,7 @@ describe DataObjects::Hsqldb::Command do
       @mock_logger = mock('MockLogger', :level => 1)
       DataObjects::Hsqldb.expects(:logger).returns(@mock_logger)
       @mock_logger.expects(:debug).never
-      command.execute_reader('Scott')
+      command.execute_reader('Scott').close
     end
   end
 

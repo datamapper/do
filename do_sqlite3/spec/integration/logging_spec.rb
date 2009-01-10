@@ -19,7 +19,7 @@ describe DataObjects::Sqlite3::Command do
       @mock_logger = mock('MockLogger', :level => 0)
       DataObjects::Sqlite3.should_receive(:logger).and_return(@mock_logger)
       @mock_logger.should_receive(:debug).with(/\([\d.]+\) SELECT \* FROM users/)
-      command.execute_reader
+      command.execute_reader.close
     end
 
     it "shouldn't log reader queries when the level isn't Debug (0)" do
@@ -27,7 +27,7 @@ describe DataObjects::Sqlite3::Command do
       @mock_logger = mock('MockLogger', :level => 1)
       DataObjects::Sqlite3.should_receive(:logger).and_return(@mock_logger)
       @mock_logger.should_not_receive(:debug)
-      command.execute_reader
+      command.execute_reader.close
     end
   end
 

@@ -134,6 +134,14 @@ describe "DataObjects::Derby::Reader" do
     end
   end
 
+  it "should return proper number of rows and fields using row_count and field_count" do
+    command = @connection.create_command("SELECT * FROM widgets WHERE id = (SELECT max(id) FROM widgets)")
+    reader = command.execute_reader
+    reader.field_count.should == 14
+    reader.row_count.should == 1
+    reader.close
+  end
+
   it "should raise an exception if .values is called after reading all available rows" do
     pending "Derby has no way of limiting rows being returned"
     select("SELECT * FROM widgets") do |reader|
