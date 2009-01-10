@@ -149,7 +149,7 @@ describe "DataObjects::Postgres::Reader" do
     lambda { reader = command.execute_reader }.should raise_error
   end
 
-  it "should typecast a value from the postgres type" do
+  it "should return proper number of rows and fields using row_count and field_count" do
     command = @connection.create_command("SELECT id, name, registered, money FROM users ORDER BY id DESC LIMIT 3")
     reader = command.execute_reader
     reader.field_count.should == 4
