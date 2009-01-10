@@ -172,6 +172,16 @@ public class Reader extends RubyObject {
         return api.getInstanceVariable(recv, "@fields");
     }
 
+    @JRubyMethod
+    public static IRubyObject row_count(IRubyObject recv) {
+        return api.getInstanceVariable(recv, "@row_count");
+    }
+
+    @JRubyMethod
+    public static IRubyObject field_count(IRubyObject recv) {
+        return api.getInstanceVariable(recv, "@field_count");
+    }
+
     // -------------------------------------------------- PRIVATE HELPER METHODS
 
     /**
