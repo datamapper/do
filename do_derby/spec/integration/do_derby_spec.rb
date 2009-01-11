@@ -195,7 +195,6 @@ describe "DataObjects::Derby::Reader" do
   describe "Date, Time, and DateTime" do
 
     it "should return nil when the time is 0" do
-      pending "work out string representation of 0 time"
       id = insert("INSERT INTO users (name, fired_at) VALUES ('James', '1980-10-25-13.01.23.123456')")
       select("SELECT fired_at FROM users WHERE id = ?", [Time], id) do |reader|
         reader.values.last.should be_nil
