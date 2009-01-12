@@ -210,6 +210,14 @@ describe DataObjects::Mysql::Reader do
     end
   end
 
+  it "should correctly work with default utf8 character set" do
+    name = "Билли Боб"
+    id = insert("INSERT INTO users (name) VALUES ('#{name}')")
+    select("SELECT name from users WHERE id = ?", [String], id) do |reader|
+      reader.values[0].should == name
+    end
+  end
+
   describe "Date, Time, and DateTime" do
 
     it "should return nil when the time is 0" do
