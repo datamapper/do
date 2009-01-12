@@ -226,17 +226,10 @@ public class Reader extends RubyObject {
                 if (dt == null || rs.wasNull()) {
                     return runtime.getNil();
                 }
-                // XXX produces RubyDate, but in ~50% probes there is a 1sec diff (why?)
-                // return DataObjectsUtils.prepareRubyDateFromSqlDate(runtime, dt);
-
-                // XXX produces RubyTime
+                // produces  RubyDate
+                return DataObjectsUtils.prepareRubyDateFromSqlDate(runtime, dt);
+                // produces RubyTime
                 // return DataObjectsUtils.parse_date(runtime, dt); 
-
-                // XXX produces RubyDate
-                IRubyObject rbTime1 = DataObjectsUtils.parse_date(runtime, dt);
-                return runtime.fastGetClass("Date").callMethod(runtime.getCurrentContext(), "parse",
-                        new IRubyObject[]{ rbTime1.callMethod(runtime.getCurrentContext(), "strftime", new IRubyObject[]{
-                        runtime.newString("%Y/%m/%d")}) });
             case DATE_TIME:
                 java.sql.Timestamp ts = null;
                 // DateTimes with all-zero components throw a SQLException with
@@ -249,26 +242,20 @@ public class Reader extends RubyObject {
                 if (ts == null || rs.wasNull()) {
                     return runtime.getNil();
                 }
-                // XXX produces RubyDateTime, but in ~50% probes there is a 1sec diff (why?)
-                // return DataObjectsUtils.prepareRubyDateTimeFromSqlTimestamp(runtime,ts);
-
-                // XXX produces RubyTime
+                // produces RubyDateTime
+                return DataObjectsUtils.prepareRubyDateTimeFromSqlTimestamp(runtime,ts);
+                // produces RubyTime
                 // return DataObjectsUtils.parse_date_time(runtime, ts);
 
-                // XXX produces RubyDateTime
-                IRubyObject rbTime2 = DataObjectsUtils.parse_date_time(runtime, ts);
-                return runtime.fastGetClass("DateTime").callMethod(runtime.getCurrentContext(), "parse",
-                     new IRubyObject[]{ rbTime2.callMethod(runtime.getCurrentContext(), "to_s") });
             case TIME:
                 java.sql.Time tm = rs.getTime(col);
                 if (tm == null || rs.wasNull()) {
                     return runtime.getNil();
                 }
-                // XXX produces RubyTime
+                // produces RubyString
+                return  DataObjectsUtils.prepareRubyTimeFromSqlTime(runtime, tm);
+                // produces RubyTime
                 // return DataObjectsUtils.parse_time(runtime, tm); 
-
-                // XXX produces RubyString
-                return  DataObjectsUtils.prepareRubyTimeFromSqlTime(runtime, tm); 
             case STRING:
             default:
                 String str = rs.getString(col);

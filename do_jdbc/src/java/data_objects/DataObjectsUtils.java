@@ -14,6 +14,8 @@ import java.util.Calendar;
 import java.util.GregorianCalendar;
 import org.jruby.Ruby;
 import org.jruby.RubyClass;
+import org.jruby.RubyNumeric;
+import org.jruby.RubyRational;
 import org.jruby.RubyTime;
 import org.jruby.exceptions.RaiseException;
 import org.jruby.runtime.builtin.IRubyObject;
@@ -148,24 +150,33 @@ public final class DataObjectsUtils {
        month++; // In Calendar January == 0, etc...
        RubyClass klazz = runtime.fastGetClass("Date");
        return klazz.callMethod(
-                 runtime.getCurrentContext() ,"ordinal",
+                 runtime.getCurrentContext() ,"civil",
                  new IRubyObject []{ runtime.newFixnum(gregCalendar.get(Calendar.YEAR)),
-                 runtime.newFixnum(gregCalendar.get(Calendar.DAY_OF_YEAR))});
+                 runtime.newFixnum(month),
+                 runtime.newFixnum(gregCalendar.get(Calendar.DAY_OF_MONTH))});
     }
 
     public static IRubyObject prepareRubyDateTimeFromSqlTimestamp(Ruby runtime,Timestamp stamp){
        gregCalendar.setTime(stamp);
        int month = gregCalendar.get(Calendar.MONTH);
        month++; // In Calendar January == 0, etc...
-       float offset = ((gregCalendar.get(Calendar.ZONE_OFFSET)/3600000)/24f);
+
+       int zoneOffset = gregCalendar.get(Calendar.ZONE_OFFSET)/3600000;
        RubyClass klazz = runtime.fastGetClass("DateTime");
-       return klazz.callMethod(runtime.getCurrentContext() , "ordinal",
+
+       IRubyObject rbOffset = runtime.fastGetClass("Rational")
+                .callMethod(runtime.getCurrentContext(), "new",new IRubyObject[]{
+            runtime.newFixnum(zoneOffset),runtime.newFixnum(24)
+        });
+
+       return klazz.callMethod(runtime.getCurrentContext() , "civil",
                  new IRubyObject []{runtime.newFixnum(gregCalendar.get(Calendar.YEAR)),
-                 runtime.newFixnum(gregCalendar.get(Calendar.DAY_OF_YEAR)),
+                 runtime.newFixnum(month),
+                 runtime.newFixnum(gregCalendar.get(Calendar.DAY_OF_MONTH)),
                  runtime.newFixnum(gregCalendar.get(Calendar.HOUR_OF_DAY)),
                  runtime.newFixnum(gregCalendar.get(Calendar.MINUTE)),
                  runtime.newFixnum(gregCalendar.get(Calendar.SECOND)),
-                 runtime.newFloat(offset) });
+                 rbOffset});
     }
 
      public static IRubyObject prepareRubyTimeFromSqlTime(Ruby runtime,Time time){

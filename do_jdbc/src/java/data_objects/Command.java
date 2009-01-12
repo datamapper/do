@@ -1,7 +1,6 @@
 package data_objects;
 
 import data_objects.drivers.DriverDefinition;
-import java.math.BigDecimal;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
@@ -12,6 +11,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.jruby.Ruby;
 import org.jruby.RubyArray;
+import org.jruby.RubyBigDecimal;
 import org.jruby.RubyClass;
 import org.jruby.RubyModule;
 import org.jruby.RubyNumeric;
@@ -486,7 +486,6 @@ public class Command extends RubyObject {
      */
     private static void setPreparedStatementParam(PreparedStatement ps, IRubyObject recv, IRubyObject arg, int idx)
             throws SQLException {
-        
         if (arg.getType().equals(RubyType.FIXNUM) || arg.getType().toString().equals(RubyType.FIXNUM.toString())) {
             ps.setInt(idx, Integer.parseInt(arg.toString()));
         } else if (arg.getType().toString().equals("NilClass")) {
@@ -498,7 +497,8 @@ public class Command extends RubyObject {
         } else if (arg.getType().toString().equals("DateTime")) {
             ps.setTimestamp(idx, java.sql.Timestamp.valueOf(arg.toString().replace('T', ' ').replaceFirst("[-+]..:..$", "")));
         } else if (arg.getType().toString().equals(RubyType.BIG_DECIMAL.toString())) {
-            ps.setBigDecimal(idx, BigDecimal.valueOf(RubyNumeric.num2dbl(arg)));
+            RubyBigDecimal rbBigDec = (RubyBigDecimal) arg;
+            ps.setBigDecimal(idx, rbBigDec.getValue());
         } else {
             ps.setString(idx, arg.toString());
         }
