@@ -2,7 +2,6 @@ package data_objects;
 
 import data_objects.drivers.DriverDefinition;
 import java.math.BigDecimal;
-import java.sql.CallableStatement;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
@@ -206,7 +205,7 @@ public class Command extends RubyObject {
         java.sql.Connection conn = (java.sql.Connection) wrapped_jdbc_connection.dataGetStruct();
         boolean inferTypes = false;
         int columnCount = 0;
-        int rowCount = 0;
+        int rowCount = 0; // TODO
         PreparedStatement sqlStatement = null;
         ResultSet resultSet = null;
         ResultSetMetaData metaData = null;
@@ -247,7 +246,7 @@ public class Command extends RubyObject {
 
             // save the field_count in reader
             api.setInstanceVariable(reader, "@field_count", runtime.newFixnum(columnCount));
-            api.setInstanceVariable(reader, "@row_count", runtime.newFixnum(rowCount));
+            api.setInstanceVariable(reader, "@row_count", runtime.newFixnum(rowCount)); // TODO
 
             // get the field types
             RubyArray field_names = runtime.newArray();
@@ -487,7 +486,7 @@ public class Command extends RubyObject {
      */
     private static void setPreparedStatementParam(PreparedStatement ps, IRubyObject recv, IRubyObject arg, int idx)
             throws SQLException {
-
+        
         if (arg.getType().equals(RubyType.FIXNUM) || arg.getType().toString().equals(RubyType.FIXNUM.toString())) {
             ps.setInt(idx, Integer.parseInt(arg.toString()));
         } else if (arg.getType().toString().equals("NilClass")) {
@@ -498,8 +497,8 @@ public class Command extends RubyObject {
             ps.setTime(idx, java.sql.Time.valueOf(arg.toString()));
         } else if (arg.getType().toString().equals("DateTime")) {
             ps.setTimestamp(idx, java.sql.Timestamp.valueOf(arg.toString().replace('T', ' ').replaceFirst("[-+]..:..$", "")));
-        } else if (arg.getMetaClass().toString().equals(RubyType.BIG_DECIMAL)) {
-            ps.setBigDecimal(idx, BigDecimal.valueOf(RubyNumeric.fix2long(arg)));
+        } else if (arg.getType().toString().equals(RubyType.BIG_DECIMAL.toString())) {
+            ps.setBigDecimal(idx, BigDecimal.valueOf(RubyNumeric.num2dbl(arg)));
         } else {
             ps.setString(idx, arg.toString());
         }

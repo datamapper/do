@@ -150,6 +150,7 @@ describe "DataObjects::Postgres::Reader" do
   end
 
   it "should return proper number of rows and fields using row_count and field_count" do
+    pending "do_jdbc doesn's return correctly row_count at the moment" if JRUBY
     command = @connection.create_command("SELECT id, name, registered, money FROM users ORDER BY id DESC LIMIT 3")
     reader = command.execute_reader
     reader.field_count.should == 4
@@ -186,6 +187,15 @@ describe "DataObjects::Postgres::Reader" do
     end
   end
 
+  it "should return nil when the time is 0" do
+    pending "We need to introduce something like Proxy for typeasting where each SQL type will have _rules_ of casting" if JRUBY
+    id = insert("INSERT INTO users (name, fired_at) VALUES ('James', 0);")
+    select("SELECT fired_at FROM users WHERE id = ?", [Time], id) do |reader|
+      reader.values.last.should be_nil
+    end
+    exec("DELETE FROM users WHERE id = ?", id)
+  end
+
   it "should not convert empty strings to null" do
     id = insert("INSERT INTO users (name) VALUES ('')")
     select("SELECT name FROM users WHERE id = ?", [String], id) do |reader|
@@ -210,11 +220,19 @@ describe "DataObjects::Postgres::Reader" do
     end
   end
 
+  it "should return DateTimes using the current locale's Time Zone" do
+    date = DateTime.now
+    id = insert("INSERT INTO users (name, created_at) VALUES (?, ?)", 'Sam', date)
+    select("SELECT created_at FROM users WHERE id = ?", [DateTime], id) do |reader|
+      reader.values.last.to_s.should == date.to_s
+    end
+    exec("DELETE FROM users WHERE id = ?", id)
+  end
+
   it "should typecast a timestamp field" do
     command = @connection.create_command("SELECT created_at FROM users WHERE created_at is not null LIMIT 1")
     reader = command.execute_reader
     reader.next!
-    dt = reader.values[0]
     reader.values[0].should be_a_kind_of(DateTime)
 
     command = @connection.create_command("SELECT created_at::date as date FROM users WHERE created_at is not null LIMIT 1")

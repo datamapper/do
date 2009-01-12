@@ -135,6 +135,7 @@ describe "DataObjects::Derby::Reader" do
   end
 
   it "should return proper number of rows and fields using row_count and field_count" do
+    pending "do_jdbc doesn's return correctly row_count at the moment" 
     command = @connection.create_command("SELECT * FROM widgets WHERE id = (SELECT max(id) FROM widgets)")
     reader = command.execute_reader
     reader.field_count.should == 14

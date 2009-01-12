@@ -10,13 +10,16 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.jruby.Ruby;
 import org.jruby.RubyArray;
+import org.jruby.RubyBigDecimal;
 import org.jruby.RubyClass;
+import org.jruby.RubyFloat;
 import org.jruby.RubyModule;
 import org.jruby.RubyNumeric;
 import org.jruby.RubyObject;
 import org.jruby.RubyObjectAdapter;
 import org.jruby.RubyProc;
 import org.jruby.RubyString;
+import org.jruby.RubyTime;
 import org.jruby.anno.JRubyClass;
 import org.jruby.anno.JRubyMethod;
 import org.jruby.javasupport.JavaEmbedUtils;
@@ -124,7 +127,7 @@ public class Reader extends RubyObject {
         if (!hasNext) {
             return runtime.getNil();
         }
-
+        
         for (int i = 0; i < RubyNumeric.fix2int(field_count.convertToInteger()); i++) {
             int col = i + 1;
             RubyType type;
@@ -146,7 +149,8 @@ public class Reader extends RubyObject {
             //System.out.println("JDBC TypeName " + rs.getMetaData().getColumnTypeName(col));
             //System.out.println("JDBC Metadata scale " + rs.getMetaData().getScale(col));
             //System.out.println("Ruby Type " + type);
-
+            // System.out.println(""); //for prettier output
+            
             value = get_typecast_rs_value(runtime, rs, col, type);
             row.push_m(new IRubyObject[]{value});
         }
@@ -211,9 +215,9 @@ public class Reader extends RubyObject {
                 long lng = rs.getLong(col);
                 return RubyNumeric.int2fix(runtime, lng);
             case BIG_DECIMAL:
+                return new RubyBigDecimal(runtime, rs.getBigDecimal(col));
             case FLOAT:
-                double dbl = rs.getDouble(col);
-                return RubyNumeric.dbl2num(runtime, dbl);
+                return new RubyFloat(runtime, rs.getDouble(col));
             case TRUE_CLASS:
                 boolean bool = rs.getBoolean(col);
                 return runtime.newBoolean(bool);
@@ -222,7 +226,17 @@ public class Reader extends RubyObject {
                 if (dt == null || rs.wasNull()) {
                     return runtime.getNil();
                 }
-                return DataObjectsUtils.parse_date(runtime, dt);
+                // XXX produces RubyDate, but in ~50% probes there is a 1sec diff (why?)
+                // return DataObjectsUtils.prepareRubyDateFromSqlDate(runtime, dt);
+
+                // XXX produces RubyTime
+                // return DataObjectsUtils.parse_date(runtime, dt); 
+
+                // XXX produces RubyDate
+                IRubyObject rbTime1 = DataObjectsUtils.parse_date(runtime, dt);
+                return runtime.fastGetClass("Date").callMethod(runtime.getCurrentContext(), "parse",
+                        new IRubyObject[]{ rbTime1.callMethod(runtime.getCurrentContext(), "strftime", new IRubyObject[]{
+                        runtime.newString("%Y/%m/%d")}) });
             case DATE_TIME:
                 java.sql.Timestamp ts = null;
                 // DateTimes with all-zero components throw a SQLException with
@@ -235,13 +249,26 @@ public class Reader extends RubyObject {
                 if (ts == null || rs.wasNull()) {
                     return runtime.getNil();
                 }
-                return DataObjectsUtils.parse_date_time(runtime, ts);
+                // XXX produces RubyDateTime, but in ~50% probes there is a 1sec diff (why?)
+                // return DataObjectsUtils.prepareRubyDateTimeFromSqlTimestamp(runtime,ts);
+
+                // XXX produces RubyTime
+                // return DataObjectsUtils.parse_date_time(runtime, ts);
+
+                // XXX produces RubyDateTime
+                IRubyObject rbTime2 = DataObjectsUtils.parse_date_time(runtime, ts);
+                return runtime.fastGetClass("DateTime").callMethod(runtime.getCurrentContext(), "parse",
+                     new IRubyObject[]{ rbTime2.callMethod(runtime.getCurrentContext(), "to_s") });
             case TIME:
                 java.sql.Time tm = rs.getTime(col);
                 if (tm == null || rs.wasNull()) {
                     return runtime.getNil();
                 }
-                return DataObjectsUtils.parse_time(runtime, tm);
+                // XXX produces RubyTime
+                // return DataObjectsUtils.parse_time(runtime, tm); 
+
+                // XXX produces RubyString
+                return  DataObjectsUtils.prepareRubyTimeFromSqlTime(runtime, tm); 
             case STRING:
             default:
                 String str = rs.getString(col);

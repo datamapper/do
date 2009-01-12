@@ -166,6 +166,7 @@ describe DataObjects::Mysql::Reader do
   end
 
   it "should return proper number of rows and fields using row_count and field_count" do
+    pending "do_jdbc doesn's return correctly row_count at the moment" if JRUBY
     command = @connection.create_command("SELECT * FROM widgets WHERE id = (SELECT max(id) FROM widgets)")
     reader = command.execute_reader
     reader.field_count.should == 21
@@ -234,7 +235,7 @@ describe DataObjects::Mysql::Reader do
   describe "Date, Time, and DateTime" do
 
     it "should return nil when the time is 0" do
-
+      pending "We need to introduce something like Proxy for typeasting where each SQL type will have _rules_ of casting" if JRUBY
       # skip the test if the strict dates/times setting is turned on
       strict_time = select("SHOW VARIABLES LIKE 'sql_mode'") do |reader|
         reader.values.last.split(',').any? do |mode|

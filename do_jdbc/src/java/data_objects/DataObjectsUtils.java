@@ -9,14 +9,12 @@ import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 
-import org.joda.time.DateTime;
-import org.joda.time.format.DateTimeFormat;
-import org.joda.time.format.DateTimeFormatter;
 
+import java.util.Calendar;
+import java.util.GregorianCalendar;
 import org.jruby.Ruby;
 import org.jruby.RubyClass;
 import org.jruby.RubyTime;
-import org.jruby.anno.JRubyMethod;
 import org.jruby.exceptions.RaiseException;
 import org.jruby.runtime.builtin.IRubyObject;
 
@@ -29,6 +27,7 @@ public final class DataObjectsUtils {
 
     private static final DateFormat utilDateFormatter = new SimpleDateFormat("dd-MM-yyyy");
     private static final DateFormat sqlDateFormatter = new SimpleDateFormat("yyyy-MM-dd");
+    private static final GregorianCalendar gregCalendar = new GregorianCalendar();
 
     /**
      * Create a driver Error
@@ -142,6 +141,43 @@ public final class DataObjectsUtils {
         time.extend(new IRubyObject[] {runtime.getModule("TimeFormatter")});
         return (time.getUSec() != 0) ? time : runtime.getNil();
     }
+
+    public static IRubyObject prepareRubyDateFromSqlDate(Ruby runtime,Date date){
+       gregCalendar.setTime(date);
+       int month = gregCalendar.get(Calendar.MONTH);
+       month++; // In Calendar January == 0, etc...
+       RubyClass klazz = runtime.fastGetClass("Date");
+       return klazz.callMethod(
+                 runtime.getCurrentContext() ,"ordinal",
+                 new IRubyObject []{ runtime.newFixnum(gregCalendar.get(Calendar.YEAR)),
+                 runtime.newFixnum(gregCalendar.get(Calendar.DAY_OF_YEAR))});
+    }
+
+    public static IRubyObject prepareRubyDateTimeFromSqlTimestamp(Ruby runtime,Timestamp stamp){
+       gregCalendar.setTime(stamp);
+       int month = gregCalendar.get(Calendar.MONTH);
+       month++; // In Calendar January == 0, etc...
+       float offset = ((gregCalendar.get(Calendar.ZONE_OFFSET)/3600000)/24f);
+       RubyClass klazz = runtime.fastGetClass("DateTime");
+       return klazz.callMethod(runtime.getCurrentContext() , "ordinal",
+                 new IRubyObject []{runtime.newFixnum(gregCalendar.get(Calendar.YEAR)),
+                 runtime.newFixnum(gregCalendar.get(Calendar.DAY_OF_YEAR)),
+                 runtime.newFixnum(gregCalendar.get(Calendar.HOUR_OF_DAY)),
+                 runtime.newFixnum(gregCalendar.get(Calendar.MINUTE)),
+                 runtime.newFixnum(gregCalendar.get(Calendar.SECOND)),
+                 runtime.newFloat(offset) });
+    }
+
+     public static IRubyObject prepareRubyTimeFromSqlTime(Ruby runtime,Time time){
+       RubyTime rbTime = RubyTime.newTime(runtime, time.getTime());
+       rbTime.extend(new IRubyObject[] {runtime.getModule("TimeFormatter")});
+       if(rbTime.getJavaDate().getTime() == 0){
+            return runtime.getNil();
+       }else{
+            SimpleDateFormat sdf = new SimpleDateFormat("HH-mm-ss"); // TODO proper format?
+            return runtime.newString(sdf.format(rbTime.getJavaDate()));
+       }
+     }
 
     // private constructor
     private DataObjectsUtils() {
