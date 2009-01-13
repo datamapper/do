@@ -11,7 +11,6 @@ require File.expand_path(File.join(File.dirname(__FILE__), 'data_objects', 'tran
 require File.expand_path(File.join(File.dirname(__FILE__), 'data_objects', 'command'))
 require File.expand_path(File.join(File.dirname(__FILE__), 'data_objects', 'result'))
 require File.expand_path(File.join(File.dirname(__FILE__), 'data_objects', 'reader'))
-require File.expand_path(File.join(File.dirname(__FILE__), 'data_objects', 'field'))
 require File.expand_path(File.join(File.dirname(__FILE__), 'data_objects', 'quoting'))
 
 

@@ -391,8 +391,7 @@ static MYSQL_RES* cCommand_execute_async(VALUE self, MYSQL* db, VALUE query) {
 
   VALUE connection = rb_iv_get(self, "@connection");
 
-  retval = mysql_ping(db);
-  if(retval == CR_SERVER_GONE_ERROR) {
+  if(mysql_ping(db) && mysql_errno(db) == CR_SERVER_GONE_ERROR) {
     CHECK_AND_RAISE(retval, "Mysql server has gone away. \
                              Please report this issue to the Datamapper project. \
                              Specify your at least your MySQL version when filing a ticket");
@@ -496,9 +495,6 @@ static VALUE cConnection_initialize(VALUE self, VALUE uri) {
   //   mysql_ssl_set(db, key, cert, ca, capath, cipher)
   // }
 
-  my_bool reconnect = 1;
-  mysql_options(db, MYSQL_OPT_RECONNECT, &reconnect);
-
   result = (MYSQL *)mysql_real_connect(
     db,
     host,
@@ -513,6 +509,9 @@ static VALUE cConnection_initialize(VALUE self, VALUE uri) {
   if (NULL == result) {
     raise_mysql_error(Qnil, db, -1, NULL);
   }
+
+  my_bool reconnect = 1;
+  mysql_options(db, MYSQL_OPT_RECONNECT, &reconnect);
 
   // Set the connections character set
   encoding_error = mysql_set_character_set(db, encoding);
