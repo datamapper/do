@@ -143,6 +143,8 @@ CCROOT = ROOT.parent
 
 SQLITE_VERSION = '3_6_6_2'
 
+MINGW_PATH = ENV['MINGW_PATH'] || '/usr/i586-mingw32msvc'
+
 if (tasks_dir = ROOT.parent + 'tasks').directory?
   require tasks_dir + 'win32'
 
