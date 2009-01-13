@@ -5,8 +5,18 @@ describe "DataObjects::Sqlite3" do
   include Sqlite3SpecHelpers
 
   it "should raise error on bad connection string" do
+    pending
     # lambda { DataObjects::Connection.new("sqlite3:///ac0d9iopalmsdcasd/asdc9pomasd/test.db") }.should raise_error("unable to open database file")
   end
+
+  if JRUBY
+    it "should accept either DO or JDBC style URLs on JRuby" do
+      pending
+      @connection = DataObjects::Connection.new("jdbc:sqlite:test.db") # note the sqlite not sqlite3!
+      @connection = DataObjects::Connection.new("sqlite3://#{File.expand_path(File.dirname(__FILE__))}/test.db")
+    end
+  end
+
 end
 
 NOW = DateTime.now
@@ -15,11 +25,7 @@ describe "DataObjects::Sqlite3::Result" do
   include Sqlite3SpecHelpers
 
   before(:all) do
-    if JRUBY                                    # note the sqlite not sqlite3!
-      @connection = DataObjects::Connection.new("jdbc:sqlite:test.db")
-    else
-      @connection = DataObjects::Connection.new("sqlite3://#{File.expand_path(File.dirname(__FILE__))}/test.db")
-    end
+    @connection = DataObjects::Connection.new("sqlite3://#{File.expand_path(File.dirname(__FILE__))}/test.db")
   end
 
   after :all do

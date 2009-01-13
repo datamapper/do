@@ -202,8 +202,12 @@ public class Connection extends RubyObject {
         String fullUri = api.callMethod(connectionUri, "to_s").asJavaString();
         if (fullUri.startsWith("postgres:")) {
             // PostgreSQL uris require their own handling, and need to be of the
-            // form 'jdbc:postgresql' NOT 'jdbc:postgres'.
+            // form 'jdbc:postgresql' NOT 'jdbc:postgres'
             uri = new java.net.URI("jdbc:" + fullUri.replaceFirst("postgres", "postgresql"));
+        } else if (fullUri.startsWith("sqlite3:")) {
+            // SQLite3 uris also require special handling, and need to be of the
+            // form 'jdbc:sqlite' NOT 'jdbc:sqlite3'
+            uri = new java.net.URI("jdbc:" + fullUri.replaceFirst("sqlite3", "sqlite"));
         } else if (!fullUri.startsWith("jdbc:")) {
             // Generally, to create a JDBC uri, prefix the given uri with 'jdbc:'.
             uri = new java.net.URI("jdbc:" + fullUri);
