@@ -28,8 +28,8 @@ def have_build_env
   have_header('catalog/pg_type.h')
 end
 
-dir_config('pgsql', config_value('includedir-server'), config_value('libdir'))
-dir_config('pgsql', config_value('includedir'), config_value('libdir'))
+dir_config('pgsql-server', config_value('includedir-server'), config_value('libdir'))
+dir_config('pgsql-client', config_value('includedir'), config_value('libdir'))
 
 required_libraries = []
 desired_functions = %w(PQsetClientEncoding pg_encoding_to_char PQfreemem)
