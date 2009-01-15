@@ -7,7 +7,6 @@ Rakefile
 lib/data_objects.rb
 lib/data_objects/command.rb
 lib/data_objects/connection.rb
-lib/data_objects/field.rb
 lib/data_objects/logger.rb
 lib/data_objects/quoting.rb
 lib/data_objects/reader.rb
