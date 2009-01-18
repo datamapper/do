@@ -12,7 +12,7 @@ AUTHOR = "Yehuda Katz"
 EMAIL  = "wycats@gmail.com"
 GEM_NAME = "data_objects"
 GEM_VERSION = DataObjects::VERSION
-GEM_DEPENDENCIES = ["addressable", "~>2.0"], ["extlib", "~>0.9.8"]
+GEM_DEPENDENCIES = ["addressable", "~>2.0"], ["extlib", "~>0.9.9"]
 GEM_CLEAN = "{coverage,doc,log}/", "profile_results.*", "**/.*.sw?", "*.gem", ".config", "**/.DS_Store"
 GEM_EXTRAS = {}
 
@@ -49,7 +49,7 @@ end
 Spec::Rake::SpecTask.new(:spec) do |t|
   t.spec_opts << '--format' << 'specdoc' << '--colour'
   t.spec_opts << '--loadby' << 'random'
-  t.spec_files = Pathname.glob(ENV['FILES'] || 'spec/**/*_spec.rb')
+  t.spec_files = Pathname.glob(ENV['FILES'] || 'spec/**/*_spec.rb').map { |f| f.to_s }
 
   begin
     t.rcov = RUN_RCOV
