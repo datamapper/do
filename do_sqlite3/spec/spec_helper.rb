@@ -23,7 +23,7 @@ require 'do_sqlite3'
 log_path = File.expand_path(File.join(File.dirname(__FILE__), '..', 'log', 'do.log'))
 FileUtils.mkdir_p(File.dirname(log_path))
 
-DataObjects::Sqlite3.logger = DataObjects::Logger.new(log_path, 0)
+DataObjects::Sqlite3.logger = DataObjects::Logger.new(log_path, :debug)
 
 at_exit { DataObjects.logger.flush }
 

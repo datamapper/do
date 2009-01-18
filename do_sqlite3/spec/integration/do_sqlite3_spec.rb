@@ -28,8 +28,16 @@ describe "DataObjects::Sqlite3::Result" do
     @connection = DataObjects::Connection.new("sqlite3://#{File.expand_path(File.dirname(__FILE__))}/test.db")
   end
 
+  before do
+    class ::Person; end
+  end
+
   after :all do
     @connection.close
+  end
+
+  after do
+    Object.send(:remove_const, :Person)
   end
 
   it "should raise an error for a bad query" do
@@ -117,8 +125,6 @@ describe "DataObjects::Sqlite3::Result" do
   end
 
   it "should do a custom typecast reader with Class" do
-    class Person; end
-
     id = insert("INSERT INTO users (name, age, type) VALUES (?, ?, ?)", 'Sam', 30, Person)
 
     select("SELECT name, age, type FROM users WHERE id = ?", [String, Integer, Class], id) do |reader|
@@ -137,6 +143,8 @@ describe "DataObjects::Sqlite3::Result" do
 
       # Insert a timezone-less DateTime into the DB
       id = insert("INSERT INTO users (name, age, type, created_at) VALUES (?, ?, ?, ?)", 'Sam', 30, Person, raw_value)
+
+      pending 'Rational.new! is private in Ruby 1.9' if RUBY_VERSION >= '1.9.0'
 
       select("SELECT created_at FROM users WHERE id = ?", [DateTime], id) do |reader|
         reader.values.last.to_s.should == NOW.to_s
