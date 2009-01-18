@@ -10,7 +10,6 @@
 #undef PACKAGE_TARNAME
 #undef PACKAGE_VERSION
 #include <ruby.h>
-#include <version.h>
 #include <string.h>
 #include <math.h>
 #include <ctype.h>
@@ -52,6 +51,7 @@ static ID ID_LOGGER;
 static ID ID_DEBUG;
 static ID ID_LEVEL;
 static ID ID_TO_S;
+static ID ID_RATIONAL;
 
 static VALUE mDO;
 static VALUE cDO_Quoting;
@@ -62,7 +62,6 @@ static VALUE cDO_Reader;
 
 static VALUE rb_cDate;
 static VALUE rb_cDateTime;
-static VALUE rb_cRational;
 static VALUE rb_cBigDecimal;
 
 static VALUE mPostgres;
@@ -150,7 +149,7 @@ static VALUE parse_date(const char *date) {
 
   // Math from Date.jd_to_ajd
   ajd = jd * 2 - 1;
-  rational = rb_funcall(rb_cRational, rb_intern("new!"), 2, INT2NUM(ajd), INT2NUM(2));
+  rational = rb_funcall(rb_mKernel, ID_RATIONAL, 2, INT2NUM(ajd), INT2NUM(2));
 
   return rb_funcall(rb_cDate, ID_NEW_DATE, 3, rational, INT2NUM(0), INT2NUM(2299161));
 }
@@ -159,7 +158,7 @@ static VALUE parse_date(const char *date) {
 static VALUE seconds_to_offset(do_int64 num) {
   do_int64 den = 86400;
   reduce(&num, &den);
-  return rb_funcall(rb_cRational, rb_intern("new!"), 2, rb_ll2inum(num), rb_ll2inum(den));
+  return rb_funcall(rb_mKernel, ID_RATIONAL, 2, rb_ll2inum(num), rb_ll2inum(den));
 }
 
 static VALUE timezone_to_offset(int hour_offset, int minute_offset) {
@@ -253,7 +252,7 @@ static VALUE parse_date_time(const char *date) {
 
   reduce(&num, &den);
 
-  ajd = rb_funcall(rb_cRational, rb_intern("new!"), 2, rb_ull2inum(num), rb_ull2inum(den));
+  ajd = rb_funcall(rb_mKernel, ID_RATIONAL, 2, rb_ull2inum(num), rb_ull2inum(den));
   offset = timezone_to_offset(hour_offset, minute_offset);
 
   return rb_funcall(rb_cDateTime, ID_NEW_DATE, 3, ajd, offset, INT2NUM(2299161));
@@ -317,7 +316,7 @@ static VALUE infer_ruby_type(Oid type) {
   return rb_str_new2(ruby_type);
 }
 
-static VALUE typecast(char *value, long length, char *type) {
+static VALUE typecast(char *value, long length, const char *type) {
 
   if ( strcmp(type, "Class") == 0) {
     return rb_funcall(rb_cObject, rb_intern("full_const_get"), 1, TAINTED_STRING(value, length));
@@ -634,7 +633,7 @@ static VALUE cCommand_execute_reader(int argc, VALUE *argv[], VALUE self) {
   field_names = rb_ary_new();
   field_types = rb_iv_get(self, "@field_types");
 
-  if ( field_types == Qnil || RARRAY(field_types)->len == 0 ) {
+  if ( field_types == Qnil || RARRAY_LEN(field_types) == 0 ) {
     field_types = rb_ary_new();
     infer_types = 1;
   }
@@ -679,7 +678,7 @@ static VALUE cReader_next(VALUE self) {
   int i;
   int position;
 
-  char *type = "";
+  const char *type;
 
   VALUE array = rb_ary_new();
   VALUE field_types, ruby_type;
@@ -695,7 +694,7 @@ static VALUE cReader_next(VALUE self) {
   }
 
   for ( i = 0; i < field_count; i++ ) {
-    ruby_type = RARRAY(field_types)->ptr[i];
+    ruby_type = RARRAY_PTR(field_types)[i];
 
     if ( TYPE(ruby_type) == T_STRING ) {
       type = StringValuePtr(ruby_type);
@@ -752,16 +751,20 @@ void Init_do_postgres_ext() {
   rb_cDate = CONST_GET(rb_mKernel, "Date");
   rb_cDateTime = CONST_GET(rb_mKernel, "DateTime");
   rb_cTime = CONST_GET(rb_mKernel, "Time");
-  rb_cRational = CONST_GET(rb_mKernel, "Rational");
   rb_cBigDecimal = CONST_GET(rb_mKernel, "BigDecimal");
 
   rb_funcall(rb_mKernel, rb_intern("require"), 1, rb_str_new2("data_objects"));
 
-  ID_NEW_DATE = RUBY_VERSION_CODE < 186 ? rb_intern("new0") : rb_intern("new!");
+#ifdef RUBY_LESS_THAN_186
+  ID_NEW_DATE = rb_intern("new0");
+#else
+  ID_NEW_DATE = rb_intern("new!");
+#endif
   ID_LOGGER = rb_intern("logger");
   ID_DEBUG = rb_intern("debug");
   ID_LEVEL = rb_intern("level");
   ID_TO_S = rb_intern("to_s");
+  ID_RATIONAL = rb_intern("Rational");
 
   // Get references to the DataObjects module and its classes
   mDO = CONST_GET(rb_mKernel, "DataObjects");

@@ -6,7 +6,7 @@ describe "DataObjects::Postgres::Reader" do
 
   before :all do
     @connection = ensure_users_table_and_return_connection
-    Time.now.to_s.match(/\w{3} \w{3} \d{2} \d{2}:\d{2}:\d{2} ([-+]\d{2})(\d{2})/)
+    Time.now.to_s.match(/([-+]\d{2})(\d{2})/)
     @connection.create_command("SET SESSION TIME ZONE INTERVAL '#{$1}:#{$2}' HOUR TO MINUTE").execute_non_query
     @connection.create_command("INSERT INTO users (name) VALUES ('Test')").execute_non_query
     @connection.create_command("INSERT INTO users (name) VALUES ('Test')").execute_non_query
@@ -21,8 +21,6 @@ describe "DataObjects::Postgres::Reader" do
     date = DateTime.now
     id = insert("INSERT INTO users (name, created_at) VALUES (?, ?)", 'Sam', date)
 
-    pending 'Rational.new! is private in Ruby 1.9' if RUBY_VERSION >= '1.9.0'
-
     select("SELECT created_at FROM users WHERE id = ?", [DateTime], id) do |reader|
       reader.values.last.to_s.should == date.to_s
     end
@@ -33,8 +31,6 @@ describe "DataObjects::Postgres::Reader" do
   it "should return DateTimes using the current locale's Time Zone TIMESTAMP WITH TIME ZONE fields" do
     date = DateTime.now
     id = insert("INSERT INTO users (name, fired_at) VALUES (?, ?)", 'Sam', date)
-
-    pending 'Rational.new! is private in Ruby 1.9' if RUBY_VERSION >= '1.9.0'
 
     select("SELECT fired_at FROM users WHERE id = ?", [DateTime], id) do |reader|
       reader.values.last.to_s.should == date.to_s
@@ -56,8 +52,6 @@ describe "DataObjects::Postgres::Reader" do
 
     dates.each do |date|
       id = insert("INSERT INTO users (name, fired_at) VALUES (?, ?)", 'Sam', date)
-
-      pending 'Rational.new! is private in Ruby 1.9' if RUBY_VERSION >= '1.9.0'
 
       select("SELECT name, fired_at FROM users WHERE id = ?", [String, DateTime], id) do |reader|
         reader.fields.should == ["name", "fired_at"]

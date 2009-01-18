@@ -43,6 +43,7 @@ static ID ID_NEW;
 static ID ID_NEW_RATIONAL;
 static ID ID_NEW_DATE;
 static ID ID_CONST_GET;
+static ID ID_RATIONAL;
 static ID ID_UTC;
 static ID ID_ESCAPE_SQL;
 static ID ID_STRFTIME;
@@ -61,9 +62,6 @@ static VALUE cDO_Reader;
 // References to Ruby classes that we'll need
 static VALUE rb_cDate;
 static VALUE rb_cDateTime;
-#ifndef RUBY_19_COMPATIBILITY
-static VALUE rb_cRational;
-#endif
 static VALUE rb_cBigDecimal;
 
 // Classes that we'll build in Init
@@ -158,7 +156,7 @@ static int jd_from_date(int year, int month, int day) {
 static VALUE seconds_to_offset(long seconds_offset) {
   do_int64 num = seconds_offset, den = 86400;
   reduce(&num, &den);
-  return rb_funcall(rb_cRational, rb_intern("new!"), 2, rb_ll2inum(num), rb_ll2inum(den));
+  return rb_funcall(rb_mKernel, ID_RATIONAL, 2, rb_ll2inum(num), rb_ll2inum(den));
 }
 
 static VALUE timezone_to_offset(int hour_offset, int minute_offset) {
@@ -181,7 +179,7 @@ static VALUE parse_date(const char *date) {
 
   // Math from Date.jd_to_ajd
   ajd = jd * 2 - 1;
-  rational = rb_funcall(rb_cRational, ID_NEW_RATIONAL, 2, INT2NUM(ajd), INT2NUM(2));
+  rational = rb_funcall(rb_mKernel, ID_RATIONAL, 2, INT2NUM(ajd), INT2NUM(2));
   return rb_funcall(rb_cDate, ID_NEW_DATE, 3, rational, INT2NUM(0), INT2NUM(2299161));
 }
 
@@ -293,14 +291,14 @@ static VALUE parse_date_time(const char *date) {
 
   reduce(&num, &den);
 
-  ajd = rb_funcall(rb_cRational, rb_intern("new!"), 2, rb_ull2inum(num), rb_ull2inum(den));
+  ajd = rb_funcall(rb_mKernel, ID_RATIONAL, 2, rb_ull2inum(num), rb_ull2inum(den));
   offset = timezone_to_offset(hour_offset, minute_offset);
 
   return rb_funcall(rb_cDateTime, ID_NEW_DATE, 3, ajd, offset, INT2NUM(2299161));
 }
 
 // Convert C-string to a Ruby instance of Ruby type "type"
-static VALUE typecast(const char* value, unsigned long length, char* type) {
+static VALUE typecast(const char* value, unsigned long length, const char* type) {
   if (NULL == value)
     return Qnil;
 
@@ -392,7 +390,7 @@ static MYSQL_RES* cCommand_execute_async(VALUE self, MYSQL* db, VALUE query) {
   VALUE connection = rb_iv_get(self, "@connection");
 
   if(mysql_ping(db) && mysql_errno(db) == CR_SERVER_GONE_ERROR) {
-    CHECK_AND_RAISE(retval, "Mysql server has gone away. \
+    CHECK_AND_RAISE(mysql_errno(db), "Mysql server has gone away. \
                              Please report this issue to the Datamapper project. \
                              Specify your at least your MySQL version when filing a ticket");
   }
@@ -762,7 +760,7 @@ static VALUE cReader_next(VALUE self) {
   unsigned long *lengths;
 
   int i;
-  char *field_type;
+  const char *field_type;
 
   if (Qnil == reader_container)
     return Qfalse;
@@ -824,13 +822,13 @@ void Init_do_mysql_ext() {
   ID_TO_S = rb_intern("to_s");
   ID_TO_TIME = rb_intern("to_time");
   ID_NEW = rb_intern("new");
-  ID_NEW_RATIONAL = rb_intern("new!");
 #ifdef RUBY_LESS_THAN_186
   ID_NEW_DATE = rb_intern("new0");
 #else
   ID_NEW_DATE = rb_intern("new!");
 #endif
   ID_CONST_GET = rb_intern("const_get");
+  ID_RATIONAL = rb_intern("Rational");
   ID_UTC = rb_intern("utc");
   ID_ESCAPE_SQL = rb_intern("escape_sql");
   ID_STRFTIME = rb_intern("strftime");

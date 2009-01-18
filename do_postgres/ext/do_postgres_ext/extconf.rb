@@ -39,8 +39,14 @@ if have_build_env
   required_libraries.each(&method(:have_library))
   desired_functions.each(&method(:have_func))
   $CFLAGS << ' -Wall ' unless RUBY_PLATFORM =~ /mswin/
+
+  if RUBY_VERSION < '1.8.6'
+    $CFLAGS << ' -DRUBY_LESS_THAN_186'
+  end
+
   create_makefile("do_postgres_ext")
 else
   puts 'Could not find PostgreSQL build environment (libraries & headers): Makefile not created'
   exit(1)
 end
+

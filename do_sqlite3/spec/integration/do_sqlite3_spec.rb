@@ -144,8 +144,6 @@ describe "DataObjects::Sqlite3::Result" do
       # Insert a timezone-less DateTime into the DB
       id = insert("INSERT INTO users (name, age, type, created_at) VALUES (?, ?, ?, ?)", 'Sam', 30, Person, raw_value)
 
-      pending 'Rational.new! is private in Ruby 1.9' if RUBY_VERSION >= '1.9.0'
-
       select("SELECT created_at FROM users WHERE id = ?", [DateTime], id) do |reader|
         reader.values.last.to_s.should == NOW.to_s
       end

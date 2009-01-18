@@ -41,6 +41,7 @@
 
 // To store rb_intern values
 static ID ID_NEW_DATE;
+static ID ID_RATIONAL;
 static ID ID_LOGGER;
 static ID ID_DEBUG;
 static ID ID_LEVEL;
@@ -133,7 +134,7 @@ static VALUE parse_date(char *date) {
 
   // Math from Date.jd_to_ajd
   ajd = jd * 2 - 1;
-  rational = rb_funcall(rb_cRational, rb_intern("new!"), 2, INT2NUM(ajd), INT2NUM(2));
+  rational = rb_funcall(rb_mKernel, ID_RATIONAL, 2, INT2NUM(ajd), INT2NUM(2));
   return rb_funcall(rb_cDate, ID_NEW_DATE, 3, rational, INT2NUM(0), INT2NUM(2299161));
 }
 
@@ -141,7 +142,7 @@ static VALUE parse_date(char *date) {
 static VALUE seconds_to_offset(do_int64 num) {
   do_int64 den = 86400;
   reduce(&num, &den);
-  return rb_funcall(rb_cRational, rb_intern("new!"), 2, rb_ll2inum(num), rb_ll2inum(den));
+  return rb_funcall(rb_mKernel, ID_RATIONAL, 2, rb_ll2inum(num), rb_ll2inum(den));
 }
 
 static VALUE timezone_to_offset(int hour_offset, int minute_offset) {
@@ -239,7 +240,7 @@ static VALUE parse_date_time(char *date) {
 
   reduce(&num, &den);
 
-  ajd = rb_funcall(rb_cRational, rb_intern("new!"), 2, rb_ull2inum(num), rb_ull2inum(den));
+  ajd = rb_funcall(rb_mKernel, ID_RATIONAL, 2, rb_ull2inum(num), rb_ull2inum(den));
   offset = timezone_to_offset(hour_offset, minute_offset);
 
   return rb_funcall(rb_cDateTime, ID_NEW_DATE, 3, ajd, offset, INT2NUM(2299161));
@@ -263,7 +264,7 @@ static VALUE parse_time(char *date) {
 }
 
 static VALUE typecast(sqlite3_stmt *stmt, int i, VALUE ruby_class) {
-  char *ruby_type;
+  const char *ruby_type;
   VALUE ruby_value = Qnil;
   int original_type = sqlite3_column_type(stmt, i);
   int length        = sqlite3_column_bytes(stmt, i);
@@ -542,7 +543,6 @@ void Init_do_sqlite3_ext() {
   rb_cDate = CONST_GET(rb_mKernel, "Date");
   rb_cDateTime = CONST_GET(rb_mKernel, "DateTime");
   rb_cTime = CONST_GET(rb_mKernel, "Time");
-  rb_cRational = CONST_GET(rb_mKernel, "Rational");
   rb_cBigDecimal = CONST_GET(rb_mKernel, "BigDecimal");
 
   rb_funcall(rb_mKernel, rb_intern("require"), 1, rb_str_new2("data_objects"));
@@ -552,6 +552,7 @@ void Init_do_sqlite3_ext() {
 #else
   ID_NEW_DATE = rb_intern("new!");
 #endif
+  ID_RATIONAL = rb_intern("Rational");
   ID_LOGGER = rb_intern("logger");
   ID_DEBUG = rb_intern("debug");
   ID_LEVEL = rb_intern("level");
