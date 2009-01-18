@@ -839,7 +839,6 @@ void Init_do_mysql_ext() {
   // Store references to a few helpful clases that aren't in Ruby Core
   rb_cDate = RUBY_CLASS("Date");
   rb_cDateTime = RUBY_CLASS("DateTime");
-  rb_cRational = RUBY_CLASS("Rational");
   rb_cBigDecimal = RUBY_CLASS("BigDecimal");
 
   // Get references to the DataObjects module and its classes
