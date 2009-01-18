@@ -55,11 +55,6 @@ static VALUE cDO_Reader;
 
 static VALUE rb_cDate;
 static VALUE rb_cDateTime;
-
-#ifndef RUBY_19_COMPATIBILITY
-static VALUE rb_cRational;
-#endif
-
 static VALUE rb_cBigDecimal;
 
 static VALUE mSqlite3;
