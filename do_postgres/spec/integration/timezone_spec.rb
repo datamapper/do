@@ -20,18 +20,26 @@ describe "DataObjects::Postgres::Reader" do
   it "should return DateTimes using the current locale's Time Zone for TIMESTAMP WITHOUT TIME ZONE fields" do
     date = DateTime.now
     id = insert("INSERT INTO users (name, created_at) VALUES (?, ?)", 'Sam', date)
+
+    pending 'Rational.new! is private in Ruby 1.9' if RUBY_VERSION >= '1.9.0'
+
     select("SELECT created_at FROM users WHERE id = ?", [DateTime], id) do |reader|
       reader.values.last.to_s.should == date.to_s
     end
+
     exec("DELETE FROM users WHERE id = ?", id)
   end
 
   it "should return DateTimes using the current locale's Time Zone TIMESTAMP WITH TIME ZONE fields" do
     date = DateTime.now
     id = insert("INSERT INTO users (name, fired_at) VALUES (?, ?)", 'Sam', date)
+
+    pending 'Rational.new! is private in Ruby 1.9' if RUBY_VERSION >= '1.9.0'
+
     select("SELECT fired_at FROM users WHERE id = ?", [DateTime], id) do |reader|
       reader.values.last.to_s.should == date.to_s
     end
+
     exec("DELETE FROM users WHERE id = ?", id)
   end
 
@@ -48,6 +56,8 @@ describe "DataObjects::Postgres::Reader" do
 
     dates.each do |date|
       id = insert("INSERT INTO users (name, fired_at) VALUES (?, ?)", 'Sam', date)
+
+      pending 'Rational.new! is private in Ruby 1.9' if RUBY_VERSION >= '1.9.0'
 
       select("SELECT name, fired_at FROM users WHERE id = ?", [String, DateTime], id) do |reader|
         reader.fields.should == ["name", "fired_at"]
