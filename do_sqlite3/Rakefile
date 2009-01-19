@@ -10,8 +10,8 @@ JRUBY   = RUBY_PLATFORM =~ /java/
 WINDOWS = Gem.win_platform?
 SUDO    = (WINDOWS || JRUBY) ? '' : ('sudo' unless ENV['SUDOLESS'])
 
-AUTHOR = "Bernerd Schaefer"
-EMAIL  = "bj.schaefer@gmail.com"
+AUTHOR = "Dirkjan Bussink"
+EMAIL  = "d.bussink@gmail.com"
 GEM_NAME = "do_sqlite3"
 GEM_VERSION = DataObjects::Sqlite3::VERSION
 GEM_DEPENDENCIES = if JRUBY

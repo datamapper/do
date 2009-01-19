@@ -9,8 +9,8 @@ JRUBY   = RUBY_PLATFORM =~ /java/
 WINDOWS = Gem.win_platform?
 SUDO    = (WINDOWS || JRUBY) ? '' : ('sudo' unless ENV['SUDOLESS'])
 
-AUTHOR = "Bernerd Schaefer"
-EMAIL  = "bj.schaefer@gmail.com"
+AUTHOR = "Dirkjan Bussink"
+EMAIL  = "d.bussink@gmail.com"
 GEM_NAME = "do_postgres"
 GEM_VERSION = DataObjects::Postgres::VERSION
 GEM_DEPENDENCIES = if JRUBY

@@ -8,8 +8,8 @@ JRUBY   = RUBY_PLATFORM =~ /java/
 WINDOWS = Gem.win_platform?
 SUDO    = (WINDOWS || JRUBY) ? '' : ('sudo' unless ENV['SUDOLESS'])
 
-AUTHOR = "Yehuda Katz"
-EMAIL  = "wycats@gmail.com"
+AUTHOR = "Dirkjan Bussink"
+EMAIL  = "d.bussink@gmail.com"
 GEM_NAME = "data_objects"
 GEM_VERSION = DataObjects::VERSION
 GEM_DEPENDENCIES = ["addressable", "~>2.0"], ["extlib", "~>0.9.9"]

@@ -9,8 +9,8 @@ JRUBY   = RUBY_PLATFORM =~ /java/
 WINDOWS = Gem.win_platform?
 SUDO    = (WINDOWS || JRUBY) ? '' : ('sudo' unless ENV['SUDOLESS'])
 
-AUTHOR = "Scott Bauer"
-EMAIL  = "bauer.mail@gmail.com"
+AUTHOR = "Dirkjan Bussink"
+EMAIL  = "d.bussink@gmail.com"
 GEM_NAME = "do_mysql"
 GEM_VERSION = DataObjects::Mysql::VERSION
 GEM_DEPENDENCIES = if JRUBY
