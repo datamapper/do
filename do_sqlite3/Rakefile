@@ -204,7 +204,7 @@ begin
   require 'rake/extensiontask'
   Rake::ExtensionTask.new('do_sqlite3_ext', HOE.spec) do |ext|
     ext.cross_compile = true                # enable cross compilation (requires cross compile toolchain)
-    ext.cross_platform = 'i386-mswin32'
+    ext.cross_platform = 'x86-mswin32-60'
     ext.cross_config_options << "--with-sqlite3-dir=#{SQLITE_DIR}"
   end
 rescue LoadError
