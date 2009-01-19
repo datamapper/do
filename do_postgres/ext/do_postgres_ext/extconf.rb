@@ -49,4 +49,3 @@ else
   puts 'Could not find PostgreSQL build environment (libraries & headers): Makefile not created'
   exit(1)
 end
-
