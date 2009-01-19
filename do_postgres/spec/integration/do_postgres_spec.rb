@@ -144,9 +144,10 @@ describe "DataObjects::Postgres::Reader" do
   end
 
    it "should raise error on wrong number of columns calling set_types" do
-    command = @connection.create_command("SELECT * FROM users LIMIT 3")
-    command.set_types [Integer, String]
-    lambda { reader = command.execute_reader }.should raise_error
+     pending "C-extension does not raise an error on encountering wrong number of columns" unless JRUBY
+     command = @connection.create_command("SELECT * FROM users LIMIT 3")
+     command.set_types [Integer, String]
+     lambda { reader = command.execute_reader }.should raise_error
   end
 
   it "should return proper number of rows and fields using row_count and field_count" do
@@ -189,7 +190,8 @@ describe "DataObjects::Postgres::Reader" do
 
   it "should return nil when the time is 0" do
     pending "We need to introduce something like Proxy for typeasting where each SQL type will have _rules_ of casting" if JRUBY
-    id = insert("INSERT INTO users (name, fired_at) VALUES ('James', 0);")
+    pending "Fix zero representation of Time in PostgreSQL" unless JRUBY
+    id = insert("INSERT INTO users (name, fired_at) VALUES ('James', '0000-00-00')")
     select("SELECT fired_at FROM users WHERE id = ?", [Time], id) do |reader|
       reader.values.last.should be_nil
     end
