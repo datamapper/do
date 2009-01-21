@@ -12,7 +12,7 @@ AUTHOR = "Dirkjan Bussink"
 EMAIL  = "d.bussink@gmail.com"
 GEM_NAME = "data_objects"
 GEM_VERSION = DataObjects::VERSION
-GEM_DEPENDENCIES = ["addressable", "~>2.0"], ["extlib", "~>0.9.9"]
+GEM_DEPENDENCIES = ["addressable", "~>2.0"], ["extlib", "~>0.9.11"]
 GEM_CLEAN = "{coverage,doc,log}/", "profile_results.*", "**/.*.sw?", "*.gem", ".config", "**/.DS_Store"
 GEM_EXTRAS = {}
 
