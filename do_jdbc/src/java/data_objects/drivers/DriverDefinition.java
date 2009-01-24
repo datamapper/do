@@ -18,6 +18,14 @@ public interface DriverDefinition {
     public boolean supportsJdbcGeneratedKeys();
 
     /**
+     * Whether the Driver supports properly JDBC 2.0's
+     * scrollable result sets
+     *
+     * @return
+     */
+    public boolean supportsJdbcScrollableResultSets();
+
+    /**
      * A workaround for drivers that throw a SQLException if Connection#prepareStatement(String, int)
      * is called.
      *

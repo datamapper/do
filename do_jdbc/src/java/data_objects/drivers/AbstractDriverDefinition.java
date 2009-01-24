@@ -11,6 +11,8 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
 
     public abstract boolean supportsJdbcGeneratedKeys();
 
+    public abstract boolean supportsJdbcScrollableResultSets();
+
     public boolean supportsConnectionPrepareStatementMethodWithGKFlag() {
         return true;
     }
