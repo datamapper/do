@@ -330,21 +330,31 @@ static int flags_from_uri(VALUE uri) {
   int flags = 0;
   if (!NIL_P(query_values)) {
     /// scan for flags
+#ifdef SQLITE_OPEN_READONLY
     if (FLAG_PRESENT(query_values, OPEN_FLAG_READONLY)) {
       flags |= SQLITE_OPEN_READONLY;
     }
+#endif
+#ifdef SQLITE_OPEN_READWRITE
     if (FLAG_PRESENT(query_values, OPEN_FLAG_READWRITE)) {
       flags |= SQLITE_OPEN_READWRITE;
     }
+#endif
+#ifdef SQLITE_OPEN_CREATE
     if (FLAG_PRESENT(query_values, OPEN_FLAG_CREATE)) {
       flags |= SQLITE_OPEN_CREATE;
     }
+#endif
+#ifdef SQLITE_OPEN_NOMUTEX
     if (FLAG_PRESENT(query_values, OPEN_FLAG_NO_MUTEX)) {
       flags |= SQLITE_OPEN_NOMUTEX;
     }
+#endif
+#ifdef SQLITE_OPEN_FULLMUTEX
     if (FLAG_PRESENT(query_values, OPEN_FLAG_FULL_MUTEX)) {
       flags |= SQLITE_OPEN_FULLMUTEX;
     }
+#endif
   } else {
     flags = SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE;
   }
