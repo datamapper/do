@@ -17,6 +17,57 @@ describe "DataObjects::Sqlite3" do
     end
   end
 
+  unless JRUBY
+    it "should provide the sqlite3 version" do
+      lambda {DataObjects::Sqlite3.sqlite3_version}.should_not raise_error
+      
+      DataObjects::Sqlite3.sqlite3_version.should match(/^3\.\d+(\.\d+)?/)
+    end
+  end
+end
+
+describe "DataObjects::Sqlite3, open flags" do
+  include Sqlite3SpecHelpers
+  
+  url = "sqlite3://#{File.expand_path(File.dirname(__FILE__))}/ro_test.db"
+  ro_url = url + "?read_only=true"
+
+  
+  minor_version = DataObjects::Sqlite3.sqlite3_version.split(/\./)[1].to_i
+  
+  
+  unless JRUBY 
+    before(:all) do
+      @connection = DataObjects::Connection.new(url)
+
+      command = @connection.create_command("DROP TABLE users")
+      command.execute_non_query rescue nil
+
+      command = @connection.create_command("CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT)")
+      command.execute_non_query
+
+      insert("INSERT INTO users VALUES (1, 'A dummy user')")
+      @connection.close
+    end
+    
+    unless minor_version < 5
+    
+      it "should open a database in readonly mode if sqlite_open_v2 is available" do
+        @connection = DataObjects::Connection.new(ro_url)
+        
+        lambda {insert("insert into users (2, 'not allowed dummy')")}.should raise_error
+        
+        @connection.close
+      end
+    else
+      it "should ignore the ...open_v2 flags if sqlite version is not sufficient" do
+        @connection = DataObjects::Connection.new(ro_url)
+
+        lambda {insert("INSERT INTO users VALUES (2, 'Allowed to')")}.should_not raise_error
+        @connection.close
+      end
+    end      
+  end
 end
 
 NOW = DateTime.now
