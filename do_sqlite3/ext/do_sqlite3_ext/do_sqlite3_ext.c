@@ -325,37 +325,37 @@ static VALUE typecast(sqlite3_stmt *stmt, int i, VALUE ruby_class) {
 #define FLAG_PRESENT(query_values, flag) !NIL_P(rb_hash_aref(query_values, flag))
 
 static int cConnection_flags_from_uri(VALUE uri) {
-	VALUE query_values = rb_funcall(uri, ID_QUERY_VALUES, 0);
-	
-	int flags = 0;
-	if (!NIL_P(query_values)) {
-		/// scan for flags
-		if (FLAG_PRESENT(query_values, OPEN_FLAG_READONLY)) {
+  VALUE query_values = rb_funcall(uri, ID_QUERY_VALUES, 0);
+  
+  int flags = 0;
+  if (!NIL_P(query_values)) {
+    /// scan for flags
+    if (FLAG_PRESENT(query_values, OPEN_FLAG_READONLY)) {
       flags |= SQLITE_OPEN_READONLY;
-		} 
-		if (FLAG_PRESENT(query_values, OPEN_FLAG_READWRITE)) {
+    } 
+    if (FLAG_PRESENT(query_values, OPEN_FLAG_READWRITE)) {
       flags |= SQLITE_OPEN_READWRITE;
-		} 
-		if (FLAG_PRESENT(query_values, OPEN_FLAG_CREATE)) {
+    } 
+    if (FLAG_PRESENT(query_values, OPEN_FLAG_CREATE)) {
       flags |= SQLITE_OPEN_CREATE;
-		} 
-		if (FLAG_PRESENT(query_values, OPEN_FLAG_NO_MUTEX)) {
+    } 
+    if (FLAG_PRESENT(query_values, OPEN_FLAG_NO_MUTEX)) {
       flags |= SQLITE_OPEN_NOMUTEX;
-		} 
-		if (FLAG_PRESENT(query_values, OPEN_FLAG_FULL_MUTEX)) {
+    } 
+    if (FLAG_PRESENT(query_values, OPEN_FLAG_FULL_MUTEX)) {
       flags |= SQLITE_OPEN_FULLMUTEX;
-		} 
-		
-	} else {
-		flags = SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE;
-	}
-	
-	return  flags;
+    } 
+    
+  } else {
+    flags = SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE;
+  }
+  
+  return  flags;
 }
 
 static VALUE cConnection_open_v2(VALUE self, VALUE path, VALUE uri, sqlite3 **db) {
-	int flags = cConnection_flags_from_uri(uri);
-	return sqlite3_open_v2(StringValuePtr(path), db, flags, 0);
+  int flags = cConnection_flags_from_uri(uri);
+  return sqlite3_open_v2(StringValuePtr(path), db, flags, 0);
 }
 
 #endif
