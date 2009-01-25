@@ -62,6 +62,21 @@ describe "DataObjects::Sqlite3::Result" do
     result.to_i.should == 1
   end
 
+    it "should return proper number of rows and fields using row_count and field_count" do
+    pending "C-extension doesn't return row_count correctly at the moment"  unless JRUBY
+    command = @connection.create_command("DROP TABLE users")
+    command.execute_non_query rescue nil
+    command = @connection.create_command("CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT, type TEXT, age INTEGER, created_at DATETIME, balance DECIMAL default '0.00')")
+    command.execute_non_query
+    command = @connection.create_command("INSERT INTO users (name) VALUES ('test')")
+    command.execute_non_query
+    command = @connection.create_command("SELECT * FROM users WHERE id = (SELECT max(id) FROM users)")
+    reader = command.execute_reader
+    reader.field_count.should == 6
+    reader.row_count.should == 1
+    reader.close
+  end
+
   it "should do a reader query" do
     command = @connection.create_command("SELECT * FROM users")
     reader = command.execute_reader
