@@ -9,4 +9,8 @@ public class DerbyDriverDefinition extends AbstractDriverDefinition {
         return true;
     }
 
+    @Override
+    public boolean supportsJdbcScrollableResultSets() {
+        return true;
+    }
 }

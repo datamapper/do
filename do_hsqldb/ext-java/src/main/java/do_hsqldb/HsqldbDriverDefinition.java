@@ -9,4 +9,9 @@ public class HsqldbDriverDefinition extends AbstractDriverDefinition {
         return false;
     }
 
+    public boolean supportsJdbcScrollableResultSets()
+    {
+        return true;
+    }
+
 }

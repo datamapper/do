@@ -9,4 +9,9 @@ public class H2DriverDefinition extends AbstractDriverDefinition {
         return true;
     }
 
+    public boolean supportsJdbcScrollableResultSets()
+    {
+        return true;
+    }
+
 }

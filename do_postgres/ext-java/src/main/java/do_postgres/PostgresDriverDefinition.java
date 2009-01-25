@@ -9,4 +9,8 @@ public class PostgresDriverDefinition extends AbstractDriverDefinition {
         return false;
     }
 
+    public boolean supportsJdbcScrollableResultSets() {
+        return true;
+    }
+
 }

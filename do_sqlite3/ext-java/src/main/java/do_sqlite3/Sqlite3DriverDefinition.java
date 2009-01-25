@@ -9,6 +9,10 @@ public class Sqlite3DriverDefinition extends AbstractDriverDefinition {
         return true;
     }
 
+    public boolean supportsJdbcScrollableResultSets() {
+        return false; // TODO
+    }
+
     public boolean supportsConnectionPrepareStatementMethodWithGKFlag()
     {
         return false;

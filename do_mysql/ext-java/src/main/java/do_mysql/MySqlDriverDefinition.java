@@ -9,6 +9,11 @@ public class MySqlDriverDefinition extends AbstractDriverDefinition {
         return true;
     }
 
+    public boolean supportsJdbcScrollableResultSets()
+    {
+        return true;
+    }
+
     //@Override
     public String quoteString(String str) {
         StringBuffer quotedValue = new StringBuffer(str.length() + 2);
