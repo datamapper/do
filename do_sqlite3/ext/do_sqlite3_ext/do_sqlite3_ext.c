@@ -324,38 +324,32 @@ static VALUE typecast(sqlite3_stmt *stmt, int i, VALUE ruby_class) {
 
 #define FLAG_PRESENT(query_values, flag) !NIL_P(rb_hash_aref(query_values, flag))
 
-static int cConnection_flags_from_uri(VALUE uri) {
+static int flags_from_uri(VALUE uri) {
   VALUE query_values = rb_funcall(uri, ID_QUERY_VALUES, 0);
-  
+
   int flags = 0;
   if (!NIL_P(query_values)) {
     /// scan for flags
     if (FLAG_PRESENT(query_values, OPEN_FLAG_READONLY)) {
       flags |= SQLITE_OPEN_READONLY;
-    } 
+    }
     if (FLAG_PRESENT(query_values, OPEN_FLAG_READWRITE)) {
       flags |= SQLITE_OPEN_READWRITE;
-    } 
+    }
     if (FLAG_PRESENT(query_values, OPEN_FLAG_CREATE)) {
       flags |= SQLITE_OPEN_CREATE;
-    } 
+    }
     if (FLAG_PRESENT(query_values, OPEN_FLAG_NO_MUTEX)) {
       flags |= SQLITE_OPEN_NOMUTEX;
-    } 
+    }
     if (FLAG_PRESENT(query_values, OPEN_FLAG_FULL_MUTEX)) {
       flags |= SQLITE_OPEN_FULLMUTEX;
-    } 
-    
+    }
   } else {
     flags = SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE;
   }
-  
-  return  flags;
-}
 
-static VALUE cConnection_open_v2(VALUE self, VALUE path, VALUE uri, sqlite3 **db) {
-  int flags = cConnection_flags_from_uri(uri);
-  return sqlite3_open_v2(StringValuePtr(path), db, flags, 0);
+  return flags;
 }
 
 #endif
@@ -366,12 +360,15 @@ static VALUE cConnection_initialize(VALUE self, VALUE uri) {
   int ret;
   VALUE path;
   sqlite3 *db;
-  
+  int flags = 0;
+
   path = rb_funcall(uri, ID_PATH, 0);
 
 #ifdef HAVE_SQLITE3_OPEN_V2
-  ret = cConnection_open_v2(self, path, uri, &db);
+  flags = flags_from_uri(uri);
+  ret = sqlite3_open_v2(StringValuePtr(path), &db, flags, 0);
 #else
+  printf("Kiekeboe\n");
   ret = sqlite3_open(StringValuePtr(path), &db);
 #endif
 
@@ -581,10 +578,6 @@ static VALUE cReader_row_count(VALUE self) {
   return rb_iv_get(self, "@row_count");
 }
 
-static VALUE mSqlite3_sqlite_version(VALUE self) {
-  return rb_str_new2(sqlite3_libversion());
-}
-
 void Init_do_sqlite3_ext() {
   rb_require("bigdecimal");
   rb_require("date");
@@ -617,9 +610,7 @@ void Init_do_sqlite3_ext() {
 
   // Initialize the DataObjects::Sqlite3 module, and define its classes
   mSqlite3 = rb_define_module_under(mDO, "Sqlite3");
-  puts("hi");
-  rb_define_singleton_method(mSqlite3, "sqlite3_version", mSqlite3_sqlite_version, 0);
-  
+
   eSqlite3Error = rb_define_class("Sqlite3Error", rb_eStandardError);
 
   cConnection = SQLITE3_CLASS("Connection", cDO_Connection);

@@ -36,10 +36,7 @@ end
 # create_makefile(extension_name)
 if have_header( "sqlite3.h" ) && have_library( "sqlite3", "sqlite3_open" )
   have_func("sqlite3_prepare_v2")
-  
-  if (have_func("sqlite3_open_v2"))
-    puts "Using sqlite3_open_v2"
-  end
-  
+  have_func("sqlite3_open_v2")
+
   create_makefile(extension_name)
 end
