@@ -5,6 +5,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
+import java.sql.SQLFeatureNotSupportedException;
 import java.sql.Statement;
 import java.sql.Types;
 import java.util.regex.Matcher;
@@ -205,7 +206,7 @@ public class Command extends RubyObject {
         java.sql.Connection conn = (java.sql.Connection) wrapped_jdbc_connection.dataGetStruct();
         boolean inferTypes = false;
         int columnCount = 0;
-        int rowCount = 0; // TODO
+        IRubyObject rowCount = runtime.getNil();
         PreparedStatement sqlStatement = null;
         ResultSet resultSet = null;
         ResultSetMetaData metaData = null;
@@ -217,8 +218,13 @@ public class Command extends RubyObject {
         // execute the query
         try {
             String sqlText = prepareSqlTextForPs(api.getInstanceVariable(recv, "@text").asJavaString(), recv, args);
-            sqlStatement = conn.prepareStatement(sqlText);
-            //sqlStatement.setMaxRows();
+
+            sqlStatement = conn.prepareStatement(
+                           sqlText,
+                           driver.supportsJdbcScrollableResultSets() ? ResultSet.TYPE_SCROLL_INSENSITIVE : ResultSet.TYPE_FORWARD_ONLY,
+                           ResultSet.CONCUR_READ_ONLY);
+
+            //sqlStatement.setMaxRows();  // TODO Important when there is many rows and we are trying count them.
             prepareStatementFromArgs(sqlStatement, recv, args);
 
             long startTime = System.currentTimeMillis();
@@ -229,6 +235,8 @@ public class Command extends RubyObject {
 
             metaData = resultSet.getMetaData();
             columnCount = metaData.getColumnCount();
+            //XXX counting rows implies lost of lazy loading with scrollable RS :(
+            rowCount = countRows(resultSet,conn,sqlText,runtime,recv,args);
 
             // pass the response to the reader
             IRubyObject wrappedResultSet = Java.java_to_ruby(recv, JavaObject.wrap(recv.getRuntime(), resultSet), Block.NULL_BLOCK);
@@ -246,7 +254,7 @@ public class Command extends RubyObject {
 
             // save the field_count in reader
             api.setInstanceVariable(reader, "@field_count", runtime.newFixnum(columnCount));
-            api.setInstanceVariable(reader, "@row_count", runtime.newFixnum(rowCount)); // TODO
+            api.setInstanceVariable(reader, "@row_count", rowCount);
 
             // get the field types
             RubyArray field_names = runtime.newArray();
@@ -349,6 +357,75 @@ public class Command extends RubyObject {
                 rs.close();
             } catch (Exception e) {}
         }
+    }
+
+    /**
+     * Count rows using scrollable RS (if supported) 
+     * or create second query and count rows of returned RS
+     *
+     * @param runtime
+     * @param rs
+     * @return number of rows
+     * @throws java.sql.SQLFeatureNotSupportedException Shouldn't be thrown (we use DriverDefinition)
+     * @throws java.sql.SQLException
+     */
+    private static IRubyObject countRows(ResultSet rs,java.sql.Connection conn,
+            String sqlText,Ruby runtime, IRubyObject recv, IRubyObject[] args)
+            throws SQLFeatureNotSupportedException, SQLException{
+         int rowCount = 0;
+         if(driver.supportsJdbcScrollableResultSets()){
+            int pos = rs.getRow();
+            boolean afterLast = false;
+            if(pos == 0){
+                afterLast = rs.isAfterLast();
+            }
+            try{
+                if(rs.last() == true){
+                    rowCount = rs.getRow();
+                }
+                return runtime.newFixnum(rowCount);
+            }finally{
+                // XXX Warning: MySQL throws Exception on rs.absoulte(0) ("point before first row")
+                // http://kickjava.com/src/com/mysql/jdbc/ResultSet.java.htm line:2115
+                if(pos == 0){
+                    if(afterLast == false){
+                        rs.beforeFirst();
+                    }else{
+                        rs.afterLast();
+                    }
+                }else{
+                    rs.absolute(pos);
+                }
+            }
+         }else{
+                // TODO
+                // XXX dirty hack for Sqlite3
+                // Sqlite3 is never used in server mode so
+                // cost of transfer data from db to client
+                // is low and we may execute query two times
+                //
+                // There is a solution for this: Take lazy aproach
+                // and count rows during _first_ invocation
+                // of Reader#row_count and cache that value
+                // If nobody uses row_count there will no second query.
+                PreparedStatement sqlStatement = null;
+                ResultSet resultSet = null;
+                int rowsNr = 0;
+                sqlStatement = conn.prepareStatement(sqlText, ResultSet.TYPE_FORWARD_ONLY,
+                           ResultSet.CONCUR_READ_ONLY);
+                prepareStatementFromArgs(sqlStatement, recv, args);
+                resultSet = sqlStatement.executeQuery();
+                while(resultSet.next()){
+                    rowsNr ++;
+                }
+                if(resultSet != null){
+                    resultSet.close();
+                }
+                if(sqlStatement != null){
+                    sqlStatement.close();
+                }
+                return runtime.newFixnum(rowsNr);
+         }
     }
 
     /**
