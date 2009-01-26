@@ -232,9 +232,17 @@ describe DataObjects::Mysql::Reader do
     end
   end
 
-  it "should correctly work with default utf8 character set" do
+  it "should correctly interpret extended characters in sql statements" do
     name = "Билли Боб"
     id = insert("INSERT INTO users (name) VALUES ('#{name}')")
+    select("SELECT name from users WHERE id = ?", [String], id) do |reader|
+      reader.values[0].should == name
+    end
+  end
+
+  it "should correctly interpret extended characters in args of sql statements" do
+    name = "Билли Боб"
+    id = insert("INSERT INTO users (name) VALUES (?)", name)
     select("SELECT name from users WHERE id = ?", [String], id) do |reader|
       reader.values[0].should == name
     end

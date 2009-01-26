@@ -42,7 +42,7 @@ MYSQL.database = ENV['DO_MYSQL_DATABASE'] || 'do_mysql_test'
 MYSQL.socket   = ENV['DO_MYSQL_SOCKET'] || '/tmp/mysql.sock'
 
 DO_MYSQL_SPEC_URI = Addressable::URI::parse(ENV["DO_MYSQL_SPEC_URI"] ||
-                    "mysql://#{MYSQL.user}:#{MYSQL.pass}@#{MYSQL.host}:#{MYSQL.port}/#{MYSQL.database}")
+                    "mysql://#{MYSQL.user}:#{MYSQL.pass}@#{MYSQL.host}:#{MYSQL.port}/#{MYSQL.database}?useUnicode=true&characterEncoding=utf8")
 
 module MysqlSpecHelpers
   def insert(query, *args)
