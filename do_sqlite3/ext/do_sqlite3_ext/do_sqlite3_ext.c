@@ -378,7 +378,6 @@ static VALUE cConnection_initialize(VALUE self, VALUE uri) {
   flags = flags_from_uri(uri);
   ret = sqlite3_open_v2(StringValuePtr(path), &db, flags, 0);
 #else
-  printf("Kiekeboe\n");
   ret = sqlite3_open(StringValuePtr(path), &db);
 #endif
 
