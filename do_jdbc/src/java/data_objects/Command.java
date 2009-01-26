@@ -94,7 +94,12 @@ public class Command extends RubyObject {
         int affectedCount = 0;
         PreparedStatement sqlStatement = null;
         java.sql.ResultSet keys = null;
-        String sqlText = prepareSqlTextForPs(api.getInstanceVariable(recv, "@text").asJavaString(), recv, args);
+
+//        String sqlText = prepareSqlTextForPs(api.getInstanceVariable(recv, "@text").asJavaString(), recv, args);
+
+        String sqlText = prepareSqlTextForPs(
+                api.convertToRubyString(api.getInstanceVariable(recv, "@text")).getUnicodeValue(),
+                recv, args);
 
         try {
             if (driver.supportsConnectionPrepareStatementMethodWithGKFlag()) {
@@ -575,7 +580,8 @@ public class Command extends RubyObject {
             RubyBigDecimal rbBigDec = (RubyBigDecimal) arg;
             ps.setBigDecimal(idx, rbBigDec.getValue());
         } else {
-            ps.setString(idx, arg.toString());
+//            ps.setString(idx, arg.toString());
+            ps.setString(idx, api.convertToRubyString(arg).getUnicodeValue());
         }
     }
 
