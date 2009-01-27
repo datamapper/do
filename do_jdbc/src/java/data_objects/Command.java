@@ -1,12 +1,15 @@
 package data_objects;
 
 import data_objects.drivers.DriverDefinition;
+import java.io.UnsupportedEncodingException;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Types;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.jruby.Ruby;
@@ -95,11 +98,10 @@ public class Command extends RubyObject {
         PreparedStatement sqlStatement = null;
         java.sql.ResultSet keys = null;
 
-//        String sqlText = prepareSqlTextForPs(api.getInstanceVariable(recv, "@text").asJavaString(), recv, args);
 
-        String sqlText = prepareSqlTextForPs(
-                api.convertToRubyString(api.getInstanceVariable(recv, "@text")).getUnicodeValue(),
-                recv, args);
+//        String sqlText = prepareSqlTextForPs(api.getInstanceVariable(recv, "@text").asJavaString(), recv, args);
+        String doSqlText = api.convertToRubyString(api.getInstanceVariable(recv, "@text")).getUnicodeValue();
+        String sqlText = prepareSqlTextForPs(doSqlText, recv, args);
 
         try {
             if (driver.supportsConnectionPrepareStatementMethodWithGKFlag()) {
