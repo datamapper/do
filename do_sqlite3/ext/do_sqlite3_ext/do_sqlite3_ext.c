@@ -9,7 +9,7 @@
 #define ID_PATH rb_intern("path")
 #define ID_NEW rb_intern("new")
 #define ID_ESCAPE rb_intern("escape_sql")
-#define ID_QUERY_VALUES rb_intern("query_values")
+#define ID_QUERY rb_intern("query")
 
 #define RUBY_STRING(char_ptr) rb_str_new2(char_ptr)
 #define TAINTED_STRING(name, length) rb_tainted_str_new(name, length)
@@ -325,7 +325,7 @@ static VALUE typecast(sqlite3_stmt *stmt, int i, VALUE ruby_class) {
 #define FLAG_PRESENT(query_values, flag) !NIL_P(rb_hash_aref(query_values, flag))
 
 static int flags_from_uri(VALUE uri) {
-  VALUE query_values = rb_funcall(uri, ID_QUERY_VALUES, 0);
+  VALUE query_values = rb_funcall(uri, ID_QUERY, 0);
 
   int flags = 0;
   if (!NIL_P(query_values)) {
