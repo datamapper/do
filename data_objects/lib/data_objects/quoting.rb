@@ -50,7 +50,7 @@ module DataObjects
           if value.respond_to?(:to_sql)
             value.to_sql
           else
-            raise "Don't know how to quote #{value.inspect}"
+            raise "Don't know how to quote #{value.class} objects (#{value.inspect})"
           end
       end
     end
