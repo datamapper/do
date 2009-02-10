@@ -76,6 +76,8 @@ describe DataObjects::Mysql do
   end
 
   it "should raise an error when opened with an invalid server uri" do
+    pending 'causing a hang in JRuby' if JRUBY
+
     def connecting_with(uri)
       lambda { DataObjects::Connection.new(uri) }
     end
