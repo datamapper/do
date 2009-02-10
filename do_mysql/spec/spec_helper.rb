@@ -16,6 +16,9 @@ require 'fileutils'
 $:.unshift File.expand_path(File.join(File.dirname(__FILE__), '..', '..', 'data_objects', 'lib'))
 require 'data_objects'
 
+DATAOBJECTS_SPEC_ROOT = Pathname(__FILE__).dirname.parent.parent + 'data_objects' + 'spec'
+Pathname.glob((DATAOBJECTS_SPEC_ROOT + 'lib/**/*.rb').to_s).each { |f| require f }
+
 if JRUBY
   $:.unshift File.expand_path(File.join(File.dirname(__FILE__), '..', '..', 'do_jdbc', 'lib'))
   require 'do_jdbc'
@@ -31,6 +34,10 @@ FileUtils.mkdir_p(File.dirname(log_path))
 DataObjects::Mysql.logger = DataObjects::Logger.new(log_path, :debug)
 
 at_exit { DataObjects.logger.flush }
+
+Spec::Runner.configure do |config|
+  config.include(DataObjects::Spec::PendingHelpers)
+end
 
 MYSQL = OpenStruct.new
 MYSQL.user = ENV['DO_MYSQL_USER'] || 'root'
