@@ -5,7 +5,6 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
-import java.sql.SQLFeatureNotSupportedException;
 import java.sql.Statement;
 import java.sql.Types;
 import java.util.regex.Matcher;
@@ -366,12 +365,11 @@ public class Command extends RubyObject {
      * @param runtime
      * @param rs
      * @return number of rows
-     * @throws java.sql.SQLFeatureNotSupportedException Shouldn't be thrown (we use DriverDefinition)
      * @throws java.sql.SQLException
      */
     private static IRubyObject countRows(ResultSet rs,java.sql.Connection conn,
             String sqlText,Ruby runtime, IRubyObject recv, IRubyObject[] args)
-            throws SQLFeatureNotSupportedException, SQLException{
+            throws SQLException{
          int rowCount = 0;
          if(driver.supportsJdbcScrollableResultSets()){
             int pos = rs.getRow();
