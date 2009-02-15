@@ -6,12 +6,7 @@ describe "DataObjects::Hsqldb::Connection" do
 
   it "should connect to the database" do
     @connection = DataObjects::Connection.new("jdbc:hsqldb:mem")
-  end
-
-  it "should be closeable" do
-    pending
-    @connection = DataObjects::Connection.new("jdbc:hsqldb:mem")
-    @connection.real_close.should_not raise_error
+    @connection.close
   end
 
 end
@@ -19,8 +14,12 @@ end
 describe "DataObjects::Hsqldb::Command" do
   include JdbcSpecHelpers
 
-  before(:all) do
+  before :each do
     setup_test_environment
+  end
+
+  after :each do
+    teardown_test_environment
   end
 
   it "should be able to create a command" do
@@ -34,12 +33,12 @@ describe "DataObjects::Hsqldb::Command" do
 
     it "should raise an error when given a bad query" do
       command = @connection.create_command("INSER INTO table_which_doesnt_exist (id) VALUES (1)")
-      lambda { command.execute_non_query }.should raise_error(JdbcError,
+      lambda { command.execute_non_query }.should raise_error(HsqldbError,
           /Unexpected token: INSER in statement \[INSER\]/)
 
       command = @connection.create_command("INSERT INTO table_which_doesnt_exist (id) VALUES (1)")
-      lambda { command.execute_non_query }.should raise_error(JdbcError,
-          /Table not found in statement \[INSERT INTO table_which_doesnt_exist\]/)
+      lambda { command.execute_non_query }.should raise_error(HsqldbError,
+          /Table not found in statement \[INSERT INTO table_which_doesnt_exist.*\]/)
     end
 
     it "should execute and return a Result" do
@@ -54,11 +53,11 @@ describe "DataObjects::Hsqldb::Command" do
 
     it "should raise an error when given a bad query" do
       command = @connection.create_command("SELCT * FROM table_which_doesnt_exist")
-      lambda { command.execute_reader }.should raise_error(JdbcError,
-          /Unexpected token: SELCT in statement \[SELCT\]/)
+      lambda { command.execute_reader }.should raise_error(HsqldbError)
+      #,         /Unexpected token: SELCT in statement \[SELCT\]/)
 
       command = @connection.create_command("SELECT * FROM table_which_doesnt_exist")
-      lambda { command.execute_reader }.should raise_error(JdbcError,
+      lambda { command.execute_reader }.should raise_error(HsqldbError,
           /Table not found in statement \[SELECT \* FROM table_which_doesnt_exist\]/)
     end
 
@@ -120,11 +119,11 @@ describe "DataObjects::Jdbc::Reader" do
   it "should raise an error when you pass too many or too few types for the expected result set" do
     lambda {
       select("SELECT name, fired_at FROM users", [String, DateTime, Integer])
-      }.should raise_error(JdbcError, /Field-count mismatch. Expected 3 fields, but the query yielded 2/)
+      }.should raise_error(HsqldbError, /Field-count mismatch. Expected 3 fields, but the query yielded 2/)
   end
 
   it "shouldn't raise an error when you pass NO types for the expected result set" do
-    lambda { select("SELECT name, fired_at FROM users", nil) }.should_not raise_error(JdbcError)
+    lambda { select("SELECT name, fired_at FROM users", nil) }.should_not raise_error(HsqldbError)
   end
 
   it "should return the proper number of fields" do
@@ -150,7 +149,7 @@ describe "DataObjects::Jdbc::Reader" do
       reader.next!
       reader.next!
 
-      lambda { reader.values }.should raise_error(JdbcError)
+      lambda { reader.values }.should raise_error(HsqldbError)
     end
   end
 
@@ -170,7 +169,6 @@ describe "DataObjects::Jdbc::Reader" do
   end
 
   it "should return DB nulls as nil" do
-    pending "needs fixing"
     id = insert("INSERT INTO users (name) VALUES (NULL)")
     select("SELECT name from users WHERE name is null") do |reader|
       reader.values[0].should == nil

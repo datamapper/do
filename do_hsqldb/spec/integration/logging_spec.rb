@@ -12,16 +12,16 @@ describe DataObjects::Hsqldb::Command do
     it "should log reader queries when the level is Debug (0)" do
       command = @connection.create_command("SELECT * FROM widgets WHERE name = ?")
       @mock_logger = mock('MockLogger', :level => 0)
-      DataObjects::Hsqldb.expects(:logger).returns(@mock_logger)
-      @mock_logger.expects(:debug) #.with("SELECT * FROM widgets WHERE name = 'Scott'")
+      DataObjects::Hsqldb.should_receive(:logger).and_return(@mock_logger)
+      @mock_logger.should_receive(:debug).with(/\([\d.]+\) SELECT \* FROM widgets WHERE name = 'Scott'/)
       command.execute_reader('Scott').close
     end
 
     it "shouldn't log reader queries when the level isn't Debug (0)" do
       command = @connection.create_command("SELECT * FROM widgets WHERE name = ?")
       @mock_logger = mock('MockLogger', :level => 1)
-      DataObjects::Hsqldb.expects(:logger).returns(@mock_logger)
-      @mock_logger.expects(:debug).never
+      DataObjects::Hsqldb.should_receive(:logger).and_return(@mock_logger)
+      @mock_logger.should_receive(:debug).never
       command.execute_reader('Scott').close
     end
   end
@@ -30,16 +30,16 @@ describe DataObjects::Hsqldb::Command do
     it "should log non-query statements when the level is Debug (0)" do
       command = @connection.create_command("INSERT INTO invoices (invoice_number) VALUES (?)")
       @mock_logger = mock('MockLogger', :level => 0)
-      DataObjects::Hsqldb.expects(:logger).returns(@mock_logger)
-      @mock_logger.expects(:debug) #.with("INSERT INTO invoices (invoice_number) VALUES (1234)")
+      DataObjects::Hsqldb.should_receive(:logger).and_return(@mock_logger)
+      @mock_logger.should_receive(:debug) #.with("INSERT INTO invoices (invoice_number) VALUES (1234)")
       command.execute_non_query('Blah')
     end
 
     it "shouldn't log non-query statements when the level isn't Debug (0)" do
       command = @connection.create_command("INSERT INTO invoices (invoice_number) VALUES (?)")
       @mock_logger = mock('MockLogger', :level => 1)
-      DataObjects::Hsqldb.expects(:logger).returns(@mock_logger)
-      @mock_logger.expects(:debug).never
+      DataObjects::Hsqldb.should_receive(:logger).and_return(@mock_logger)
+      @mock_logger.should_receive(:debug).never
       command.execute_non_query('Blah')
     end
   end

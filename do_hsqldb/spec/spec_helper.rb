@@ -21,11 +21,6 @@ require 'do_jdbc'
 $:.unshift File.expand_path(File.join(File.dirname(__FILE__), '..', 'lib'))
 require 'do_hsqldb'
 
-Spec::Runner.configure do |config|
-  # Use Mocha rather than RSpec Mocks
-  config.mock_with :mocha
-end
-
 log_path = File.expand_path(File.join(File.dirname(__FILE__), '..', 'log', 'do.log'))
 FileUtils.mkdir_p(File.dirname(log_path))
 
@@ -57,6 +52,8 @@ module JdbcSpecHelpers
     end
   end
 
+  def teardown_test_environment
+  end
 
   def setup_test_environment
     @connection = DataObjects::Connection.new("jdbc:hsqldb:mem")

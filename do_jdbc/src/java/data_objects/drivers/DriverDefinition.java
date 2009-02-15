@@ -1,6 +1,7 @@
 package data_objects.drivers;
 
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 
 /**
@@ -45,5 +46,7 @@ public interface DriverDefinition {
 
 
     public String quoteString(String str);
+
+    public String toString(PreparedStatement ps);
 
 }

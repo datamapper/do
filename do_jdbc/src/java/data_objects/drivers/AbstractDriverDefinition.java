@@ -1,6 +1,7 @@
 package data_objects.drivers;
 
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 
 /**
@@ -27,6 +28,10 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
         quotedValue.append(str);
         quotedValue.append("\'");
         return quotedValue.toString();
+    }
+
+    public String toString(PreparedStatement ps) {
+	return ps.toString();
     }
 
 }

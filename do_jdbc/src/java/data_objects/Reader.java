@@ -127,7 +127,7 @@ public class Reader extends RubyObject {
         if (!hasNext) {
             return runtime.getNil();
         }
-        
+
         for (int i = 0; i < RubyNumeric.fix2int(field_count.convertToInteger()); i++) {
             int col = i + 1;
             RubyType type;
@@ -150,7 +150,7 @@ public class Reader extends RubyObject {
             //System.out.println("JDBC Metadata scale " + rs.getMetaData().getScale(col));
             //System.out.println("Ruby Type " + type);
             // System.out.println(""); //for prettier output
-            
+
             value = get_typecast_rs_value(runtime, rs, col, type);
             row.push_m(new IRubyObject[]{value});
         }
@@ -229,7 +229,7 @@ public class Reader extends RubyObject {
                 // produces  RubyDate
                 return DataObjectsUtils.prepareRubyDateFromSqlDate(runtime, dt);
                 // produces RubyTime
-                // return DataObjectsUtils.parse_date(runtime, dt); 
+                // return DataObjectsUtils.parse_date(runtime, dt);
             case DATE_TIME:
                 java.sql.Timestamp ts = null;
                 // DateTimes with all-zero components throw a SQLException with
@@ -255,7 +255,7 @@ public class Reader extends RubyObject {
                 // produces RubyString
                 return  DataObjectsUtils.prepareRubyTimeFromSqlTime(runtime, tm);
                 // produces RubyTime
-                // return DataObjectsUtils.parse_time(runtime, tm); 
+                // return DataObjectsUtils.parse_time(runtime, tm);
             case STRING:
             default:
                 String str = rs.getString(col);

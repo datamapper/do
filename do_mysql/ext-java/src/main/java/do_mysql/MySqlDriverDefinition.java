@@ -1,5 +1,7 @@
 package do_mysql;
 
+import java.sql.PreparedStatement;
+
 import data_objects.drivers.AbstractDriverDefinition;
 
 public class MySqlDriverDefinition extends AbstractDriverDefinition {
@@ -22,6 +24,10 @@ public class MySqlDriverDefinition extends AbstractDriverDefinition {
         // TODO: handle backslashes
         quotedValue.append("\'");
         return quotedValue.toString();
+    }
+
+    public String toString(PreparedStatement ps) {
+	return ps.toString().replaceFirst(".*].-\\s*", "");
     }
 
 }

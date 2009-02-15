@@ -6,6 +6,7 @@ import org.jruby.RubyClass;
 import org.jruby.RubyModule;
 import org.jruby.RubyObject;
 import org.jruby.RubyObjectAdapter;
+import org.jruby.anno.JRubyClass;
 import org.jruby.anno.JRubyMethod;
 import org.jruby.javasupport.JavaEmbedUtils;
 import org.jruby.runtime.ObjectAllocator;
@@ -17,7 +18,9 @@ import static data_objects.DataObjects.DATA_OBJECTS_MODULE_NAME;
  * Transaction Class
  *
  * @author alexbcoles
+ * @author mkristian
  */
+@JRubyClass(name = "Transaction")
 public class Transaction extends RubyObject {
 
     public final static String RUBY_CLASS_NAME = "Transaction";

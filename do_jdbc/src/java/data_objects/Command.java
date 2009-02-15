@@ -105,9 +105,8 @@ public class Command extends RubyObject {
 
         try {
             if (driver.supportsConnectionPrepareStatementMethodWithGKFlag()) {
-                sqlStatement =
-                        conn.prepareStatement(sqlText,
-                            driver.supportsJdbcGeneratedKeys() ? Statement.RETURN_GENERATED_KEYS : Statement.NO_GENERATED_KEYS);
+                sqlStatement = conn.prepareStatement(sqlText,
+						     driver.supportsJdbcGeneratedKeys() ? Statement.RETURN_GENERATED_KEYS : Statement.NO_GENERATED_KEYS);
             } else {
                 // If java.sql.PreparedStatement#getGeneratedKeys() is not supported,
                 // then it is important to call java.sql.Connection#prepareStatement(String)
@@ -141,7 +140,7 @@ public class Command extends RubyObject {
             }
             long endTime = System.currentTimeMillis();
 
-            debug(recv.getRuntime(), sqlStatement.toString(), Long.valueOf(endTime - startTime));
+            debug(recv.getRuntime(), driver.toString(sqlStatement), Long.valueOf(endTime - startTime));
 
             if (keys == null) {
                 if (driver.supportsJdbcGeneratedKeys()) {
@@ -178,7 +177,8 @@ public class Command extends RubyObject {
             //            sqlStatement.close();
             //            sqlStatement = null;
         } catch (SQLException sqle) {
-            // TODO: log sqle.printStackTrace();
+            // TODO: log
+	    //sqle.printStackTrace();
             throw DataObjectsUtils.newDriverError(runtime, errorName, sqle.getLocalizedMessage());
         } finally {
             if (sqlStatement != null) {
@@ -237,7 +237,7 @@ public class Command extends RubyObject {
             resultSet = sqlStatement.executeQuery();
             long endTime = System.currentTimeMillis();
 
-            debug(recv.getRuntime(), sqlStatement.toString(), Long.valueOf(endTime - startTime));
+            debug(recv.getRuntime(), driver.toString(sqlStatement), Long.valueOf(endTime - startTime));
 
             metaData = resultSet.getMetaData();
             columnCount = metaData.getColumnCount();
@@ -325,6 +325,7 @@ public class Command extends RubyObject {
 
     @JRubyMethod(required = 1)
     public static IRubyObject set_types(IRubyObject recv, IRubyObject value) {
+	System.out.println(recv.inspect());
         IRubyObject types = api.setInstanceVariable(recv, "@types", value);
         return types;
     }
@@ -366,7 +367,7 @@ public class Command extends RubyObject {
     }
 
     /**
-     * Count rows using scrollable RS (if supported) 
+     * Count rows using scrollable RS (if supported)
      * or create second query and count rows of returned RS
      *
      * @param runtime
@@ -615,8 +616,8 @@ public class Command extends RubyObject {
             if (executionTime != null) {
                 msgSb.append("(").append(executionTime).append(") ");
             }
-            // FIXME: replaceFirst is mysql specific !!
-            msgSb.append(logMessage.replaceFirst(".*].-\\s*", ""));
+
+            msgSb.append(logMessage);
 
             api.callMethod(logger, "debug", runtime.newString(msgSb.toString()));
         }
