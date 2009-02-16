@@ -6,17 +6,19 @@ import data_objects.drivers.AbstractDriverDefinition;
 
 public class MySqlDriverDefinition extends AbstractDriverDefinition {
 
+    @Override
     public boolean supportsJdbcGeneratedKeys()
     {
         return true;
     }
 
+    @Override
     public boolean supportsJdbcScrollableResultSets()
     {
         return true;
     }
 
-    //@Override
+    @Override
     public String quoteString(String str) {
         StringBuffer quotedValue = new StringBuffer(str.length() + 2);
         quotedValue.append("\'");
@@ -26,8 +28,9 @@ public class MySqlDriverDefinition extends AbstractDriverDefinition {
         return quotedValue.toString();
     }
 
+    @Override
     public String toString(PreparedStatement ps) {
-	return ps.toString().replaceFirst(".*].-\\s*", "");
+        return ps.toString().replaceFirst(".*].-\\s*", "");
     }
 
 }

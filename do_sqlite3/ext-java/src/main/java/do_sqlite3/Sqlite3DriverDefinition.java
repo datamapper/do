@@ -4,21 +4,24 @@ import data_objects.drivers.AbstractDriverDefinition;
 
 public class Sqlite3DriverDefinition extends AbstractDriverDefinition {
 
+    @Override
     public boolean supportsJdbcGeneratedKeys()
     {
         return true;
     }
 
+    @Override
     public boolean supportsJdbcScrollableResultSets() {
         return false; // TODO
     }
 
+    @Override
     public boolean supportsConnectionPrepareStatementMethodWithGKFlag()
     {
         return false;
     }
 
-    //@Override
+    @Override
     public String quoteString(String str) {
         StringBuffer quotedValue = new StringBuffer(str.length() + 2);
         quotedValue.append("\'");

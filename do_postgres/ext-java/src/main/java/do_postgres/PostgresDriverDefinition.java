@@ -4,11 +4,13 @@ import data_objects.drivers.AbstractDriverDefinition;
 
 public class PostgresDriverDefinition extends AbstractDriverDefinition {
 
+    @Override
     public boolean supportsJdbcGeneratedKeys()
     {
         return false;
     }
 
+    @Override
     public boolean supportsJdbcScrollableResultSets() {
         return true;
     }
