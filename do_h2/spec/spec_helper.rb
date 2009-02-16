@@ -14,6 +14,9 @@ require 'fileutils'
 $:.unshift File.expand_path(File.join(File.dirname(__FILE__), '..', '..', 'data_objects', 'lib'))
 require 'data_objects'
 
+DATAOBJECTS_SPEC_ROOT = Pathname(__FILE__).dirname.parent.parent + 'data_objects' + 'spec'
+Pathname.glob((DATAOBJECTS_SPEC_ROOT + 'lib/**/*.rb').to_s).each { |f| require f }
+
 $:.unshift File.expand_path(File.join(File.dirname(__FILE__), '..', '..', 'do_jdbc', 'lib'))
 require 'do_jdbc'
 
@@ -21,17 +24,16 @@ require 'do_jdbc'
 $:.unshift File.expand_path(File.join(File.dirname(__FILE__), '..', 'lib'))
 require 'do_h2'
 
-Spec::Runner.configure do |config|
-  # Use Mocha rather than RSpec Mocks
-  config.mock_with :mocha
-end
-
 log_path = File.expand_path(File.join(File.dirname(__FILE__), '..', 'log', 'do.log'))
 FileUtils.mkdir_p(File.dirname(log_path))
 
 DataObjects::H2.logger = DataObjects::Logger.new(log_path, 0)
 
 at_exit { DataObjects.logger.flush }
+
+Spec::Runner.configure do |config|
+  config.include(DataObjects::Spec::PendingHelpers)
+end
 
 module H2SpecHelpers
 
