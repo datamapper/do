@@ -106,7 +106,7 @@ public class Command extends RubyObject {
         try {
             if (driver.supportsConnectionPrepareStatementMethodWithGKFlag()) {
                 sqlStatement = conn.prepareStatement(sqlText,
-						     driver.supportsJdbcGeneratedKeys() ? Statement.RETURN_GENERATED_KEYS : Statement.NO_GENERATED_KEYS);
+                                                    driver.supportsJdbcGeneratedKeys() ? Statement.RETURN_GENERATED_KEYS : Statement.NO_GENERATED_KEYS);
             } else {
                 // If java.sql.PreparedStatement#getGeneratedKeys() is not supported,
                 // then it is important to call java.sql.Connection#prepareStatement(String)
@@ -178,7 +178,7 @@ public class Command extends RubyObject {
             //            sqlStatement = null;
         } catch (SQLException sqle) {
             // TODO: log
-	    //sqle.printStackTrace();
+            //sqle.printStackTrace();
             throw DataObjectsUtils.newDriverError(runtime, errorName, sqle.getLocalizedMessage());
         } finally {
             if (sqlStatement != null) {
@@ -586,7 +586,7 @@ public class Command extends RubyObject {
             RubyBigDecimal rbBigDec = (RubyBigDecimal) arg;
             ps.setBigDecimal(idx, rbBigDec.getValue());
         } else {
-//            ps.setString(idx, arg.toString());
+            //            ps.setString(idx, arg.toString());
             ps.setString(idx, api.convertToRubyString(arg).getUnicodeValue());
         }
     }
