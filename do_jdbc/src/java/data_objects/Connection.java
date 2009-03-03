@@ -75,6 +75,7 @@ public class Connection extends RubyObject {
 
     @JRubyMethod(required = 1)
     public static IRubyObject initialize(IRubyObject recv, IRubyObject uri) {
+        System.out.println("============== initialize called " + uri);
         Ruby runtime = recv.getRuntime();
         String jdbcDriver = null;
         java.net.URI connectionUri;
@@ -140,12 +141,12 @@ public class Connection extends RubyObject {
                     userInfo += ":";
                 }
 
-                conn = DriverManager.getConnection(jdbcUri,
+                conn = DriverManager.getConnection("jdbc:" + jdbcUri,
                                                    userInfo.substring(0, userInfo.indexOf(":")),
                                                    userInfo.substring(userInfo.indexOf(":") + 1));
             }
             else {
-                conn = DriverManager.getConnection(connectionUri.toString());
+                conn = DriverManager.getConnection("jdbc:" + connectionUri.toString());
             }
 
         } catch (SQLException ex) {
@@ -165,6 +166,7 @@ public class Connection extends RubyObject {
 
     @JRubyMethod
     public static IRubyObject dispose(IRubyObject recv) {
+        System.out.println("============== dispose called");
         Ruby runtime = recv.getRuntime();
 
         java.sql.Connection prev = getConnection(recv);
@@ -202,14 +204,14 @@ public class Connection extends RubyObject {
         if (fullUri.startsWith("postgres:")) {
             // PostgreSQL uris require their own handling, and need to be of the
             // form 'jdbc:postgresql' NOT 'jdbc:postgres'
-            uri = new java.net.URI("jdbc:" + fullUri.replaceFirst("postgres", "postgresql"));
+            uri = new java.net.URI(fullUri.replaceFirst("postgres", "postgresql"));
         } else if (fullUri.startsWith("sqlite3:")) {
             // SQLite3 uris also require special handling, and need to be of the
             // form 'jdbc:sqlite' NOT 'jdbc:sqlite3'
-            uri = new java.net.URI("jdbc:" + fullUri.replaceFirst("sqlite3", "sqlite"));
-        } else if (!fullUri.startsWith("jdbc:")) {
+            uri = new java.net.URI(fullUri.replaceFirst("sqlite3", "sqlite").replaceFirst("://", ":"));
+        } else if (fullUri.startsWith("jdbc:")) {
             // Generally, to create a JDBC uri, prefix the given uri with 'jdbc:'.
-            uri = new java.net.URI("jdbc:" + fullUri);
+            uri = new java.net.URI(fullUri.substring(5));
         } else {
             // If its already a JDBC uri, we pass it through.
             uri = new java.net.URI(fullUri);

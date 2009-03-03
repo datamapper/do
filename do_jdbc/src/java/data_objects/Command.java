@@ -325,7 +325,6 @@ public class Command extends RubyObject {
 
     @JRubyMethod(required = 1)
     public static IRubyObject set_types(IRubyObject recv, IRubyObject value) {
-	System.out.println(recv.inspect());
         IRubyObject types = api.setInstanceVariable(recv, "@types", value);
         return types;
     }
@@ -573,6 +572,10 @@ public class Command extends RubyObject {
             ps.setInt(idx, Integer.parseInt(arg.toString()));
         } else if (arg.getType().toString().equals("NilClass")) {
             ps.setNull(idx, Types.NULL);
+        } else if (arg.getType().toString().equals("TrueClass") || arg.getType().toString().equals("FalseClass")) {
+            ps.setBoolean(idx, arg.toString().equals("true"));
+        } else if (arg.getType().toString().equals("Class")) {
+            ps.setString(idx, arg.toString());
         } else if (arg.getType().toString().equals("Date")) {
             ps.setDate(idx, java.sql.Date.valueOf(arg.toString()));
         } else if (arg.getType().toString().equals("Time")) {

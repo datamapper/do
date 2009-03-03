@@ -11,9 +11,14 @@ describe "DataObjects::Sqlite3" do
 
   if JRUBY
     it "should accept either DO or JDBC style URLs on JRuby" do
-      pending
       @connection = DataObjects::Connection.new("jdbc:sqlite:test.db") # note the sqlite not sqlite3!
+      @connection = DataObjects::Connection.new("sqlite3:test.db")
+      @connection = DataObjects::Connection.new("jdbc:sqlite://#{File.expand_path(File.dirname(__FILE__))}/test.db") # note the sqlite not sqlite3!
       @connection = DataObjects::Connection.new("sqlite3://#{File.expand_path(File.dirname(__FILE__))}/test.db")
+    end
+    it "should accept memory uri" do
+      @connection = DataObjects::Connection.new("jdbc:sqlite::memory:") # note the sqlite not sqlite3!
+      @connection = DataObjects::Connection.new("sqlite3::memory:")
     end
   end
 
