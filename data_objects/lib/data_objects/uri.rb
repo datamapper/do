@@ -30,5 +30,13 @@ module DataObjects
       string << "##{fragment}"   if fragment
       string
     end
+
+    def eql?(other)
+      to_s.eql?(other.to_s)
+    end
+
+    def hash
+      to_s.hash
+    end
   end
 end
