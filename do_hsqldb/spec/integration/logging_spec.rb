@@ -7,6 +7,10 @@ describe DataObjects::Hsqldb::Command do
     @connection = DataObjects::Hsqldb::Connection.new("jdbc:hsqldb:mem")
   end
 
+  after(:each) do
+    @connection.close
+  end
+
   describe "Executing a Reader" do
 
     it "should log reader queries when the level is Debug (0)" do

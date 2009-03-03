@@ -60,6 +60,7 @@ module JdbcSpecHelpers
   end
 
   def teardown_test_environment
+    @connection.close
   end
 
   def setup_test_environment
