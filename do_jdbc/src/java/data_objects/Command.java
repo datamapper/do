@@ -477,6 +477,7 @@ public class Command extends RubyObject {
                 int count = 0;
                 while (pm.find()) {
                     if (count == i) pm.appendReplacement(sb, replaceSb.toString());
+                    count++;
                 }
                 pm.appendTail(sb);
                 psSqlText = sb.toString();
@@ -491,6 +492,7 @@ public class Command extends RubyObject {
                 int count = 0;
                 while (pm.find()) {
                     if (count == i) pm.appendReplacement(sb, "(? AND ?)");
+                    count++;
                 }
                 pm.appendTail(sb);
                 psSqlText = sb.toString();
