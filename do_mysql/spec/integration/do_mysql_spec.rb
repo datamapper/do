@@ -75,6 +75,8 @@ describe DataObjects::Mysql do
     connection.close
   end
 
+  it 'should use root as the user if no user is specified'
+
   it "should raise an error when opened with an invalid server uri" do
     pending 'causing a hang in JRuby' if JRUBY
 
