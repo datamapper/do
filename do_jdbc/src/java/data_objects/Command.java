@@ -8,6 +8,10 @@ import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Types;
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -22,6 +26,7 @@ import org.jruby.RubyObject;
 import org.jruby.RubyObjectAdapter;
 import org.jruby.RubyRange;
 import org.jruby.RubyString;
+import org.jruby.RubyTime;
 import org.jruby.anno.JRubyClass;
 import org.jruby.anno.JRubyMethod;
 import org.jruby.javasupport.Java;
@@ -560,6 +565,8 @@ public class Command extends RubyObject {
         }
     }
 
+    private static final DateFormat FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+
     /**
      *
      * @param ps the PreparedStatement for which the parameter should be set
@@ -581,12 +588,37 @@ public class Command extends RubyObject {
         } else if (arg.getType().toString().equals("Date")) {
             ps.setDate(idx, java.sql.Date.valueOf(arg.toString()));
         } else if (arg.getType().toString().equals("Time")) {
-            ps.setTime(idx, java.sql.Time.valueOf(arg.toString()));
+            RubyTime rubyTime = (RubyTime) arg;
+            java.util.Date date = rubyTime.getJavaDate();
+            long millis = date.getTime();
+            long micros = rubyTime.microseconds() - millis / 1000;
+            java.sql.Timestamp ts = new java.sql.Timestamp(millis);
+            java.util.Calendar cal = Calendar.getInstance();
+            cal.setTime(date);
+            if (micros > 0) {
+                ts.setNanos((int)(micros * 1000));
+            }
+            ps.setTimestamp(idx, ts, cal);
+            //ps.setTime(idx, java.sql.Time.valueOf(arg.toString()));
         } else if (arg.getType().toString().equals("DateTime")) {
             ps.setTimestamp(idx, java.sql.Timestamp.valueOf(arg.toString().replace('T', ' ').replaceFirst("[-+]..:..$", "")));
         } else if (arg.getType().toString().equals(RubyType.BIG_DECIMAL.toString())) {
             RubyBigDecimal rbBigDec = (RubyBigDecimal) arg;
             ps.setBigDecimal(idx, rbBigDec.getValue());
+        } else if (arg.toString().indexOf("-") != -1 && arg.toString().indexOf(":") != -1) {
+            // TODO: improve the above string pattern checking
+            // Handle date patterns in strings
+            java.util.Date parsedDate;
+            try {
+                parsedDate = FORMAT.parse(arg.asJavaString().replace('T', ' '));
+                java.sql.Timestamp timestamp = new java.sql.Timestamp(parsedDate.getTime());
+                ps.setTimestamp(idx, timestamp);
+            } catch (ParseException ex) {
+                ps.setString(idx, api.convertToRubyString(arg).getUnicodeValue());
+            }
+        } else if (arg.toString().indexOf(":") != -1 && arg.toString().length() == 8) {
+            // Handle time patterns in strings
+            ps.setTime(idx, java.sql.Time.valueOf(arg.asJavaString()));
         } else {
             //            ps.setString(idx, arg.toString());
             ps.setString(idx, api.convertToRubyString(arg).getUnicodeValue());

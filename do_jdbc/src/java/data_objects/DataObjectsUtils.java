@@ -145,6 +145,11 @@ public final class DataObjectsUtils {
     }
 
     public static IRubyObject prepareRubyDateFromSqlDate(Ruby runtime,Date date){
+
+       if (date.getTime() == 0) {
+           return runtime.getNil();
+       }
+
        gregCalendar.setTime(date);
        int month = gregCalendar.get(Calendar.MONTH);
        month++; // In Calendar January == 0, etc...
@@ -157,6 +162,11 @@ public final class DataObjectsUtils {
     }
 
     public static IRubyObject prepareRubyDateTimeFromSqlTimestamp(Ruby runtime,Timestamp stamp){
+
+       if (stamp.getTime() == 0) {
+           return runtime.getNil();
+       }
+
        gregCalendar.setTime(stamp);
        int month = gregCalendar.get(Calendar.MONTH);
        month++; // In Calendar January == 0, etc...
@@ -179,16 +189,18 @@ public final class DataObjectsUtils {
                  rbOffset});
     }
 
-     public static IRubyObject prepareRubyTimeFromSqlTime(Ruby runtime,Time time){
-       RubyTime rbTime = RubyTime.newTime(runtime, time.getTime());
-       rbTime.extend(new IRubyObject[] {runtime.getModule("TimeFormatter")});
-       if(rbTime.getJavaDate().getTime() == 0){
+    public static IRubyObject prepareRubyTimeFromSqlTime(Ruby runtime, Time time) {
+
+        if (time.getTime() + 3600000 == 0) {
             return runtime.getNil();
-       }else{
-            SimpleDateFormat sdf = new SimpleDateFormat("HH-mm-ss"); // TODO proper format?
-            return runtime.newString(sdf.format(rbTime.getJavaDate()));
-       }
-     }
+        }
+
+        RubyTime rbTime = RubyTime.newTime(runtime, time.getTime());
+        rbTime.extend(new IRubyObject[]{runtime.getModule("TimeFormatter")});
+
+        SimpleDateFormat sdf = new SimpleDateFormat("HH-mm-ss"); // TODO proper format?
+        return runtime.newString(sdf.format(rbTime.getJavaDate()));
+    }
 
     // private constructor
     private DataObjectsUtils() {

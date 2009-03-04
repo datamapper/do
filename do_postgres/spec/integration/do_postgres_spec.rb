@@ -188,9 +188,7 @@ describe "DataObjects::Postgres::Reader" do
   end
 
   it "should return nil when the time is 0" do
-    pending "We need to introduce something like Proxy for typeasting where each SQL type will have _rules_ of casting" if JRUBY
-    pending "Fix zero representation of Time in PostgreSQL" unless JRUBY
-    id = insert("INSERT INTO users (name, fired_at) VALUES ('James', '0000-00-00')")
+    id = insert("INSERT INTO users (name, fired_at) VALUES ('James', '1970-01-01 00:00:00')")
     select("SELECT fired_at FROM users WHERE id = ?", [Time], id) do |reader|
       reader.values.last.should be_nil
     end

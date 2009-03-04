@@ -195,7 +195,7 @@ describe "DataObjects::Derby::Reader" do
   describe "Date, Time, and DateTime" do
 
     it "should return nil when the time is 0" do
-      id = insert("INSERT INTO users (name, fired_at) VALUES ('James', '1980-10-25-13.01.23.123456')")
+      id = insert("INSERT INTO users (name, fired_at) VALUES ('James', '1970-01-01-00.00.00.000000')")
       select("SELECT fired_at FROM users WHERE id = ?", [Time], id) do |reader|
         reader.values.last.should be_nil
       end

@@ -255,7 +255,6 @@ describe DataObjects::Mysql::Reader do
   describe "Date, Time, and DateTime" do
 
     it "should return nil when the time is 0" do
-      pending "We need to introduce something like Proxy for typeasting where each SQL type will have _rules_ of casting" if JRUBY
       # skip the test if the strict dates/times setting is turned on
       strict_time = select("SHOW VARIABLES LIKE 'sql_mode'") do |reader|
         reader.values.last.split(',').any? do |mode|
@@ -265,6 +264,8 @@ describe DataObjects::Mysql::Reader do
 
       unless strict_time
         id = insert("INSERT INTO users (name, fired_at) VALUES ('James', 0);")
+        # NOTE: "We need to introduce something like Proxy for typeasting where
+        # each SQL type will have _rules_ of casting"
         select("SELECT fired_at FROM users WHERE id = ?", [Time], id) do |reader|
           reader.values.last.should be_nil
         end
