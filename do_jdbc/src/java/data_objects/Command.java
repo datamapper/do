@@ -458,17 +458,21 @@ public class Command extends RubyObject {
     private static String prepareSqlTextForPs(String doSqlText, IRubyObject recv, IRubyObject[] args) {
 
         if (args.length == 0) return doSqlText;
-
+        // long timeStamp = System.currentTimeMillis(); XXX for debug
+        // System.out.println(""+timeStamp+" SQL before replacements @: " + doSqlText); // XXX for debug
         String psSqlText = doSqlText;
-
+        int addedSymbols=0;
+        
         for (int i = 0; i < args.length; i++) {
+
             if (args[i] instanceof RubyArray) {
                 // replace "?" with "(?,?)"
-
                 // calculate replacement string, depending on the length of the
                 // RubyArray - i.e. should it be "(?)" or "(?,?,?)
+                // System.out.println(""+timeStamp+" RubyArray @: " + args[i]); // XXX for debug
                 StringBuffer replaceSb = new StringBuffer("(");
                 int arrayLength = args[i].convertToArray().getLength();
+
                 for (int j = 0; j < arrayLength; j++) {
                     replaceSb.append("?");
                     if (j < arrayLength - 1) replaceSb.append(",");
@@ -476,37 +480,46 @@ public class Command extends RubyObject {
                 replaceSb.append(")");
 
                 Pattern pp = Pattern.compile("\\?");
-                Matcher pm = pp.matcher(doSqlText);
+                Matcher pm = pp.matcher(psSqlText);
                 StringBuffer sb = new StringBuffer();
 
                 int count = 0;
+                lbWhile:
                 while (pm.find()) {
-                    if (count == i) pm.appendReplacement(sb, replaceSb.toString());
+                    if (count == (i+addedSymbols)){
+                        pm.appendReplacement(sb, replaceSb.toString());
+                        addedSymbols += arrayLength-1;
+                        break lbWhile;
+                    }
                     count++;
                 }
                 pm.appendTail(sb);
                 psSqlText = sb.toString();
-
             } else if (args[i] instanceof RubyRange) {
                 // replace "?" with "(?,?)"
-
+                // System.out.println(""+timeStamp+" RubyRange @: " + args[i]); // XXX for debug
                 Pattern pp = Pattern.compile("\\?");
-                Matcher pm = pp.matcher(doSqlText);
+                Matcher pm = pp.matcher(psSqlText);
                 StringBuffer sb = new StringBuffer();
 
                 int count = 0;
+                lbWhile:
                 while (pm.find()) {
-                    if (count == i) pm.appendReplacement(sb, "(? AND ?)");
+                    if (count ==(i+addedSymbols)){
+                        pm.appendReplacement(sb, "? AND ?"); // XXX was (? AND ?)
+                        addedSymbols += 1;
+                        break lbWhile;
+                    }
                     count++;
                 }
                 pm.appendTail(sb);
                 psSqlText = sb.toString();
-
             } else {
+                // System.out.println(""+timeStamp+" Nothing @: " + args[i]); // XXX for debug
                 // do nothing
             }
         }
-
+        // System.out.println(""+timeStamp+" SQL after replacements @: " + psSqlText); // XXX for debug
         return psSqlText;
     }
 
