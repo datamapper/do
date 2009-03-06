@@ -41,6 +41,7 @@ def setup_c_extension(extension_name, gem_spec = nil)
         ruby 'extconf.rb'
       end
     end
+
     task "lib/#{ext_name}" => ['lib', "#{ext_dir}/#{ext_name}"] do
       cp "#{ext_dir}/#{ext_name}", "lib/#{ext_name}"
     end
@@ -58,7 +59,7 @@ def setup_c_extension(extension_name, gem_spec = nil)
 
         # add the precompiled binaries to the list of files
         # (taken from compile task dependency)
-        gem_spec.files += ["lib/#{ext_name}"]
+        gem_spec.files += Rake::Task['compile'].prerequisites
       end
     end
   end

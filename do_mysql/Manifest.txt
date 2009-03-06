@@ -8,7 +8,6 @@ buildfile
 ext-java/src/main/java/DoMysqlExtService.java
 ext-java/src/main/java/do_mysql/MySqlDriverDefinition.java
 ext/.gitignore
-ext/do_mysql_ext/Makefile
 ext/do_mysql_ext/do_mysql_ext.c
 ext/do_mysql_ext/extconf.rb
 lib/do_mysql.rb

@@ -15,7 +15,7 @@ def setup_java_extension(extension_name, gem_spec = nil, opts = {})
   namespace :compile do
 
     desc "Compile Java Extension for JRuby"
-    task :jruby do
+    task :jruby => [ :clean ] do
       pkg_classes = File.join(*%w(pkg classes))
       mkdir_p pkg_classes
 

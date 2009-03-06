@@ -49,6 +49,6 @@ task :install => [ :package ] do
 end
 
 desc "Uninstall #{GEM_NAME} #{GEM_VERSION}"
-task :uninstall => [ :clobber ] do
+task :uninstall => [ :clean ] do
   sudo_gem "uninstall #{GEM_NAME} -v#{GEM_VERSION} -I -x"
 end

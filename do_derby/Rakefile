@@ -13,14 +13,13 @@ AUTHOR = "Alex Coles"
 EMAIL  = "alex@alexcolesportfolio.com"
 GEM_NAME = "do_derby"
 GEM_VERSION = DataObjects::Derby::VERSION
-GEM_DEPENDENCIES = ["data_objects", GEM_VERSION], ["do_jdbc", GEM_VERSION], ["jdbc-derby", ">=10.3.2"]
+GEM_DEPENDENCIES = ["data_objects", GEM_VERSION], ["do_jdbc", GEM_VERSION], ["jdbc-derby", "~>10.3.2"]
 GEM_CLEAN = ['derby*', 'testdb','test/reports','lib/**/*.jar','log/*','ext-java/target']
 GEM_EXTRAS = { :platform => 'java', :has_rdoc => false }
 
 PROJECT_NAME = "dorb"
 PROJECT_URL  = "http://rubyforge.org/projects/dorb"
 PROJECT_DESCRIPTION = PROJECT_SUMMARY = "A DataObjects.rb driver for Derby"
-
 
 if (tasks_dir = ROOT.parent + 'tasks').directory?
   require tasks_dir + 'hoe'
@@ -49,7 +48,7 @@ task :install => [ :package ] do
 end
 
 desc "Uninstall #{GEM_NAME} #{GEM_VERSION}"
-task :uninstall => [ :clobber ] do
+task :uninstall => [ :clean ] do
   sudo_gem "uninstall #{GEM_NAME} -v#{GEM_VERSION} -I -x"
 end
 

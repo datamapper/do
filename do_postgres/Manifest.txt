@@ -8,7 +8,6 @@ autobuild.rb
 buildfile
 ext-java/src/main/java/DoPostgresExtService.java
 ext-java/src/main/java/do_postgres/PostgresDriverDefinition.java
-ext/do_postgres_ext/Makefile
 ext/do_postgres_ext/do_postgres_ext.c
 ext/do_postgres_ext/extconf.rb
 lib/do_postgres.rb
