@@ -103,7 +103,7 @@ module DataObjectsSpecHelpers
         "cost1" double precision default 10.23,
         "cost2" decimal(8,2) default 50.23,
         "release_date" date default '2008-02-14',
-        "release_datetime" timestamp default '2008-02-14T00:31:12+01:00',
+        "release_datetime" timestamp default '2008-02-14T00:31:12+00:00',
         "release_timestamp" timestamp with time zone default '2008-02-14 00:31:31'
       );
     EOF

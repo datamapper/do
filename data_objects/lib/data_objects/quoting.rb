@@ -86,12 +86,10 @@ module DataObjects
 
     def quote_time(value)
       offset = value.utc_offset
-      offset_string = offset == 0 ? 'Z' : ''
-      
-      if offset > 0
-        offset_string << "+#{sprintf("%02d", offset / 3600)}:#{sprintf("%02d", (offset % 3600) / 60)}"
+      if offset >= 0
+        offset_string = "+#{sprintf("%02d", offset / 3600)}:#{sprintf("%02d", (offset % 3600) / 60)}"
       elsif offset < 0
-        offset_string << "-#{sprintf("%02d", -offset / 3600)}:#{sprintf("%02d", (-offset % 3600) / 60)}"
+        offset_string = "-#{sprintf("%02d", -offset / 3600)}:#{sprintf("%02d", (-offset % 3600) / 60)}"
       end
       "'#{value.strftime('%Y-%m-%dT%H:%M:%S')}" << (value.usec > 0 ? ".#{value.usec.to_s.rjust(6, '0')}" : "") << offset_string << "'"
     end

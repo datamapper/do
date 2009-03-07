@@ -46,7 +46,7 @@ share_examples_for 'supporting DateTime' do
   describe 'writing an DateTime' do
 
     before  do
-      @reader = @connection.create_command("SELECT id FROM widgets WHERE release_datetime = ?").execute_reader(DateTime.civil(2008, 2, 14, 00, 31, 12, Rational(1, 24)))
+      @reader = @connection.create_command("SELECT id FROM widgets WHERE release_datetime = ?").execute_reader(DateTime.civil(2008, 2, 14, 00, 31, 12, 0))
       @reader.next!
       @values = @reader.values
     end
