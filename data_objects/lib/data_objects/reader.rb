@@ -22,9 +22,5 @@ module DataObjects
       raise NotImplementedError.new
     end
 
-    def row_count
-      raise NotImplementedError.new
-    end
-
   end
 end

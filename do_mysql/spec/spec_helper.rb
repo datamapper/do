@@ -39,57 +39,35 @@ Spec::Runner.configure do |config|
   config.include(DataObjects::Spec::PendingHelpers)
 end
 
-MYSQL = OpenStruct.new
-MYSQL.user = ENV['DO_MYSQL_USER'] || 'root'
-MYSQL.pass = ENV['DO_MYSQL_PASS'] || ''
-MYSQL.host = ENV['DO_MYSQL_HOST'] || '127.0.0.1'
-MYSQL.hostname = ENV['DO_MYSQL_HOSTNAME'] || 'localhost'
-MYSQL.port     = ENV['DO_MYSQL_PORT'] || '3306'
-MYSQL.database = ENV['DO_MYSQL_DATABASE'] || 'do_mysql_test'
-MYSQL.socket   = ENV['DO_MYSQL_SOCKET'] || '/tmp/mysql.sock'
+CONFIG = OpenStruct.new
+CONFIG.scheme   = 'mysql'
+CONFIG.user     = ENV['DO_MYSQL_USER'] || 'root'
+CONFIG.pass     = ENV['DO_MYSQL_PASS'] || ''
+CONFIG.host     = ENV['DO_MYSQL_HOST'] || 'localhost'
+CONFIG.port     = ENV['DO_MYSQL_PORT'] || '3306'
+CONFIG.database = ENV['DO_MYSQL_DATABASE'] || 'do_test'
 
-DO_MYSQL_SPEC_URI = Addressable::URI::parse(ENV["DO_MYSQL_SPEC_URI"] ||
-                    "mysql://#{MYSQL.user}:#{MYSQL.pass}@#{MYSQL.host}:#{MYSQL.port}/#{MYSQL.database}?useUnicode=true&characterEncoding=utf8")
+CONFIG.uri = ENV["DO_MYSQL_SPEC_URI"] ||"#{CONFIG.scheme}://#{CONFIG.user}:#{CONFIG.pass}@#{CONFIG.host}:#{CONFIG.port}/#{CONFIG.database}"
+CONFIG.sleep = "SELECT sleep(1)"
 
-module MysqlSpecHelpers
-  def insert(query, *args)
-    result = @secondary_connection.create_command(query).execute_non_query(*args)
-    result.insert_id
-  end
-
-  def exec(query, *args)
-    @secondary_connection.create_command(query).execute_non_query(*args)
-  end
-
-  def select(query, types = nil, *args)
-    begin
-      command = @connection.create_command(query)
-      command.set_types types unless types.nil?
-      reader = command.execute_reader(*args)
-      reader.next!
-      yield reader if block_given?
-    ensure
-      reader.close if reader
-    end
-  end
+module DataObjectsSpecHelpers
 
   def setup_test_environment
-    @connection = DataObjects::Connection.new(DO_MYSQL_SPEC_URI)
-    @secondary_connection = DataObjects::Connection.new(DO_MYSQL_SPEC_URI)
+    conn = DataObjects::Connection.new(CONFIG.uri)
 
-    @connection.create_command(<<-EOF).execute_non_query
+    conn.create_command(<<-EOF).execute_non_query
       DROP TABLE IF EXISTS `invoices`
     EOF
 
-    @connection.create_command(<<-EOF).execute_non_query
+    conn.create_command(<<-EOF).execute_non_query
       DROP TABLE IF EXISTS `users`
     EOF
 
-    @connection.create_command(<<-EOF).execute_non_query
+    conn.create_command(<<-EOF).execute_non_query
       DROP TABLE IF EXISTS `widgets`
     EOF
 
-    @connection.create_command(<<-EOF).execute_non_query
+    conn.create_command(<<-EOF).execute_non_query
       CREATE TABLE `users` (
         `id` int(11) NOT NULL auto_increment,
         `name` varchar(200) default 'Billy' NULL,
@@ -98,7 +76,7 @@ module MysqlSpecHelpers
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
     EOF
 
-    @connection.create_command(<<-EOF).execute_non_query
+    conn.create_command(<<-EOF).execute_non_query
       CREATE TABLE `invoices` (
         `id` int(11) NOT NULL auto_increment,
         `invoice_number` varchar(50) NOT NULL,
@@ -106,7 +84,7 @@ module MysqlSpecHelpers
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
     EOF
 
-    @connection.create_command(<<-EOF).execute_non_query
+    conn.create_command(<<-EOF).execute_non_query
       CREATE TABLE `widgets` (
         `id` int(11) NOT NULL auto_increment,
         `code` char(8) default 'A14' NULL,
@@ -123,7 +101,7 @@ module MysqlSpecHelpers
         `number_sold` mediumint default 0,
         `super_number` bigint default 9223372036854775807,
         `weight` float default 1.23,
-        `cost1` double(8,2) default 10.23,
+        `cost1` double default 10.23,
         `cost2` decimal(8,2) default 50.23,
         `release_date` date default '2008-02-14',
         `release_datetime` datetime default '2008-02-14 00:31:12',
@@ -134,15 +112,21 @@ module MysqlSpecHelpers
     EOF
 
     1.upto(16) do |n|
-      @connection.create_command(<<-EOF).execute_non_query
-        insert into widgets(code, name, shelf_location, description, image_data, ad_description, ad_image, whitepaper_text, cad_drawing, super_number) VALUES ('W#{n.to_s.rjust(7,"0")}', 'Widget #{n}', 'A14', 'This is a description', 'IMAGE DATA', 'Buy this product now!', 'AD IMAGE DATA', 'Utilizing blah blah blah', 'CAD DRAWING', 1234);
+      conn.create_command(<<-EOF).execute_non_query
+        insert into widgets(code, name, shelf_location, description, image_data, ad_description, ad_image, whitepaper_text, cad_drawing, super_number, weight) VALUES ('W#{n.to_s.rjust(7,"0")}', 'Widget #{n}', 'A14', 'This is a description', 'IMAGE DATA', 'Buy this product now!', 'AD IMAGE DATA', 'String', 'CAD \001 \000 DRAWING', 1234, 13.4);
       EOF
     end
 
+    conn.create_command(<<-EOF).execute_non_query
+      update widgets set flags = 1 where id = 2
+    EOF
+
+    conn.create_command(<<-EOF).execute_non_query
+      update widgets set ad_description = NULL where id = 3
+    EOF
+
+    conn.close
+
   end
 
-  def teardown_test_environment
-    @connection.close
-    @secondary_connection.close
-  end
 end

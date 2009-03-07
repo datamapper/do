@@ -141,9 +141,10 @@ task :ci => ["ci:spec"]
 # use the do directory for the cross-compile stuff
 CCROOT = ROOT.parent
 
-SQLITE_VERSION = '3_6_6_2'
+SQLITE_VERSION = '3_6_11'
 
-MINGW_PATH = ENV['MINGW_PATH'] || '/usr/i586-mingw32msvc'
+default_mingw_path = ['/usr/i586-mingw32msvc', '/opt/local/i386-mingw32'].find { |p| File.directory? p }
+MINGW_PATH = ENV['MINGW_PATH'] || default_mingw_path
 
 if (tasks_dir = ROOT.parent + 'tasks').directory?
   require tasks_dir + 'win32'

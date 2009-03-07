@@ -21,14 +21,26 @@ module DataObjects
     # bind-parameters.
     def escape_sql(args)
       sql = @text.dup
+      vars = args.dup
 
-      unless args.empty?
-        sql.gsub!(/\?/) do |x|
-          quote_value(args.shift)
+      replacements = 0
+      mismatch     = false
+
+      sql.gsub!(/\?/) do |x|
+        replacements += 1
+        if vars.empty?
+          mismatch = true
+        else
+          var = vars.shift
+          quote_value(var)
         end
       end
 
-      sql
+      if !vars.empty? || mismatch
+        raise ArgumentError, "Binding mismatch: #{args.size} for #{replacements}"
+      else
+        sql
+      end
     end
 
     def quote_value(value)
@@ -37,7 +49,6 @@ module DataObjects
       case value
         when Numeric then quote_numeric(value)
         when String then quote_string(value)
-        when Class then quote_class(value)
         when Time then quote_time(value)
         when DateTime then quote_datetime(value)
         when Date then quote_date(value)
@@ -46,6 +57,8 @@ module DataObjects
         when Range then quote_range(value)
         when Symbol then quote_symbol(value)
         when Regexp then quote_regexp(value)
+        when ByteArray then quote_byte_array(value)
+        when Class then quote_class(value)
         else
           if value.respond_to?(:to_sql)
             value.to_sql
@@ -72,7 +85,15 @@ module DataObjects
     end
 
     def quote_time(value)
-      "'#{value.strftime('%Y-%m-%d %H:%M:%S')}" + (value.usec > 0 ? ".#{value.usec.to_s.rjust(6, '0')}'" : "'")
+      offset = value.utc_offset
+      offset_string = offset == 0 ? 'Z' : ''
+      
+      if offset > 0
+        offset_string << "+#{sprintf("%02d", offset / 3600)}:#{sprintf("%02d", (offset % 3600) / 60)}"
+      elsif offset < 0
+        offset_string << "-#{sprintf("%02d", -offset / 3600)}:#{sprintf("%02d", (-offset % 3600) / 60)}"
+      end
+      "'#{value.strftime('%Y-%m-%dT%H:%M:%S')}" << (value.usec > 0 ? ".#{value.usec.to_s.rjust(6, '0')}" : "") << offset_string << "'"
     end
 
     def quote_datetime(value)
@@ -98,6 +119,11 @@ module DataObjects
     def quote_regexp(value)
       quote_string(value.source)
     end
+
+    def quote_byte_array(value)
+      quote_string(value.source)
+    end
+
   end
 
 end

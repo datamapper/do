@@ -63,6 +63,7 @@ static VALUE cDO_Reader;
 static VALUE rb_cDate;
 static VALUE rb_cDateTime;
 static VALUE rb_cBigDecimal;
+static VALUE rb_cByteArray;
 
 static VALUE mPostgres;
 static VALUE cConnection;
@@ -70,6 +71,7 @@ static VALUE cCommand;
 static VALUE cResult;
 static VALUE cReader;
 
+static VALUE eArgumentError;
 static VALUE ePostgresError;
 
 static void data_objects_debug(VALUE string, struct timeval* start) {
@@ -201,9 +203,14 @@ static VALUE parse_date_time(const char *date) {
   } else if ((max_tokens - 1) == tokens_read) {
     // We read the Date and Time, but no Minute Offset
     minute_offset = 0;
-  } else if (tokens_read == 3) {
-    return parse_date(date);
-  } else if (tokens_read >= (max_tokens - 3)) {
+  } else if (tokens_read == 3 || tokens_read >= (max_tokens - 3)) {
+    if (tokens_read == 3) {
+      hour = 0;
+      min = 0;
+      hour_offset = 0;
+      minute_offset = 0;
+      sec = 0;
+    }  
     // We read the Date and Time, default to the current locale's offset
 
     // Get localtime
@@ -258,18 +265,23 @@ static VALUE parse_date_time(const char *date) {
   return rb_funcall(rb_cDateTime, ID_NEW_DATE, 3, ajd, offset, INT2NUM(2299161));
 }
 
-static VALUE parse_time(char *date) {
+static VALUE parse_time(const char *date) {
 
-  int year, month, day, hour, min, sec, usec;
+  int year, month, day, hour, min, sec, usec, tokens;
   char subsec[7];
 
   if (0 != strchr(date, '.')) {
     // right padding usec with 0. e.g. '012' will become 12000 microsecond, since Time#local use microsecond
     sscanf(date, "%4d-%2d-%2d %2d:%2d:%2d.%s", &year, &month, &day, &hour, &min, &sec, subsec);
-      usec = atoi(subsec);
-      usec *= pow(10, (6 - strlen(subsec)));
+    usec   = atoi(subsec);
+    usec  *= pow(10, (6 - strlen(subsec)));
   } else {
-    sscanf(date, "%4d-%2d-%2d %2d:%2d:%2d", &year, &month, &day, &hour, &min, &sec);
+    tokens = sscanf(date, "%4d-%2d-%2d %2d:%2d:%2d", &year, &month, &day, &hour, &min, &sec);
+    if (tokens == 3) {
+      hour = 0;
+      min  = 0;
+      sec  = 0;
+    }
     usec = 0;
   }
 
@@ -279,61 +291,63 @@ static VALUE parse_time(char *date) {
 /* ===== Typecasting Functions ===== */
 
 static VALUE infer_ruby_type(Oid type) {
-  char *ruby_type = "String";
   switch(type) {
     case BITOID:
     case VARBITOID:
     case INT2OID:
     case INT4OID:
-    case INT8OID: {
-      ruby_type = "Integer";
-      break;
-    }
+    case INT8OID:
+      return rb_cInteger;
     case FLOAT4OID:
-    case FLOAT8OID: {
-      ruby_type = "Float";
-      break;
-    }
+    case FLOAT8OID:
+      return rb_cFloat;
     case NUMERICOID:
-    case CASHOID: {
-      ruby_type = "BigDecimal";
-      break;
-    }
-    case BOOLOID: {
-      ruby_type = "TrueClass";
-      break;
-    }
+    case CASHOID:
+      return rb_cBigDecimal;
+    case BOOLOID:
+      return rb_cTrueClass;
     case TIMESTAMPTZOID:
-    case TIMESTAMPOID: {
-      ruby_type = "DateTime";
-      break;
-    }
-    case DATEOID: {
-      ruby_type = "Date";
-      break;
-    }
+    case TIMESTAMPOID:
+      return rb_cDateTime;
+    case DATEOID:
+      return rb_cDate;
+    case BYTEAOID:
+      return rb_cByteArray;
+    default:
+      return rb_cString;
   }
-  return rb_str_new2(ruby_type);
 }
 
-static VALUE typecast(char *value, long length, const char *type) {
+static VALUE typecast(const char *value, long length, const VALUE type) {
 
-  if ( strcmp(type, "Class") == 0) {
-    return rb_funcall(rb_cObject, rb_intern("full_const_get"), 1, TAINTED_STRING(value, length));
-  } else if ( strcmp(type, "Integer") == 0 || strcmp(type, "Fixnum") == 0 || strcmp(type, "Bignum") == 0 ) {
+  if (type == rb_cInteger) {
     return rb_cstr2inum(value, 10);
-  } else if ( strcmp(type, "Float") == 0 ) {
+  } else if (type == rb_cString) {
+    return TAINTED_STRING(value, length);
+  } else if (type == rb_cFloat) {
     return rb_float_new(rb_cstr_to_dbl(value, Qfalse));
-  } else if (0 == strcmp("BigDecimal", type) ) {
+  } else if (type == rb_cBigDecimal) {
     return rb_funcall(rb_cBigDecimal, ID_NEW, 1, TAINTED_STRING(value, length));
-  } else if ( strcmp(type, "TrueClass") == 0 ) {
-    return *value == 't' ? Qtrue : Qfalse;
-  } else if ( strcmp(type, "Date") == 0 ) {
+  } else if (type == rb_cDate) {
     return parse_date(value);
-  } else if ( strcmp(type, "DateTime") == 0 ) {
+  } else if (type == rb_cDateTime) {
     return parse_date_time(value);
-  } else if ( strcmp(type, "Time") == 0 ) {
+  } else if (type == rb_cTime) {
     return parse_time(value);
+  } else if (type == rb_cTrueClass) {
+    return *value == 't' ? Qtrue : Qfalse;
+  } else if (type == rb_cByteArray) {
+    size_t new_length = 0;
+    char* unescaped = (char *)PQunescapeBytea((unsigned char*)value, &new_length);
+    VALUE byte_array = rb_funcall(rb_cByteArray, ID_NEW, 1, TAINTED_STRING(unescaped, new_length));
+    PQfreemem(unescaped);
+    return byte_array;
+  } else if (type == rb_cClass) {
+    return rb_funcall(rb_cObject, rb_intern("full_const_get"), 1, TAINTED_STRING(value, length));
+  } else if (type == rb_cObject) {
+    return rb_marshal_load(rb_str_new2(value));
+  } else if (type == rb_cNilClass) {
+    return Qnil;
   } else {
     return TAINTED_STRING(value, length);
   }
@@ -342,26 +356,67 @@ static VALUE typecast(char *value, long length, const char *type) {
 
 /* ====== Public API ======= */
 static VALUE cConnection_dispose(VALUE self) {
-  PGconn *db = DATA_PTR(rb_iv_get(self, "@connection"));
+  VALUE connection_container = rb_iv_get(self, "@connection");
+
+  PGconn *db;
+
+  if (Qnil == connection_container)
+    return Qfalse;
+
+  db = DATA_PTR(connection_container);
+
+  if (NULL == db)
+    return Qfalse;
+
   PQfinish(db);
+  rb_iv_set(self, "@connection", Qnil);
+
   return Qtrue;
 }
 
-static VALUE cCommand_set_types(VALUE self, VALUE array) {
-  rb_iv_set(self, "@field_types", array);
+static VALUE cCommand_set_types(int argc, VALUE *argv, VALUE self) {
+  VALUE type_strings = rb_ary_new();
+  VALUE array = rb_ary_new();
+
+  int i, j;
+
+  for ( i = 0; i < argc; i++) {
+    rb_ary_push(array, argv[i]);
+  }
+
+  for (i = 0; i < RARRAY_LEN(array); i++) {
+    VALUE entry = rb_ary_entry(array, i);
+    if(TYPE(entry) == T_CLASS) {
+      rb_ary_push(type_strings, entry);
+    } else if (TYPE(entry) == T_ARRAY) {
+      for (j = 0; j < RARRAY_LEN(entry); j++) {
+        VALUE sub_entry = rb_ary_entry(entry, j);
+        if(TYPE(sub_entry) == T_CLASS) {
+          rb_ary_push(type_strings, sub_entry);
+        } else {
+          rb_raise(eArgumentError, "Invalid type given");
+        }
+      }
+    } else {
+      rb_raise(eArgumentError, "Invalid type given");
+    }
+  }
+
+  rb_iv_set(self, "@field_types", type_strings);
+
   return array;
 }
 
 static VALUE build_query_from_args(VALUE klass, int count, VALUE *args[]) {
   VALUE query = rb_iv_get(klass, "@text");
-  if ( count > 0 ) {
-    int i;
-    VALUE array = rb_ary_new();
-    for ( i = 0; i < count; i++) {
-      rb_ary_push(array, (VALUE)args[i]);
-    }
-    query = rb_funcall(klass, ID_ESCAPE, 1, array);
+
+  int i;
+  VALUE array = rb_ary_new();
+  for ( i = 0; i < count; i++) {
+    rb_ary_push(array, (VALUE)args[i]);
   }
+  query = rb_funcall(klass, ID_ESCAPE, 1, array);
+
   return query;
 }
 
@@ -387,6 +442,32 @@ static VALUE cCommand_quote_string(VALUE self, VALUE string) {
 
   result = rb_str_new(escaped, quoted_length + 2);
   free(escaped);
+  return result;
+}
+
+static VALUE cCommand_quote_byte_array(VALUE self, VALUE string) {
+  PGconn *db = DATA_PTR(rb_iv_get(rb_iv_get(self, "@connection"), "@connection"));
+
+  const unsigned char *source = (unsigned char*) RSTRING_PTR(string);
+  size_t source_len     = RSTRING_LEN(string);
+
+  unsigned char *escaped;
+  unsigned char *escaped_quotes;
+  size_t quoted_length = 0;
+  VALUE result;
+
+  // Allocate space for the escaped version of 'string'
+  // http://www.postgresql.org/docs/8.3/static/libpq-exec.html#LIBPQ-EXEC-ESCAPE-STRING
+  escaped = PQescapeByteaConn(db, source, source_len, &quoted_length);
+  escaped_quotes = (unsigned char *)calloc(quoted_length + 1, sizeof(unsigned char));
+  memcpy(escaped_quotes + 1, escaped, quoted_length);
+
+  // Wrap the escaped string in single-quotes, this is DO's convention (replace trailing \0)
+  escaped_quotes[quoted_length] = escaped_quotes[0] = '\'';
+
+  result = TAINTED_STRING((char*)escaped_quotes, quoted_length + 1);
+  PQfreemem(escaped);
+  free(escaped_quotes);
   return result;
 }
 
@@ -455,6 +536,7 @@ static VALUE cConnection_initialize(VALUE self, VALUE uri) {
   char *search_path_query = NULL;
   char *backslash_off = "SET backslash_quote = off";
   char *standard_strings_on = "SET standard_conforming_strings = on";
+  char *warning_messages = "SET client_min_messages = warning";
 
   PGconn *db;
 
@@ -536,6 +618,13 @@ static VALUE cConnection_initialize(VALUE self, VALUE uri) {
     rb_warn(PQresultErrorMessage(result));
   }
 
+  r_options = rb_str_new2(warning_messages);
+  result = cCommand_execute_async(db, r_options);
+
+  if (PQresultStatus(result) != PGRES_COMMAND_OK) {
+    rb_warn(PQresultErrorMessage(result));
+  }
+
   encoding = get_uri_option(r_query, "encoding");
   if (!encoding) { encoding = get_uri_option(r_query, "charset"); }
   if (!encoding) { encoding = "utf8"; }
@@ -569,12 +658,18 @@ static VALUE cConnection_character_set(VALUE self) {
 }
 
 static VALUE cCommand_execute_non_query(int argc, VALUE *argv[], VALUE self) {
-  PGconn *db = DATA_PTR(rb_iv_get(rb_iv_get(self, "@connection"), "@connection"));
+  VALUE connection = rb_iv_get(self, "@connection");
+  VALUE postgres_connection = rb_iv_get(connection, "@connection");
+  if (Qnil == postgres_connection) {
+    rb_raise(ePostgresError, "This connection has already been closed.");
+  }
+
+  PGconn *db = DATA_PTR(postgres_connection);
   PGresult *response;
   int status;
 
-  int affected_rows;
-  int insert_id;
+  VALUE affected_rows;
+  VALUE insert_id;
 
   VALUE query = build_query_from_args(self, argc, argv);
 
@@ -583,12 +678,12 @@ static VALUE cCommand_execute_non_query(int argc, VALUE *argv[], VALUE self) {
   status = PQresultStatus(response);
 
   if ( status == PGRES_TUPLES_OK ) {
-    insert_id = atoi(PQgetvalue(response, 0, 0));
-    affected_rows = 1;
+    insert_id = INT2NUM(atoi(PQgetvalue(response, 0, 0)));
+    affected_rows = INT2NUM(1);
   }
   else if ( status == PGRES_COMMAND_OK ) {
-    insert_id = 0;
-    affected_rows = atoi(PQcmdTuples(response));
+    insert_id = Qnil;
+    affected_rows = INT2NUM(atoi(PQcmdTuples(response)));
   }
   else {
     char *message = PQresultErrorMessage(response);
@@ -599,7 +694,7 @@ static VALUE cCommand_execute_non_query(int argc, VALUE *argv[], VALUE self) {
 
   PQclear(response);
 
-  return rb_funcall(cResult, ID_NEW, 3, self, INT2NUM(affected_rows), INT2NUM(insert_id));
+  return rb_funcall(cResult, ID_NEW, 3, self, affected_rows, insert_id);
 }
 
 static VALUE cCommand_execute_reader(int argc, VALUE *argv[], VALUE self) {
@@ -610,7 +705,13 @@ static VALUE cCommand_execute_reader(int argc, VALUE *argv[], VALUE self) {
   int field_count;
   int infer_types = 0;
 
-  PGconn *db = DATA_PTR(rb_iv_get(rb_iv_get(self, "@connection"), "@connection"));
+  VALUE connection = rb_iv_get(self, "@connection");
+  VALUE postgres_connection = rb_iv_get(connection, "@connection");
+  if (Qnil == postgres_connection) {
+    rb_raise(ePostgresError, "This connection has already been closed.");
+  }
+
+  PGconn *db = DATA_PTR(postgres_connection);
   PGresult *response;
 
   query = build_query_from_args(self, argc, argv);
@@ -633,9 +734,14 @@ static VALUE cCommand_execute_reader(int argc, VALUE *argv[], VALUE self) {
   field_names = rb_ary_new();
   field_types = rb_iv_get(self, "@field_types");
 
-  if ( field_types == Qnil || RARRAY_LEN(field_types) == 0 ) {
+  if ( field_types == Qnil || 0 == RARRAY_LEN(field_types) ) {
     field_types = rb_ary_new();
     infer_types = 1;
+  } else if (RARRAY_LEN(field_types) != field_count) {
+    // Whoops...  wrong number of types passed to set_types.  Close the reader and raise
+    // and error
+    rb_funcall(reader, rb_intern("close"), 0);
+    rb_raise(eArgumentError, "Field-count mismatch. Expected %ld fields, but the query yielded %d", RARRAY_LEN(field_types), field_count);
   }
 
   for ( i = 0; i < field_count; i++ ) {
@@ -678,10 +784,8 @@ static VALUE cReader_next(VALUE self) {
   int i;
   int position;
 
-  const char *type;
-
   VALUE array = rb_ary_new();
-  VALUE field_types, ruby_type;
+  VALUE field_types, field_type;
   VALUE value;
 
   row_count = NUM2INT(rb_iv_get(self, "@row_count"));
@@ -690,22 +794,16 @@ static VALUE cReader_next(VALUE self) {
   position = NUM2INT(rb_iv_get(self, "@position"));
 
   if ( position > (row_count-1) ) {
-    return Qnil;
+    rb_iv_set(self, "@values", Qnil);
+    return Qfalse;
   }
 
   for ( i = 0; i < field_count; i++ ) {
-    ruby_type = RARRAY_PTR(field_types)[i];
-
-    if ( TYPE(ruby_type) == T_STRING ) {
-      type = StringValuePtr(ruby_type);
-    }
-    else {
-      type = rb_class2name(ruby_type);
-    }
+    field_type = rb_ary_entry(field_types, i);
 
     // Always return nil if the value returned from Postgres is null
     if (!PQgetisnull(reader, position, i)) {
-      value = typecast(PQgetvalue(reader, position, i), PQgetlength(reader, position, i), type);
+      value = typecast(PQgetvalue(reader, position, i), PQgetlength(reader, position, i), field_type);
     } else {
       value = Qnil;
     }
@@ -721,14 +819,11 @@ static VALUE cReader_next(VALUE self) {
 
 static VALUE cReader_values(VALUE self) {
 
-  int position = rb_iv_get(self, "@position");
-  int row_count = NUM2INT(rb_iv_get(self, "@row_count"));
-
-  if ( position == Qnil || NUM2INT(position) > row_count ) {
+  VALUE values = rb_iv_get(self, "@values");
+  if(values == Qnil) {
     rb_raise(ePostgresError, "Reader not initialized");
-  }
-  else {
-    return rb_iv_get(self, "@values");
+  } else {
+    return values;
   }
 }
 
@@ -738,9 +833,6 @@ static VALUE cReader_fields(VALUE self) {
 
 static VALUE cReader_field_count(VALUE self) {
   return rb_iv_get(self, "@field_count");
-}
-static VALUE cReader_row_count(VALUE self) {
-  return rb_iv_get(self, "@row_count");
 }
 
 void Init_do_postgres_ext() {
@@ -752,6 +844,7 @@ void Init_do_postgres_ext() {
   rb_cDateTime = CONST_GET(rb_mKernel, "DateTime");
   rb_cTime = CONST_GET(rb_mKernel, "Time");
   rb_cBigDecimal = CONST_GET(rb_mKernel, "BigDecimal");
+  rb_cByteArray = CONST_GET(rb_mKernel, "ByteArray");
 
   rb_funcall(rb_mKernel, rb_intern("require"), 1, rb_str_new2("data_objects"));
 
@@ -774,6 +867,7 @@ void Init_do_postgres_ext() {
   cDO_Result = CONST_GET(mDO, "Result");
   cDO_Reader = CONST_GET(mDO, "Reader");
 
+  eArgumentError = CONST_GET(rb_mKernel, "ArgumentError");
   mPostgres = rb_define_module_under(mDO, "Postgres");
   ePostgresError = rb_define_class("PostgresError", rb_eStandardError);
 
@@ -784,10 +878,11 @@ void Init_do_postgres_ext() {
 
   cCommand = POSTGRES_CLASS("Command", cDO_Command);
   rb_include_module(cCommand, cDO_Quoting);
-  rb_define_method(cCommand, "set_types", cCommand_set_types, 1);
+  rb_define_method(cCommand, "set_types", cCommand_set_types, -1);
   rb_define_method(cCommand, "execute_non_query", cCommand_execute_non_query, -1);
   rb_define_method(cCommand, "execute_reader", cCommand_execute_reader, -1);
   rb_define_method(cCommand, "quote_string", cCommand_quote_string, 1);
+  rb_define_method(cCommand, "quote_byte_array", cCommand_quote_byte_array, 1);
 
   cResult = POSTGRES_CLASS("Result", cDO_Result);
 
@@ -796,7 +891,6 @@ void Init_do_postgres_ext() {
   rb_define_method(cReader, "next!", cReader_next, 0);
   rb_define_method(cReader, "values", cReader_values, 0);
   rb_define_method(cReader, "fields", cReader_fields, 0);
-  rb_define_method(cReader, "row_count", cReader_row_count, 0);
   rb_define_method(cReader, "field_count", cReader_field_count, 0);
 
 }
