@@ -19,7 +19,6 @@ import org.jruby.RubyObject;
 import org.jruby.RubyObjectAdapter;
 import org.jruby.RubyProc;
 import org.jruby.RubyString;
-import org.jruby.RubyTime;
 import org.jruby.anno.JRubyClass;
 import org.jruby.anno.JRubyMethod;
 import org.jruby.javasupport.JavaEmbedUtils;
@@ -176,10 +175,6 @@ public class Reader extends RubyObject {
         return api.getInstanceVariable(recv, "@fields");
     }
 
-    @JRubyMethod
-    public static IRubyObject row_count(IRubyObject recv) {
-        return api.getInstanceVariable(recv, "@row_count");
-    }
 
     @JRubyMethod
     public static IRubyObject field_count(IRubyObject recv) {

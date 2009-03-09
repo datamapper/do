@@ -22,6 +22,8 @@ public interface DriverDefinition {
      * Whether the Driver supports properly JDBC 2.0's
      * scrollable result sets
      *
+     * XXX left taking consideration into further versions
+     *
      * @return
      */
     public boolean supportsJdbcScrollableResultSets();
