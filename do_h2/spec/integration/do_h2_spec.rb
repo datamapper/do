@@ -129,11 +129,10 @@ describe "DataObjects::H2::Reader" do
     end
   end
 
-  it "should return proper number of rows and fields using row_count and field_count" do
+  it "should return proper number of  fields using field_count" do
     command = @connection.create_command("SELECT * FROM widgets WHERE id = (SELECT max(id) FROM widgets)")
     reader = command.execute_reader
     reader.field_count.should == 20
-    reader.row_count.should == 1
     reader.close
   end
 
