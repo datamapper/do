@@ -1,5 +1,6 @@
 package data_objects;
 
+import java.io.UnsupportedEncodingException;
 import java.sql.Date;
 import java.sql.SQLException;
 import java.sql.Time;
@@ -12,8 +13,13 @@ import java.text.SimpleDateFormat;
 
 import java.util.Calendar;
 import java.util.GregorianCalendar;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.StringTokenizer;
 import org.jruby.Ruby;
 import org.jruby.RubyClass;
+import org.jruby.RubyFixnum;
 import org.jruby.RubyNumeric;
 import org.jruby.RubyRational;
 import org.jruby.RubyTime;
@@ -209,6 +215,70 @@ public final class DataObjectsUtils {
 
         SimpleDateFormat sdf = new SimpleDateFormat("HH-mm-ss"); // TODO proper format?
         return runtime.newString(sdf.format(rbTime.getJavaDate()));
+    }
+
+    public static String stringOrNull(IRubyObject obj) {
+        return (!obj.isNil()) ? obj.asJavaString() : null;
+    }
+
+    public static int intOrMinusOne(IRubyObject obj) {
+        return (!obj.isNil()) ? RubyFixnum.fix2int(obj) : -1;
+    }
+
+    public static Integer integerOrNull(IRubyObject obj) {
+        return (!obj.isNil()) ? RubyFixnum.fix2int(obj) : null;
+    }
+
+    /**
+     * Convert a map of key/values to a URI query string
+     *
+     * @param map
+     * @return
+     * @throws java.io.UnsupportedEncodingException
+     */
+    public static String mapToQueryString(Map<Object, Object> map)
+            throws UnsupportedEncodingException {
+        Iterator it = map.entrySet().iterator();
+        StringBuffer querySb = new StringBuffer();
+        while (it.hasNext()) {
+            Map.Entry pairs = (Map.Entry) it.next();
+            String key = (pairs.getKey() != null) ? pairs.getKey().toString() : "";
+            String value = (pairs.getValue() != null) ? pairs.getValue().toString() : "";
+            querySb.append(java.net.URLEncoder.encode(key, "UTF-8")).append("=");
+            querySb.append(java.net.URLEncoder.encode(value, "UTF-8"));
+        }
+        return querySb.toString();
+    }
+
+    /**
+     * Convert a query string (e.g. driver=org.postgresql.Driver&protocol=postgresql)
+     * to a Map of values.
+     *
+     * @param query
+     * @return
+     */
+    public static Map<String, String> parseQueryString(String query)
+            throws UnsupportedEncodingException {
+        if (query == null) {
+            return null;
+        }
+        Map<String, String> nameValuePairs = new HashMap<String, String>();
+        StringTokenizer stz = new StringTokenizer(query, "&");
+
+        // Tokenize at and for name / value pairs
+        while (stz.hasMoreTokens()) {
+            String nameValueToken = stz.nextToken();
+            // Split at = to split the pairs
+            int i = nameValueToken.indexOf("=");
+            String name = nameValueToken.substring(0, i);
+            String value = nameValueToken.substring(i + 1);
+            // Name and value should be URL decoded
+            name = java.net.URLDecoder.decode(name, "UTF-8");
+            value = java.net.URLDecoder.decode(value, "UTF-8");
+            nameValuePairs.put(name, value);
+        }
+
+        return nameValuePairs;
     }
 
     // private constructor
