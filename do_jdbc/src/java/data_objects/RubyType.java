@@ -17,7 +17,9 @@ public enum RubyType {
     INTEGER    ("Integer"),
     BIGNUM     ("Bignum"),
     FLOAT      ("Float"),
-    BIG_DECIMAL("BigDecimal");
+    BIG_DECIMAL("BigDecimal"),
+    BYTE_ARRAY ("ByteArray"),
+    NIL        ("NilClass");
 
     private String rubyName;
 

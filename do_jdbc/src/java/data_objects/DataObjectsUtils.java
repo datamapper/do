@@ -111,6 +111,15 @@ public final class DataObjectsUtils {
             case Types.DOUBLE:
                 primitiveType = RubyType.FLOAT;
                 break;
+            case Types.BLOB:
+            case Types.JAVA_OBJECT: // XXX: Not sure this should be here
+            case Types.VARBINARY:
+            case Types.LONGVARBINARY:
+                primitiveType = RubyType.BYTE_ARRAY;
+                break;
+            case Types.NULL:
+                primitiveType = RubyType.NIL;
+                break;
             default:
                 primitiveType = RubyType.STRING;
         }

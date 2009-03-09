@@ -114,7 +114,7 @@ public class Reader extends RubyObject {
             return runtime.getFalse();
         }
 
-        IRubyObject field_types = api.getInstanceVariable(recv, "@types");
+        IRubyObject field_types = api.getInstanceVariable(recv, "@field_types");
         IRubyObject field_count = api.getInstanceVariable(recv, "@field_count");
         RubyArray row = runtime.newArray();
         IRubyObject value;
@@ -124,7 +124,7 @@ public class Reader extends RubyObject {
         api.setInstanceVariable(recv, "@state", runtime.newBoolean(hasNext));
 
         if (!hasNext) {
-            return runtime.getNil();
+            return runtime.getFalse();
         }
 
         for (int i = 0; i < RubyNumeric.fix2int(field_count.convertToInteger()); i++) {
@@ -141,6 +141,7 @@ public class Reader extends RubyObject {
                 // assume the mapping from jdbc type to ruby type to be complete
                 type = DataObjectsUtils.jdbcTypeToRubyType(rs.getMetaData().getColumnType(col),
                         rs.getMetaData().getScale(col));
+
             }
 
             // -- debugging what's coming out
@@ -149,6 +150,8 @@ public class Reader extends RubyObject {
             //System.out.println("JDBC Metadata scale " + rs.getMetaData().getScale(col));
             //System.out.println("Ruby Type " + type);
             // System.out.println(""); //for prettier output
+
+            if (type == null) throw runtime.newRuntimeError("Problem automatically mapping JDBC Type to Ruby Type");
 
             value = get_typecast_rs_value(runtime, rs, col, type);
             row.push_m(new IRubyObject[]{value});

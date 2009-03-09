@@ -170,11 +170,14 @@ public class Connection extends RubyObject {
         Ruby runtime = recv.getRuntime();
 
         java.sql.Connection prev = getConnection(recv);
-        if (prev != null) {
-            try {
-                prev.close();
-            } catch (Exception e) {
-            }
+        if (prev == null) {
+            return runtime.getFalse();
+        }
+
+        try {
+            prev.close();
+        } catch (Exception e) {
+            return runtime.getFalse();
         }
 
         return runtime.getTrue();

@@ -26,6 +26,7 @@ import org.jruby.RubyString;
 import org.jruby.RubyTime;
 import org.jruby.anno.JRubyClass;
 import org.jruby.anno.JRubyMethod;
+import org.jruby.exceptions.RaiseException;
 import org.jruby.javasupport.Java;
 import org.jruby.javasupport.JavaEmbedUtils;
 import org.jruby.javasupport.JavaObject;
@@ -181,7 +182,7 @@ public class Command extends RubyObject {
         } catch (SQLException sqle) {
             // TODO: log
             //sqle.printStackTrace();
-            throw DataObjectsUtils.newDriverError(runtime, errorName, sqle.getLocalizedMessage());
+            throw newQueryError(runtime, sqle, sqlStatement);
         } finally {
             if (sqlStatement != null) {
                 try {
@@ -262,7 +263,7 @@ public class Command extends RubyObject {
 
             // get the field types
             RubyArray field_names = runtime.newArray();
-            IRubyObject field_types = api.getInstanceVariable(recv , "@types");
+            IRubyObject field_types = api.getInstanceVariable(recv , "@field_types");
 
             // If no types are passed in, infer them
             if (field_types == null) {
@@ -277,10 +278,9 @@ public class Command extends RubyObject {
                     // Wrong number of fields passed to set_types. Close the reader
                     // and raise an error.
                     api.callMethod(reader, "close");
-                    throw DataObjectsUtils.newDriverError(runtime, errorName,
-                                                          String.format("Field-count mismatch. Expected %1$d fields, but the query yielded %2$d",
-                                                                        fieldTypesCount,
-                                                                        columnCount));
+                    throw runtime.newArgumentError(String.format("Field-count mismatch. Expected %1$d fields, but the query yielded %2$d",
+                                                                 fieldTypesCount,
+                                                                 columnCount));
                 }
             }
 
@@ -297,7 +297,7 @@ public class Command extends RubyObject {
 
             // set the reader @field_names and @types (guessed or otherwise)
             api.setInstanceVariable(reader, "@fields", field_names);
-            api.setInstanceVariable(reader, "@types", field_types);
+            api.setInstanceVariable(reader, "@field_types", field_types);
 
             // keep the statement open
 
@@ -307,7 +307,7 @@ public class Command extends RubyObject {
             //sqlStatement = null;
         } catch (SQLException sqle) {
             // TODO: log sqle.printStackTrace();
-            throw DataObjectsUtils.newDriverError(runtime, errorName, sqle.getLocalizedMessage());
+            throw newQueryError(runtime, sqle, sqlStatement);
         } finally {
             //if (sqlStatement != null) {
             //    try {
@@ -321,9 +321,29 @@ public class Command extends RubyObject {
         return reader;
     }
 
-    @JRubyMethod(required = 1)
-    public static IRubyObject set_types(IRubyObject recv, IRubyObject value) {
-        IRubyObject types = api.setInstanceVariable(recv, "@types", value);
+    @JRubyMethod(rest = true)
+    public static IRubyObject set_types(IRubyObject recv, IRubyObject[] args) {
+        Ruby runtime = recv.getRuntime();
+        RubyArray types = RubyArray.newArray(runtime, args);
+        RubyArray type_strings = RubyArray.newArray(runtime);
+
+        for (IRubyObject arg : args) {
+            if (arg instanceof RubyClass) {
+                type_strings.append(arg);
+            } else if (arg instanceof RubyArray) {
+                for (IRubyObject sub_arg : arg.convertToArray().toJavaArray()) {
+                    if (sub_arg instanceof RubyClass) {
+                        type_strings.append(sub_arg);
+                    } else {
+                        throw runtime.newArgumentError("Invalid type given");
+                    }
+                }
+            } else {
+                throw runtime.newArgumentError("Invalid type given");
+            }
+        }
+
+        api.setInstanceVariable(recv, "@field_types", type_strings);
         return types;
     }
 
@@ -363,6 +383,25 @@ public class Command extends RubyObject {
         }
     }
 
+    private static RaiseException newQueryError(Ruby runtime, SQLException sqle,
+            Statement statement) {
+        // TODO: provide an option to display extended debug information, for
+        // driver developers, etc. Otherwise, keep it off to keep noise down for
+        // end-users.
+        Pattern p = Pattern.compile("Statement parameter (\\d+) not set.");
+        Matcher m = p.matcher(sqle.getMessage());
+
+        if (m.matches()) {
+            return runtime.newArgumentError("Binding mismatch: 0 for " + m.group(1));
+        } else {
+            return DataObjectsUtils.newDriverError(runtime, errorName,
+                    sqle.getLocalizedMessage() +
+                    "\nSQl Statement: " + ((statement != null) ? statement.toString() : "<nil>") +
+                    "\nError Code: " + sqle.getErrorCode() +
+                    "\nSQL State: " + sqle.getSQLState());
+        }
+    }
+
     /**
      * Assist with the formatting of SQL Text Strings for PreparedStatements.
      *
@@ -387,7 +426,7 @@ public class Command extends RubyObject {
         // System.out.println(""+timeStamp+" SQL before replacements @: " + doSqlText); // XXX for debug
         String psSqlText = doSqlText;
         int addedSymbols=0;
-        
+
         for (int i = 0; i < args.length; i++) {
 
             if (args[i] instanceof RubyArray) {
@@ -498,8 +537,16 @@ public class Command extends RubyObject {
             }
         } catch (SQLException sqle) {
             // TODO: log sqle.printStackTrace();
-            //throw DataObjectsUtils.newDriverError(runtime, errorName, sqle.getLocalizedMessage());
-            sqle.printStackTrace();
+            // TODO: possibly move this exception string parsing somewhere else
+            Pattern pattern = Pattern.compile("Parameter index out of bounds. (\\d+) is not between valid values of (\\d+) and (\\d+)");
+            Matcher matcher = pattern.matcher(sqle.getMessage());
+            if (matcher.matches()) {
+                throw recv.getRuntime().newArgumentError(String.format("Binding mismatch: %1$d for %2$d",
+                        Integer.parseInt(matcher.group(1)),
+                        Integer.parseInt(matcher.group(2))));
+            } else {
+                throw DataObjectsUtils.newDriverError(recv.getRuntime(), errorName, sqle.getLocalizedMessage());
+            }
         }
     }
 
