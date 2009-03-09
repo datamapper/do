@@ -115,7 +115,7 @@ describe "DataObjects::H2::Reader" do
   it "should raise an error when you pass too many or too few types for the expected result set" do
     lambda {
       select("SELECT name, fired_at FROM users", [String, DateTime, Integer])
-      }.should raise_error(H2Error, /Field-count mismatch. Expected 3 fields, but the query yielded 2/)
+      }.should raise_error(ArgumentError, /Field-count mismatch. Expected 3 fields, but the query yielded 2/)
   end
 
   it "shouldn't raise an error when you pass NO types for the expected result set" do
