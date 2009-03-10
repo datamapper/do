@@ -311,7 +311,7 @@ static VALUE typecast(const char *value, long length, const VALUE type) {
   } else if (type == rb_cTime) {
     return parse_time(value);
   } else if (type == rb_cTrueClass) {
-    return *value == 't' ? Qtrue : Qfalse;
+    return (0 == value || 0 == strcmp("0", value)) ? Qfalse : Qtrue;
   } else if (type == rb_cByteArray) {
     return rb_funcall(rb_cByteArray, ID_NEW, 1, TAINTED_STRING(value, length));
   } else if (type == rb_cClass) {
