@@ -254,6 +254,9 @@ public class Reader extends RubyObject {
                 return  DataObjectsUtils.prepareRubyTimeFromSqlTime(runtime, tm);
                 // produces RubyTime
                 // return DataObjectsUtils.parse_time(runtime, tm);
+            case NIL:
+                return runtime.getNil();
+                
             case STRING:
             default:
                 String str = rs.getString(col);
