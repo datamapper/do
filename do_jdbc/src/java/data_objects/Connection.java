@@ -88,6 +88,14 @@ public class Connection extends RubyObject {
             throw runtime.newArgumentError("Unsupported Encoding in Query Parameters" + ex);
         }
 
+        // Normally, a database path must be specified. However, we should only
+        // throw this error for opaque URIs - so URIs like jdbc:h2:mem should work.
+        if (!connectionUri.isOpaque() && (connectionUri.getPath() == null
+                || "".equals(connectionUri.getPath())
+                ||"/".equals(connectionUri.getPath()))) {
+            throw runtime.newArgumentError("No database specified");
+        }
+
         if (connectionUri.getQuery() != null) {
             Map<String, String> query;
             try {
