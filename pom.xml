@@ -1,0 +1,54 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>org.dataobjects</groupId>
+  <artifactId>dataobjects</artifactId>
+  <packaging>jar</packaging>
+  <version>0.9.12</version>
+  <name>dataobjects</name>
+  <description>
+    This POM for DataObjects is just for bootstrapping IDEs. You can't use it
+    to build the project at the moment.
+  </description>
+  <url>http://datamapper.org/</url>
+
+  <issueManagement>
+    <system>lighthouse</system>
+    <url>http://datamapper.lighthouseapp.com/projects/20609-datamapper</url>
+  </issueManagement>
+
+  <scm>
+    <connection>scm:git:git://github.com/datamapper/do.git</connection>
+    <developerConnection>scm:git:git@github.com:datamapper/do.git</developerConnection>
+    <url>http://github.com/datamapper/do</url>
+  </scm>
+
+  <licenses>
+    <license>
+      <name>MIT</name>
+      <url>http://www.opensource.org/licenses/mit-license.php</url>
+      <distribution>repo</distribution>
+    </license>
+  </licenses>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.jruby</groupId>
+      <artifactId>jruby-complete</artifactId>
+      <version>1.1.6</version>
+    </dependency>
+  </dependencies>
+
+  <modules>
+    <!-- the "core" module -->
+    <module>do_jdbc</module>
+    <!-- each of the drivers with JDBC support -->
+    <module>do_derby</module>
+    <module>do_h2</module>
+    <module>do_hsqldb</module>
+    <module>do_mysql</module>
+    <module>do_postgres</module>
+    <module>do_sqlite3</module>
+  </modules>
+
+</project>
