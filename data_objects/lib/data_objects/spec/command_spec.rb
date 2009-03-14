@@ -25,7 +25,7 @@ share_examples_for 'a Command' do
     describe 'with an invalid statement' do
 
       before :each do
-        @invalid_command = @connection.create_command("INSERT INTO non_existant_table (tester) VALUES (1)")
+        @invalid_command = @connection.create_command("INSERT INTO non_existent_table (tester) VALUES (1)")
       end
 
       it 'should raise an error on an invalid query' do
@@ -118,7 +118,7 @@ share_examples_for 'a Command' do
 
     describe 'with a valid reader' do
 
-      it 'should not raise an error with corrent number of types' do
+      it 'should not raise an error with correct number of types' do
         @reader.set_types(Integer, String)
         lambda { @result = @reader.execute_reader('Buy this product now!') }.should_not raise_error
         lambda { @result.next! }.should_not raise_error
