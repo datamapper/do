@@ -88,17 +88,28 @@ module DataObjectsSpecHelpers
       )
     EOF
 
+    # FIXME:
+    # description, ad_description and whitepaper_text should be LONG VARCHAR and
+    # not VARCHAR(500). However, the specs are failing with the following error
+    # when the LONG VARCHAR type is used: Comparisons between 'LONG VARCHAR
+    # (UCS_BASIC)' and 'LONG VARCHAR (UCS_BASIC)' are not supported. Types must
+    # be comparable. String types must also have matching collation. If
+    # collation does not match, a possible solution is to cast operands to force
+    # them to the default collation (e.g. select tablename from sys.systables
+    # where CAST(tablename as VARCHAR(128)) = 'T1')
+    # Error Code: 30000
+    # SQL State: 42818
     conn.create_command(<<-EOF).execute_non_query
       CREATE TABLE widgets (
         id                INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
         code              CHAR(8) DEFAULT 'A14',
         name              VARCHAR(200) DEFAULT 'Super Widget',
         shelf_location    VARCHAR(50),
-        description       LONG VARCHAR,
+        description       VARCHAR(500),
         image_data        BLOB,
-        ad_description    LONG VARCHAR,
+        ad_description    VARCHAR(500),
         ad_image          BLOB,
-        whitepaper_text   LONG VARCHAR,
+        whitepaper_text   VARCHAR(500),
         cad_drawing       BLOB,
         flags             SMALLINT DEFAULT 0,
         number_in_stock   SMALLINT DEFAULT 500,
