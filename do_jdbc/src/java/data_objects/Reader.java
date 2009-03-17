@@ -105,7 +105,7 @@ public class Reader extends RubyObject {
      * @return
      */
     @JRubyMethod(name = "next!")
-    public static IRubyObject next(IRubyObject recv) throws SQLException {
+    public static IRubyObject next(IRubyObject recv) {
         Ruby runtime = recv.getRuntime();
         IRubyObject reader = api.getInstanceVariable(recv, "@reader");
         ResultSet rs = (ResultSet) reader.dataGetStruct();
@@ -120,41 +120,45 @@ public class Reader extends RubyObject {
         IRubyObject value;
         int fieldTypesCount = field_types.convertToArray().getLength();
 
-        boolean hasNext = rs.next();
-        api.setInstanceVariable(recv, "@state", runtime.newBoolean(hasNext));
+        try {
+            boolean hasNext = rs.next();
+            api.setInstanceVariable(recv, "@state", runtime.newBoolean(hasNext));
 
-        if (!hasNext) {
-            return runtime.getFalse();
-        }
-
-        for (int i = 0; i < RubyNumeric.fix2int(field_count.convertToInteger()); i++) {
-            int col = i + 1;
-            RubyType type;
-
-            if (fieldTypesCount > 0) {
-                // use the specified type
-                String typeName = field_types.convertToArray().get(i).toString();
-                type = RubyType.getRubyType(typeName.toUpperCase());
-            } else {
-                // infer the type
-
-                // assume the mapping from jdbc type to ruby type to be complete
-                type = DataObjectsUtils.jdbcTypeToRubyType(rs.getMetaData().getColumnType(col),
-                        rs.getMetaData().getScale(col));
-
+            if (!hasNext) {
+                return runtime.getFalse();
             }
 
-            // -- debugging what's coming out
-            //System.out.println("Column Name: " + rs.getMetaData().getColumnName(col));
-            //System.out.println("JDBC TypeName " + rs.getMetaData().getColumnTypeName(col));
-            //System.out.println("JDBC Metadata scale " + rs.getMetaData().getScale(col));
-            //System.out.println("Ruby Type " + type);
-            // System.out.println(""); //for prettier output
+            for (int i = 0; i < RubyNumeric.fix2int(field_count.convertToInteger()); i++) {
+                int col = i + 1;
+                RubyType type;
 
-            if (type == null) throw runtime.newRuntimeError("Problem automatically mapping JDBC Type to Ruby Type");
+                if (fieldTypesCount > 0) {
+                    // use the specified type
+                    String typeName = field_types.convertToArray().get(i).toString();
+                    type = RubyType.getRubyType(typeName.toUpperCase());
+                } else {
+                    // infer the type
 
-            value = get_typecast_rs_value(runtime, rs, col, type);
-            row.push_m(new IRubyObject[]{value});
+                    // assume the mapping from jdbc type to ruby type to be complete
+                    type = DataObjectsUtils.jdbcTypeToRubyType(rs.getMetaData().getColumnType(col),
+                            rs.getMetaData().getScale(col));
+
+                }
+
+                // -- debugging what's coming out
+                //System.out.println("Column Name: " + rs.getMetaData().getColumnName(col));
+                //System.out.println("JDBC TypeName " + rs.getMetaData().getColumnTypeName(col));
+                //System.out.println("JDBC Metadata scale " + rs.getMetaData().getScale(col));
+                //System.out.println("Ruby Type " + type);
+                // System.out.println(""); //for prettier output
+
+                if (type == null) throw runtime.newRuntimeError("Problem automatically mapping JDBC Type to Ruby Type");
+
+                value = get_typecast_rs_value(runtime, rs, col, type);
+                row.push_m(new IRubyObject[]{value});
+            }
+        } catch (SQLException sqe) {
+           throw DataObjectsUtils.newDriverError(runtime, errorName, sqe);
         }
 
         api.setInstanceVariable(recv, "@values", row);
@@ -196,7 +200,13 @@ public class Reader extends RubyObject {
             int col, RubyType type) throws SQLException {
         switch (type) {
             case CLASS:
-                return runtime.getClass(rs.getString(col));
+                String classNameStr = rs.getString(col);
+                if (classNameStr == null || rs.wasNull()) {
+                    return runtime.getNil();
+                }
+                RubyString class_name_str = RubyString.newUnicodeString(runtime, rs.getString(col));
+                class_name_str.setTaint(true);
+                return api.callMethod(runtime.getObject(), "full_const_get", class_name_str);
             case OBJECT:
                 InputStream strm = rs.getAsciiStream(col);
                 IRubyObject obj = runtime.getNil();
@@ -256,7 +266,7 @@ public class Reader extends RubyObject {
                 // return DataObjectsUtils.parse_time(runtime, tm);
             case NIL:
                 return runtime.getNil();
-                
+
             case STRING:
             default:
                 String str = rs.getString(col);

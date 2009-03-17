@@ -127,7 +127,7 @@ module DataObjectsSpecHelpers
           '4f3d4331434343434331',
           'Buy this product now!',
           '4f3d4331434343434331',
-          'Utilizing blah blah blah',
+          'String',
           '4f3d4331434343434331',
           1234,
           13.4);

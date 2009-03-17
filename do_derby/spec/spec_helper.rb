@@ -144,7 +144,7 @@ module DataObjectsSpecHelpers
           'A14',
           'This is a description',
           'Buy this product now!',
-          'Utilizing blah blah blah',
+          'String',
           1234,
           13.4)
       EOF
