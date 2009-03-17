@@ -61,11 +61,36 @@ public final class DataObjectsUtils {
      */
     public static RaiseException newDriverError(Ruby runtime, String errorName,
             SQLException exception) {
+        return newDriverError(runtime, errorName, exception, null);
+    }
+
+    /**
+     * Create a driver Error from an java.sql.SQLException, that displays the
+     * sql statement/query.
+     *
+     * @param runtime
+     * @param errorName
+     * @param exception
+     * @param statement
+     * @return
+     */
+    public static RaiseException newDriverError(Ruby runtime, String errorName,
+            SQLException exception, java.sql.Statement statement)
+    {
         RubyClass driverError = runtime.getClass(errorName);
         int code = exception.getErrorCode();
+        StringBuffer sb = new StringBuffer("(");
+
+        // Append the Vendor Code, if there is one
         // TODO: parse vendor exception codes
-        String message = exception.getLocalizedMessage();
-        return new RaiseException(runtime, driverError, message, true);
+        // TODO: replace 'vendor' with vendor name
+        if (code > 0) sb.append("vendor_errno=").append(code).append(", ");
+        sb.append("sql_state=").append(exception.getSQLState()).append(") ");
+        sb.append(exception.getLocalizedMessage());
+        // TODO: delegate to the DriverDefinition for this
+        if (statement != null) sb.append("\nQuery: ").append(statement.toString());
+
+        return new RaiseException(runtime, driverError, sb.toString(), true);
     }
 
     // STOLEN FROM AR-JDBC

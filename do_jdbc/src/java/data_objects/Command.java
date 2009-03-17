@@ -394,11 +394,7 @@ public class Command extends RubyObject {
         if (m.matches()) {
             return runtime.newArgumentError("Binding mismatch: 0 for " + m.group(1));
         } else {
-            return DataObjectsUtils.newDriverError(runtime, errorName,
-                    sqle.getLocalizedMessage() +
-                    "\nSQl Statement: " + ((statement != null) ? statement.toString() : "<nil>") +
-                    "\nError Code: " + sqle.getErrorCode() +
-                    "\nSQL State: " + sqle.getSQLState());
+            return DataObjectsUtils.newDriverError(runtime, errorName, sqle, statement);
         }
     }
 
@@ -545,7 +541,7 @@ public class Command extends RubyObject {
                         Integer.parseInt(matcher.group(1)),
                         Integer.parseInt(matcher.group(2))));
             } else {
-                throw DataObjectsUtils.newDriverError(recv.getRuntime(), errorName, sqle.getLocalizedMessage());
+                throw DataObjectsUtils.newDriverError(recv.getRuntime(), errorName, sqle);
             }
         }
     }
