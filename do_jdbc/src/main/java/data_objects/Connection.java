@@ -28,6 +28,7 @@ import org.jruby.runtime.builtin.IRubyObject;
 import org.jruby.runtime.callback.Callback;
 
 import data_objects.drivers.DriverDefinition;
+import data_objects.errors.Errors;
 import data_objects.util.JDBCUtil;
 
 /**
@@ -121,8 +122,10 @@ public final class Connection extends DORubyObject {
         if (!connectionUri.isOpaque() && (connectionUri.getPath() == null
                 || "".equals(connectionUri.getPath())
                 || "/".equals(connectionUri.getPath()))) {
-            //XXX Nothing to close
-            throw runtime.newArgumentError("No database specified");
+            // XXX Nothing to close
+            // XXX: MRI driver raises a ConnectionError. Is a ArgumentError not
+            //      more appropriate?
+            throw Errors.newConnectionError(runtime, "No database specified");
         }
 
         if (connectionUri.getQuery() != null) {
@@ -162,8 +165,8 @@ public final class Connection extends DORubyObject {
                     conn = dataSource.getConnection();
                 } catch (NamingException ex) {
                     JDBCUtil.close(conn);
-                    throw runtime.newRuntimeError("Can't lookup datasource: "
-                                                  + jndiName + "\n\t" + ex.getLocalizedMessage());
+                    throw Errors.newConnectionError(runtime, "Can't lookup datasource: "
+                                                  + connectionUri.toString() + "\n\t" + ex.getLocalizedMessage());
                 }
             } else {
                 Properties props = driver.getDefaultConnectionProperties();
@@ -193,14 +196,14 @@ public final class Connection extends DORubyObject {
 
         } catch (SQLException ex) {
             JDBCUtil.close(conn);
-            throw driver.newDriverError(runtime, "Can't connect: "
+            throw Errors.newSqlError(runtime, driver, "Can't connect: "
                                         + connectionUri.toString() + "\n\t" + ex.getLocalizedMessage());
         }
 
         // some jdbc driver just return null if the subscheme of URI does not match
         if(conn == null){
             //XXX Nothing to close
-            throw driver.newDriverError(runtime, "Can't connect: "
+            throw Errors.newSqlError(runtime, driver, "Can't connect: "
                                         + connectionUri.toString());
         }
 
@@ -209,8 +212,8 @@ public final class Connection extends DORubyObject {
             driver.afterConnectionCallback(this, conn, query);
         } catch (SQLException ex) {
             JDBCUtil.close(conn);
-            throw driver.newDriverError(runtime, "Connection initialization error:"
-                                        + "\n\t" + ex.getLocalizedMessage());
+            throw Errors.newSqlError(runtime, driver, "Connection initialization error:"
+                                     + "\n\t" + ex.getLocalizedMessage());
         }
 
 

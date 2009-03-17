@@ -82,4 +82,5 @@ public class DerbyDriverDefinition extends AbstractDriverDefinition {
     public boolean supportsJdbcScrollableResultSets() {
         return true;
     }
+
 }

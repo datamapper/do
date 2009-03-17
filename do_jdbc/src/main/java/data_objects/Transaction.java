@@ -13,6 +13,7 @@ import org.jruby.runtime.ObjectAllocator;
 import org.jruby.runtime.builtin.IRubyObject;
 
 import data_objects.drivers.DriverDefinition;
+import data_objects.errors.Errors;
 import data_objects.util.JDBCUtil;
 
 /**
@@ -78,7 +79,7 @@ public class Transaction extends DORubyObject {
             conn.setAutoCommit(false);
         } catch (SQLException sqle) {
             JDBCUtil.close(conn);
-            throw driver.newDriverError(getRuntime(), sqle);
+            throw Errors.newSqlError(getRuntime(), driver, sqle);
         }
         return getRuntime().getTrue();
     }
@@ -95,13 +96,13 @@ public class Transaction extends DORubyObject {
             conn.commit();
         } catch (SQLException sqle) {
             JDBCUtil.close(conn);
-            throw driver.newDriverError(getRuntime(), sqle);
+            throw Errors.newSqlError(getRuntime(), driver, sqle);
         } finally {
             try {
                 conn.setAutoCommit(true);
             } catch (SQLException sqle) {
                 JDBCUtil.close(conn);
-                throw driver.newDriverError(getRuntime(), sqle);
+                throw Errors.newSqlError(getRuntime(), driver, sqle);
             }
         }
         return getRuntime().getTrue();
@@ -119,13 +120,13 @@ public class Transaction extends DORubyObject {
             conn.rollback();
         } catch (SQLException sqle) {
             JDBCUtil.close(conn);
-            throw driver.newDriverError(getRuntime(), sqle);
+            throw Errors.newSqlError(getRuntime(), driver, sqle);
         } finally {
             try {
                 conn.setAutoCommit(true);
             } catch (SQLException sqle) {
                 JDBCUtil.close(conn);
-                throw driver.newDriverError(getRuntime(), sqle);
+                throw Errors.newSqlError(getRuntime(), driver, sqle);
             }
         }
         return getRuntime().getTrue();
@@ -143,7 +144,7 @@ public class Transaction extends DORubyObject {
         java.sql.Connection conn = connection_instance.getInternalConnection();
         try {
             if (conn == null || conn.isClosed()) {
-                throw driver.newDriverError(getRuntime(), "This connection has already been closed.");
+                throw Errors.newConnectionError(getRuntime(), "This connection has already been closed.");
             }
         } catch (SQLException ignored) {
         //TODO log this

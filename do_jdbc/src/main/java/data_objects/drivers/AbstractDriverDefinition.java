@@ -35,7 +35,6 @@ import org.jruby.RubyProc;
 import org.jruby.RubyRegexp;
 import org.jruby.RubyString;
 import org.jruby.RubyTime;
-import org.jruby.exceptions.RaiseException;
 import org.jruby.javasupport.JavaEmbedUtils;
 import org.jruby.runtime.builtin.IRubyObject;
 import org.jruby.runtime.marshal.UnmarshalStream;
@@ -126,14 +125,6 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
      */
     public String getModuleName() {
         return this.moduleName;
-    }
-
-    /**
-     *
-     * @return
-     */
-    public String getErrorName() {
-        return this.moduleName + "Error";
     }
 
     /**
@@ -246,54 +237,6 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
             querySb.append(java.net.URLEncoder.encode(value, "UTF-8"));
         }
         return querySb.toString();
-    }
-
-    /**
-     *
-     * @param runtime
-     * @param message
-     * @return
-     */
-    public RaiseException newDriverError(Ruby runtime, String message) {
-        RubyClass driverError = runtime.getClass(getErrorName());
-        return new RaiseException(runtime, driverError, message, true);
-    }
-
-    /**
-     *
-     * @param runtime
-     * @param exception
-     * @return
-     */
-    public RaiseException newDriverError(Ruby runtime, SQLException exception) {
-        return newDriverError(runtime, exception, null);
-    }
-
-    /**
-     *
-     * @param runtime
-     * @param exception
-     * @param statement
-     * @return
-     */
-    public RaiseException newDriverError(Ruby runtime, SQLException exception,
-            java.sql.Statement statement) {
-        RubyClass driverError = runtime.getClass(getErrorName());
-        int code = exception.getErrorCode();
-        StringBuilder sb = new StringBuilder("(");
-
-        // Append the Vendor Code, if there is one
-        // TODO: parse vendor exception codes
-        // TODO: replace 'vendor' with vendor name
-        if (code > 0)
-            sb.append("vendor_errno=").append(code).append(", ");
-        sb.append("sql_state=").append(exception.getSQLState()).append(") ");
-        sb.append(exception.getLocalizedMessage());
-
-        if (statement != null)
-            sb.append("\nQuery: ").append(statementToString(statement));
-
-        return new RaiseException(runtime, driverError, sb.toString(), true);
     }
 
     /**

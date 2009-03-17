@@ -16,7 +16,6 @@ import org.jruby.runtime.builtin.IRubyObject;
 import data_objects.RubyType;
 import data_objects.drivers.AbstractDriverDefinition;
 
-
 public class HsqldbDriverDefinition extends AbstractDriverDefinition {
 
     public final static String URI_SCHEME = "hsqldb";

@@ -14,7 +14,6 @@ import java.util.Properties;
 
 import org.jruby.Ruby;
 import org.jruby.RubyObjectAdapter;
-import org.jruby.exceptions.RaiseException;
 import org.jruby.runtime.builtin.IRubyObject;
 
 import data_objects.RubyType;
@@ -33,12 +32,6 @@ public interface DriverDefinition {
 
     /**
      *
-     * @return
-     */
-    public String getErrorName();
-
-    /**
-     *
      * @param uri
      * @return
      * @throws URISyntaxException
@@ -46,32 +39,6 @@ public interface DriverDefinition {
      */
     public URI parseConnectionURI(IRubyObject uri) throws URISyntaxException,
             UnsupportedEncodingException;
-
-    /**
-     *
-     * @param runtime
-     * @param message
-     * @return
-     */
-    public RaiseException newDriverError(Ruby runtime, String message);
-
-    /**
-     *
-     * @param runtime
-     * @param sqe
-     * @return
-     */
-    public RaiseException newDriverError(Ruby runtime, SQLException sqe);
-
-    /**
-     *
-     * @param runtime
-     * @param sqle
-     * @param statement
-     * @return
-     */
-    public RaiseException newDriverError(Ruby runtime, SQLException sqle,
-            Statement statement);
 
     /**
      *

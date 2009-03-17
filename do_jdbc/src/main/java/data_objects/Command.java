@@ -28,6 +28,7 @@ import org.jruby.runtime.ObjectAllocator;
 import org.jruby.runtime.builtin.IRubyObject;
 
 import data_objects.drivers.DriverDefinition;
+import data_objects.errors.Errors;
 import data_objects.util.JDBCUtil;
 
 
@@ -197,7 +198,7 @@ public class Command extends DORubyObject {
             }
 
         } catch (SQLException sqle) {
-            throw newQueryError(runtime, sqle, usePS ? sqlStatement : sqlSimpleStatement);
+            throw Errors.newQueryError(runtime, driver, sqle, usePS ? sqlStatement : sqlSimpleStatement);
         } finally {
             if (usePS) {
                 JDBCUtil.close(keys,sqlStatement);
@@ -343,7 +344,7 @@ public class Command extends DORubyObject {
             }
 
             api.callMethod(reader, "close");
-            throw newQueryError(runtime, sqle, sqlStatement);
+            throw Errors.newQueryError(runtime, driver, sqle, sqlStatement);
         }
 
         // return the reader
@@ -399,7 +400,7 @@ public class Command extends DORubyObject {
     private void checkConnectionNotClosed(java.sql.Connection conn) {
         try {
             if (conn == null || conn.isClosed()) {
-                throw driver.newDriverError(getRuntime(), "This connection has already been closed.");
+                throw Errors.newConnectionError(getRuntime(), "This connection has already been closed.");
             }
         } catch (SQLException ignored) {
         }
@@ -425,28 +426,6 @@ public class Command extends DORubyObject {
             return getRuntime().getNil();
         } finally {
             JDBCUtil.close(rs);
-        }
-    }
-
-    /**
-     *
-     * @param runtime
-     * @param sqle
-     * @param statement
-     * @return
-     */
-    private RaiseException newQueryError(Ruby runtime, SQLException sqle,
-            Statement statement) {
-        // TODO: provide an option to display extended debug information, for
-        // driver developers, etc. Otherwise, keep it off to keep noise down for
-        // end-users.
-        Pattern p = Pattern.compile("Statement parameter (\\d+) not set.");
-        Matcher m = p.matcher(sqle.getMessage());
-
-        if (m.matches()) {
-            return runtime.newArgumentError("Binding mismatch: 0 for " + m.group(1));
-        } else {
-            return driver.newDriverError(runtime, sqle, statement);
         }
     }
 
@@ -624,8 +603,14 @@ public class Command extends DORubyObject {
             return hasReturnParam;
         } catch (SQLException sqle) {
             // TODO: possibly move this exception string parsing somewhere else
-            Pattern pattern = Pattern
-                    .compile("Parameter index out of bounds. (\\d+) is not between valid values of (\\d+) and (\\d+)");
+            Pattern pattern = Pattern.compile("Parameter index out of bounds. (\\d+) is not between valid values of (\\d+) and (\\d+)");
+                                // POSTGRES: The column index is out of range: 2, number of columns: 1.
+                                // POSTGRES SQL STATE: 22023 (22023 "INVALID PARAMETER VALUE" invalid_parameter_value)
+                                // SQLITE3:  Does not throw a SQLException!
+                                // H2: Invalid value 2 for parameter parameterIndex [90008-63]
+                                // HSQLDB:      Invalid argument in JDBC call: parameter index out of range: 2
+                                // DERBY:       The parameter position '2' is out of range.  The number of parameters for this prepared  statement is '1'
+                                // DERbY SQL CODE:  XCL13
             Matcher matcher = pattern.matcher(sqle.getMessage());
             if (matcher.matches()) {
                 throw getRuntime().newArgumentError(
@@ -633,7 +618,7 @@ public class Command extends DORubyObject {
                                 Integer.parseInt(matcher.group(1)), Integer
                                         .parseInt(matcher.group(2))));
             } else {
-                throw driver.newDriverError(getRuntime(), sqle);
+                throw Errors.newSqlError(getRuntime(), driver, sqle);
             }
         }
     }

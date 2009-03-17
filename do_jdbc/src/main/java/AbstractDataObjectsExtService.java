@@ -37,9 +37,6 @@ public abstract class AbstractDataObjectsExtService implements BasicLibraryServi
         // e.g. DataObjects::Derby, DataObjects::MySql
         doModule.defineModuleUnder(driver.getModuleName());
 
-        // Define a driver Error class
-        runtime.defineClass(driver.getErrorName(), runtime.getStandardError(), runtime.getStandardError().getAllocator());
-
         // Define the DataObjects driver classes
         Command.createCommandClass(runtime, driver);
         Connection.createConnectionClass(runtime, driver);

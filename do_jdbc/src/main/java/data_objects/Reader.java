@@ -20,6 +20,7 @@ import org.jruby.runtime.ObjectAllocator;
 import org.jruby.runtime.builtin.IRubyObject;
 
 import data_objects.drivers.DriverDefinition;
+import data_objects.errors.Errors;
 import data_objects.util.JDBCUtil;
 
 /**
@@ -131,10 +132,10 @@ public class Reader extends DORubyObject {
 
             } catch (SQLException sqe) {
                 JDBCUtil.close(resultSet,statement);
-                throw driver.newDriverError(runtime, sqe);
+                throw Errors.newSqlError(runtime, driver, sqe);
             } catch (IOException ioe) {
                 JDBCUtil.close(resultSet,statement);
-                throw driver.newDriverError(runtime, ioe.getLocalizedMessage());
+                throw Errors.newSqlError(runtime, driver, ioe.getLocalizedMessage());
             }
 
             //TODO needed on ruby side ?
@@ -143,7 +144,7 @@ public class Reader extends DORubyObject {
         } catch (RuntimeException e) {
             JDBCUtil.close(resultSet,statement);
             e.printStackTrace();
-            throw driver.newDriverError(runtime, e.getMessage());
+            throw Errors.newSqlError(runtime, driver, e.getMessage());
         }
     }
 
@@ -155,7 +156,7 @@ public class Reader extends DORubyObject {
     public IRubyObject values() {
         if (!opened) {
             JDBCUtil.close(resultSet,statement);
-            throw driver.newDriverError(getRuntime(), "Reader is not initialized");
+            throw Errors.newDataError(getRuntime(), "Reader is not initialized");
         }
 
         return values != null ? values : NIL;

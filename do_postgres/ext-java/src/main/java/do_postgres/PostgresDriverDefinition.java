@@ -217,4 +217,5 @@ public class PostgresDriverDefinition extends AbstractDriverDefinition {
         }
         return length;
     }
+
 }
