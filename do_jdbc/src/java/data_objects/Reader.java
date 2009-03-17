@@ -192,16 +192,64 @@ public class Reader extends RubyObject {
 
     /**
      *
+     * @param runtime
      * @param rs
+     * @param col
      * @param type
+     * @throws SQLException
      * @return
      */
     private static IRubyObject get_typecast_rs_value(Ruby runtime, ResultSet rs,
             int col, RubyType type) throws SQLException {
+
+        assert(type != null); // this method does not expect a null Ruby Type
+        if (rs == null || rs.wasNull()) {
+            return runtime.getNil();
+        }
+
         switch (type) {
+            case FIXNUM:
+            case INTEGER:
+            case BIGNUM:
+                // TODO: attempt to make this more granular, depending on the
+                // size of the number (?)
+                long lng = rs.getLong(col);
+                return RubyNumeric.int2fix(runtime, lng);
+            case FLOAT:
+                return new RubyFloat(runtime, rs.getDouble(col));
+            case BIG_DECIMAL:
+                return new RubyBigDecimal(runtime, rs.getBigDecimal(col));
+            case DATE:
+                java.sql.Date dt = rs.getDate(col);
+                if (dt == null) {
+                    return runtime.getNil();
+                }
+                return DataObjectsUtils.prepareRubyDateFromSqlDate(runtime, dt);
+            case DATE_TIME:
+                java.sql.Timestamp ts = null;
+                // DateTimes with all-zero components throw a SQLException with
+                // SQLState S1009 in MySQL Connector/J 3.1+
+                // See http://dev.mysql.com/doc/refman/5.0/en/connector-j-installing-upgrading.html
+                try {
+                    ts = rs.getTimestamp(col);
+                } catch (SQLException sqle) {
+                }
+                if (ts == null) {
+                    return runtime.getNil();
+                }
+                return DataObjectsUtils.prepareRubyDateTimeFromSqlTimestamp(runtime,ts);
+            case TIME:
+                java.sql.Time tm = rs.getTime(col);
+                if (tm == null) {
+                    return runtime.getNil();
+                }
+                return DataObjectsUtils.prepareRubyTimeFromSqlTime(runtime, tm);
+            case TRUE_CLASS:
+                boolean bool = rs.getBoolean(col);
+                return runtime.newBoolean(bool);
             case CLASS:
                 String classNameStr = rs.getString(col);
-                if (classNameStr == null || rs.wasNull()) {
+                if (classNameStr == null) {
                     return runtime.getNil();
                 }
                 RubyString class_name_str = RubyString.newUnicodeString(runtime, rs.getString(col));
@@ -217,60 +265,12 @@ public class Reader extends RubyObject {
                     // TODO: log this
                 }
                 return obj;
-            case FIXNUM:
-            case BIGNUM:
-            case INTEGER:
-                long lng = rs.getLong(col);
-                return RubyNumeric.int2fix(runtime, lng);
-            case BIG_DECIMAL:
-                return new RubyBigDecimal(runtime, rs.getBigDecimal(col));
-            case FLOAT:
-                return new RubyFloat(runtime, rs.getDouble(col));
-            case TRUE_CLASS:
-                boolean bool = rs.getBoolean(col);
-                return runtime.newBoolean(bool);
-            case DATE:
-                java.sql.Date dt = rs.getDate(col);
-                if (dt == null || rs.wasNull()) {
-                    return runtime.getNil();
-                }
-                // produces  RubyDate
-                return DataObjectsUtils.prepareRubyDateFromSqlDate(runtime, dt);
-                // produces RubyTime
-                // return DataObjectsUtils.parse_date(runtime, dt);
-            case DATE_TIME:
-                java.sql.Timestamp ts = null;
-                // DateTimes with all-zero components throw a SQLException with
-                // SQLState S1009 in MySQL Connector/J 3.1+
-                // See http://dev.mysql.com/doc/refman/5.0/en/connector-j-installing-upgrading.html
-                try {
-                    ts = rs.getTimestamp(col);
-                } catch (SQLException sqle) {
-                }
-                if (ts == null || rs.wasNull()) {
-                    return runtime.getNil();
-                }
-                // produces RubyDateTime
-                return DataObjectsUtils.prepareRubyDateTimeFromSqlTimestamp(runtime,ts);
-                // produces RubyTime
-                // return DataObjectsUtils.parse_date_time(runtime, ts);
-
-            case TIME:
-                java.sql.Time tm = rs.getTime(col);
-                if (tm == null || rs.wasNull()) {
-                    return runtime.getNil();
-                }
-                // produces RubyString
-                return  DataObjectsUtils.prepareRubyTimeFromSqlTime(runtime, tm);
-                // produces RubyTime
-                // return DataObjectsUtils.parse_time(runtime, tm);
             case NIL:
                 return runtime.getNil();
-
             case STRING:
             default:
                 String str = rs.getString(col);
-                if (str == null || rs.wasNull()) {
+                if (str == null) {
                     return runtime.getNil();
                 }
                 RubyString return_str = RubyString.newUnicodeString(runtime, str);
