@@ -26,6 +26,7 @@ import org.jruby.runtime.ObjectAllocator;
 import org.jruby.runtime.builtin.IRubyObject;
 import org.jruby.runtime.marshal.UnmarshalStream;
 
+import org.jruby.util.ByteList;
 import static data_objects.DataObjects.DATA_OBJECTS_MODULE_NAME;
 
 /**
@@ -159,6 +160,8 @@ public class Reader extends RubyObject {
             }
         } catch (SQLException sqe) {
            throw DataObjectsUtils.newDriverError(runtime, errorName, sqe);
+        } catch (IOException ioe) {
+           throw DataObjectsUtils.newDriverError(runtime, errorName, ioe.getLocalizedMessage());
         }
 
         api.setInstanceVariable(recv, "@values", row);
@@ -200,7 +203,7 @@ public class Reader extends RubyObject {
      * @return
      */
     private static IRubyObject get_typecast_rs_value(Ruby runtime, ResultSet rs,
-            int col, RubyType type) throws SQLException {
+            int col, RubyType type) throws SQLException, IOException {
 
         assert(type != null); // this method does not expect a null Ruby Type
         if (rs == null || rs.wasNull()) {
@@ -247,6 +250,18 @@ public class Reader extends RubyObject {
             case TRUE_CLASS:
                 boolean bool = rs.getBoolean(col);
                 return runtime.newBoolean(bool);
+            case BYTE_ARRAY:
+                InputStream binaryStream = rs.getBinaryStream(col);
+                ByteList bytes = new ByteList(2048);
+                try {
+                    byte[] buf = new byte[2048];
+                    for (int n = binaryStream.read(buf); n != -1; n = binaryStream.read(buf)) {
+                        bytes.append(buf, 0, n);
+                    }
+                } finally {
+                    binaryStream.close();
+                }
+                return api.callMethod(runtime.getClass("ByteArray"), "new", runtime.newString(bytes));
             case CLASS:
                 String classNameStr = rs.getString(col);
                 if (classNameStr == null) {
@@ -256,10 +271,10 @@ public class Reader extends RubyObject {
                 class_name_str.setTaint(true);
                 return api.callMethod(runtime.getObject(), "full_const_get", class_name_str);
             case OBJECT:
-                InputStream strm = rs.getAsciiStream(col);
+                InputStream asciiStream = rs.getAsciiStream(col);
                 IRubyObject obj = runtime.getNil();
                 try {
-                    UnmarshalStream ums = new UnmarshalStream(runtime, strm, RubyProc.NEVER);
+                    UnmarshalStream ums = new UnmarshalStream(runtime, asciiStream, RubyProc.NEVER);
                     obj = ums.unmarshalObject();
                 } catch (IOException ioe) {
                     // TODO: log this
