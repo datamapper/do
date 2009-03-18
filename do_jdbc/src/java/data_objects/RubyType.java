@@ -1,6 +1,8 @@
 package data_objects;
 
 /**
+ * Enum representing the Ruby classes that DataObjects must handle (marshal,
+ * unmarshal, convert to equivalent JDBC/Java types, etc.)
  *
  * @author alexbcoles
  */
@@ -13,12 +15,14 @@ public enum RubyType {
     DATE_TIME  ("DateTime"),
     TIME       ("Time"),
     TRUE_CLASS ("TrueClass"),
-    FIXNUM     ("Fixnum"),
+    FALSE_CLASS("FalseClass"),
     INTEGER    ("Integer"),
+    FIXNUM     ("Fixnum"),
     BIGNUM     ("Bignum"),
+    RATIONAL   ("Rational"),
     FLOAT      ("Float"),
     BIG_DECIMAL("BigDecimal"),
-    BYTE_ARRAY ("ByteArray"),
+    BYTE_ARRAY ("ByteArray"),       // Extlib: ByteArray < String
     NIL        ("NilClass");
 
     private String rubyName;

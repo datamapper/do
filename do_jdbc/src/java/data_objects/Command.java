@@ -16,6 +16,7 @@ import java.util.regex.Pattern;
 import org.jruby.Ruby;
 import org.jruby.RubyArray;
 import org.jruby.RubyBigDecimal;
+import org.jruby.RubyBignum;
 import org.jruby.RubyClass;
 import org.jruby.RubyModule;
 import org.jruby.RubyNumeric;
@@ -558,17 +559,27 @@ public class Command extends RubyObject {
      */
     private static void setPreparedStatementParam(PreparedStatement ps, IRubyObject recv, IRubyObject arg, int idx)
             throws SQLException {
-        if (arg.getType().equals(RubyType.FIXNUM) || arg.getType().toString().equals(RubyType.FIXNUM.toString())) {
+        String rubyTypeName = arg.getType().getName();
+        if ("Fixnum".equals(rubyTypeName)) {
             ps.setInt(idx, Integer.parseInt(arg.toString()));
-        } else if (arg.getType().toString().equals("NilClass")) {
+        } else if ("Bignum".equals(rubyTypeName)) {
+            ps.setLong(idx, ((RubyBignum) arg).getLongValue());
+        } else if ("Float".equals(rubyTypeName)) {
+            ps.setDouble(idx, RubyNumeric.num2dbl(arg));
+        } else if ("BigDecimal".equals(rubyTypeName)) {
+            ps.setBigDecimal(idx, ((RubyBigDecimal) arg).getValue());
+        } else if ("NilClass".equals(rubyTypeName)) {
             ps.setNull(idx, Types.NULL);
-        } else if (arg.getType().toString().equals("TrueClass") || arg.getType().toString().equals("FalseClass")) {
+        } else if ("TrueClass".equals(rubyTypeName) || "FalseClass".equals(rubyTypeName)) {
             ps.setBoolean(idx, arg.toString().equals("true"));
-        } else if (arg.getType().toString().equals("Class")) {
+        } else if ("Class".equals(rubyTypeName)) {
             ps.setString(idx, arg.toString());
-        } else if (arg.getType().toString().equals("Date")) {
+        } else if ("ByteArray".equals(rubyTypeName)) {
+            ps.setBytes(idx, ((RubyString) arg).getBytes());
+            // TODO: add support for ps.setBlob();
+        } else if ("Date".equals(rubyTypeName)) {
             ps.setDate(idx, java.sql.Date.valueOf(arg.toString()));
-        } else if (arg.getType().toString().equals("Time")) {
+        } else if ("Time".equals(rubyTypeName)) {
             RubyTime rubyTime = (RubyTime) arg;
             java.util.Date date = rubyTime.getJavaDate();
             long millis = date.getTime();
@@ -581,11 +592,8 @@ public class Command extends RubyObject {
             }
             ps.setTimestamp(idx, ts, cal);
             //ps.setTime(idx, java.sql.Time.valueOf(arg.toString()));
-        } else if (arg.getType().toString().equals("DateTime")) {
+        } else if ("DateTime".equals(rubyTypeName)) {
             ps.setTimestamp(idx, java.sql.Timestamp.valueOf(arg.toString().replace('T', ' ').replaceFirst("[-+]..:..$", "")));
-        } else if (arg.getType().toString().equals(RubyType.BIG_DECIMAL.toString())) {
-            RubyBigDecimal rbBigDec = (RubyBigDecimal) arg;
-            ps.setBigDecimal(idx, rbBigDec.getValue());
         } else if (arg.toString().indexOf("-") != -1 && arg.toString().indexOf(":") != -1) {
             // TODO: improve the above string pattern checking
             // Handle date patterns in strings
@@ -601,7 +609,6 @@ public class Command extends RubyObject {
             // Handle time patterns in strings
             ps.setTime(idx, java.sql.Time.valueOf(arg.asJavaString()));
         } else {
-            //            ps.setString(idx, arg.toString());
             ps.setString(idx, api.convertToRubyString(arg).getUnicodeValue());
         }
     }
