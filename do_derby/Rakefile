@@ -13,7 +13,7 @@ AUTHOR = "Alex Coles"
 EMAIL  = "alex@alexcolesportfolio.com"
 GEM_NAME = "do_derby"
 GEM_VERSION = DataObjects::Derby::VERSION
-GEM_DEPENDENCIES = ["data_objects", GEM_VERSION], ["do_jdbc", GEM_VERSION], ["jdbc-derby", "~>10.3.2"]
+GEM_DEPENDENCIES = ["data_objects", GEM_VERSION], ["do_jdbc", GEM_VERSION], ["jdbc-derby", "~>10.4.2.0"]
 GEM_CLEAN = ['derby*', 'testdb','test/reports','lib/**/*.jar','log/*','ext-java/target']
 GEM_EXTRAS = { :platform => 'java', :has_rdoc => false }
 

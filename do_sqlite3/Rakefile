@@ -13,7 +13,7 @@ EMAIL  = "d.bussink@gmail.com"
 GEM_NAME = "do_sqlite3"
 GEM_VERSION = DataObjects::Sqlite3::VERSION
 GEM_DEPENDENCIES = if JRUBY
-  [["data_objects", GEM_VERSION], ["do_jdbc", GEM_VERSION], ["jdbc-sqlite3", "~>3.5.8"]]
+  [["data_objects", GEM_VERSION], ["do_jdbc", GEM_VERSION], ["jdbc-sqlite3", "~>3.6.3.054"]]
 else
   [["data_objects", GEM_VERSION]]
 end

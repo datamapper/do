@@ -13,7 +13,7 @@ AUTHOR = "Alex Coles"
 EMAIL  = "alex@alexcolesportfolio.com"
 GEM_NAME = "do_h2"
 GEM_VERSION = DataObjects::H2::VERSION
-GEM_DEPENDENCIES = ["data_objects", GEM_VERSION], ["do_jdbc", GEM_VERSION], ["jdbc-h2", "~>1.0.63"]
+GEM_DEPENDENCIES = ["data_objects", GEM_VERSION], ["do_jdbc", GEM_VERSION], ["jdbc-h2", "~>1.1.107"]
 GEM_CLEAN = ['test.db.*','mem.*','log/*','test/reports', 'lib/**/*.jar','ext-java/target']
 GEM_EXTRAS = { :platform => 'java', :has_rdoc => false }
 
