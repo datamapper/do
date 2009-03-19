@@ -138,6 +138,7 @@ public final class DataObjectsUtils {
             case Types.NUMERIC:
                 primitiveType = RubyType.BIG_DECIMAL;
                 break;
+            case Types.REAL:
             case Types.FLOAT:
             case Types.DOUBLE:
                 primitiveType = RubyType.FLOAT;
