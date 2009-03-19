@@ -182,18 +182,23 @@ public class Connection extends RubyObject {
     public static IRubyObject dispose(IRubyObject recv) {
         // System.out.println("============== dispose called");
         Ruby runtime = recv.getRuntime();
+        IRubyObject connection = api.getInstanceVariable(recv, "@connection");
+        if (connection.isNil()) {
+            return runtime.getFalse();
+        }
 
-        java.sql.Connection prev = getConnection(recv);
-        if (prev == null) {
+        java.sql.Connection conn = getConnection(connection);
+        if (conn == null) {
             return runtime.getFalse();
         }
 
         try {
-            prev.close();
-        } catch (Exception e) {
-            return runtime.getFalse();
+            conn.close();
+            conn = null;
+        } catch (SQLException sqe) {
         }
 
+        api.setInstanceVariable(recv, "@connection", runtime.getNil());
         return runtime.getTrue();
     }
 

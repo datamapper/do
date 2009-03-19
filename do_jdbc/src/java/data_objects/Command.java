@@ -91,10 +91,13 @@ public class Command extends RubyObject {
         Ruby runtime = recv.getRuntime();
         IRubyObject connection_instance = api.getInstanceVariable(recv, "@connection");
         IRubyObject wrapped_jdbc_connection = api.getInstanceVariable(connection_instance, "@connection");
+        if (wrapped_jdbc_connection.isNil()) {
+            throw DataObjectsUtils.newDriverError(runtime, errorName, "This connection has already been closed.");
+        }
+        java.sql.Connection conn = getConnection(wrapped_jdbc_connection);
+
         IRubyObject insert_key = runtime.newFixnum(0);
         RubyClass resultClass = Result.createResultClass(runtime, moduleName, errorName, driver);
-
-        java.sql.Connection conn = (java.sql.Connection) wrapped_jdbc_connection.dataGetStruct();
         // affectedCount == 1 means 1 updated row
         // or 1 row in result set that represents returned key (insert...returning),
         // other values represents numer of updated rows
@@ -211,9 +214,12 @@ public class Command extends RubyObject {
         Ruby runtime = recv.getRuntime();
         IRubyObject connection_instance = api.getInstanceVariable(recv, "@connection");
         IRubyObject wrapped_jdbc_connection = api.getInstanceVariable(connection_instance, "@connection");
-        RubyClass readerClass = Reader.createReaderClass(runtime, moduleName, errorName, driver);
+        if (wrapped_jdbc_connection.isNil()) {
+            throw DataObjectsUtils.newDriverError(runtime, errorName, "This connection has already been closed.");
+        }
+        java.sql.Connection conn = getConnection(wrapped_jdbc_connection);
 
-        java.sql.Connection conn = (java.sql.Connection) wrapped_jdbc_connection.dataGetStruct();
+        RubyClass readerClass = Reader.createReaderClass(runtime, moduleName, errorName, driver);
         boolean inferTypes = false;
         int columnCount = 0;
         PreparedStatement sqlStatement = null;
@@ -357,6 +363,11 @@ public class Command extends RubyObject {
     }
 
     // ---------------------------------------------------------- HELPER METHODS
+
+    private static java.sql.Connection getConnection(IRubyObject recv) {
+        java.sql.Connection conn = (java.sql.Connection) recv.dataGetStruct();
+        return conn;
+    }
 
     /**
      * Unmarshal a java.sql.Resultset containing generated keys, and return a
