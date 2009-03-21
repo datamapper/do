@@ -42,22 +42,30 @@ share_examples_for 'supporting Nil' do
 
   end
 
-  describe 'writing an Nil' do
+end
 
-    before  do
-      @reader = @connection.create_command("SELECT id FROM widgets WHERE ad_description IS ?").execute_reader(nil)
-      @reader.next!
-      @values = @reader.values
+share_examples_for 'supporting writing an Nil' do
+
+  describe 'supporting writing an Nil' do
+
+    describe 'as a parameter' do
+
+        before  do
+          @reader = @connection.create_command("SELECT id FROM widgets WHERE ad_description IS ?").execute_reader(nil)
+          @reader.next!
+          @values = @reader.values
+        end
+
+        after do
+          @reader.close
+        end
+
+        it 'should return the correct entry' do
+          @values.first.should == 3
+        end
+
     end
 
-    after do
-      @reader.close
-    end
-
-    it 'should return the correct entry' do
-      @values.first.should == 3
-    end
-    
   end
 
 end
