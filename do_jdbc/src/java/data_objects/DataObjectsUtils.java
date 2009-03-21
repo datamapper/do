@@ -20,8 +20,6 @@ import java.util.StringTokenizer;
 import org.jruby.Ruby;
 import org.jruby.RubyClass;
 import org.jruby.RubyFixnum;
-import org.jruby.RubyNumeric;
-import org.jruby.RubyRational;
 import org.jruby.RubyTime;
 import org.jruby.exceptions.RaiseException;
 import org.jruby.runtime.builtin.IRubyObject;
@@ -146,6 +144,7 @@ public final class DataObjectsUtils {
             case Types.BLOB:
             case Types.JAVA_OBJECT: // XXX: Not sure this should be here
             case Types.VARBINARY:
+            case Types.BINARY:
             case Types.LONGVARBINARY:
                 primitiveType = RubyType.BYTE_ARRAY;
                 break;

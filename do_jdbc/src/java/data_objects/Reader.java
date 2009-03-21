@@ -25,7 +25,6 @@ import org.jruby.javasupport.JavaEmbedUtils;
 import org.jruby.runtime.ObjectAllocator;
 import org.jruby.runtime.builtin.IRubyObject;
 import org.jruby.runtime.marshal.UnmarshalStream;
-
 import org.jruby.util.ByteList;
 import static data_objects.DataObjects.DATA_OBJECTS_MODULE_NAME;
 
@@ -209,7 +208,6 @@ public class Reader extends RubyObject {
         if (rs == null || rs.wasNull()) {
             return runtime.getNil();
         }
-
         switch (type) {
             case FIXNUM:
             case INTEGER:
@@ -261,7 +259,7 @@ public class Reader extends RubyObject {
                 } finally {
                     binaryStream.close();
                 }
-                return api.callMethod(runtime.getClass("ByteArray"), "new", runtime.newString(bytes));
+                return api.callMethod(runtime.fastGetClass("ByteArray"), "new", runtime.newString(bytes));
             case CLASS:
                 String classNameStr = rs.getString(col);
                 if (classNameStr == null) {
