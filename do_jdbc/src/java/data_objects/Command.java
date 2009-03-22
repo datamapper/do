@@ -96,7 +96,7 @@ public class Command extends RubyObject {
         }
         java.sql.Connection conn = getConnection(wrapped_jdbc_connection);
 
-        IRubyObject insert_key = runtime.newFixnum(0);
+        IRubyObject insert_key = runtime.getNil();
         RubyClass resultClass = Result.createResultClass(runtime, moduleName, errorName, driver);
         // affectedCount == 1 means 1 updated row
         // or 1 row in result set that represents returned key (insert...returning),
@@ -106,7 +106,7 @@ public class Command extends RubyObject {
         java.sql.ResultSet keys = null;
 
 
-//        String sqlText = prepareSqlTextForPs(api.getInstanceVariable(recv, "@text").asJavaString(), recv, args);
+        // String sqlText = prepareSqlTextForPs(api.getInstanceVariable(recv, "@text").asJavaString(), recv, args);
         String doSqlText = api.convertToRubyString(api.getInstanceVariable(recv, "@text")).getUnicodeValue();
         String sqlText = prepareSqlTextForPs(doSqlText, recv, args);
 
@@ -233,7 +233,7 @@ public class Command extends RubyObject {
         // execute the query
         try {
             String sqlText = prepareSqlTextForPs(api.getInstanceVariable(recv, "@text").asJavaString(), recv, args);
-            
+
             sqlStatement = conn.prepareStatement(
                            sqlText,
                            driver.supportsJdbcScrollableResultSets() ? ResultSet.TYPE_SCROLL_INSENSITIVE : ResultSet.TYPE_FORWARD_ONLY,
@@ -604,8 +604,8 @@ public class Command extends RubyObject {
             if (micros > 0) {
                 ts.setNanos((int)(micros * 1000));
             }
-          ps.setTimestamp(idx, ts, cal);
-//        ps.setTime(idx, java.sql.Time.valueOf(arg.toString()));
+            ps.setTimestamp(idx, ts, cal);
+            // ps.setTime(idx, java.sql.Time.valueOf(arg.toString()));
         } else if ("DateTime".equals(rubyTypeName)) {
             ps.setTimestamp(idx, java.sql.Timestamp.valueOf(arg.toString().replace('T', ' ').replaceFirst("[-+]..:..$", "")));
         } else if (arg.toString().indexOf("-") != -1 && arg.toString().indexOf(":") != -1) {

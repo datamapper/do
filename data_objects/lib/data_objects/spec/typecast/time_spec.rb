@@ -44,7 +44,7 @@ share_examples_for 'supporting Time' do
 
   describe 'writing an Time' do
 
-    before
+    before  do
       @reader = @connection.create_command("SELECT id FROM widgets WHERE release_datetime = ?").execute_reader(Time.utc(2008, 2, 14, 00, 31, 31))
       @reader.next!
       @values = @reader.values
