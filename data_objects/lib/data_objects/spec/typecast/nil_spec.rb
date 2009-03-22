@@ -61,7 +61,8 @@ share_examples_for 'supporting writing an Nil' do
         end
 
         it 'should return the correct entry' do
-          @values.first.should == 3
+          #Some of the drivers starts autoincrementation from 0 not 1
+          @values.first.should satisfy { |val| val == 3 or val == 2 }
         end
 
     end

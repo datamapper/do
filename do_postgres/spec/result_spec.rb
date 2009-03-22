@@ -34,7 +34,7 @@ describe DataObjects::Postgres::Result do
     it { @result.should respond_to(:insert_id) }
 
     describe 'insert_id' do
-    
+
       it 'should return nil' do
         @result.insert_id.should be_nil
       end
@@ -49,7 +49,7 @@ describe DataObjects::Postgres::Result do
   end
 
   describe 'when using RETURNING' do
-    
+
     before :each do
       @connection = DataObjects::Connection.new(CONFIG.uri)
       @result    = @connection.create_command("INSERT INTO users (name) VALUES (?) RETURNING id").execute_non_query("monkey")

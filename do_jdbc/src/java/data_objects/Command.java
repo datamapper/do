@@ -233,7 +233,7 @@ public class Command extends RubyObject {
         // execute the query
         try {
             String sqlText = prepareSqlTextForPs(api.getInstanceVariable(recv, "@text").asJavaString(), recv, args);
-
+            
             sqlStatement = conn.prepareStatement(
                            sqlText,
                            driver.supportsJdbcScrollableResultSets() ? ResultSet.TYPE_SCROLL_INSENSITIVE : ResultSet.TYPE_FORWARD_ONLY,
@@ -430,7 +430,7 @@ public class Command extends RubyObject {
     private static String prepareSqlTextForPs(String doSqlText, IRubyObject recv, IRubyObject[] args) {
 
         if (args.length == 0) return doSqlText;
-        // long timeStamp = System.currentTimeMillis(); XXX for debug
+        // long timeStamp = System.currentTimeMillis(); // XXX for debug
         // System.out.println(""+timeStamp+" SQL before replacements @: " + doSqlText); // XXX for debug
         String psSqlText = doSqlText;
         int addedSymbols=0;
@@ -580,6 +580,9 @@ public class Command extends RubyObject {
         } else if ("BigDecimal".equals(rubyTypeName)) {
             ps.setBigDecimal(idx, ((RubyBigDecimal) arg).getValue());
         } else if ("NilClass".equals(rubyTypeName)) {
+            // XXX In fact this should looks like ps.setNull(idx, Types.YYY); 
+            // where YYY is a JDBC type of column i.e. Types.VARCHAR
+            // but this code works for MySQL :)
             ps.setNull(idx, Types.NULL);
         } else if ("TrueClass".equals(rubyTypeName) || "FalseClass".equals(rubyTypeName)) {
             ps.setBoolean(idx, arg.toString().equals("true"));
@@ -601,8 +604,8 @@ public class Command extends RubyObject {
             if (micros > 0) {
                 ts.setNanos((int)(micros * 1000));
             }
-            ps.setTimestamp(idx, ts, cal);
-            //ps.setTime(idx, java.sql.Time.valueOf(arg.toString()));
+          ps.setTimestamp(idx, ts, cal);
+//        ps.setTime(idx, java.sql.Time.valueOf(arg.toString()));
         } else if ("DateTime".equals(rubyTypeName)) {
             ps.setTimestamp(idx, java.sql.Timestamp.valueOf(arg.toString().replace('T', ' ').replaceFirst("[-+]..:..$", "")));
         } else if (arg.toString().indexOf("-") != -1 && arg.toString().indexOf(":") != -1) {

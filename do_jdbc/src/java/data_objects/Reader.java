@@ -6,6 +6,7 @@ import java.io.InputStream;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.sql.Types;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.jruby.Ruby;
@@ -208,6 +209,8 @@ public class Reader extends RubyObject {
         if (rs == null || rs.wasNull()) {
             return runtime.getNil();
         }
+        int trueColumnType = rs.getMetaData().getColumnType(col);
+        
         switch (type) {
             case FIXNUM:
             case INTEGER:
@@ -217,7 +220,7 @@ public class Reader extends RubyObject {
                 long lng = rs.getLong(col);
                 return RubyNumeric.int2fix(runtime, lng);
             case FLOAT:
-                return new RubyFloat(runtime, rs.getDouble(col));
+                return new RubyFloat(runtime, rs.getBigDecimal(col).doubleValue());
             case BIG_DECIMAL:
                 return new RubyBigDecimal(runtime, rs.getBigDecimal(col));
             case DATE:
@@ -240,11 +243,27 @@ public class Reader extends RubyObject {
                 }
                 return DataObjectsUtils.prepareRubyDateTimeFromSqlTimestamp(runtime,ts);
             case TIME:
-                java.sql.Time tm = rs.getTime(col);
-                if (tm == null) {
-                    return runtime.getNil();
+                if(trueColumnType==Types.TIME){
+                    java.sql.Time tm = rs.getTime(col);
+                    if (tm == null) {
+                        return runtime.getNil();
+                    }
+                    return DataObjectsUtils.prepareRubyTimeFromSqlTime(runtime, tm);
+                }else if(rs.getMetaData().getColumnType(col) == Types.DATE){
+                    java.sql.Date da = rs.getDate(col);
+                    if (da == null) {
+                        return runtime.getNil();
+                    }
+                    return DataObjectsUtils.prepareRubyTimeFromSqlDate(runtime, da);
+                }else{
+                    String str = rs.getString(col);
+                    if (str == null) {
+                        return runtime.getNil();
+                    }
+                    RubyString return_str = RubyString.newUnicodeString(runtime, str);
+                    return_str.setTaint(true);
+                    return return_str;
                 }
-                return DataObjectsUtils.prepareRubyTimeFromSqlTime(runtime, tm);
             case TRUE_CLASS:
                 boolean bool = rs.getBoolean(col);
                 return runtime.newBoolean(bool);

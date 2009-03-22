@@ -237,9 +237,21 @@ public final class DataObjectsUtils {
 
         RubyTime rbTime = RubyTime.newTime(runtime, time.getTime());
         rbTime.extend(new IRubyObject[]{runtime.getModule("TimeFormatter")});
+        return rbTime;
+        // SimpleDateFormat sdf = new SimpleDateFormat("HH-mm-ss"); // TODO proper format?
+        // return runtime.newString(sdf.format(rbTime.getJavaDate()));
+    }
 
-        SimpleDateFormat sdf = new SimpleDateFormat("HH-mm-ss"); // TODO proper format?
-        return runtime.newString(sdf.format(rbTime.getJavaDate()));
+    public static IRubyObject prepareRubyTimeFromSqlDate(Ruby runtime, Date date) {
+
+        if (date.getTime() + 3600000 == 0) {
+            return runtime.getNil();
+        }
+        RubyTime rbTime = RubyTime.newTime(runtime, date.getTime());
+        rbTime.extend(new IRubyObject[]{runtime.getModule("TimeFormatter")});
+        return rbTime;
+        // SimpleDateFormat sdf = new SimpleDateFormat("HH-mm-ss"); // TODO proper format?
+        // return runtime.newString(sdf.format(rbTime.getJavaDate()));
     }
 
     public static String stringOrNull(IRubyObject obj) {

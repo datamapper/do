@@ -106,7 +106,7 @@ public class Connection extends RubyObject {
             }
 
             jdbcDriver = query.get("driver");
-            //String protocol = query.get("protocol"); XXX : not sure of the point of this
+            //String protocol = query.get("protocol"); // XXX : not sure of the point of this
         }
 
         // Load JDBC Driver Class

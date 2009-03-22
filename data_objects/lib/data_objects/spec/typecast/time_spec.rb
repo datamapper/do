@@ -45,7 +45,7 @@ share_examples_for 'supporting Time' do
   describe 'writing an Time' do
 
     before  do
-      @reader = @connection.create_command("SELECT id FROM widgets WHERE release_datetime = ?").execute_reader(Time.utc(2008, 2, 14, 00, 31, 12))
+      @reader = @connection.create_command("SELECT id FROM widgets WHERE release_timestamp = ?").execute_reader(Time.utc(2008, 2, 14, 00, 31, 31))
       @reader.next!
       @values = @reader.values
     end
@@ -55,7 +55,8 @@ share_examples_for 'supporting Time' do
     end
 
     it 'should return the correct entry' do
-      @values.first.should == 1
+       #Some of the drivers starts autoincrementation from 0 not 1
+       @values.first.should satisfy { |val| val == 1 or val == 0 }
     end
     
   end
