@@ -19,6 +19,11 @@ public class MySqlDriverDefinition extends AbstractDriverDefinition {
     }
 
     @Override
+    public boolean supportsCalendarsInJDBCPreparedStatement() {
+        return false;
+    }
+
+    @Override
     public String quoteString(String str) {
         StringBuffer quotedValue = new StringBuffer(str.length() + 2);
         quotedValue.append("\'");

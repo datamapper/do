@@ -21,6 +21,11 @@ public class HsqldbDriverDefinition extends AbstractDriverDefinition {
     }
 
     @Override
+    public boolean supportsCalendarsInJDBCPreparedStatement() {
+        return false;
+    }
+
+    @Override
     public boolean supportsJdbcScrollableResultSets()
     {
         return true;

@@ -18,6 +18,10 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
         return true;
     }
 
+    public boolean supportsCalendarsInJDBCPreparedStatement(){
+        return true;
+    }
+
     public ResultSet getGeneratedKeys(Connection connection) {
         return null;
     }
