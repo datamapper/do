@@ -258,21 +258,22 @@ static VALUE parse_date_time(char *date) {
 
 static VALUE parse_time(char *date) {
 
-  int year, month, day, hour, min, sec, usec, tokens;
-  char subsec[7];
+  int year, month, day, hour, min, sec, usec, tokens, hour_offset, minute_offset;
 
   if (0 != strchr(date, '.')) {
-    // right padding usec with 0. e.g. '012' will become 12000 microsecond, since Time#local use microsecond
-    sscanf(date, "%4d-%2d-%2d %2d:%2d:%2d.%s", &year, &month, &day, &hour, &min, &sec, subsec);
-    sscanf(subsec, "%d", &usec);
+    // This is a datetime with sub-second precision
+    tokens = sscanf(date, "%4d-%2d-%2d%*c%2d:%2d:%2d.%d%3d:%2d", &year, &month, &day, &hour, &min, &sec, &usec, &hour_offset, &minute_offset);
   } else {
-    tokens = sscanf(date, "%4d-%2d-%2d %2d:%2d:%2d", &year, &month, &day, &hour, &min, &sec);
-    if (tokens == 3) {
+    // This is a datetime second precision
+    tokens = sscanf(date, "%4d-%2d-%2d%*c%2d:%2d:%2d%3d:%2d", &year, &month, &day, &hour, &min, &sec, &hour_offset, &minute_offset);
+    if(tokens == 3) {
       hour = 0;
-      min  = 0;
-      sec  = 0;
+      min = 0;
+      sec = 0;
+      usec = 0;
+      hour_offset = 0;
+      minute_offset = 0;
     }
-    usec = 0;
   }
 
   return rb_funcall(rb_cTime, rb_intern("local"), 7, INT2NUM(year), INT2NUM(month), INT2NUM(day), INT2NUM(hour), INT2NUM(min), INT2NUM(sec), INT2NUM(usec));
