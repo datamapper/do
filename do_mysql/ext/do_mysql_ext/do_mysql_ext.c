@@ -444,6 +444,7 @@ static VALUE cConnection_initialize(VALUE self, VALUE uri) {
   db = (MYSQL *)mysql_init(NULL);
 
   rb_iv_set(self, "@using_socket", Qfalse);
+  rb_iv_set(self, "@ssl_cipher", Qnil);
 
   r_host = rb_funcall(uri, rb_intern("host"), 0);
   if (Qnil != r_host) {
@@ -490,9 +491,21 @@ static VALUE cConnection_initialize(VALUE self, VALUE uri) {
   if (!encoding) { encoding = get_uri_option(r_query, "charset"); }
   if (!encoding) { encoding = "utf8"; }
 
-  // If ssl? {
-  //   mysql_ssl_set(db, key, cert, ca, capath, cipher)
-  // }
+#ifdef HAVE_MYSQL_SSL_SET
+  char *ssl, *ssl_key, *ssl_cert, *ssl_ca, *ssl_capath, *ssl_cipher;
+
+  ssl = get_uri_option(r_query, "ssl");
+
+  if (ssl != NULL && 0 == strcasecmp(ssl, "true")) {
+    ssl_key    = get_uri_option(r_query, "ssl_key");
+    ssl_cert   = get_uri_option(r_query, "ssl_cert");
+    ssl_ca     = get_uri_option(r_query, "ssl_ca");
+    ssl_capath = get_uri_option(r_query, "ssl_capath");
+    ssl_cipher = get_uri_option(r_query, "ssl_cipher");
+
+    mysql_ssl_set(db, ssl_key, ssl_cert, ssl_ca, ssl_capath, ssl_cipher);
+  }
+#endif
 
   result = (MYSQL *)mysql_real_connect(
     db,
@@ -508,6 +521,14 @@ static VALUE cConnection_initialize(VALUE self, VALUE uri) {
   if (NULL == result) {
     raise_mysql_error(Qnil, db, -1, NULL);
   }
+
+#ifdef HAVE_MYSQL_SSL_SET
+  const char *ssl_cipher_used = mysql_get_ssl_cipher(db);
+
+  if (NULL != ssl_cipher_used) {
+    rb_iv_set(self, "@ssl_cipher", RUBY_STRING(ssl_cipher_used));
+  }
+#endif
 
 #ifdef MYSQL_OPT_RECONNECT
   my_bool reconnect = 1;
@@ -548,6 +569,10 @@ static VALUE cConnection_character_set(VALUE self) {
 
 static VALUE cConnection_is_using_socket(VALUE self) {
   return rb_iv_get(self, "@using_socket");
+}
+
+static VALUE cConnection_ssl_cipher(VALUE self) {
+  return rb_iv_get(self, "@ssl_cipher");
 }
 
 static VALUE cConnection_dispose(VALUE self) {
@@ -884,6 +909,7 @@ void Init_do_mysql_ext() {
   cConnection = DRIVER_CLASS("Connection", cDO_Connection);
   rb_define_method(cConnection, "initialize", cConnection_initialize, 1);
   rb_define_method(cConnection, "using_socket?", cConnection_is_using_socket, 0);
+  rb_define_method(cConnection, "ssl_cipher", cConnection_ssl_cipher, 0);
   rb_define_method(cConnection, "character_set", cConnection_character_set , 0);
   rb_define_method(cConnection, "dispose", cConnection_dispose, 0);
 

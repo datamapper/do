@@ -129,4 +129,60 @@ module DataObjectsSpecHelpers
 
   end
 
+  def test_environment_supports_ssl?(ssl_config)
+    conn = DataObjects::Connection.new(CONFIG.uri)
+
+    ssl_variables = conn.create_command(<<-EOF).execute_reader
+      SHOW VARIABLES LIKE '%ssl%'
+    EOF
+
+    current_config = { }
+
+    while ssl_variables.next!
+      variable, value = ssl_variables.values
+      current_config[variable.intern] = value
+    end
+
+    errors = []
+
+    if current_config[:have_ssl] == 'NO'
+      errors << "SSL was not compiled"
+    end
+
+    if current_config[:have_ssl] == 'DISABLED'
+      errors << "SSL was not enabled"
+    end
+
+    if current_config[:ssl_ca] != ssl_config[:ca_cert]
+      errors << "the CA certificate wasn't set (it was set to '#{current_config[:ssl_ca]}')"
+    end
+
+    if current_config[:ssl_cert] != ssl_config[:server_cert]
+      errors << "the server certificate wasn't set (it was set to '#{current_config[:ssl_cert]}')"
+    end
+
+    if current_config[:ssl_key] != ssl_config[:server_key]
+      errors << "the server key wasn't set, (it was set to '#{current_config[:ssl_key]}')"
+    end
+
+    if current_config[:ssl_cipher] != ssl_config[:cipher]
+      errors << "the cipher wasn't set, (it was set to '#{current_config[:ssl_cipher]}')"
+    end
+
+    if errors.any?
+      message = "MySQL is not configured for the SSL testing environment because #{errors.join(', ')}.\n"
+      message << "Use the following options:\n"
+      message << "--ssl "
+      message << "--ssl-ca #{ssl_config[:ca_cert]} "
+      message << "--ssl-cert #{ssl_config[:server_cert]} "
+      message << "--ssl-key #{ssl_config[:server_key]} "
+      message << "--ssl-cipher #{ssl_config[:cipher]} "
+      return false, message
+    end
+
+    return true, ""
+  ensure
+    conn.close
+  end
+
 end
