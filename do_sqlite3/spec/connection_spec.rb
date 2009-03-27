@@ -6,12 +6,12 @@ require 'data_objects/spec/connection_spec'
 describe DataObjects::Sqlite3::Connection do
 
   before :all do
-    @driver = 'sqlite3'
-    @user   = ''
-    @password = ''
-    @host   = ''
-    @port   = ''
-    @database = "#{File.expand_path(File.dirname(__FILE__))}/test.db"
+    @driver = CONFIG.scheme
+    @user   = CONFIG.user
+    @password = CONFIG.pass
+    @host   = CONFIG.host
+    @port   = CONFIG.port
+    @database = CONFIG.database
   end
 
   it_should_behave_like 'a Connection'
