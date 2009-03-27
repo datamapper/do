@@ -28,6 +28,7 @@ import org.jruby.runtime.ObjectAllocator;
 import org.jruby.runtime.builtin.IRubyObject;
 
 import data_objects.drivers.DriverDefinition;
+import data_objects.util.JDBCUtil;
 import org.jruby.runtime.callback.Callback;
 
 /**
@@ -239,11 +240,7 @@ public final class Connection extends DORubyObject {
             return runtime.getFalse();
         }
 
-        try {
-            conn.close();
-            conn = null;
-        } catch (SQLException sqe) {
-        }
+        JDBCUtil.close(conn);
 
         api.setInstanceVariable(this, "@connection", runtime.getNil());
         return runtime.getTrue();

@@ -29,6 +29,8 @@ import org.jruby.runtime.ObjectAllocator;
 import org.jruby.runtime.builtin.IRubyObject;
 
 import data_objects.drivers.DriverDefinition;
+import data_objects.util.JDBCUtil;
+
 
 /**
  * Command Class
@@ -187,20 +189,11 @@ public class Command extends DORubyObject {
         } catch (SQLException sqle) {
             throw newQueryError(runtime, sqle, usePS ? sqlStatement : sqlSimpleStatement);
         } finally {
-            if (usePS)
-                if (sqlStatement != null) {
-                    try {
-                        sqlStatement.close();
-                    } catch (SQLException sqle2) {
-                    }
-                }
-            else
-                if (sqlSimpleStatement != null) {
-                    try {
-                        sqlSimpleStatement.close();
-                    } catch (SQLException sqle2) {
-                    }
-                }
+            if (usePS) {
+                JDBCUtil.close(sqlStatement);
+            } else {
+                JDBCUtil.close(sqlSimpleStatement);
+            }
         }
 
         IRubyObject affected_rows = runtime.newFixnum(affectedCount);
@@ -414,9 +407,7 @@ public class Command extends DORubyObject {
             }
             return getRuntime().getNil();
         } finally {
-            try {
-                rs.close();
-            } catch (Exception e) {}
+            JDBCUtil.close(rs);
         }
     }
 
@@ -623,6 +614,7 @@ public class Command extends DORubyObject {
             }
         }
     }
+
 
     /**
      * Output a log message
