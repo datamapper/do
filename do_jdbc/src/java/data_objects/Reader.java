@@ -210,7 +210,7 @@ public class Reader extends RubyObject {
             return runtime.getNil();
         }
         int trueColumnType = rs.getMetaData().getColumnType(col);
-        
+
         switch (type) {
             case FIXNUM:
             case INTEGER:

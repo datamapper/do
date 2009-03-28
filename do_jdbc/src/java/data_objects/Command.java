@@ -560,8 +560,6 @@ public class Command extends RubyObject {
     }
 
     private static final DateFormat FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-    static int counterEx = 0;
-    static int counterOk = 0;
     /**
      *
      * @param ps the PreparedStatement for which the parameter should be set
