@@ -93,7 +93,7 @@ share_examples_for 'a Command' do
     describe 'is invalid when used with a statement' do
 
       before :each do
-        @command.set_types(Integer)
+        @command.set_types(String)
       end
 
       it 'should raise an error when types are set' do
@@ -105,12 +105,12 @@ share_examples_for 'a Command' do
     describe 'with an invalid reader' do
 
       it 'should raise an error with too few types' do
-        @reader.set_types(Integer)
+        @reader.set_types(String)
         lambda { @reader.execute_reader("One parameter") }.should raise_error(ArgumentError, "Field-count mismatch. Expected 1 fields, but the query yielded 2")
       end
 
       it 'should raise an error with too many types' do
-        @reader.set_types(Integer, String, BigDecimal)
+        @reader.set_types(String, String, BigDecimal)
         lambda { @reader.execute_reader("One parameter") }.should raise_error(ArgumentError, "Field-count mismatch. Expected 3 fields, but the query yielded 2")
       end
 
@@ -119,7 +119,7 @@ share_examples_for 'a Command' do
     describe 'with a valid reader' do
 
       it 'should not raise an error with correct number of types' do
-        @reader.set_types(Integer, String)
+        @reader.set_types(String, String)
         lambda { @result = @reader.execute_reader('Buy this product now!') }.should_not raise_error
         lambda { @result.next! }.should_not raise_error
         lambda { @result.values }.should_not raise_error
@@ -127,7 +127,7 @@ share_examples_for 'a Command' do
       end
 
       it 'should also support old style array argument types' do
-        @reader.set_types([Integer, String])
+        @reader.set_types([String, String])
         lambda { @result = @reader.execute_reader('Buy this product now!') }.should_not raise_error
         lambda { @result.next! }.should_not raise_error
         lambda { @result.values }.should_not raise_error
