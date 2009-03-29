@@ -266,11 +266,11 @@ static VALUE parse_time(char *date) {
   } else {
     // This is a datetime second precision
     tokens = sscanf(date, "%4d-%2d-%2d%*c%2d:%2d:%2d%3d:%2d", &year, &month, &day, &hour, &min, &sec, &hour_offset, &minute_offset);
+    usec = 0;
     if(tokens == 3) {
       hour = 0;
       min = 0;
       sec = 0;
-      usec = 0;
       hour_offset = 0;
       minute_offset = 0;
     }
