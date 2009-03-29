@@ -30,7 +30,7 @@ if RUBY_PLATFORM =~ /java/
           reader.next!
           char_set = reader.values.to_s
           reader.close
-          char_set
+          char_set.downcase
         end
 
       end
