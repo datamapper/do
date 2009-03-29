@@ -1,4 +1,4 @@
-share_examples_for 'a driver supporting Array and Range' do
+share_examples_for 'supporting Range' do
 
   include DataObjectsSpecHelpers
 
@@ -12,26 +12,6 @@ share_examples_for 'a driver supporting Array and Range' do
 
   after :each do
     @connection.close
-  end
-
-  describe 'passing an Array as a parameter in execute_reader' do
-
-      before  do
-        @reader = @connection.create_command("SELECT * FROM widgets WHERE id in ?").execute_reader([2,3,4,5])
-      end
-
-      after do
-        @reader.close
-      end
-
-      it 'should return correct number of rows' do
-        counter  = 0
-        while(@reader.next!) do
-          counter += 1
-        end
-        counter.should == 4
-      end
-
   end
 
   describe 'passing a Range as a parameter in execute_reader' do
@@ -51,6 +31,6 @@ share_examples_for 'a driver supporting Array and Range' do
         end
         counter.should == 4
       end
-      
+
   end
 end
