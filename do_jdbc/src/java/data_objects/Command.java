@@ -604,30 +604,18 @@ public class Command extends RubyObject {
             GregorianCalendar cal = new GregorianCalendar();
             cal.setTime(date);
             cal.setTimeZone(TimeZone.getTimeZone("UTC")); // XXX works only if driver suports Calendars in PS
-
-            // XXX ugly workaround for MySQL and Hsqldb
+            java.sql.Timestamp ts;
             if(driver.supportsCalendarsInJDBCPreparedStatement() == true){
-                java.sql.Timestamp ts = new java.sql.Timestamp(cal.getTime().getTime());
+                ts = new java.sql.Timestamp(cal.getTime().getTime());
                 ts.setNanos(cal.get(GregorianCalendar.MILLISECOND)*100000);
-                // long millis = cal.getTime().getTime();
-                // long micros = rubyTime.microseconds() - (millis / 1000);
-                // if (micros > 0) {
-                //     ts.setNanos((int)(micros * 1000));
-                // }
-                ps.setTimestamp(idx, ts,cal);
             }else{
-                java.sql.Timestamp ts = new Timestamp(cal.get(GregorianCalendar.YEAR)-1900,
+                // XXX ugly workaround for MySQL and Hsqldb
+                ts = new Timestamp(cal.get(GregorianCalendar.YEAR)-1900,
                         cal.get(GregorianCalendar.MONTH),cal.get(GregorianCalendar.DAY_OF_MONTH),
                         cal.get(GregorianCalendar.HOUR_OF_DAY),cal.get(GregorianCalendar.MINUTE),
                         cal.get(GregorianCalendar.SECOND),cal.get(GregorianCalendar.MILLISECOND)*100000);
-                // long millis = cal.getTime().getTime();
-                // long micros = rubyTime.microseconds() - (millis / 1000);
-                // if (micros > 0) {
-                //     ts.setNanos((int)(micros * 1000));
-                // }
-                ps.setTimestamp(idx, ts,cal);
             }
-            // ps.setTime(idx, java.sql.Time.valueOf(arg.toString()));
+            ps.setTimestamp(idx, ts,cal);
         } else if ("DateTime".equals(rubyTypeName)) {
             ps.setTimestamp(idx, java.sql.Timestamp.valueOf(arg.toString().replace('T', ' ').replaceFirst("[-+]..:..$", "")));
         } else if (arg.toString().indexOf("-") != -1 && arg.toString().indexOf(":") != -1) {
@@ -651,19 +639,19 @@ public class Command extends RubyObject {
                // TODO: Here comes conversions like '.execute_reader("2")'
                // It definitly needs to be refactored...
                try{
-                   if(jdbcTypeId == 12){  //JDBC VARCHAR
+                   if(jdbcTypeId == Types.VARCHAR){
                       ps.setString(idx, api.convertToRubyString(arg).getUnicodeValue());
-                   }else if(jdbcTypeId == 4){ // JDBC INTEGER
-                        ps.setObject(idx,Integer.valueOf(arg.toString()),jdbcTypeId);
-                   }else {  // ...
+                   }else if(jdbcTypeId == Types.INTEGER){
+                      ps.setObject(idx,Integer.valueOf(arg.toString()),jdbcTypeId);
+                   }else {
                       // I'm not sure is it correct in 100%
                       ps.setString(idx, api.convertToRubyString(arg).getUnicodeValue());
                    }
                 }catch(NumberFormatException ex){ // i.e Integer.valueOf
-                    ps.setString(idx, api.convertToRubyString(arg).getUnicodeValue());
+                   ps.setString(idx, api.convertToRubyString(arg).getUnicodeValue());
                 }
             }
-        } 
+        }
     }
 
     /**
