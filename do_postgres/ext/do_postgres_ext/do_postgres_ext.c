@@ -53,6 +53,7 @@ static ID ID_LEVEL;
 static ID ID_TO_S;
 static ID ID_RATIONAL;
 
+static VALUE mExtlib;
 static VALUE mDO;
 static VALUE cDO_Quoting;
 static VALUE cDO_Connection;
@@ -844,7 +845,6 @@ void Init_do_postgres_ext() {
   rb_cDateTime = CONST_GET(rb_mKernel, "DateTime");
   rb_cTime = CONST_GET(rb_mKernel, "Time");
   rb_cBigDecimal = CONST_GET(rb_mKernel, "BigDecimal");
-  rb_cByteArray = CONST_GET(rb_mKernel, "ByteArray");
 
   rb_funcall(rb_mKernel, rb_intern("require"), 1, rb_str_new2("data_objects"));
 
@@ -858,6 +858,10 @@ void Init_do_postgres_ext() {
   ID_LEVEL = rb_intern("level");
   ID_TO_S = rb_intern("to_s");
   ID_RATIONAL = rb_intern("Rational");
+
+  // Get references to the Extlib module
+  mExtlib = CONST_GET(rb_mKernel, "Extlib");
+  rb_cByteArray = CONST_GET(mExtlib, "ByteArray");
 
   // Get references to the DataObjects module and its classes
   mDO = CONST_GET(rb_mKernel, "DataObjects");

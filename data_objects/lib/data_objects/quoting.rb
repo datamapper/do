@@ -57,7 +57,7 @@ module DataObjects
         when Range then quote_range(value)
         when Symbol then quote_symbol(value)
         when Regexp then quote_regexp(value)
-        when ByteArray then quote_byte_array(value)
+        when ::Extlib::ByteArray then quote_byte_array(value)
         when Class then quote_class(value)
         else
           if value.respond_to?(:to_sql)

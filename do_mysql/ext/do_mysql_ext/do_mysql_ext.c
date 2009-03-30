@@ -49,6 +49,9 @@ static ID ID_LOGGER;
 static ID ID_DEBUG;
 static ID ID_LEVEL;
 
+// Reference to Extlib module
+static VALUE mExtlib;
+
 // References to DataObjects base classes
 static VALUE mDO;
 static VALUE cDO_Quoting;
@@ -865,7 +868,10 @@ void Init_do_mysql_ext() {
   rb_cDate = RUBY_CLASS("Date");
   rb_cDateTime = RUBY_CLASS("DateTime");
   rb_cBigDecimal = RUBY_CLASS("BigDecimal");
-  rb_cByteArray = RUBY_CLASS("ByteArray");
+
+  // Get references to the Extlib module
+  mExtlib = CONST_GET(rb_mKernel, "Extlib");
+  rb_cByteArray = CONST_GET(mExtlib, "ByteArray");
 
   // Get references to the DataObjects module and its classes
   mDO = CONST_GET(rb_mKernel, "DataObjects");

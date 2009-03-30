@@ -48,6 +48,8 @@ static ID ID_LOGGER;
 static ID ID_DEBUG;
 static ID ID_LEVEL;
 
+static VALUE mExtlib;
+
 static VALUE mDO;
 static VALUE cDO_Quoting;
 static VALUE cDO_Connection;
@@ -644,7 +646,6 @@ void Init_do_sqlite3_ext() {
   rb_cDateTime = RUBY_CLASS( "DateTime");
   rb_cTime = RUBY_CLASS("Time");
   rb_cBigDecimal = RUBY_CLASS("BigDecimal");
-  rb_cByteArray = RUBY_CLASS("ByteArray");
 
   rb_funcall(rb_mKernel, rb_intern("require"), 1, rb_str_new2("data_objects"));
 
@@ -657,6 +658,10 @@ void Init_do_sqlite3_ext() {
   ID_LOGGER = rb_intern("logger");
   ID_DEBUG = rb_intern("debug");
   ID_LEVEL = rb_intern("level");
+
+  // Get references to the Extlib module
+  mExtlib = CONST_GET(rb_mKernel, "Extlib");
+  rb_cByteArray = CONST_GET(mExtlib, "ByteArray");
 
   // Get references to the DataObjects module and its classes
   mDO = CONST_GET(rb_mKernel, "DataObjects");
