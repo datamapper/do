@@ -593,7 +593,7 @@ public class Command extends RubyObject {
             ps.setBoolean(idx, arg.toString().equals("true"));
         } else if ("Class".equals(rubyTypeName)) {
             ps.setString(idx, arg.toString());
-        } else if ("ByteArray".equals(rubyTypeName)) {
+        } else if ("Extlib::ByteArray".equals(rubyTypeName)) {
             ps.setBytes(idx, ((RubyString) arg).getBytes());
             // TODO: add support for ps.setBlob();
         } else if ("Date".equals(rubyTypeName)) {

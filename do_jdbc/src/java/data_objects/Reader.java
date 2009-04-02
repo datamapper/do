@@ -278,7 +278,7 @@ public class Reader extends RubyObject {
                 } finally {
                     binaryStream.close();
                 }
-                return api.callMethod(runtime.fastGetClass("ByteArray"), "new", runtime.newString(bytes));
+                return api.callMethod(runtime.fastGetModule("Extlib").fastGetClass("ByteArray"), "new", runtime.newString(bytes));
             case CLASS:
                 String classNameStr = rs.getString(col);
                 if (classNameStr == null) {
