@@ -80,7 +80,7 @@ share_examples_for 'supporting Integer' do
     it 'should return the correct entry' do
       @values.first.should == 2
     end
-    
+
   end
 
 end

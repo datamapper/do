@@ -59,7 +59,7 @@ share_examples_for 'supporting DateTime' do
       #Some of the drivers starts autoincrementation from 0 not 1
       @values.first.should satisfy { |val| val == 0 or val == 1 }
     end
-    
+
   end
 
 end

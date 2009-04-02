@@ -1,7 +1,7 @@
 share_examples_for 'a Connection' do
 
   include DataObjectsSpecHelpers
-  
+
   before :all do
     setup_test_environment
   end

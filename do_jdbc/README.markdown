@@ -1,35 +1,38 @@
-do\_jdbc 'Doppio'
+do_jdbc 'Doppio'
 =========================
 
 *Native JDBC Support for DataObjects*
 
-**WARNING** This package is under heavy development. 
+**WARNING** This package is under heavy development.
 
 Test
 ----
 
 the default task:
-	jruby -S rake
+
+  jruby -S rake
+
 or:
-	jruby -S rake java_compile
-	jruby -S rake spec
+
+  jruby -S rake java_compile
+  jruby -S rake spec
 
 Installation
 ------------
 
 Install Data Objects 0.9.9 from Git sources:
 
-	jruby -S gem install pkg/data_objects-0.9.9.gem
-or
+  jruby -S gem install pkg/data_objects-0.9.9.gem
 
-    rake jruby:install
+or:
 
+  rake jruby:install
 
 then build, test Doppio:
 
- 	jruby -S rake java_compile
-	jruby -S rake package
-	jruby -S gem install pkg/do_jdbc-0.9.9.gem
+  jruby -S rake java_compile
+  jruby -S rake package
+  jruby -S gem install pkg/do_jdbc-0.9.9.gem
 
 Licensing and Copyright
 -----------------------
@@ -43,7 +46,7 @@ Copyright (c) 2008-2009 Alexander Coles, Ikonoklastik Productions
 Support
 -------
 
-This Module is under heavy development. No official support is currently 
+This Module is under heavy development. No official support is currently
 provided.
 
 * Contact the developer directly:

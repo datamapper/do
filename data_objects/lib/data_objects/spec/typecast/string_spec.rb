@@ -80,7 +80,7 @@ share_examples_for 'supporting String' do
       # Some of the drivers starts autoincrementation from 0 not 1
       @values.first.should satisfy { |val| val == 1 or val == 2 }
     end
-    
+
   end
 
 end

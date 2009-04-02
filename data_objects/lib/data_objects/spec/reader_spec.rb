@@ -53,7 +53,7 @@ share_examples_for 'a Reader' do
     end
 
     describe 'when the reader is moved to the end' do
-      
+
       it 'should raise an error again' do
         lambda { @reader.values }.should raise_error
       end

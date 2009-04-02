@@ -18,7 +18,7 @@ share_examples_for 'a Result' do
   it { @result.should respond_to(:affected_rows) }
 
   describe 'affected_rows' do
-    
+
     it 'should return the number of affected rows' do
       @result.affected_rows.should == 1
     end
@@ -47,7 +47,7 @@ share_examples_for 'a Result which returns inserted keys' do
   it { @result.should respond_to(:affected_rows) }
 
   describe 'insert_id' do
-    
+
     it 'should return the number of affected rows' do
       # This is actually the 2nd record inserted
       @result.insert_id.should == 2
