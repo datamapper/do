@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.dataobjects</groupId>
   <artifactId>dataobjects</artifactId>
-  <packaging>jar</packaging>
+  <packaging>pom</packaging>
   <version>0.9.12</version>
   <name>dataobjects</name>
   <description>
