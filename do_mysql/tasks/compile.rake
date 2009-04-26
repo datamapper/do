@@ -12,7 +12,7 @@ begin
       ext.config_options << "--with-mysql-lib=#{mysql_lib}/lib/opt"
     else
       ext.cross_compile = true
-      ext.cross_platform = ['i386-mingw32', 'x86-mswin32-60']
+      ext.cross_platform = ['x86-mingw32', 'x86-mswin32-60']
       ext.cross_config_options << "--with-mysql-include=#{mysql_lib}/include"
       ext.cross_config_options << "--with-mysql-lib=#{mysql_lib}/lib/opt"
     end

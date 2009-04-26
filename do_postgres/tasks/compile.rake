@@ -14,7 +14,7 @@ begin
       ext.config_options << "--with-pgsql-client-lib=#{postgres_lib}/lib"
     else
       ext.cross_compile = true
-      ext.cross_platform = ['i386-mingw32', 'x86-mswin32-60']
+      ext.cross_platform = ['x86-mingw32', 'x86-mswin32-60']
       ext.cross_config_options << "--with-pgsql-server-include=#{postgres_lib}/include/server"
       ext.cross_config_options << "--with-pgsql-client-include=#{postgres_lib}/include"
       ext.cross_config_options << "--with-pgsql-win32-include=#{postgres_lib}/include/server/port/win32"

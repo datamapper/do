@@ -13,7 +13,7 @@ begin
     sqlite3_lib = File.expand_path(File.join(File.dirname(__FILE__), '..', 'vendor', 'sqlite3'))
 
     ext.cross_compile = true
-    ext.cross_platform = ['i386-mingw32', 'x86-mswin32-60']
+    ext.cross_platform = ['x86-mingw32', 'x86-mswin32-60']
     ext.cross_config_options << "--with-sqlite3-dir=#{sqlite3_lib}"
 
     # automatically add build options to avoid need of manual input
