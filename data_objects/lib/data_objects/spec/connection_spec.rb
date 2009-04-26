@@ -23,7 +23,7 @@ share_examples_for 'a Connection' do
 
     describe 'on open connection' do
       before do
-        @open_connection = DataObjects::Connection.new("#{@driver}://#{@user}:#{@password}@#{@host}:#{@port}/#{@database}")
+        @open_connection = DataObjects::Connection.new("#{@driver}://#{@user}:#{@password}@#{@host}:#{@port}#{@database}")
         @open_connection.detach
       end
 
@@ -36,7 +36,7 @@ share_examples_for 'a Connection' do
 
     describe 'on closed connection' do
       before do
-        @closed_connection = DataObjects::Connection.new("#{@driver}://#{@user}:#{@password}@#{@host}:#{@port}/#{@database}")
+        @closed_connection = DataObjects::Connection.new("#{@driver}://#{@user}:#{@password}@#{@host}:#{@port}#{@database}")
         @closed_connection.detach
         @closed_connection.dispose
       end
@@ -78,46 +78,25 @@ share_examples_for 'a Connection with authentication support' do
     end
 
     it 'should raise an error if no database specified' do
-      connecting_with("#{@driver}://#{@user}:#{@password}@#{@host}:#{@port}/").should raise_error
+      connecting_with("#{@driver}://#{@user}:#{@password}@#{@host}:#{@port}").should raise_error
     end
 
     it 'should raise an error if bad username is given' do
-      connecting_with("#{@driver}://thisreallyshouldntexist:#{@password}@#{@host}:#{@port}/#{@database}").should raise_error
+      connecting_with("#{@driver}://thisreallyshouldntexist:#{@password}@#{@host}:#{@port}#{@database}").should raise_error
     end
 
     it 'should raise an error if bad password is given' do
-      connecting_with("#{@driver}://#{@user}:completelyincorrectpassword:#{@host}:#{@port}/#{@database}").should raise_error
+      connecting_with("#{@driver}://#{@user}:completelyincorrectpassword:#{@host}:#{@port}#{@database}").should raise_error
     end
 
     it 'should raise an error if an invalid port is given' do
-      connecting_with("#{@driver}://#{@user}:#{@password}:#{@host}:648646543/#{@database}").should raise_error
+      connecting_with("#{@driver}://#{@user}:#{@password}:#{@host}:648646543#{@database}").should raise_error
     end
 
     it 'should raise an error if an invalid database is given' do
       connecting_with("#{@driver}://#{@user}:#{@password}:#{@host}:#{@port}/someweirddatabase").should raise_error
     end
 
-    it 'should raise an error with a meaningless URI' do
-      connecting_with("#{@driver}://peekaboo$2!@#4543").should raise_error
-    end
-    it 'should raise an error with a meaningless URI' do
-      connecting_with("#{@driver}://peekaboo$2!@#4543").should raise_error
-    end
-    it 'should raise an error with a meaningless URI' do
-      connecting_with("#{@driver}://peekaboo$2!@#4543").should raise_error
-    end
-    it 'should raise an error with a meaningless URI' do
-      connecting_with("#{@driver}://peekaboo$2!@#4543").should raise_error
-    end
-    it 'should raise an error with a meaningless URI' do
-      connecting_with("#{@driver}://peekaboo$2!@#4543").should raise_error
-    end
-    it 'should raise an error with a meaningless URI' do
-      connecting_with("#{@driver}://peekaboo$2!@#4543").should raise_error
-    end
-    it 'should raise an error with a meaningless URI' do
-      connecting_with("#{@driver}://peekaboo$2!@#4543").should raise_error
-    end
     it 'should raise an error with a meaningless URI' do
       connecting_with("#{@driver}://peekaboo$2!@#4543").should raise_error
     end

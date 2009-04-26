@@ -9,6 +9,22 @@
 #undef PACKAGE_STRING
 #undef PACKAGE_TARNAME
 #undef PACKAGE_VERSION
+
+#ifdef _WIN32
+/* On Windows this stuff is also defined by Postgres, but we don't
+   want to use Postgres' version actually */
+#undef fsync
+#undef vsnprintf
+#undef snprintf
+#undef sprintf
+#undef printf
+#define cCommand_execute cCommand_execute_sync
+#define do_int64 signed __int64
+#else
+#define cCommand_execute cCommand_execute_async
+#define do_int64 signed long long int
+#endif
+
 #include <ruby.h>
 #include <string.h>
 #include <math.h>
@@ -39,11 +55,6 @@
 #define RARRAY_LEN(a) RARRAY(a)->len
 #endif
 
-#ifdef _WIN32
-#define do_int64 signed __int64
-#else
-#define do_int64 signed long long int
-#endif
 
 // To store rb_intern values
 static ID ID_NEW_DATE;
@@ -472,6 +483,37 @@ static VALUE cCommand_quote_byte_array(VALUE self, VALUE string) {
   return result;
 }
 
+#ifdef _WIN32
+static PGresult* cCommand_execute_sync(PGconn *db, VALUE query) {
+  PGresult *response;
+  struct timeval start;
+  char* str = StringValuePtr(query);
+
+  while ((response = PQgetResult(db)) != NULL) {
+    PQclear(response);
+  }
+
+  gettimeofday(&start, NULL);
+
+  response = PQexec(db, str);
+
+  if (response == NULL) {
+    if(PQstatus(db) != CONNECTION_OK) {
+      PQreset(db);
+      if (PQstatus(db) == CONNECTION_OK) {
+        response = PQexec(db, str);
+      }
+    }
+
+    if(response == NULL) {
+      rb_raise(ePostgresError, PQerrorMessage(db));
+    }
+  }
+
+  data_objects_debug(query, &start);
+  return response;
+}
+#else
 static PGresult* cCommand_execute_async(PGconn *db, VALUE query) {
   int socket_fd;
   int retval;
@@ -526,6 +568,7 @@ static PGresult* cCommand_execute_async(PGconn *db, VALUE query) {
   data_objects_debug(query, &start);
   return PQgetResult(db);
 }
+#endif
 
 static VALUE cConnection_initialize(VALUE self, VALUE uri) {
   PGresult *result = NULL;
@@ -595,7 +638,7 @@ static VALUE cConnection_initialize(VALUE self, VALUE uri) {
     search_path_query = (char *)calloc(256, sizeof(char));
     snprintf(search_path_query, 256, "set search_path to %s;", search_path);
     r_query = rb_str_new2(search_path_query);
-    result = cCommand_execute_async(db, r_query);
+    result = cCommand_execute(db, r_query);
 
     if (PQresultStatus(result) != PGRES_COMMAND_OK) {
       free(search_path_query);
@@ -606,21 +649,21 @@ static VALUE cConnection_initialize(VALUE self, VALUE uri) {
   }
 
   r_options = rb_str_new2(backslash_off);
-  result = cCommand_execute_async(db, r_options);
+  result = cCommand_execute(db, r_options);
 
   if (PQresultStatus(result) != PGRES_COMMAND_OK) {
     rb_warn(PQresultErrorMessage(result));
   }
 
   r_options = rb_str_new2(standard_strings_on);
-  result = cCommand_execute_async(db, r_options);
+  result = cCommand_execute(db, r_options);
 
   if (PQresultStatus(result) != PGRES_COMMAND_OK) {
     rb_warn(PQresultErrorMessage(result));
   }
 
   r_options = rb_str_new2(warning_messages);
-  result = cCommand_execute_async(db, r_options);
+  result = cCommand_execute(db, r_options);
 
   if (PQresultStatus(result) != PGRES_COMMAND_OK) {
     rb_warn(PQresultErrorMessage(result));
@@ -674,7 +717,7 @@ static VALUE cCommand_execute_non_query(int argc, VALUE *argv[], VALUE self) {
 
   VALUE query = build_query_from_args(self, argc, argv);
 
-  response = cCommand_execute_async(db, query);
+  response = cCommand_execute(db, query);
 
   status = PQresultStatus(response);
 
@@ -717,7 +760,7 @@ static VALUE cCommand_execute_reader(int argc, VALUE *argv[], VALUE self) {
 
   query = build_query_from_args(self, argc, argv);
 
-  response = cCommand_execute_async(db, query);
+  response = cCommand_execute(db, query);
 
   if ( PQresultStatus(response) != PGRES_TUPLES_OK ) {
     char *message = PQresultErrorMessage(response);
@@ -843,7 +886,6 @@ void Init_do_postgres_ext() {
   // Get references classes needed for Date/Time parsing
   rb_cDate = CONST_GET(rb_mKernel, "Date");
   rb_cDateTime = CONST_GET(rb_mKernel, "DateTime");
-  rb_cTime = CONST_GET(rb_mKernel, "Time");
   rb_cBigDecimal = CONST_GET(rb_mKernel, "BigDecimal");
 
   rb_funcall(rb_mKernel, rb_intern("require"), 1, rb_str_new2("data_objects"));

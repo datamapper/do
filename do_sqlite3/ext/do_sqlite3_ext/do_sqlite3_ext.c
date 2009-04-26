@@ -644,7 +644,6 @@ void Init_do_sqlite3_ext() {
   // Get references classes needed for Date/Time parsing
   rb_cDate = RUBY_CLASS("Date");
   rb_cDateTime = RUBY_CLASS( "DateTime");
-  rb_cTime = RUBY_CLASS("Time");
   rb_cBigDecimal = RUBY_CLASS("BigDecimal");
 
   rb_funcall(rb_mKernel, rb_intern("require"), 1, rb_str_new2("data_objects"));

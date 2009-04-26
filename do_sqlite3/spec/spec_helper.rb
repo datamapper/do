@@ -41,13 +41,9 @@ end
 
 CONFIG = OpenStruct.new
 CONFIG.scheme   = 'sqlite3'
-CONFIG.user     = ENV['DO_SQLITE3_USER'] || 'sqlite3'
-CONFIG.pass     = ENV['DO_SQLITE3_PASS'] || ''
-CONFIG.host     = ENV['DO_SQLITE3_HOST'] || ''
-CONFIG.port     = ENV['DO_SQLITE3_PORT'] || ''
 CONFIG.database = ENV['DO_SQLITE3_DATABASE'] || "#{File.expand_path(File.dirname(__FILE__))}/test.db"
 
-CONFIG.uri = ENV["DO_SQLITE3_SPEC_URI"] ||"#{CONFIG.scheme}://#{CONFIG.user}:#{CONFIG.pass}@#{CONFIG.host}:#{CONFIG.port}/#{CONFIG.database}"
+CONFIG.uri = ENV["DO_SQLITE3_SPEC_URI"] || "#{CONFIG.scheme}://#{CONFIG.database}"
 
 module DataObjectsSpecHelpers
 

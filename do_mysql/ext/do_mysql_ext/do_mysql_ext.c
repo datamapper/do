@@ -28,8 +28,10 @@
 #endif
 
 #ifdef _WIN32
+#define cCommand_execute cCommand_execute_sync
 #define do_int64 signed __int64
 #else
+#define cCommand_execute cCommand_execute_async
 #define do_int64 signed long long int
 #endif
 
@@ -383,6 +385,29 @@ static char * get_uri_option(VALUE query_hash, char * key) {
   return value;
 }
 
+#ifdef _WIN32
+static MYSQL_RES* cCommand_execute_sync(VALUE self, MYSQL* db, VALUE query) {
+  int retval;
+  struct timeval start;
+  char* str = RSTRING_PTR(query);
+  int len   = RSTRING_LEN(query);
+
+  VALUE connection = rb_iv_get(self, "@connection");
+
+  if(mysql_ping(db) && mysql_errno(db) == CR_SERVER_GONE_ERROR) {
+    CHECK_AND_RAISE(mysql_errno(db), "Mysql server has gone away. \
+                             Please report this issue to the Datamapper project. \
+                             Specify your at least your MySQL version when filing a ticket");
+  }
+  gettimeofday(&start, NULL);
+  retval = mysql_real_query(db, str, len);
+  CHECK_AND_RAISE(retval, str);
+
+  data_objects_debug(query, &start);
+
+  return mysql_store_result(db);
+}
+#else
 static MYSQL_RES* cCommand_execute_async(VALUE self, MYSQL* db, VALUE query) {
   int socket_fd;
   int retval;
@@ -431,6 +456,7 @@ static MYSQL_RES* cCommand_execute_async(VALUE self, MYSQL* db, VALUE query) {
 
   return mysql_store_result(db);
 }
+#endif
 
 static VALUE cConnection_initialize(VALUE self, VALUE uri) {
   VALUE r_host, r_user, r_password, r_path, r_query, r_port;
@@ -524,8 +550,8 @@ static VALUE cConnection_initialize(VALUE self, VALUE uri) {
   }
 
   // Disable sql_auto_is_null
-  cCommand_execute_async(self, db, rb_str_new2("SET sql_auto_is_null = 0"));
-  cCommand_execute_async(self, db, rb_str_new2("SET SESSION sql_mode = 'ANSI,NO_AUTO_VALUE_ON_ZERO,NO_DIR_IN_CREATE,NO_ENGINE_SUBSTITUTION,NO_UNSIGNED_SUBTRACTION,TRADITIONAL'"));
+  cCommand_execute(self, db, rb_str_new2("SET sql_auto_is_null = 0"));
+  cCommand_execute(self, db, rb_str_new2("SET SESSION sql_mode = 'ANSI,NO_AUTO_VALUE_ON_ZERO,NO_DIR_IN_CREATE,NO_ENGINE_SUBSTITUTION,NO_UNSIGNED_SUBTRACTION,TRADITIONAL'"));
 
   rb_iv_set(self, "@uri", uri);
   rb_iv_set(self, "@connection", Data_Wrap_Struct(rb_cObject, 0, 0, db));
@@ -676,7 +702,7 @@ static VALUE cCommand_execute_non_query(int argc, VALUE *argv, VALUE self) {
   MYSQL *db = DATA_PTR(mysql_connection);
   query = build_query_from_args(self, argc, argv);
 
-  response = cCommand_execute_async(self, db, query);
+  response = cCommand_execute(self, db, query);
 
   affected_rows = mysql_affected_rows(db);
   mysql_free_result(response);
@@ -708,7 +734,7 @@ static VALUE cCommand_execute_reader(int argc, VALUE *argv, VALUE self) {
 
   query = build_query_from_args(self, argc, argv);
 
-  response = cCommand_execute_async(self, db, query);
+  response = cCommand_execute(self, db, query);
 
   if (!response) {
     return Qnil;

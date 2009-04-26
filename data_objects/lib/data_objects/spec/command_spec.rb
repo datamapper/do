@@ -1,3 +1,5 @@
+WINDOWS = Gem.win_platform?
+
 share_examples_for 'a Command' do
 
   include DataObjectsSpecHelpers
@@ -180,7 +182,9 @@ share_examples_for 'a Command with async' do
     end
 
     it "should finish within 2 seconds" do
-      (@finish - @start).should < 2
+      pending_if("Ruby on Windows doesn't support asynchronious operations", WINDOWS) do
+        (@finish - @start).should < 2
+      end
     end
 
   end
