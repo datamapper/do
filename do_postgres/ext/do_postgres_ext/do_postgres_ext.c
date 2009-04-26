@@ -432,8 +432,8 @@ static VALUE build_query_from_args(VALUE klass, int count, VALUE *args[]) {
   return query;
 }
 
-static VALUE cCommand_quote_string(VALUE self, VALUE string) {
-  PGconn *db = DATA_PTR(rb_iv_get(rb_iv_get(self, "@connection"), "@connection"));
+static VALUE cConnection_quote_string(VALUE self, VALUE string) {
+  PGconn *db = DATA_PTR(rb_iv_get(self, "@connection"));
 
   const char *source = RSTRING_PTR(string);
   int source_len     = RSTRING_LEN(string);
@@ -457,8 +457,8 @@ static VALUE cCommand_quote_string(VALUE self, VALUE string) {
   return result;
 }
 
-static VALUE cCommand_quote_byte_array(VALUE self, VALUE string) {
-  PGconn *db = DATA_PTR(rb_iv_get(rb_iv_get(self, "@connection"), "@connection"));
+static VALUE cConnection_quote_byte_array(VALUE self, VALUE string) {
+  PGconn *db = DATA_PTR(rb_iv_get(self, "@connection"));
 
   const unsigned char *source = (unsigned char*) RSTRING_PTR(string);
   size_t source_len     = RSTRING_LEN(string);
@@ -921,14 +921,13 @@ void Init_do_postgres_ext() {
   rb_define_method(cConnection, "initialize", cConnection_initialize, 1);
   rb_define_method(cConnection, "dispose", cConnection_dispose, 0);
   rb_define_method(cConnection, "character_set", cConnection_character_set , 0);
+  rb_define_method(cConnection, "quote_string", cConnection_quote_string, 1);
+  rb_define_method(cConnection, "quote_byte_array", cConnection_quote_byte_array, 1);
 
   cCommand = POSTGRES_CLASS("Command", cDO_Command);
-  rb_include_module(cCommand, cDO_Quoting);
   rb_define_method(cCommand, "set_types", cCommand_set_types, -1);
   rb_define_method(cCommand, "execute_non_query", cCommand_execute_non_query, -1);
   rb_define_method(cCommand, "execute_reader", cCommand_execute_reader, -1);
-  rb_define_method(cCommand, "quote_string", cCommand_quote_string, 1);
-  rb_define_method(cCommand, "quote_byte_array", cCommand_quote_byte_array, 1);
 
   cResult = POSTGRES_CLASS("Result", cDO_Result);
 

@@ -635,23 +635,23 @@ static VALUE cCommand_set_types(int argc, VALUE *argv, VALUE self) {
   return array;
 }
 
-VALUE cCommand_quote_time(VALUE self, VALUE value) {
+VALUE cConnection_quote_time(VALUE self, VALUE value) {
   return rb_funcall(value, ID_STRFTIME, 1, RUBY_STRING("'%Y-%m-%d %H:%M:%S'"));
 }
 
 
-VALUE cCommand_quote_date_time(VALUE self, VALUE value) {
+VALUE cConnection_quote_date_time(VALUE self, VALUE value) {
   // TODO: Support non-local dates. we need to call #new_offset on the date to be
   // quoted and pass in the current locale's date offset (self.new_offset((hours * 3600).to_r / 86400)
   return rb_funcall(value, ID_STRFTIME, 1, RUBY_STRING("'%Y-%m-%d %H:%M:%S'"));
 }
 
-VALUE cCommand_quote_date(VALUE self, VALUE value) {
+VALUE cConnection_quote_date(VALUE self, VALUE value) {
   return rb_funcall(value, ID_STRFTIME, 1, RUBY_STRING("'%Y-%m-%d'"));
 }
 
-static VALUE cCommand_quote_string(VALUE self, VALUE string) {
-  MYSQL *db = DATA_PTR(rb_iv_get(rb_iv_get(self, "@connection"), "@connection"));
+static VALUE cConnection_quote_string(VALUE self, VALUE string) {
+  MYSQL *db = DATA_PTR(rb_iv_get(self, "@connection"));
   const char *source = RSTRING_PTR(string);
   int source_len     = RSTRING_LEN(string);
   char *escaped;
@@ -918,16 +918,15 @@ void Init_do_mysql_ext() {
   rb_define_method(cConnection, "using_socket?", cConnection_is_using_socket, 0);
   rb_define_method(cConnection, "character_set", cConnection_character_set , 0);
   rb_define_method(cConnection, "dispose", cConnection_dispose, 0);
+  rb_define_method(cConnection, "quote_string", cConnection_quote_string, 1);
+  rb_define_method(cConnection, "quote_date", cConnection_quote_date, 1);
+  rb_define_method(cConnection, "quote_time", cConnection_quote_time, 1);
+  rb_define_method(cConnection, "quote_datetime", cConnection_quote_date_time, 1);
 
   cCommand = DRIVER_CLASS("Command", cDO_Command);
-  rb_include_module(cCommand, cDO_Quoting);
   rb_define_method(cCommand, "set_types", cCommand_set_types, -1);
   rb_define_method(cCommand, "execute_non_query", cCommand_execute_non_query, -1);
   rb_define_method(cCommand, "execute_reader", cCommand_execute_reader, -1);
-  rb_define_method(cCommand, "quote_string", cCommand_quote_string, 1);
-  rb_define_method(cCommand, "quote_date", cCommand_quote_date, 1);
-  rb_define_method(cCommand, "quote_time", cCommand_quote_time, 1);
-  rb_define_method(cCommand, "quote_datetime", cCommand_quote_date_time, 1);
 
   // Non-Query result
   cResult = DRIVER_CLASS("Result", cDO_Result);

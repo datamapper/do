@@ -457,11 +457,11 @@ static VALUE cCommand_set_types(int argc, VALUE *argv, VALUE self) {
   return array;
 }
 
-static VALUE cCommand_quote_boolean(VALUE self, VALUE value) {
+static VALUE cConnection_quote_boolean(VALUE self, VALUE value) {
   return rb_tainted_str_new2(value == Qtrue ? "'t'" : "'f'");
 }
 
-static VALUE cCommand_quote_string(VALUE self, VALUE string) {
+static VALUE cConnection_quote_string(VALUE self, VALUE string) {
   const char *source = StringValuePtr(string);
   char *escaped_with_quotes;
   VALUE result;
@@ -679,14 +679,13 @@ void Init_do_sqlite3_ext() {
   cConnection = SQLITE3_CLASS("Connection", cDO_Connection);
   rb_define_method(cConnection, "initialize", cConnection_initialize, 1);
   rb_define_method(cConnection, "dispose", cConnection_dispose, 0);
+  rb_define_method(cConnection, "quote_boolean", cConnection_quote_boolean, 1);
+  rb_define_method(cConnection, "quote_string", cConnection_quote_string, 1);
 
   cCommand = SQLITE3_CLASS("Command", cDO_Command);
-  rb_include_module(cCommand, cDO_Quoting);
   rb_define_method(cCommand, "set_types", cCommand_set_types, -1);
   rb_define_method(cCommand, "execute_non_query", cCommand_execute_non_query, -1);
   rb_define_method(cCommand, "execute_reader", cCommand_execute_reader, -1);
-  rb_define_method(cCommand, "quote_boolean", cCommand_quote_boolean, 1);
-  rb_define_method(cCommand, "quote_string", cCommand_quote_string, 1);
 
   cResult = SQLITE3_CLASS("Result", cDO_Result);
 
