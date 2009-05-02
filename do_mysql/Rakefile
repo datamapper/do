@@ -30,7 +30,7 @@ PROJECT_URL  = "http://rubyforge.org/projects/dorb"
 PROJECT_DESCRIPTION = PROJECT_SUMMARY = "A DataObject.rb driver for MySQL"
 
 # Version to link the binary Windows build to
-BINARY_VERSION = '5.1.34'
+BINARY_VERSION = '5.0.77'
 
 if (tasks_dir = ROOT.parent + 'tasks').directory?
   require tasks_dir + 'hoe'
