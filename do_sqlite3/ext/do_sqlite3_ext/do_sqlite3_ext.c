@@ -383,13 +383,11 @@ static VALUE cConnection_initialize(VALUE self, VALUE uri) {
   int ret;
   VALUE path;
   sqlite3 *db;
-  int flags = 0;
 
   path = rb_funcall(uri, ID_PATH, 0);
 
 #ifdef HAVE_SQLITE3_OPEN_V2
-  flags = flags_from_uri(uri);
-  ret = sqlite3_open_v2(StringValuePtr(path), &db, flags, 0);
+  ret = sqlite3_open_v2(StringValuePtr(path), &db, flags_from_uri(uri), 0);
 #else
   ret = sqlite3_open(StringValuePtr(path), &db);
 #endif
@@ -623,6 +621,7 @@ static VALUE cReader_values(VALUE self) {
   VALUE state = rb_iv_get(self, "@state");
   if ( state == Qnil || NUM2INT(state) != SQLITE_ROW ) {
     rb_raise(eSqlite3Error, "Reader is not initialized");
+    return Qnil;
   }
   else {
     return rb_iv_get(self, "@values");
