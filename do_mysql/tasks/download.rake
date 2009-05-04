@@ -29,7 +29,8 @@ begin
   end
  
   file "vendor/mysql-noinstall-#{BINARY_VERSION}-win32.zip" => ['vendor'] do |t|
-    url = "http://mysql.proserve.nl/Downloads/MySQL-5.1/#{File.basename(t.name)}"
+    base_version = BINARY_VERSION.gsub(/\.[0-9]+$/, '')
+    url = "http://mysql.proserve.nl/Downloads/MySQL-#{base_version}/#{File.basename(t.name)}"
     when_writing "downloading #{t.name}" do
       cd File.dirname(t.name) do
         sh "wget -c #{url} || curl -C - -O #{url}"
