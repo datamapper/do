@@ -11,6 +11,7 @@
 #define ID_ESCAPE rb_intern("escape_sql")
 #define ID_QUERY rb_intern("query")
 
+#define RUBY_CLASS(name) rb_const_get(rb_cObject, rb_intern(name))
 #define RUBY_STRING(char_ptr) rb_str_new2(char_ptr)
 #define TAINTED_STRING(name, length) rb_tainted_str_new(name, length)
 #define CONST_GET(scope, constant) (rb_funcall(scope, ID_CONST_GET, 1, rb_str_new2(constant)))
@@ -47,6 +48,8 @@ static ID ID_LOGGER;
 static ID ID_DEBUG;
 static ID ID_LEVEL;
 
+static VALUE mExtlib;
+
 static VALUE mDO;
 static VALUE cDO_Quoting;
 static VALUE cDO_Connection;
@@ -57,6 +60,7 @@ static VALUE cDO_Reader;
 static VALUE rb_cDate;
 static VALUE rb_cDateTime;
 static VALUE rb_cBigDecimal;
+static VALUE rb_cByteArray;
 
 static VALUE mSqlite3;
 static VALUE cConnection;
@@ -64,6 +68,7 @@ static VALUE cCommand;
 static VALUE cResult;
 static VALUE cReader;
 
+static VALUE eArgumentError;
 static VALUE eSqlite3Error;
 
 static VALUE OPEN_FLAG_READONLY;
@@ -113,9 +118,6 @@ static void data_objects_debug(VALUE string, struct timeval* start) {
     gettimeofday(&stop, NULL);
 
     duration = (stop.tv_sec - start->tv_sec) * 1000000 + stop.tv_usec - start->tv_usec;
-    if(stop.tv_usec < start->tv_usec) {
-      duration += 1000000;
-    }
 
     snprintf(total_time, 32, "%.6f", duration / 1000000.0);
     message = (char *)calloc(length + strlen(total_time) + 4, sizeof(char));
@@ -191,9 +193,14 @@ static VALUE parse_date_time(char *date) {
   } else if ((max_tokens - 1) == tokens_read) {
     // We read the Date and Time, but no Minute Offset
     minute_offset = 0;
-  } else if (tokens_read == 3) {
-    return parse_date(date);
-  } else if (tokens_read >= (max_tokens - 3)) {
+  } else if (tokens_read == 3 || tokens_read >= (max_tokens - 3)) {
+    if (tokens_read == 3) {
+      hour = 0;
+      min = 0;
+      hour_offset = 0;
+      minute_offset = 0;
+      sec = 0;
+    }  
     // We read the Date and Time, default to the current locale's offset
 
     // Get localtime
@@ -250,23 +257,28 @@ static VALUE parse_date_time(char *date) {
 
 static VALUE parse_time(char *date) {
 
-  int year, month, day, hour, min, sec, usec;
-  char subsec[7];
+  int year, month, day, hour, min, sec, usec, tokens, hour_offset, minute_offset;
 
   if (0 != strchr(date, '.')) {
-    // right padding usec with 0. e.g. '012' will become 12000 microsecond, since Time#local use microsecond
-    sscanf(date, "%4d-%2d-%2d %2d:%2d:%2d.%s", &year, &month, &day, &hour, &min, &sec, subsec);
-    sscanf(subsec, "%d", &usec);
+    // This is a datetime with sub-second precision
+    tokens = sscanf(date, "%4d-%2d-%2d%*c%2d:%2d:%2d.%d%3d:%2d", &year, &month, &day, &hour, &min, &sec, &usec, &hour_offset, &minute_offset);
   } else {
-    sscanf(date, "%4d-%2d-%2d %2d:%2d:%2d", &year, &month, &day, &hour, &min, &sec);
+    // This is a datetime second precision
+    tokens = sscanf(date, "%4d-%2d-%2d%*c%2d:%2d:%2d%3d:%2d", &year, &month, &day, &hour, &min, &sec, &hour_offset, &minute_offset);
     usec = 0;
+    if(tokens == 3) {
+      hour = 0;
+      min = 0;
+      sec = 0;
+      hour_offset = 0;
+      minute_offset = 0;
+    }
   }
 
   return rb_funcall(rb_cTime, rb_intern("local"), 7, INT2NUM(year), INT2NUM(month), INT2NUM(day), INT2NUM(hour), INT2NUM(min), INT2NUM(sec), INT2NUM(usec));
 }
 
-static VALUE typecast(sqlite3_stmt *stmt, int i, VALUE ruby_class) {
-  const char *ruby_type;
+static VALUE typecast(sqlite3_stmt *stmt, int i, VALUE type) {
   VALUE ruby_value = Qnil;
   int original_type = sqlite3_column_type(stmt, i);
   int length        = sqlite3_column_bytes(stmt, i);
@@ -274,47 +286,51 @@ static VALUE typecast(sqlite3_stmt *stmt, int i, VALUE ruby_class) {
     return ruby_value;
   }
 
-  if ( original_type == SQLITE_BLOB ) {
-    return TAINTED_STRING((char*)sqlite3_column_blob(stmt, i), length);
-  }
-
-  if(ruby_class == Qnil) {
+  if(type == Qnil) {
     switch(original_type) {
       case SQLITE_INTEGER: {
-        ruby_type = "Integer";
+        type = rb_cInteger;
         break;
       }
       case SQLITE_FLOAT: {
-        ruby_type = "Float";
+        type = rb_cFloat;
+        break;
+      }
+      case SQLITE_BLOB: {
+        type = rb_cByteArray;
         break;
       }
       default: {
-        ruby_type = "String";
+        type = rb_cString;
         break;
       }
     }
-  } else {
-    ruby_type = rb_class2name(ruby_class);
   }
 
-  if ( strcmp(ruby_type, "Class") == 0) {
-    return rb_funcall(rb_cObject, rb_intern("full_const_get"), 1, TAINTED_STRING((char*)sqlite3_column_text(stmt, i), length));
-  } else if ( strcmp(ruby_type, "Object") == 0 ) {
-    return rb_marshal_load(rb_str_new2((char*)sqlite3_column_text(stmt, i)));
-  } else if ( strcmp(ruby_type, "TrueClass") == 0 ) {
-    return strcmp((char*)sqlite3_column_text(stmt, i), "t") == 0 ? Qtrue : Qfalse;
-  } else if ( strcmp(ruby_type, "Integer") == 0 || strcmp(ruby_type, "Fixnum") == 0 || strcmp(ruby_type, "Bignum") == 0 ) {
+  if (type == rb_cInteger) {
     return LL2NUM(sqlite3_column_int64(stmt, i));
-  } else if ( strcmp(ruby_type, "BigDecimal") == 0 ) {
-    return rb_funcall(rb_cBigDecimal, ID_NEW, 1, TAINTED_STRING((char*)sqlite3_column_text(stmt, i), length));
-  } else if ( strcmp(ruby_type, "Float") == 0 ) {
+  } else if (type == rb_cString) {
+    return TAINTED_STRING((char*)sqlite3_column_text(stmt, i), length);
+  } else if (type == rb_cFloat) {
     return rb_float_new(sqlite3_column_double(stmt, i));
-  } else if ( strcmp(ruby_type, "Date") == 0 ) {
+  } else if (type == rb_cBigDecimal) {
+    return rb_funcall(rb_cBigDecimal, ID_NEW, 1, TAINTED_STRING((char*)sqlite3_column_text(stmt, i), length));
+  } else if (type == rb_cDate) {
     return parse_date((char*)sqlite3_column_text(stmt, i));
-  } else if ( strcmp(ruby_type, "DateTime") == 0 ) {
+  } else if (type == rb_cDateTime) {
     return parse_date_time((char*)sqlite3_column_text(stmt, i));
-  } else if ( strcmp(ruby_type, "Time") == 0 ) {
+  } else if (type == rb_cTime) {
     return parse_time((char*)sqlite3_column_text(stmt, i));
+  } else if (type == rb_cTrueClass) {
+    return strcmp((char*)sqlite3_column_text(stmt, i), "t") == 0 ? Qtrue : Qfalse;
+  } else if (type == rb_cByteArray) {
+    return rb_funcall(rb_cByteArray, ID_NEW, 1, TAINTED_STRING((char*)sqlite3_column_blob(stmt, i), length));
+  } else if (type == rb_cClass) {
+    return rb_funcall(rb_cObject, rb_intern("full_const_get"), 1, TAINTED_STRING((char*)sqlite3_column_text(stmt, i), length));
+  } else if (type == rb_cObject) {
+    return rb_marshal_load(rb_str_new((char*)sqlite3_column_text(stmt, i), length));
+  } else if (type == rb_cNilClass) {
+    return Qnil;
   } else {
     return TAINTED_STRING((char*)sqlite3_column_text(stmt, i), length);
   }
@@ -328,21 +344,14 @@ static int flags_from_uri(VALUE uri) {
   VALUE query_values = rb_funcall(uri, ID_QUERY, 0);
 
   int flags = 0;
-  if (!NIL_P(query_values)) {
+
+  if (!NIL_P(query_values) && TYPE(query_values) == T_HASH) {
     /// scan for flags
 #ifdef SQLITE_OPEN_READONLY
     if (FLAG_PRESENT(query_values, OPEN_FLAG_READONLY)) {
       flags |= SQLITE_OPEN_READONLY;
-    }
-#endif
-#ifdef SQLITE_OPEN_READWRITE
-    if (FLAG_PRESENT(query_values, OPEN_FLAG_READWRITE)) {
+    } else {
       flags |= SQLITE_OPEN_READWRITE;
-    }
-#endif
-#ifdef SQLITE_OPEN_CREATE
-    if (FLAG_PRESENT(query_values, OPEN_FLAG_CREATE)) {
-      flags |= SQLITE_OPEN_CREATE;
     }
 #endif
 #ifdef SQLITE_OPEN_NOMUTEX
@@ -355,6 +364,7 @@ static int flags_from_uri(VALUE uri) {
       flags |= SQLITE_OPEN_FULLMUTEX;
     }
 #endif
+    flags |= SQLITE_OPEN_CREATE;
   } else {
     flags = SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE;
   }
@@ -370,13 +380,11 @@ static VALUE cConnection_initialize(VALUE self, VALUE uri) {
   int ret;
   VALUE path;
   sqlite3 *db;
-  int flags = 0;
 
   path = rb_funcall(uri, ID_PATH, 0);
 
 #ifdef HAVE_SQLITE3_OPEN_V2
-  flags = flags_from_uri(uri);
-  ret = sqlite3_open_v2(StringValuePtr(path), &db, flags, 0);
+  ret = sqlite3_open_v2(StringValuePtr(path), &db, flags_from_uri(uri), 0);
 #else
   ret = sqlite3_open(StringValuePtr(path), &db);
 #endif
@@ -392,41 +400,83 @@ static VALUE cConnection_initialize(VALUE self, VALUE uri) {
 }
 
 static VALUE cConnection_dispose(VALUE self) {
+  VALUE connection_container = rb_iv_get(self, "@connection");
+
   sqlite3 *db;
-  Data_Get_Struct(rb_iv_get(self, "@connection"), sqlite3, db);
+
+  if (Qnil == connection_container)
+    return Qfalse;
+
+  db = DATA_PTR(connection_container);
+
+  if (NULL == db)
+    return Qfalse;
+
   sqlite3_close(db);
+  rb_iv_set(self, "@connection", Qnil);
+
   return Qtrue;
+
 }
 
-static VALUE cCommand_set_types(VALUE self, VALUE array) {
-  rb_iv_set(self, "@field_types", array);
+static VALUE cCommand_set_types(int argc, VALUE *argv, VALUE self) {
+  VALUE type_strings = rb_ary_new();
+  VALUE array = rb_ary_new();
+
+  int i, j;
+
+  for ( i = 0; i < argc; i++) {
+    rb_ary_push(array, argv[i]);
+  }
+
+  for (i = 0; i < RARRAY_LEN(array); i++) {
+    VALUE entry = rb_ary_entry(array, i);
+    if(TYPE(entry) == T_CLASS) {
+      rb_ary_push(type_strings, entry);
+    } else if (TYPE(entry) == T_ARRAY) {
+      for (j = 0; j < RARRAY_LEN(entry); j++) {
+        VALUE sub_entry = rb_ary_entry(entry, j);
+        if(TYPE(sub_entry) == T_CLASS) {
+          rb_ary_push(type_strings, sub_entry);
+        } else {
+          rb_raise(eArgumentError, "Invalid type given");
+        }
+      }
+    } else {
+      rb_raise(eArgumentError, "Invalid type given");
+    }
+  }
+
+  rb_iv_set(self, "@field_types", type_strings);
+
   return array;
 }
 
-static VALUE cCommand_quote_boolean(VALUE self, VALUE value) {
+static VALUE cConnection_quote_boolean(VALUE self, VALUE value) {
   return rb_tainted_str_new2(value == Qtrue ? "'t'" : "'f'");
 }
 
-static VALUE cCommand_quote_string(VALUE self, VALUE string) {
+static VALUE cConnection_quote_string(VALUE self, VALUE string) {
   const char *source = StringValuePtr(string);
   char *escaped_with_quotes;
+  VALUE result;
 
   // Wrap the escaped string in single-quotes, this is DO's convention
   escaped_with_quotes = sqlite3_mprintf("%Q", source);
 
-  return rb_tainted_str_new2(escaped_with_quotes);
+  result = rb_tainted_str_new2(escaped_with_quotes);
+  sqlite3_free(escaped_with_quotes);
+  return result;
 }
 
 static VALUE build_query_from_args(VALUE klass, int count, VALUE *args) {
   VALUE query = rb_iv_get(klass, "@text");
-  if ( count > 0 ) {
-    int i;
-    VALUE array = rb_ary_new();
-    for ( i = 0; i < count; i++) {
-      rb_ary_push(array, (VALUE)args[i]);
-    }
-    query = rb_funcall(klass, ID_ESCAPE, 1, array);
+  int i;
+  VALUE array = rb_ary_new();
+  for ( i = 0; i < count; i++) {
+    rb_ary_push(array, (VALUE)args[i]);
   }
+  query = rb_funcall(klass, ID_ESCAPE, 1, array);
   return query;
 }
 
@@ -485,17 +535,13 @@ static VALUE cCommand_execute_reader(int argc, VALUE *argv, VALUE self) {
   }
 
   field_count = sqlite3_column_count(sqlite3_reader);
-
   reader = rb_funcall(cReader, ID_NEW, 0);
+
   rb_iv_set(reader, "@reader", Data_Wrap_Struct(rb_cObject, 0, 0, sqlite3_reader));
   rb_iv_set(reader, "@field_count", INT2NUM(field_count));
 
   field_names = rb_ary_new();
   field_types = rb_iv_get(self, "@field_types");
-
-  // if ( field_types == Qnil ) {
-  //  field_types = rb_ary_new();
-  // }
 
   if ( field_types == Qnil || 0 == RARRAY_LEN(field_types) ) {
     field_types = rb_ary_new();
@@ -503,7 +549,7 @@ static VALUE cCommand_execute_reader(int argc, VALUE *argv, VALUE self) {
     // Whoops...  wrong number of types passed to set_types.  Close the reader and raise
     // and error
     rb_funcall(reader, rb_intern("close"), 0);
-    rb_raise(eSqlite3Error, "Field-count mismatch. Expected %ld fields, but the query yielded %d", RARRAY_LEN(field_types), field_count);
+    rb_raise(eArgumentError, "Field-count mismatch. Expected %ld fields, but the query yielded %d", RARRAY_LEN(field_types), field_count);
   }
 
   for ( i = 0; i < field_count; i++ ) {
@@ -539,6 +585,7 @@ static VALUE cReader_next(VALUE self) {
   int ft_length;
   VALUE arr = rb_ary_new();
   VALUE field_types;
+  VALUE field_type;
   VALUE value;
 
   Data_Get_Struct(rb_iv_get(self, "@reader"), sqlite3_stmt, reader);
@@ -552,11 +599,13 @@ static VALUE cReader_next(VALUE self) {
   rb_iv_set(self, "@state", INT2NUM(result));
 
   if ( result != SQLITE_ROW ) {
-    return Qnil;
+    rb_iv_set(self, "@values", Qnil);
+    return Qfalse;
   }
 
   for ( i = 0; i < field_count; i++ ) {
-    value = typecast(reader, i, rb_ary_entry(field_types, i));
+    field_type = rb_ary_entry(field_types, i);
+    value = typecast(reader, i, field_type);
     rb_ary_push(arr, value);
   }
 
@@ -569,6 +618,7 @@ static VALUE cReader_values(VALUE self) {
   VALUE state = rb_iv_get(self, "@state");
   if ( state == Qnil || NUM2INT(state) != SQLITE_ROW ) {
     rb_raise(eSqlite3Error, "Reader is not initialized");
+    return Qnil;
   }
   else {
     return rb_iv_get(self, "@values");
@@ -583,19 +633,14 @@ static VALUE cReader_field_count(VALUE self) {
   return rb_iv_get(self, "@field_count");
 }
 
-static VALUE cReader_row_count(VALUE self) {
-  return rb_iv_get(self, "@row_count");
-}
-
 void Init_do_sqlite3_ext() {
   rb_require("bigdecimal");
   rb_require("date");
 
   // Get references classes needed for Date/Time parsing
-  rb_cDate = CONST_GET(rb_mKernel, "Date");
-  rb_cDateTime = CONST_GET(rb_mKernel, "DateTime");
-  rb_cTime = CONST_GET(rb_mKernel, "Time");
-  rb_cBigDecimal = CONST_GET(rb_mKernel, "BigDecimal");
+  rb_cDate = RUBY_CLASS("Date");
+  rb_cDateTime = RUBY_CLASS( "DateTime");
+  rb_cBigDecimal = RUBY_CLASS("BigDecimal");
 
   rb_funcall(rb_mKernel, rb_intern("require"), 1, rb_str_new2("data_objects"));
 
@@ -609,6 +654,10 @@ void Init_do_sqlite3_ext() {
   ID_DEBUG = rb_intern("debug");
   ID_LEVEL = rb_intern("level");
 
+  // Get references to the Extlib module
+  mExtlib = CONST_GET(rb_mKernel, "Extlib");
+  rb_cByteArray = CONST_GET(mExtlib, "ByteArray");
+
   // Get references to the DataObjects module and its classes
   mDO = CONST_GET(rb_mKernel, "DataObjects");
   cDO_Quoting = CONST_GET(mDO, "Quoting");
@@ -620,19 +669,19 @@ void Init_do_sqlite3_ext() {
   // Initialize the DataObjects::Sqlite3 module, and define its classes
   mSqlite3 = rb_define_module_under(mDO, "Sqlite3");
 
+  eArgumentError = CONST_GET(rb_mKernel, "ArgumentError");
   eSqlite3Error = rb_define_class("Sqlite3Error", rb_eStandardError);
 
   cConnection = SQLITE3_CLASS("Connection", cDO_Connection);
   rb_define_method(cConnection, "initialize", cConnection_initialize, 1);
   rb_define_method(cConnection, "dispose", cConnection_dispose, 0);
+  rb_define_method(cConnection, "quote_boolean", cConnection_quote_boolean, 1);
+  rb_define_method(cConnection, "quote_string", cConnection_quote_string, 1);
 
   cCommand = SQLITE3_CLASS("Command", cDO_Command);
-  rb_include_module(cCommand, cDO_Quoting);
-  rb_define_method(cCommand, "set_types", cCommand_set_types, 1);
+  rb_define_method(cCommand, "set_types", cCommand_set_types, -1);
   rb_define_method(cCommand, "execute_non_query", cCommand_execute_non_query, -1);
   rb_define_method(cCommand, "execute_reader", cCommand_execute_reader, -1);
-  rb_define_method(cCommand, "quote_boolean", cCommand_quote_boolean, 1);
-  rb_define_method(cCommand, "quote_string", cCommand_quote_string, 1);
 
   cResult = SQLITE3_CLASS("Result", cDO_Result);
 
@@ -642,12 +691,16 @@ void Init_do_sqlite3_ext() {
   rb_define_method(cReader, "values", cReader_values, 0);
   rb_define_method(cReader, "fields", cReader_fields, 0);
   rb_define_method(cReader, "field_count", cReader_field_count, 0);
-  rb_define_method(cReader, "row_count", cReader_row_count, 0);
 
   OPEN_FLAG_READONLY = rb_str_new2("read_only");
+  rb_global_variable(&OPEN_FLAG_READONLY);
   OPEN_FLAG_READWRITE = rb_str_new2("read_write");
+  rb_global_variable(&OPEN_FLAG_READWRITE);
   OPEN_FLAG_CREATE = rb_str_new2("create");
+  rb_global_variable(&OPEN_FLAG_CREATE);
   OPEN_FLAG_NO_MUTEX = rb_str_new2("no_mutex");
+  rb_global_variable(&OPEN_FLAG_NO_MUTEX);
   OPEN_FLAG_FULL_MUTEX = rb_str_new2("full_mutex");
+  rb_global_variable(&OPEN_FLAG_FULL_MUTEX);
 
 }

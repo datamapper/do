@@ -27,13 +27,6 @@ task :release do
   end
 end
 
-desc 'Run CI tasks'
-task :ci do
-  projects.each do |gem_name|
-    Dir.chdir(gem_name){ rake 'ci' }
-  end
-end
-
 desc 'Run the specification'
 task :spec do
   projects.each do |gem_name|
@@ -55,11 +48,9 @@ task :package do
   end
 end
 
-%w[ clean clobber ].each do |command|
-  desc "#{command} temporary files"
-  task command do
-    projects.each do |gem_name|
-      Dir.chdir(gem_name){ rake command }
-    end
+desc "clean temporary files"
+task :clean do
+  projects.each do |gem_name|
+    Dir.chdir(gem_name){ rake :clean }
   end
 end

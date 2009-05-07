@@ -56,6 +56,8 @@ module DataObjects
         end
 
         include Extlib::Pooling
+        include Quoting
+
         alias close release
       end
 

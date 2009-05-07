@@ -9,9 +9,6 @@ describe DataObjects::Result do
 
     result = command.execute_non_query
 
-    # In case the driver needs to access the command or connection to load additional data.
-    result.instance_variables.map { |i| i.to_s }.should include('@command')
-
     # Affected Rows:
     result.should respond_to(:to_i)
     result.to_i.should == 0

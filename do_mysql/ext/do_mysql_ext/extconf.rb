@@ -32,6 +32,7 @@ end
 # ruby extconf.rb --with-mysql-config=/path/to/mysql_config
 if RUBY_PLATFORM =~ /mswin|mingw/
   dir_config('mysql')
+  have_header 'my_global.h'
   have_header 'mysql.h' || exit(1)
   have_library 'libmysql' || exit(1)
   have_func('mysql_query', 'mysql.h') || exit(1)

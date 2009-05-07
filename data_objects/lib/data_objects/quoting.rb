@@ -1,35 +1,6 @@
 module DataObjects
 
   module Quoting
-    # Escape a string of SQL with a set of arguments.
-    # The first argument is assumed to be the SQL to escape,
-    # the remaining arguments (if any) are assumed to be
-    # values to escape and interpolate.
-    #
-    # ==== Examples
-    #   escape_sql("SELECT * FROM zoos")
-    #   # => "SELECT * FROM zoos"
-    #
-    #   escape_sql("SELECT * FROM zoos WHERE name = ?", "Dallas")
-    #   # => "SELECT * FROM zoos WHERE name = `Dallas`"
-    #
-    #   escape_sql("SELECT * FROM zoos WHERE name = ? AND acreage > ?", "Dallas", 40)
-    #   # => "SELECT * FROM zoos WHERE name = `Dallas` AND acreage > 40"
-    #
-    # ==== Warning
-    # This method is meant mostly for adapters that don't support
-    # bind-parameters.
-    def escape_sql(args)
-      sql = @text.dup
-
-      unless args.empty?
-        sql.gsub!(/\?/) do |x|
-          quote_value(args.shift)
-        end
-      end
-
-      sql
-    end
 
     # Quote a value of any of the recognised data types
     def quote_value(value)
@@ -38,7 +9,6 @@ module DataObjects
       case value
         when Numeric then quote_numeric(value)
         when String then quote_string(value)
-        when Class then quote_class(value)
         when Time then quote_time(value)
         when DateTime then quote_datetime(value)
         when Date then quote_date(value)
@@ -47,6 +17,8 @@ module DataObjects
         when Range then quote_range(value)
         when Symbol then quote_symbol(value)
         when Regexp then quote_regexp(value)
+        when ::Extlib::ByteArray then quote_byte_array(value)
+        when Class then quote_class(value)
         else
           if value.respond_to?(:to_sql)
             value.to_sql
@@ -78,7 +50,13 @@ module DataObjects
 
     # Convert a Time to standard YMDHMS format (with microseconds if necessary)
     def quote_time(value)
-      "'#{value.strftime('%Y-%m-%d %H:%M:%S')}" + (value.usec > 0 ? ".#{value.usec.to_s.rjust(6, '0')}'" : "'")
+      offset = value.utc_offset
+      if offset >= 0
+        offset_string = "+#{sprintf("%02d", offset / 3600)}:#{sprintf("%02d", (offset % 3600) / 60)}"
+      elsif offset < 0
+        offset_string = "-#{sprintf("%02d", -offset / 3600)}:#{sprintf("%02d", (-offset % 3600) / 60)}"
+      end
+      "'#{value.strftime('%Y-%m-%dT%H:%M:%S')}" << (value.usec > 0 ? ".#{value.usec.to_s.rjust(6, '0')}" : "") << offset_string << "'"
     end
 
     # Quote a DateTime by relying on it's own to_s conversion
@@ -111,6 +89,11 @@ module DataObjects
     def quote_regexp(value)
       quote_string(value.source)
     end
+
+    def quote_byte_array(value)
+      quote_string(value.source)
+    end
+
   end
 
 end

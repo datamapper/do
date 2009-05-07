@@ -15,7 +15,7 @@ def setup_java_extension(extension_name, gem_spec = nil, opts = {})
   namespace :compile do
 
     desc "Compile Java Extension for JRuby"
-    task :jruby do
+    task :jruby => [ :clean ] do
       pkg_classes = File.join(*%w(pkg classes))
       mkdir_p pkg_classes
 
@@ -37,7 +37,14 @@ def setup_java_extension(extension_name, gem_spec = nil, opts = {})
         classpath_arg = java_classpath_arg '../do_jdbc/lib/do_jdbc_internal.jar'
       end
 
-      sh "javac -target 1.5 -source 1.5 -Xlint:unchecked -d pkg/classes #{classpath_arg} #{FileList["#{opts[:source_dir]}/**/*.java"].join(' ')}"
+      # Check if DO_JAVA_DEBUG env var was set to TRUE
+      # TRUE means compile java classes with debug info
+      if ENV['DO_JAVA_DEBUG'] && ENV['DO_JAVA_DEBUG'].upcase.eql?("TRUE")
+        sh "javac -target 1.5 -source 1.5 -Xlint:unchecked -g -d pkg/classes #{classpath_arg} #{FileList["#{opts[:source_dir]}/**/*.java"].join(' ')}"
+      else
+        sh "javac -target 1.5 -source 1.5 -Xlint:unchecked -d pkg/classes #{classpath_arg} #{FileList["#{opts[:source_dir]}/**/*.java"].join(' ')}"
+      end
+
       sh "jar cf lib/#{ext_name} -C #{pkg_classes} ."
     end
 

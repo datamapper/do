@@ -1,20 +1,24 @@
 package data_objects;
 
 import data_objects.drivers.DriverDefinition;
-import java.io.UnsupportedEncodingException;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.sql.Timestamp;
 import java.sql.Types;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.GregorianCalendar;
+import java.util.TimeZone;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.jruby.Ruby;
 import org.jruby.RubyArray;
 import org.jruby.RubyBigDecimal;
+import org.jruby.RubyBignum;
 import org.jruby.RubyClass;
 import org.jruby.RubyModule;
 import org.jruby.RubyNumeric;
@@ -22,15 +26,16 @@ import org.jruby.RubyObject;
 import org.jruby.RubyObjectAdapter;
 import org.jruby.RubyRange;
 import org.jruby.RubyString;
+import org.jruby.RubyTime;
 import org.jruby.anno.JRubyClass;
 import org.jruby.anno.JRubyMethod;
+import org.jruby.exceptions.RaiseException;
 import org.jruby.javasupport.Java;
 import org.jruby.javasupport.JavaEmbedUtils;
 import org.jruby.javasupport.JavaObject;
 import org.jruby.runtime.Block;
 import org.jruby.runtime.ObjectAllocator;
 import org.jruby.runtime.builtin.IRubyObject;
-
 import static data_objects.DataObjects.DATA_OBJECTS_MODULE_NAME;
 
 /**
@@ -87,10 +92,13 @@ public class Command extends RubyObject {
         Ruby runtime = recv.getRuntime();
         IRubyObject connection_instance = api.getInstanceVariable(recv, "@connection");
         IRubyObject wrapped_jdbc_connection = api.getInstanceVariable(connection_instance, "@connection");
-        IRubyObject insert_key = runtime.newFixnum(0);
-        RubyClass resultClass = Result.createResultClass(runtime, moduleName, errorName, driver);
+        if (wrapped_jdbc_connection.isNil()) {
+            throw DataObjectsUtils.newDriverError(runtime, errorName, "This connection has already been closed.");
+        }
+        java.sql.Connection conn = getConnection(wrapped_jdbc_connection);
 
-        java.sql.Connection conn = (java.sql.Connection) wrapped_jdbc_connection.dataGetStruct();
+        IRubyObject insert_key = runtime.getNil();
+        RubyClass resultClass = Result.createResultClass(runtime, moduleName, errorName, driver);
         // affectedCount == 1 means 1 updated row
         // or 1 row in result set that represents returned key (insert...returning),
         // other values represents numer of updated rows
@@ -99,7 +107,7 @@ public class Command extends RubyObject {
         java.sql.ResultSet keys = null;
 
 
-//        String sqlText = prepareSqlTextForPs(api.getInstanceVariable(recv, "@text").asJavaString(), recv, args);
+        // String sqlText = prepareSqlTextForPs(api.getInstanceVariable(recv, "@text").asJavaString(), recv, args);
         String doSqlText = api.convertToRubyString(api.getInstanceVariable(recv, "@text")).getUnicodeValue();
         String sqlText = prepareSqlTextForPs(doSqlText, recv, args);
 
@@ -179,7 +187,7 @@ public class Command extends RubyObject {
         } catch (SQLException sqle) {
             // TODO: log
             //sqle.printStackTrace();
-            throw DataObjectsUtils.newDriverError(runtime, errorName, sqle.getLocalizedMessage());
+            throw newQueryError(runtime, sqle, sqlStatement);
         } finally {
             if (sqlStatement != null) {
                 try {
@@ -207,12 +215,14 @@ public class Command extends RubyObject {
         Ruby runtime = recv.getRuntime();
         IRubyObject connection_instance = api.getInstanceVariable(recv, "@connection");
         IRubyObject wrapped_jdbc_connection = api.getInstanceVariable(connection_instance, "@connection");
-        RubyClass readerClass = Reader.createReaderClass(runtime, moduleName, errorName, driver);
+        if (wrapped_jdbc_connection.isNil()) {
+            throw DataObjectsUtils.newDriverError(runtime, errorName, "This connection has already been closed.");
+        }
+        java.sql.Connection conn = getConnection(wrapped_jdbc_connection);
 
-        java.sql.Connection conn = (java.sql.Connection) wrapped_jdbc_connection.dataGetStruct();
+        RubyClass readerClass = Reader.createReaderClass(runtime, moduleName, errorName, driver);
         boolean inferTypes = false;
         int columnCount = 0;
-        IRubyObject rowCount = runtime.getNil();
         PreparedStatement sqlStatement = null;
         ResultSet resultSet = null;
         ResultSetMetaData metaData = null;
@@ -230,7 +240,7 @@ public class Command extends RubyObject {
                            driver.supportsJdbcScrollableResultSets() ? ResultSet.TYPE_SCROLL_INSENSITIVE : ResultSet.TYPE_FORWARD_ONLY,
                            ResultSet.CONCUR_READ_ONLY);
 
-            //sqlStatement.setMaxRows();  // TODO Important when there is many rows and we are trying count them.
+            //sqlStatement.setMaxRows();
             prepareStatementFromArgs(sqlStatement, recv, args);
 
             long startTime = System.currentTimeMillis();
@@ -241,8 +251,6 @@ public class Command extends RubyObject {
 
             metaData = resultSet.getMetaData();
             columnCount = metaData.getColumnCount();
-            //XXX counting rows implies lost of lazy loading with scrollable RS :(
-            rowCount = countRows(resultSet,conn,sqlText,runtime,recv,args);
 
             // pass the response to the reader
             IRubyObject wrappedResultSet = Java.java_to_ruby(recv, JavaObject.wrap(recv.getRuntime(), resultSet), Block.NULL_BLOCK);
@@ -260,11 +268,10 @@ public class Command extends RubyObject {
 
             // save the field_count in reader
             api.setInstanceVariable(reader, "@field_count", runtime.newFixnum(columnCount));
-            api.setInstanceVariable(reader, "@row_count", rowCount);
 
             // get the field types
             RubyArray field_names = runtime.newArray();
-            IRubyObject field_types = api.getInstanceVariable(recv , "@types");
+            IRubyObject field_types = api.getInstanceVariable(recv , "@field_types");
 
             // If no types are passed in, infer them
             if (field_types == null) {
@@ -279,10 +286,9 @@ public class Command extends RubyObject {
                     // Wrong number of fields passed to set_types. Close the reader
                     // and raise an error.
                     api.callMethod(reader, "close");
-                    throw DataObjectsUtils.newDriverError(runtime, errorName,
-                                                          String.format("Field-count mismatch. Expected %1$d fields, but the query yielded %2$d",
-                                                                        fieldTypesCount,
-                                                                        columnCount));
+                    throw runtime.newArgumentError(String.format("Field-count mismatch. Expected %1$d fields, but the query yielded %2$d",
+                                                                 fieldTypesCount,
+                                                                 columnCount));
                 }
             }
 
@@ -299,7 +305,7 @@ public class Command extends RubyObject {
 
             // set the reader @field_names and @types (guessed or otherwise)
             api.setInstanceVariable(reader, "@fields", field_names);
-            api.setInstanceVariable(reader, "@types", field_types);
+            api.setInstanceVariable(reader, "@field_types", field_types);
 
             // keep the statement open
 
@@ -309,7 +315,7 @@ public class Command extends RubyObject {
             //sqlStatement = null;
         } catch (SQLException sqle) {
             // TODO: log sqle.printStackTrace();
-            throw DataObjectsUtils.newDriverError(runtime, errorName, sqle.getLocalizedMessage());
+            throw newQueryError(runtime, sqle, sqlStatement);
         } finally {
             //if (sqlStatement != null) {
             //    try {
@@ -323,9 +329,29 @@ public class Command extends RubyObject {
         return reader;
     }
 
-    @JRubyMethod(required = 1)
-    public static IRubyObject set_types(IRubyObject recv, IRubyObject value) {
-        IRubyObject types = api.setInstanceVariable(recv, "@types", value);
+    @JRubyMethod(rest = true)
+    public static IRubyObject set_types(IRubyObject recv, IRubyObject[] args) {
+        Ruby runtime = recv.getRuntime();
+        RubyArray types = RubyArray.newArray(runtime, args);
+        RubyArray type_strings = RubyArray.newArray(runtime);
+
+        for (IRubyObject arg : args) {
+            if (arg instanceof RubyClass) {
+                type_strings.append(arg);
+            } else if (arg instanceof RubyArray) {
+                for (IRubyObject sub_arg : arg.convertToArray().toJavaArray()) {
+                    if (sub_arg instanceof RubyClass) {
+                        type_strings.append(sub_arg);
+                    } else {
+                        throw runtime.newArgumentError("Invalid type given");
+                    }
+                }
+            } else {
+                throw runtime.newArgumentError("Invalid type given");
+            }
+        }
+
+        api.setInstanceVariable(recv, "@field_types", type_strings);
         return types;
     }
 
@@ -338,6 +364,11 @@ public class Command extends RubyObject {
     }
 
     // ---------------------------------------------------------- HELPER METHODS
+
+    private static java.sql.Connection getConnection(IRubyObject recv) {
+        java.sql.Connection conn = (java.sql.Connection) recv.dataGetStruct();
+        return conn;
+    }
 
     /**
      * Unmarshal a java.sql.Resultset containing generated keys, and return a
@@ -365,72 +396,19 @@ public class Command extends RubyObject {
         }
     }
 
-    /**
-     * Count rows using scrollable RS (if supported)
-     * or create second query and count rows of returned RS
-     *
-     * @param runtime
-     * @param rs
-     * @return number of rows
-     * @throws java.sql.SQLException
-     */
-    private static IRubyObject countRows(ResultSet rs,java.sql.Connection conn,
-            String sqlText,Ruby runtime, IRubyObject recv, IRubyObject[] args)
-            throws SQLException{
-         int rowCount = 0;
-         if(driver.supportsJdbcScrollableResultSets()){
-            int pos = rs.getRow();
-            boolean afterLast = false;
-            if(pos == 0){
-                afterLast = rs.isAfterLast();
-            }
-            try{
-                if(rs.last() == true){
-                    rowCount = rs.getRow();
-                }
-                return runtime.newFixnum(rowCount);
-            }finally{
-                // XXX Warning: MySQL throws Exception on rs.absoulte(0) ("point before first row")
-                // http://kickjava.com/src/com/mysql/jdbc/ResultSet.java.htm line:2115
-                if(pos == 0){
-                    if(afterLast == false){
-                        rs.beforeFirst();
-                    }else{
-                        rs.afterLast();
-                    }
-                }else{
-                    rs.absolute(pos);
-                }
-            }
-         }else{
-                // TODO
-                // XXX dirty hack for Sqlite3
-                // Sqlite3 is never used in server mode so
-                // cost of transfer data from db to client
-                // is low and we may execute query two times
-                //
-                // There is a solution for this: Take lazy aproach
-                // and count rows during _first_ invocation
-                // of Reader#row_count and cache that value
-                // If nobody uses row_count there will no second query.
-                PreparedStatement sqlStatement = null;
-                ResultSet resultSet = null;
-                int rowsNr = 0;
-                sqlStatement = conn.prepareStatement(sqlText, ResultSet.TYPE_FORWARD_ONLY,
-                           ResultSet.CONCUR_READ_ONLY);
-                prepareStatementFromArgs(sqlStatement, recv, args);
-                resultSet = sqlStatement.executeQuery();
-                while(resultSet.next()){
-                    rowsNr ++;
-                }
-                if(resultSet != null){
-                    resultSet.close();
-                }
-                if(sqlStatement != null){
-                    sqlStatement.close();
-                }
-                return runtime.newFixnum(rowsNr);
-         }
+    private static RaiseException newQueryError(Ruby runtime, SQLException sqle,
+            Statement statement) {
+        // TODO: provide an option to display extended debug information, for
+        // driver developers, etc. Otherwise, keep it off to keep noise down for
+        // end-users.
+        Pattern p = Pattern.compile("Statement parameter (\\d+) not set.");
+        Matcher m = p.matcher(sqle.getMessage());
+
+        if (m.matches()) {
+            return runtime.newArgumentError("Binding mismatch: 0 for " + m.group(1));
+        } else {
+            return DataObjectsUtils.newDriverError(runtime, errorName, sqle, statement);
+        }
     }
 
     /**
@@ -453,17 +431,21 @@ public class Command extends RubyObject {
     private static String prepareSqlTextForPs(String doSqlText, IRubyObject recv, IRubyObject[] args) {
 
         if (args.length == 0) return doSqlText;
-
+        // long timeStamp = System.currentTimeMillis(); // XXX for debug
+        // System.out.println(""+timeStamp+" SQL before replacements @: " + doSqlText); // XXX for debug
         String psSqlText = doSqlText;
+        int addedSymbols=0;
 
         for (int i = 0; i < args.length; i++) {
+
             if (args[i] instanceof RubyArray) {
                 // replace "?" with "(?,?)"
-
                 // calculate replacement string, depending on the length of the
                 // RubyArray - i.e. should it be "(?)" or "(?,?,?)
+                // System.out.println(""+timeStamp+" RubyArray @: " + args[i]); // XXX for debug
                 StringBuffer replaceSb = new StringBuffer("(");
                 int arrayLength = args[i].convertToArray().getLength();
+
                 for (int j = 0; j < arrayLength; j++) {
                     replaceSb.append("?");
                     if (j < arrayLength - 1) replaceSb.append(",");
@@ -471,35 +453,46 @@ public class Command extends RubyObject {
                 replaceSb.append(")");
 
                 Pattern pp = Pattern.compile("\\?");
-                Matcher pm = pp.matcher(doSqlText);
+                Matcher pm = pp.matcher(psSqlText);
                 StringBuffer sb = new StringBuffer();
 
                 int count = 0;
+                lbWhile:
                 while (pm.find()) {
-                    if (count == i) pm.appendReplacement(sb, replaceSb.toString());
+                    if (count == (i+addedSymbols)){
+                        pm.appendReplacement(sb, replaceSb.toString());
+                        addedSymbols += arrayLength-1;
+                        break lbWhile;
+                    }
+                    count++;
                 }
                 pm.appendTail(sb);
                 psSqlText = sb.toString();
-
             } else if (args[i] instanceof RubyRange) {
                 // replace "?" with "(?,?)"
-
+                // System.out.println(""+timeStamp+" RubyRange @: " + args[i]); // XXX for debug
                 Pattern pp = Pattern.compile("\\?");
-                Matcher pm = pp.matcher(doSqlText);
+                Matcher pm = pp.matcher(psSqlText);
                 StringBuffer sb = new StringBuffer();
 
                 int count = 0;
+                lbWhile:
                 while (pm.find()) {
-                    if (count == i) pm.appendReplacement(sb, "(? AND ?)");
+                    if (count ==(i+addedSymbols)){
+                        pm.appendReplacement(sb, "? AND ?"); // XXX was (? AND ?)
+                        addedSymbols += 1;
+                        break lbWhile;
+                    }
+                    count++;
                 }
                 pm.appendTail(sb);
                 psSqlText = sb.toString();
-
             } else {
+                // System.out.println(""+timeStamp+" Nothing @: " + args[i]); // XXX for debug
                 // do nothing
             }
         }
-
+        // System.out.println(""+timeStamp+" SQL after replacements @: " + psSqlText); // XXX for debug
         return psSqlText;
     }
 
@@ -553,11 +546,20 @@ public class Command extends RubyObject {
             }
         } catch (SQLException sqle) {
             // TODO: log sqle.printStackTrace();
-            //throw DataObjectsUtils.newDriverError(runtime, errorName, sqle.getLocalizedMessage());
-            sqle.printStackTrace();
+            // TODO: possibly move this exception string parsing somewhere else
+            Pattern pattern = Pattern.compile("Parameter index out of bounds. (\\d+) is not between valid values of (\\d+) and (\\d+)");
+            Matcher matcher = pattern.matcher(sqle.getMessage());
+            if (matcher.matches()) {
+                throw recv.getRuntime().newArgumentError(String.format("Binding mismatch: %1$d for %2$d",
+                        Integer.parseInt(matcher.group(1)),
+                        Integer.parseInt(matcher.group(2))));
+            } else {
+                throw DataObjectsUtils.newDriverError(recv.getRuntime(), errorName, sqle);
+            }
         }
     }
 
+    private static final DateFormat FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
     /**
      *
      * @param ps the PreparedStatement for which the parameter should be set
@@ -568,26 +570,87 @@ public class Command extends RubyObject {
      */
     private static void setPreparedStatementParam(PreparedStatement ps, IRubyObject recv, IRubyObject arg, int idx)
             throws SQLException {
-        if (arg.getType().equals(RubyType.FIXNUM) || arg.getType().toString().equals(RubyType.FIXNUM.toString())) {
+        Integer jdbcTypeId = null;
+        try{
+            jdbcTypeId = ps.getMetaData().getColumnType(idx);
+        }catch(Exception ex){
+        }
+        String rubyTypeName = arg.getType().getName();
+        if ("Fixnum".equals(rubyTypeName)) {
             ps.setInt(idx, Integer.parseInt(arg.toString()));
-        } else if (arg.getType().toString().equals("NilClass")) {
+        } else if ("Bignum".equals(rubyTypeName)) {
+            ps.setLong(idx, ((RubyBignum) arg).getLongValue());
+        } else if ("Float".equals(rubyTypeName)) {
+            ps.setDouble(idx, RubyNumeric.num2dbl(arg));
+        } else if ("BigDecimal".equals(rubyTypeName)) {
+            ps.setBigDecimal(idx, ((RubyBigDecimal) arg).getValue());
+        } else if ("NilClass".equals(rubyTypeName)) {
+            // XXX In fact this should looks like ps.setNull(idx, Types.YYY); 
+            // where YYY is a JDBC type of column i.e. Types.VARCHAR
+            // but this code works for MySQL :)
             ps.setNull(idx, Types.NULL);
-        } else if (arg.getType().toString().equals("TrueClass") || arg.getType().toString().equals("FalseClass")) {
+        } else if ("TrueClass".equals(rubyTypeName) || "FalseClass".equals(rubyTypeName)) {
             ps.setBoolean(idx, arg.toString().equals("true"));
-        } else if (arg.getType().toString().equals("Class")) {
+        } else if ("Class".equals(rubyTypeName)) {
             ps.setString(idx, arg.toString());
-        } else if (arg.getType().toString().equals("Date")) {
+        } else if ("Extlib::ByteArray".equals(rubyTypeName)) {
+            ps.setBytes(idx, ((RubyString) arg).getBytes());
+            // TODO: add support for ps.setBlob();
+        } else if ("Date".equals(rubyTypeName)) {
             ps.setDate(idx, java.sql.Date.valueOf(arg.toString()));
-        } else if (arg.getType().toString().equals("Time")) {
-            ps.setTime(idx, java.sql.Time.valueOf(arg.toString()));
-        } else if (arg.getType().toString().equals("DateTime")) {
+        } else if ("Time".equals(rubyTypeName)) {
+            RubyTime rubyTime = (RubyTime) arg;
+            java.util.Date date = rubyTime.getJavaDate();
+            GregorianCalendar cal = new GregorianCalendar();
+            cal.setTime(date);
+            cal.setTimeZone(TimeZone.getTimeZone("UTC")); // XXX works only if driver suports Calendars in PS
+            java.sql.Timestamp ts;
+            if(driver.supportsCalendarsInJDBCPreparedStatement() == true){
+                ts = new java.sql.Timestamp(cal.getTime().getTime());
+                ts.setNanos(cal.get(GregorianCalendar.MILLISECOND)*100000);
+            }else{
+                // XXX ugly workaround for MySQL and Hsqldb
+                ts = new Timestamp(cal.get(GregorianCalendar.YEAR)-1900,
+                        cal.get(GregorianCalendar.MONTH),cal.get(GregorianCalendar.DAY_OF_MONTH),
+                        cal.get(GregorianCalendar.HOUR_OF_DAY),cal.get(GregorianCalendar.MINUTE),
+                        cal.get(GregorianCalendar.SECOND),cal.get(GregorianCalendar.MILLISECOND)*100000);
+            }
+            ps.setTimestamp(idx, ts,cal);
+        } else if ("DateTime".equals(rubyTypeName)) {
             ps.setTimestamp(idx, java.sql.Timestamp.valueOf(arg.toString().replace('T', ' ').replaceFirst("[-+]..:..$", "")));
-        } else if (arg.getType().toString().equals(RubyType.BIG_DECIMAL.toString())) {
-            RubyBigDecimal rbBigDec = (RubyBigDecimal) arg;
-            ps.setBigDecimal(idx, rbBigDec.getValue());
+        } else if (arg.toString().indexOf("-") != -1 && arg.toString().indexOf(":") != -1) {
+            // TODO: improve the above string pattern checking
+            // Handle date patterns in strings
+            java.util.Date parsedDate;
+            try {
+                parsedDate = FORMAT.parse(arg.asJavaString().replace('T', ' '));
+                java.sql.Timestamp timestamp = new java.sql.Timestamp(parsedDate.getTime());
+                ps.setTimestamp(idx, timestamp);
+            } catch (ParseException ex) {
+                ps.setString(idx, api.convertToRubyString(arg).getUnicodeValue());
+            }
+        } else if (arg.toString().indexOf(":") != -1 && arg.toString().length() == 8) {
+            // Handle time patterns in strings
+            ps.setTime(idx, java.sql.Time.valueOf(arg.asJavaString()));
         } else {
-            //            ps.setString(idx, arg.toString());
-            ps.setString(idx, api.convertToRubyString(arg).getUnicodeValue());
+            if(jdbcTypeId == null){
+               ps.setString(idx, api.convertToRubyString(arg).getUnicodeValue());
+            }else{
+               // TODO: Here comes conversions like '.execute_reader("2")'
+               // It definitly needs to be refactored...
+               try{
+                   if(jdbcTypeId == Types.VARCHAR){
+                      ps.setString(idx, api.convertToRubyString(arg).getUnicodeValue());
+                   }else if(jdbcTypeId == Types.INTEGER){
+                      ps.setObject(idx,Integer.valueOf(arg.toString()),jdbcTypeId);
+                   }else {
+                      // I'm not sure is it correct in 100%
+                      ps.setString(idx, api.convertToRubyString(arg).getUnicodeValue());
+                   }
+                }catch(NumberFormatException ex){ // i.e Integer.valueOf
+                   ps.setString(idx, api.convertToRubyString(arg).getUnicodeValue());
+                }
+            }
         }
     }
 

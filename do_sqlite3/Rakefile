@@ -3,8 +3,6 @@ require 'rubygems'
 require 'spec/rake/spectask'
 require 'lib/do_sqlite3/version'
 
-
-
 ROOT    = Pathname(__FILE__).dirname.expand_path
 JRUBY   = RUBY_PLATFORM =~ /java/
 WINDOWS = Gem.win_platform?
@@ -15,42 +13,26 @@ EMAIL  = "d.bussink@gmail.com"
 GEM_NAME = "do_sqlite3"
 GEM_VERSION = DataObjects::Sqlite3::VERSION
 GEM_DEPENDENCIES = if JRUBY
-  [["data_objects", GEM_VERSION], ["do_jdbc", GEM_VERSION], ["jdbc-sqlite3", ">=3.5.8"]]
+  [["data_objects", GEM_VERSION], ["do_jdbc", GEM_VERSION], ["jdbc-sqlite3", "~>3.6.3.054"]]
 else
   [["data_objects", GEM_VERSION]]
 end
+GEM_CLEAN = %w[ **/*.db **/*.{o,so,bundle,jar,log,a,gem,dSYM,obj,pdb,exp,DS_Store} ext/do_sqlite3_ext/Makefile ext-java/target ]
+GEM_EXTRAS = { :has_rdoc => false }
 
-# TODO: remove duplicates from here that are already listed in .gitignore
-clean = %w(o bundle jar log a gem dSYM obj pdb lib def exp DS_Store)
-
-GEM_EXTRAS = if WINDOWS
-  {
-    :has_rdoc => false
-  }
-elsif JRUBY
-  {
-    :has_rdoc => false,
-    :platform => 'java'
-  }
+if JRUBY
+  GEM_EXTRAS.update(:platform => 'java')
 else
-  {
-    :has_rdoc => false,
-    :extensions => 'ext/do_sqlite3_ext/extconf.rb'
-  }
+  GEM_EXTRAS.update(:extensions => 'ext/do_sqlite3_ext/extconf.rb')
 end
-
-GEM_CLEAN = ['**/test.db',"**/*.{#{clean.join(",")}}", 'ext/Makefile', 'ext-java/target']
 
 PROJECT_NAME = "dorb"
 PROJECT_URL  = "http://rubyforge.org/projects/dorb"
 PROJECT_DESCRIPTION = PROJECT_SUMMARY = "A DataObject.rb driver for Sqlite3"
 
-
-# RCov is run by default, except on the JRuby platform, or if NO_RCOV env is true
-RUN_RCOV = JRUBY ? false : (ENV.has_key?('NO_RCOV') ? ENV['NO_RCOV'] != 'true' : true)
-
 if (tasks_dir = ROOT.parent + 'tasks').directory?
   require tasks_dir + 'hoe'
+  require tasks_dir + 'ext_helper'
   require tasks_dir + 'ext_helper_java'
 
   setup_java_extension  "#{GEM_NAME}_ext", HOE.spec
@@ -63,154 +45,8 @@ if (tasks_dir = ROOT.parent + 'tasks').directory?
 end
 
 if JRUBY
-  HOE.spec.files += ['lib/do_sqlite3_ext.jar']
+  HOE.spec.files += %w[ lib/do_sqlite3_ext.jar ]
   HOE.spec.require_paths = Dir['lib']
 end
 
-def sudo_gem(cmd)
-  sh "#{SUDO} #{RUBY} -S gem #{cmd}", :verbose => false
-end
-
-# compile the extension
-if JRUBY
-  Rake::Task['compile:jruby'].invoke
-else
-end
-
-# Installation
-
-desc "Install #{GEM_NAME} #{GEM_VERSION}"
-task :install => [ :package ] do
-  sudo_gem "install pkg/#{GEM_NAME}-#{GEM_VERSION} --no-update-sources"
-end
-
-desc "Uninstall #{GEM_NAME} #{GEM_VERSION}"
-task :uninstall => [ :clobber ] do
-  sudo_gem "uninstall #{GEM_NAME} -v#{GEM_VERSION} -I -x"
-end
-
-desc 'Run specifications'
-Spec::Rake::SpecTask.new(:spec) do |t|
-  t.spec_opts << '--format' << 'specdoc' << '--colour'
-  t.spec_opts << '--loadby' << 'random'
-  t.spec_files = Pathname.glob(ENV['FILES'] || 'spec/**/*_spec.rb').map { |f| f.to_s }
-
-  begin
-    t.rcov = RUN_RCOV
-    t.rcov_opts << '--exclude' << 'spec'
-    t.rcov_opts << '--text-summary'
-    t.rcov_opts << '--sort' << 'coverage' << '--sort-reverse'
-  rescue Exception
-    # rcov not installed
-  end
-end
-
-namespace :ci do
-
-  task :prepare do
-    rm_rf ROOT + "ci"
-    mkdir_p ROOT + "ci"
-    mkdir_p ROOT + "ci/doc"
-    mkdir_p ROOT + "ci/cyclomatic"
-    mkdir_p ROOT + "ci/token"
-  end
-
-  task :publish do
-    out = ENV['CC_BUILD_ARTIFACTS'] || "out"
-    mkdir_p out unless File.directory? out
-
-    mv "ci/rspec_report.html", "#{out}/rspec_report.html"
-    mv "ci/coverage", "#{out}/coverage"
-  end
-
-  task :spec => :prepare do
-    Rake::Task[:spec].invoke
-    mv ROOT + "coverage", ROOT + "ci/coverage"
-  end
-
-end
-
-task :ci => ["ci:spec"]
-
-
-# Windows specific stuff. (for cross-compiling a release)
-# You have been warned.
-# Thanks to Luis Lavena for helping through the writing of this.
-# will eventually be replaced with: http://github.com/luislavena/rake-compiler
-
-# use the do directory for the cross-compile stuff
-CCROOT = ROOT.parent
-
-SQLITE_VERSION = '3_6_6_2'
-
-MINGW_PATH = ENV['MINGW_PATH'] || '/usr/i586-mingw32msvc'
-
-if (tasks_dir = ROOT.parent + 'tasks').directory?
-  require tasks_dir + 'win32'
-
-  SQLITE_DIR = "#{CROSS}/sqlite-#{SQLITE_VERSION}"
-
-  namespace :build do
-
-    namespace :win32 do
-
-      desc "Creates cross compiled sqlite3 libraries"
-      task :sqlite3 => ["#{SQLITE_DIR}/include/sqlite3.h", "#{SQLITE_DIR}/lib/libsqlite3.a"]
-
-      directory SQLITE_DIR
-      directory "#{SQLITE_DIR}/include"
-      directory "#{SQLITE_DIR}/lib"
-
-      file "#{SQLITE_DIR}/include/sqlite3.h" => ["#{SQLITE_DIR}/include", "#{STASH}/sqlite-amalgamation-#{SQLITE_VERSION}.zip"] do |t|
-        when_writing "creating sqlite3.h" do
-          cd(t.prerequisites[0]) do
-            sh "unzip #{t.prerequisites[1]}"
-            touch t.name
-          end
-        end
-      end
-
-      file "#{SQLITE_DIR}/lib/libsqlite3.a" => ["#{SQLITE_DIR}/lib", "#{SQLITE_DIR}/sqlite3.dll"] do |t|
-        when_writing "creating libsqlite3.a" do
-          sh "#{MINGW_PATH}/bin/dlltool --dllname #{SQLITE_DIR}/sqlite3.dll --def #{SQLITE_DIR}/sqlite3.def --output-lib #{t.name}"
-        end
-      end
-
-      file "#{SQLITE_DIR}/sqlite3.dll" => [SQLITE_DIR, "#{STASH}/sqlitedll-#{SQLITE_VERSION}.zip"] do |t|
-        when_writing "creating sqlite3.dll" do
-          cd(SQLITE_DIR) do
-            sh "unzip #{t.prerequisites[1]}"
-            touch t.name
-          end
-        end
-      end
-
-      # download files
-      file "#{STASH}/sqlite-amalgamation-#{SQLITE_VERSION}.zip" => STASH do |t|
-        download_file(STASH, "http://www.sqlite.org/#{File.basename(t.name)}")
-      end
-
-      file "#{STASH}/sqlitedll-#{SQLITE_VERSION}.zip" => STASH do |t|
-        download_file(STASH, "http://www.sqlite.org/#{File.basename(t.name)}")
-      end
-    end
-  end
-
-  task :cross => 'build:win32:sqlite3'
-end
-
-begin
-  gem('rake-compiler')
-  require 'rake/extensiontask'
-  Rake::ExtensionTask.new('do_sqlite3_ext', HOE.spec) do |ext|
-    ext.cross_compile = true                # enable cross compilation (requires cross compile toolchain)
-    ext.cross_platform = 'x86-mswin32-60'
-    ext.cross_config_options << "--with-sqlite3-dir=#{SQLITE_DIR}"
-  end
-rescue LoadError
-  warn "To cross-compile, install rake-compiler (gem install rake-compiler)"
-  if tasks_dir.directory?
-    require tasks_dir + 'ext_helper'
-    setup_c_extension('do_sqlite3_ext', HOE.spec)
-  end
-end
+Dir['tasks/*.rake'].each { |f| import f }

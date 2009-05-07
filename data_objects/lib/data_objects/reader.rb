@@ -7,7 +7,7 @@ module DataObjects
       raise NotImplementedError.new
     end
 
-    # Return the array of field values for the current row. Not legal after next! has returned false or if there were no rows.
+    # Return the array of field values for the current row. Not legal after next! has returned false or before it's been called
     def values
       raise NotImplementedError.new
     end
@@ -17,18 +17,13 @@ module DataObjects
       raise NotImplementedError.new
     end
 
-    # Discard the current row and read the next one (returning true), or return nil if there is no further row.
+    # Discard the current row (if any) and read the next one (returning true), or return nil if there is no further row.
     def next!
       raise NotImplementedError.new
     end
 
     # Return the number of fields in the result set.
     def field_count
-      raise NotImplementedError.new
-    end
-
-    # Return the number of rows in the result set, or nil if the count is not yet known.
-    def row_count
       raise NotImplementedError.new
     end
 

@@ -13,7 +13,7 @@ AUTHOR = "Alex Coles"
 EMAIL  = "alex@alexcolesportfolio.com"
 GEM_NAME = "do_hsqldb"
 GEM_VERSION = DataObjects::Hsqldb::VERSION
-GEM_DEPENDENCIES = ["data_objects", GEM_VERSION], ["do_jdbc", GEM_VERSION], ["jdbc-hsqldb", ">=1.8.0"]
+GEM_DEPENDENCIES = ["data_objects", GEM_VERSION], ["do_jdbc", GEM_VERSION], ["jdbc-hsqldb", "~>1.8.0"]
 GEM_CLEAN = ['test.db.*','mem.*','log/*','test/reports', 'lib/**/*.jar','ext-java/target']
 GEM_EXTRAS = { :platform => 'java', :has_rdoc => false }
 
@@ -49,7 +49,7 @@ task :install => [ :package ] do
 end
 
 desc "Uninstall #{GEM_NAME} #{GEM_VERSION}"
-task :uninstall => [ :clobber ] do
+task :uninstall => [ :clean ] do
   sudo_gem "uninstall #{GEM_NAME} -v#{GEM_VERSION} -I -x"
 end
 

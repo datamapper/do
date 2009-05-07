@@ -41,6 +41,7 @@ def setup_c_extension(extension_name, gem_spec = nil)
         ruby 'extconf.rb'
       end
     end
+
     task "lib/#{ext_name}" => ['lib', "#{ext_dir}/#{ext_name}"] do
       cp "#{ext_dir}/#{ext_name}", "lib/#{ext_name}"
     end

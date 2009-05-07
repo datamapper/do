@@ -35,5 +35,4 @@ HOE = Hoe.new(GEM_NAME, GEM_VERSION) do |p|
   GEM_DEPENDENCIES.each do |dep|
     p.extra_deps << dep
   end
-
 end

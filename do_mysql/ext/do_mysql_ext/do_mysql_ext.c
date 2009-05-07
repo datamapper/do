@@ -28,8 +28,10 @@
 #endif
 
 #ifdef _WIN32
+#define cCommand_execute cCommand_execute_sync
 #define do_int64 signed __int64
 #else
+#define cCommand_execute cCommand_execute_async
 #define do_int64 signed long long int
 #endif
 
@@ -39,7 +41,6 @@ static ID ID_TO_F;
 static ID ID_TO_S;
 static ID ID_TO_TIME;
 static ID ID_NEW;
-static ID ID_NEW_RATIONAL;
 static ID ID_NEW_DATE;
 static ID ID_CONST_GET;
 static ID ID_RATIONAL;
@@ -49,6 +50,9 @@ static ID ID_STRFTIME;
 static ID ID_LOGGER;
 static ID ID_DEBUG;
 static ID ID_LEVEL;
+
+// Reference to Extlib module
+static VALUE mExtlib;
 
 // References to DataObjects base classes
 static VALUE mDO;
@@ -62,6 +66,7 @@ static VALUE cDO_Reader;
 static VALUE rb_cDate;
 static VALUE rb_cDateTime;
 static VALUE rb_cBigDecimal;
+static VALUE rb_cByteArray;
 
 // Classes that we'll build in Init
 static VALUE mDOMysql;
@@ -70,61 +75,44 @@ static VALUE cCommand;
 static VALUE cResult;
 static VALUE cReader;
 static VALUE eMysqlError;
+static VALUE eArgumentError;
 
 // Figures out what we should cast a given mysql field type to
 static VALUE infer_ruby_type(MYSQL_FIELD *field) {
-
-  char* ruby_type;
-
   switch(field->type) {
-    case MYSQL_TYPE_NULL: {
-      ruby_type = NULL;
-      break;
-    }
-    case MYSQL_TYPE_TINY: {
-      ruby_type = "TrueClass";
-      break;
-    }
+    case MYSQL_TYPE_NULL:
+      return Qnil;
+    case MYSQL_TYPE_TINY:
+      return rb_cTrueClass;
     case MYSQL_TYPE_BIT:
     case MYSQL_TYPE_SHORT:
     case MYSQL_TYPE_LONG:
     case MYSQL_TYPE_INT24:
     case MYSQL_TYPE_LONGLONG:
-    case MYSQL_TYPE_YEAR: {
-      ruby_type = "Fixnum";
-      break;
-    }
+    case MYSQL_TYPE_YEAR:
+      return rb_cInteger;
+    case MYSQL_TYPE_NEWDECIMAL:
     case MYSQL_TYPE_DECIMAL:
-    case MYSQL_TYPE_NEWDECIMAL: {
-      ruby_type = "BigDecimal";
-      break;
-    }
+      return rb_cBigDecimal;
     case MYSQL_TYPE_FLOAT:
-    case MYSQL_TYPE_DOUBLE: {
-      ruby_type = "Float";
-      break;
-    }
+    case MYSQL_TYPE_DOUBLE:
+      return rb_cFloat;
     case MYSQL_TYPE_TIMESTAMP:
-    case MYSQL_TYPE_DATETIME: {
-      ruby_type = "DateTime";
-      break;
-    }
-    case MYSQL_TYPE_TIME: {
-      ruby_type = "DateTime";
-      break;
-    }
+    case MYSQL_TYPE_DATETIME:
+      return rb_cDateTime;
+    case MYSQL_TYPE_TIME:
+      return rb_cDateTime;
     case MYSQL_TYPE_DATE:
-    case MYSQL_TYPE_NEWDATE: {
-      ruby_type = "Date";
-      break;
-    }
-    default: {
-      ruby_type = "String";
-      break;
-    }
+    case MYSQL_TYPE_NEWDATE:
+      return rb_cDate;
+    case MYSQL_TYPE_TINY_BLOB:
+    case MYSQL_TYPE_MEDIUM_BLOB:
+    case MYSQL_TYPE_LONG_BLOB:
+    case MYSQL_TYPE_BLOB:
+      return rb_cByteArray;
+    default:
+      return rb_cString;
   }
-
-  return rb_str_new2(ruby_type);
 }
 
 // Find the greatest common denominator and reduce the provided numerator and denominator.
@@ -184,7 +172,7 @@ static VALUE parse_date(const char *date) {
 
 static VALUE parse_time(const char *date) {
 
-  int year, month, day, hour, min, sec, usec;
+  int year, month, day, hour, min, sec, usec, tokens;
   char subsec[7];
 
   if (0 != strchr(date, '.')) {
@@ -192,7 +180,12 @@ static VALUE parse_time(const char *date) {
     sscanf(date, "%4d-%2d-%2d %2d:%2d:%2d.%s", &year, &month, &day, &hour, &min, &sec, subsec);
     sscanf(subsec, "%d", &usec);
   } else {
-    sscanf(date, "%4d-%2d-%2d %2d:%2d:%2d", &year, &month, &day, &hour, &min, &sec);
+    tokens = sscanf(date, "%4d-%2d-%2d %2d:%2d:%2d", &year, &month, &day, &hour, &min, &sec);
+    if (tokens == 3) {
+      hour = 0;
+      min  = 0;
+      sec  = 0;
+    }
     usec = 0;
   }
 
@@ -239,9 +232,14 @@ static VALUE parse_date_time(const char *date) {
   } else if ((max_tokens - 1) == tokens_read) {
     // We read the Date and Time, but no Minute Offset
     minute_offset = 0;
-  } else if (tokens_read == 3) {
-    return parse_date(date);
-  } else if (tokens_read >= (max_tokens - 3)) {
+  } else if (tokens_read == 3 || tokens_read >= (max_tokens - 3)) {
+    if (tokens_read == 3) {
+      hour = 0;
+      min = 0;
+      hour_offset = 0;
+      minute_offset = 0;
+      sec = 0;
+    }  
     // We read the Date and Time, default to the current locale's offset
 
     // Get localtime
@@ -297,31 +295,40 @@ static VALUE parse_date_time(const char *date) {
 }
 
 // Convert C-string to a Ruby instance of Ruby type "type"
-static VALUE typecast(const char* value, unsigned long length, const char* type) {
-  if (NULL == value)
-    return Qnil;
+static VALUE typecast(const char *value, long length, const VALUE type) {
 
-  if ( strcmp(type, "Class") == 0) {
-    return rb_funcall(rb_cObject, rb_intern("full_const_get"), 1, TAINTED_STRING(value, length));
-  } else if ( strcmp(type, "Integer") == 0 || strcmp(type, "Fixnum") == 0 || strcmp(type, "Bignum") == 0 ) {
+  if(NULL == value) {
+    return Qnil;
+  }
+
+  if (type == rb_cInteger) {
     return rb_cstr2inum(value, 10);
-  } else if (0 == strcmp("String", type)) {
+  } else if (type == rb_cString) {
     return TAINTED_STRING(value, length);
-  } else if (0 == strcmp("Float", type) ) {
+  } else if (type == rb_cFloat) {
     return rb_float_new(rb_cstr_to_dbl(value, Qfalse));
-  } else if (0 == strcmp("BigDecimal", type) ) {
+  } else if (type == rb_cBigDecimal) {
     return rb_funcall(rb_cBigDecimal, ID_NEW, 1, TAINTED_STRING(value, length));
-  } else if (0 == strcmp("TrueClass", type) || 0 == strcmp("FalseClass", type)) {
-    return (0 == value || 0 == strcmp("0", value)) ? Qfalse : Qtrue;
-  } else if (0 == strcmp("Date", type)) {
+  } else if (type == rb_cDate) {
     return parse_date(value);
-  } else if (0 == strcmp("DateTime", type)) {
+  } else if (type == rb_cDateTime) {
     return parse_date_time(value);
-  } else if (0 == strcmp("Time", type)) {
+  } else if (type == rb_cTime) {
     return parse_time(value);
+  } else if (type == rb_cTrueClass) {
+    return (0 == value || 0 == strcmp("0", value)) ? Qfalse : Qtrue;
+  } else if (type == rb_cByteArray) {
+    return rb_funcall(rb_cByteArray, ID_NEW, 1, TAINTED_STRING(value, length));
+  } else if (type == rb_cClass) {
+    return rb_funcall(rb_cObject, rb_intern("full_const_get"), 1, TAINTED_STRING(value, length));
+  } else if (type == rb_cObject) {
+    return rb_marshal_load(rb_str_new(value, length));
+  } else if (type == rb_cNilClass) {
+    return Qnil;
   } else {
     return TAINTED_STRING(value, length);
   }
+
 }
 
 static void data_objects_debug(VALUE string, struct timeval* start) {
@@ -340,9 +347,6 @@ static void data_objects_debug(VALUE string, struct timeval* start) {
     gettimeofday(&stop, NULL);
 
     duration = (stop.tv_sec - start->tv_sec) * 1000000 + stop.tv_usec - start->tv_usec;
-    if(stop.tv_usec < start->tv_usec) {
-      duration += 1000000;
-    }
 
     snprintf(total_time, 32, "%.6f", duration / 1000000.0);
     message = (char *)calloc(length + strlen(total_time) + 4, sizeof(char));
@@ -378,6 +382,29 @@ static char * get_uri_option(VALUE query_hash, char * key) {
   return value;
 }
 
+#ifdef _WIN32
+static MYSQL_RES* cCommand_execute_sync(VALUE self, MYSQL* db, VALUE query) {
+  int retval;
+  struct timeval start;
+  char* str = RSTRING_PTR(query);
+  int len   = RSTRING_LEN(query);
+
+  VALUE connection = rb_iv_get(self, "@connection");
+
+  if(mysql_ping(db) && mysql_errno(db) == CR_SERVER_GONE_ERROR) {
+    CHECK_AND_RAISE(mysql_errno(db), "Mysql server has gone away. \
+                             Please report this issue to the Datamapper project. \
+                             Specify your at least your MySQL version when filing a ticket");
+  }
+  gettimeofday(&start, NULL);
+  retval = mysql_real_query(db, str, len);
+  CHECK_AND_RAISE(retval, str);
+
+  data_objects_debug(query, &start);
+
+  return mysql_store_result(db);
+}
+#else
 static MYSQL_RES* cCommand_execute_async(VALUE self, MYSQL* db, VALUE query) {
   int socket_fd;
   int retval;
@@ -426,6 +453,7 @@ static MYSQL_RES* cCommand_execute_async(VALUE self, MYSQL* db, VALUE query) {
 
   return mysql_store_result(db);
 }
+#endif
 
 static VALUE cConnection_initialize(VALUE self, VALUE uri) {
   VALUE r_host, r_user, r_password, r_path, r_query, r_port;
@@ -507,8 +535,10 @@ static VALUE cConnection_initialize(VALUE self, VALUE uri) {
     raise_mysql_error(Qnil, db, -1, NULL);
   }
 
+#ifdef MYSQL_OPT_RECONNECT
   my_bool reconnect = 1;
   mysql_options(db, MYSQL_OPT_RECONNECT, &reconnect);
+#endif
 
   // Set the connections character set
   encoding_error = mysql_set_character_set(db, encoding);
@@ -517,8 +547,8 @@ static VALUE cConnection_initialize(VALUE self, VALUE uri) {
   }
 
   // Disable sql_auto_is_null
-  cCommand_execute_async(self, db, rb_str_new2("SET sql_auto_is_null = 0"));
-  cCommand_execute_async(self, db, rb_str_new2("SET SESSION sql_mode = 'ANSI,NO_AUTO_VALUE_ON_ZERO,NO_DIR_IN_CREATE,NO_ENGINE_SUBSTITUTION,NO_UNSIGNED_SUBTRACTION,TRADITIONAL'"));
+  cCommand_execute(self, db, rb_str_new2("SET sql_auto_is_null = 0"));
+  cCommand_execute(self, db, rb_str_new2("SET SESSION sql_mode = 'ANSI,NO_AUTO_VALUE_ON_ZERO,NO_DIR_IN_CREATE,NO_ENGINE_SUBSTITUTION,NO_UNSIGNED_SUBTRACTION,TRADITIONAL'"));
 
   rb_iv_set(self, "@uri", uri);
   rb_iv_set(self, "@connection", Data_Wrap_Struct(rb_cObject, 0, 0, db));
@@ -569,12 +599,32 @@ static VALUE cConnection_dispose(VALUE self) {
 Accepts an array of Ruby types (Fixnum, Float, String, etc...) and turns them
 into Ruby-strings so we can easily typecast later
 */
-static VALUE cCommand_set_types(VALUE self, VALUE array) {
+static VALUE cCommand_set_types(int argc, VALUE *argv, VALUE self) {
   VALUE type_strings = rb_ary_new();
-  int i;
+  VALUE array = rb_ary_new();
+
+  int i, j;
+
+  for ( i = 0; i < argc; i++) {
+    rb_ary_push(array, argv[i]);
+  }
 
   for (i = 0; i < RARRAY_LEN(array); i++) {
-    rb_ary_push(type_strings, RUBY_STRING(rb_class2name(rb_ary_entry(array, i))));
+    VALUE entry = rb_ary_entry(array, i);
+    if(TYPE(entry) == T_CLASS) {
+      rb_ary_push(type_strings, entry);
+    } else if (TYPE(entry) == T_ARRAY) {
+      for (j = 0; j < RARRAY_LEN(entry); j++) {
+        VALUE sub_entry = rb_ary_entry(entry, j);
+        if(TYPE(sub_entry) == T_CLASS) {
+          rb_ary_push(type_strings, sub_entry);
+        } else {
+          rb_raise(eArgumentError, "Invalid type given");
+        }
+      }
+    } else {
+      rb_raise(eArgumentError, "Invalid type given");
+    }
   }
 
   rb_iv_set(self, "@field_types", type_strings);
@@ -582,23 +632,23 @@ static VALUE cCommand_set_types(VALUE self, VALUE array) {
   return array;
 }
 
-VALUE cCommand_quote_time(VALUE self, VALUE value) {
+VALUE cConnection_quote_time(VALUE self, VALUE value) {
   return rb_funcall(value, ID_STRFTIME, 1, RUBY_STRING("'%Y-%m-%d %H:%M:%S'"));
 }
 
 
-VALUE cCommand_quote_date_time(VALUE self, VALUE value) {
+VALUE cConnection_quote_date_time(VALUE self, VALUE value) {
   // TODO: Support non-local dates. we need to call #new_offset on the date to be
   // quoted and pass in the current locale's date offset (self.new_offset((hours * 3600).to_r / 86400)
   return rb_funcall(value, ID_STRFTIME, 1, RUBY_STRING("'%Y-%m-%d %H:%M:%S'"));
 }
 
-VALUE cCommand_quote_date(VALUE self, VALUE value) {
+VALUE cConnection_quote_date(VALUE self, VALUE value) {
   return rb_funcall(value, ID_STRFTIME, 1, RUBY_STRING("'%Y-%m-%d'"));
 }
 
-static VALUE cCommand_quote_string(VALUE self, VALUE string) {
-  MYSQL *db = DATA_PTR(rb_iv_get(rb_iv_get(self, "@connection"), "@connection"));
+static VALUE cConnection_quote_string(VALUE self, VALUE string) {
+  MYSQL *db = DATA_PTR(rb_iv_get(self, "@connection"));
   const char *source = RSTRING_PTR(string);
   int source_len     = RSTRING_LEN(string);
   char *escaped;
@@ -623,14 +673,14 @@ static VALUE cCommand_quote_string(VALUE self, VALUE string) {
 
 static VALUE build_query_from_args(VALUE klass, int count, VALUE *args) {
   VALUE query = rb_iv_get(klass, "@text");
-  if ( count > 0 ) {
-    int i;
-    VALUE array = rb_ary_new();
-    for ( i = 0; i < count; i++) {
-      rb_ary_push(array, (VALUE)args[i]);
-    }
-    query = rb_funcall(klass, ID_ESCAPE_SQL, 1, array);
+
+  int i;
+  VALUE array = rb_ary_new();
+  for ( i = 0; i < count; i++) {
+    rb_ary_push(array, (VALUE)args[i]);
   }
+  query = rb_funcall(klass, ID_ESCAPE_SQL, 1, array);
+
   return query;
 }
 
@@ -642,13 +692,14 @@ static VALUE cCommand_execute_non_query(int argc, VALUE *argv, VALUE self) {
   my_ulonglong affected_rows;
   VALUE connection = rb_iv_get(self, "@connection");
   VALUE mysql_connection = rb_iv_get(connection, "@connection");
-  if (Qnil == mysql_connection)
+  if (Qnil == mysql_connection) {
     rb_raise(eMysqlError, "This connection has already been closed.");
+  }
 
   MYSQL *db = DATA_PTR(mysql_connection);
   query = build_query_from_args(self, argc, argv);
 
-  response = cCommand_execute_async(self, db, query);
+  response = cCommand_execute(self, db, query);
 
   affected_rows = mysql_affected_rows(db);
   mysql_free_result(response);
@@ -680,7 +731,7 @@ static VALUE cCommand_execute_reader(int argc, VALUE *argv, VALUE self) {
 
   query = build_query_from_args(self, argc, argv);
 
-  response = cCommand_execute_async(self, db, query);
+  response = cCommand_execute(self, db, query);
 
   if (!response) {
     return Qnil;
@@ -703,7 +754,7 @@ static VALUE cCommand_execute_reader(int argc, VALUE *argv, VALUE self) {
     // Whoops...  wrong number of types passed to set_types.  Close the reader and raise
     // and error
     rb_funcall(reader, rb_intern("close"), 0);
-    rb_raise(eMysqlError, "Field-count mismatch. Expected %ld fields, but the query yielded %d", RARRAY_LEN(field_types), field_count);
+    rb_raise(eArgumentError, "Field-count mismatch. Expected %ld fields, but the query yielded %d", RARRAY_LEN(field_types), field_count);
   }
 
   for(i = 0; i < field_count; i++) {
@@ -752,34 +803,35 @@ static VALUE cReader_close(VALUE self) {
 static VALUE cReader_next(VALUE self) {
   // Get the reader from the instance variable, maybe refactor this?
   VALUE reader_container = rb_iv_get(self, "@reader");
-  VALUE ruby_field_type_strings, row;
+  VALUE field_types, field_type, row;
 
   MYSQL_RES *reader;
   MYSQL_ROW result;
   unsigned long *lengths;
 
   int i;
-  const char *field_type;
 
-  if (Qnil == reader_container)
+  if (Qnil == reader_container) {
     return Qfalse;
+  }
 
   reader = DATA_PTR(reader_container);
 
   // The Meat
-  ruby_field_type_strings = rb_iv_get(self, "@field_types");
+  field_types = rb_iv_get(self, "@field_types");
   row = rb_ary_new();
-  result = (MYSQL_ROW)mysql_fetch_row(reader);
+  result = mysql_fetch_row(reader);
   lengths = mysql_fetch_lengths(reader);
 
   rb_iv_set(self, "@state", result ? Qtrue : Qfalse);
 
-  if (!result)
-    return Qnil;
+  if (!result) {
+    return Qfalse;
+  }
 
   for (i = 0; i < reader->field_count; i++) {
     // The field_type data could be cached in a c-array
-    field_type = RSTRING_PTR(rb_ary_entry(ruby_field_type_strings, i));
+    field_type = rb_ary_entry(field_types, i);
     rb_ary_push(row, typecast(result[i], lengths[i], field_type));
   }
 
@@ -840,6 +892,10 @@ void Init_do_mysql_ext() {
   rb_cDateTime = RUBY_CLASS("DateTime");
   rb_cBigDecimal = RUBY_CLASS("BigDecimal");
 
+  // Get references to the Extlib module
+  mExtlib = CONST_GET(rb_mKernel, "Extlib");
+  rb_cByteArray = CONST_GET(mExtlib, "ByteArray");
+
   // Get references to the DataObjects module and its classes
   mDO = CONST_GET(rb_mKernel, "DataObjects");
   cDO_Quoting = CONST_GET(mDO, "Quoting");
@@ -851,6 +907,7 @@ void Init_do_mysql_ext() {
   // Top Level Module that all the classes live under
   mDOMysql = rb_define_module_under(mDO, "Mysql");
 
+  eArgumentError = CONST_GET(rb_mKernel, "ArgumentError");
   eMysqlError = rb_define_class("MysqlError", rb_eStandardError);
 
   cConnection = DRIVER_CLASS("Connection", cDO_Connection);
@@ -858,16 +915,15 @@ void Init_do_mysql_ext() {
   rb_define_method(cConnection, "using_socket?", cConnection_is_using_socket, 0);
   rb_define_method(cConnection, "character_set", cConnection_character_set , 0);
   rb_define_method(cConnection, "dispose", cConnection_dispose, 0);
+  rb_define_method(cConnection, "quote_string", cConnection_quote_string, 1);
+  rb_define_method(cConnection, "quote_date", cConnection_quote_date, 1);
+  rb_define_method(cConnection, "quote_time", cConnection_quote_time, 1);
+  rb_define_method(cConnection, "quote_datetime", cConnection_quote_date_time, 1);
 
   cCommand = DRIVER_CLASS("Command", cDO_Command);
-  rb_include_module(cCommand, cDO_Quoting);
-  rb_define_method(cCommand, "set_types", cCommand_set_types, 1);
+  rb_define_method(cCommand, "set_types", cCommand_set_types, -1);
   rb_define_method(cCommand, "execute_non_query", cCommand_execute_non_query, -1);
   rb_define_method(cCommand, "execute_reader", cCommand_execute_reader, -1);
-  rb_define_method(cCommand, "quote_string", cCommand_quote_string, 1);
-  rb_define_method(cCommand, "quote_date", cCommand_quote_date, 1);
-  rb_define_method(cCommand, "quote_time", cCommand_quote_time, 1);
-  rb_define_method(cCommand, "quote_datetime", cCommand_quote_date_time, 1);
 
   // Non-Query result
   cResult = DRIVER_CLASS("Result", cDO_Result);
