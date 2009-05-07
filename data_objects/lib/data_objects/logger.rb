@@ -38,10 +38,15 @@ module DataObjects
 
   class Logger
 
+    # Use asynchronous I/O?
     attr_accessor :aio
+    # delimiter to use between message sections
     attr_accessor :delimiter
+    # a symbol representing the log level from {:off, :fatal, :error, :warn, :info, :debug}
     attr_reader   :level
+    # Direct access to the buffer
     attr_reader   :buffer
+    # The name of the log file
     attr_reader   :log
 
     # @note
@@ -64,6 +69,7 @@ module DataObjects
       :debug => 0
     }
 
+    # Set the log level (use the level symbols as documented)
     def level=(new_level)
       @level = LEVELS[new_level.to_sym]
       reset_methods(:close)
