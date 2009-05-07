@@ -27,14 +27,12 @@ begin
     end
   end
  
-  version = '3_6_13'
- 
   # required folder structure for --with-sqlite3-dir (include + lib)
   directory "vendor/sqlite3/lib"
   directory "vendor/sqlite3/include"
  
-  # download amalgamation version (for include files)
-  file "vendor/sqlite-amalgamation-#{version}.zip" => ['vendor'] do |t|
+  # download amalgamation BINARY_VERSION (for include files)
+  file "vendor/sqlite-amalgamation-#{BINARY_VERSION}.zip" => ['vendor'] do |t|
     url = "http://www.sqlite.org/#{File.basename(t.name)}"
     when_writing "downloading #{t.name}" do
       cd File.dirname(t.name) do
@@ -44,7 +42,7 @@ begin
   end
  
   # download dll binaries
-  file "vendor/sqlitedll-#{version}.zip" => ['vendor'] do |t|
+  file "vendor/sqlitedll-#{BINARY_VERSION}.zip" => ['vendor'] do |t|
     url = "http://www.sqlite.org/#{File.basename(t.name)}"
     when_writing "downloading #{t.name}" do
       cd File.dirname(t.name) do
@@ -54,7 +52,7 @@ begin
   end
  
   # extract header files into include folder
-  file "vendor/sqlite3/include/sqlite3.h" => ['vendor/sqlite3/include', "vendor/sqlite-amalgamation-#{version}.zip"] do |t|
+  file "vendor/sqlite3/include/sqlite3.h" => ['vendor/sqlite3/include', "vendor/sqlite-amalgamation-#{BINARY_VERSION}.zip"] do |t|
     full_file = File.expand_path(t.prerequisites.last)
     when_writing "creating #{t.name}" do
       cd File.dirname(t.name) do
@@ -66,7 +64,7 @@ begin
   end
  
   # extract dll files into lib folder
-  file "vendor/sqlite3/lib/sqlite3.dll" => ['vendor/sqlite3/lib', "vendor/sqlitedll-#{version}.zip"] do |t|
+  file "vendor/sqlite3/lib/sqlite3.dll" => ['vendor/sqlite3/lib', "vendor/sqlitedll-#{BINARY_VERSION}.zip"] do |t|
     full_file = File.expand_path(t.prerequisites.last)
     when_writing "creating #{t.name}" do
       cd File.dirname(t.name) do

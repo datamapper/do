@@ -2,7 +2,7 @@ begin
   gem('rake-compiler')
   require 'rake/extensiontask'
 
-  Rake::ExtensionTask.new('do_postgres_ext', HOE.spec) do |ext|
+  Rake::ExtensionTask.new('do_postgres_ext', GEM_SPEC) do |ext|
   
     postgres_lib = File.expand_path(File.join(File.dirname(__FILE__), '..', 'vendor', 'pgsql'))
 
@@ -24,5 +24,5 @@ begin
   end
 rescue LoadError
   warn "To cross-compile, install rake-compiler (gem install rake-compiler)"
-  setup_c_extension('do_postgres_ext', HOE.spec)
+  setup_c_extension('do_postgres_ext', GEM_SPEC)
 end

@@ -1,47 +1,16 @@
-require 'pathname'
 require 'rubygems'
-require 'spec/rake/spectask'
+require 'rake'
+require 'rake/clean'
+
+require 'pathname'
 require 'lib/do_postgres/version'
 
 ROOT    = Pathname(__FILE__).dirname.expand_path
 JRUBY   = RUBY_PLATFORM =~ /java/
 WINDOWS = Gem.win_platform?
 SUDO    = (WINDOWS || JRUBY) ? '' : ('sudo' unless ENV['SUDOLESS'])
-
-AUTHOR = "Dirkjan Bussink"
-EMAIL  = "d.bussink@gmail.com"
-GEM_NAME = "do_postgres"
-GEM_VERSION = DataObjects::Postgres::VERSION
-GEM_DEPENDENCIES = if JRUBY
-  [["data_objects", GEM_VERSION], ["do_jdbc", GEM_VERSION], ["jdbc-postgres", "~>8.2"]]
-else
-  [["data_objects", GEM_VERSION]]
-end
-GEM_CLEAN = %w[ **/*.{o,so,bundle,jar,log,a,gem,dSYM,obj,pdb,exp,DS_Store} ext/do_postgres_ext/Makefile ext-java/target ]
-GEM_EXTRAS = { :has_rdoc => false }
-
-if JRUBY
-  GEM_EXTRAS.update(:platform => 'java')
-else
-  GEM_EXTRAS.update(:extensions => 'ext/do_postgres_ext/extconf.rb')
-end
-
-PROJECT_NAME = "dorb"
-PROJECT_URL  = "http://rubyforge.org/projects/dorb"
-PROJECT_DESCRIPTION = PROJECT_SUMMARY = "A DataObject.rb driver for PostgreSQL"
-
-if (tasks_dir = ROOT.parent + 'tasks').directory?
-  require tasks_dir + 'hoe'
-  require tasks_dir + 'ext_helper'
-  require tasks_dir + 'ext_helper_java'
-
-  setup_java_extension  "#{GEM_NAME}_ext", HOE.spec
-end
-
-if JRUBY
-  HOE.spec.files += %w[ lib/do_postgres_ext.jar ]
-  HOE.spec.require_paths = Dir['lib']
-end
-
+BINARY_VERSION = '5.0.77'
 
 Dir['tasks/*.rake'].each { |f| import f }
+
+CLEAN.include(%w[**/*.rbc **/*.db **/*.{o,so,bundle,jar,log,a,gem,dSYM,obj,pdb,exp,DS_Store} ext/do_postgres_ext/Makefile ext-java/target tmp])

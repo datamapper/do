@@ -1,52 +1,16 @@
-require 'pathname'
 require 'rubygems'
-require 'spec/rake/spectask'
+require 'rake'
+require 'rake/clean'
+
+require 'pathname'
 require 'lib/do_sqlite3/version'
 
 ROOT    = Pathname(__FILE__).dirname.expand_path
 JRUBY   = RUBY_PLATFORM =~ /java/
 WINDOWS = Gem.win_platform?
 SUDO    = (WINDOWS || JRUBY) ? '' : ('sudo' unless ENV['SUDOLESS'])
-
-AUTHOR = "Dirkjan Bussink"
-EMAIL  = "d.bussink@gmail.com"
-GEM_NAME = "do_sqlite3"
-GEM_VERSION = DataObjects::Sqlite3::VERSION
-GEM_DEPENDENCIES = if JRUBY
-  [["data_objects", GEM_VERSION], ["do_jdbc", GEM_VERSION], ["jdbc-sqlite3", "~>3.6.3.054"]]
-else
-  [["data_objects", GEM_VERSION]]
-end
-GEM_CLEAN = %w[ **/*.db **/*.{o,so,bundle,jar,log,a,gem,dSYM,obj,pdb,exp,DS_Store} ext/do_sqlite3_ext/Makefile ext-java/target ]
-GEM_EXTRAS = { :has_rdoc => false }
-
-if JRUBY
-  GEM_EXTRAS.update(:platform => 'java')
-else
-  GEM_EXTRAS.update(:extensions => 'ext/do_sqlite3_ext/extconf.rb')
-end
-
-PROJECT_NAME = "dorb"
-PROJECT_URL  = "http://rubyforge.org/projects/dorb"
-PROJECT_DESCRIPTION = PROJECT_SUMMARY = "A DataObject.rb driver for Sqlite3"
-
-if (tasks_dir = ROOT.parent + 'tasks').directory?
-  require tasks_dir + 'hoe'
-  require tasks_dir + 'ext_helper'
-  require tasks_dir + 'ext_helper_java'
-
-  setup_java_extension  "#{GEM_NAME}_ext", HOE.spec
-
-  # use .gitignore to identify files to clean up
-  File.read(ROOT.parent + '.gitignore').split(/\s+/).each do |pattern|
-    next if pattern.include?('/') && !pattern.gsub!(/\A(?:\.\/)?#{ROOT.basename}(?:\/|\z)/, './')
-    GEM_CLEAN.concat(Dir.glob(pattern.include?('/') ? pattern : "**/#{pattern}"))
-  end
-end
-
-if JRUBY
-  HOE.spec.files += %w[ lib/do_sqlite3_ext.jar ]
-  HOE.spec.require_paths = Dir['lib']
-end
+BINARY_VERSION = '3_6_13'
 
 Dir['tasks/*.rake'].each { |f| import f }
+
+CLEAN.include(%w[**/*.rbc **/*.db **/*.{o,so,bundle,jar,log,a,gem,dSYM,obj,pdb,exp,DS_Store} ext/do_postgres_ext/Makefile ext-java/target tmp])

@@ -2,7 +2,7 @@
 require 'spec/rake/spectask'
 
 desc 'Run specifications'
-Spec::Rake::SpecTask.new(:spec => [ :clean, :compile ]) do |t|
+Spec::Rake::SpecTask.new(:spec) do |t|
   t.spec_opts << '--options' << ROOT + 'spec/spec.opts'
   t.spec_files = Pathname.glob(ENV['FILES'] || 'spec/**/*_spec.rb').map { |f| f.to_s }
 
