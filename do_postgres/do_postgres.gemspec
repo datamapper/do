@@ -9,7 +9,7 @@ autorequire:
 bindir: bin
 cert_chain: []
 
-date: 2009-05-06 00:00:00 +02:00
+date: 2009-05-07 00:00:00 +02:00
 default_executable: 
 dependencies: 
 - !ruby/object:Gem::Dependency 
@@ -56,8 +56,8 @@ description: Implements the DataObjects API for PostgreSQL
 email: d.bussink@gmail.com
 executables: []
 
-extensions: []
-
+extensions: 
+- ext/do_postgres_ext/extconf.rb
 extra_rdoc_files: []
 
 files: 
@@ -90,12 +90,16 @@ files:
 - tasks/release.rake
 - tasks/retrieve.rake
 - tasks/spec.rake
+- ext/do_postgres_ext
+- ext/do_postgres_ext/do_postgres_ext.c
+- ext/do_postgres_ext/extconf.rb
+- ext/do_postgres_ext/pg_config.h
 - LICENSE
 - Rakefile
 - History.txt
 - Manifest.txt
 - README.txt
-has_rdoc: false
+has_rdoc: true
 homepage: http://github.com/datamapper/do
 licenses: 
 - MIT
@@ -119,7 +123,7 @@ required_rubygems_version: !ruby/object:Gem::Requirement
 requirements: []
 
 rubyforge_project: dorb
-rubygems_version: 1.3.2
+rubygems_version: 1.3.3
 signing_key: 
 specification_version: 3
 summary: DataObjects PostgreSQL Driver

@@ -31,6 +31,7 @@ GEM_SPEC = Gem::Specification.new do |s|
   s.homepage          = 'http://github.com/datamapper/do'
   s.rubyforge_project = 'dorb'
   s.licenses          = ['MIT']
+  s.extensions << 'ext/do_postgres_ext/extconf.rb'
 
   # author and contributors
   s.author      = 'Dirkjan Bussink'

@@ -56,8 +56,8 @@ description: Implements the DataObjects API for Sqlite3
 email: d.bussink@gmail.com
 executables: []
 
-extensions: []
-
+extensions: 
+- ext/do_sqlite3_ext/extconf.rb
 extra_rdoc_files: []
 
 files: 
@@ -89,12 +89,16 @@ files:
 - tasks/release.rake
 - tasks/retrieve.rake
 - tasks/spec.rake
+- ext/do_sqlite3_ext
+- ext/do_sqlite3_ext/do_sqlite3_ext.c
+- ext/do_sqlite3_ext/extconf.rb
+- ext/do_sqlite3_ext/Makefile
 - LICENSE
 - Rakefile
 - History.txt
 - Manifest.txt
 - README.txt
-has_rdoc: false
+has_rdoc: true
 homepage: http://github.com/datamapper/do
 licenses: 
 - MIT
@@ -118,7 +122,7 @@ required_rubygems_version: !ruby/object:Gem::Requirement
 requirements: []
 
 rubyforge_project: dorb
-rubygems_version: 1.3.2
+rubygems_version: 1.3.3
 signing_key: 
 specification_version: 3
 summary: DataObjects Sqlite3 Driver

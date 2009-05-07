@@ -9,7 +9,7 @@ autorequire:
 bindir: bin
 cert_chain: []
 
-date: 2009-05-06 00:00:00 +02:00
+date: 2009-05-07 00:00:00 +02:00
 default_executable: 
 dependencies: 
 - !ruby/object:Gem::Dependency 
@@ -56,8 +56,8 @@ description: Implements the DataObjects API for MySQL
 email: d.bussink@gmail.com
 executables: []
 
-extensions: []
-
+extensions: 
+- ext/do_mysql_ext/extconf.rb
 extra_rdoc_files: []
 
 files: 
@@ -84,18 +84,21 @@ files:
 - spec/typecast/range_spec.rb
 - spec/typecast/string_spec.rb
 - spec/typecast/time_spec.rb
-- tasks/compile.rake
-- tasks/download.rake
 - tasks/gem.rake
 - tasks/install.rake
+- tasks/native.rake
 - tasks/release.rake
+- tasks/retrieve.rake
 - tasks/spec.rake
+- ext/do_mysql_ext
+- ext/do_mysql_ext/do_mysql_ext.c
+- ext/do_mysql_ext/extconf.rb
 - LICENSE
 - Rakefile
 - History.txt
 - Manifest.txt
 - README.txt
-has_rdoc: false
+has_rdoc: true
 homepage: http://github.com/datamapper/do
 licenses: 
 - MIT
@@ -119,7 +122,7 @@ required_rubygems_version: !ruby/object:Gem::Requirement
 requirements: []
 
 rubyforge_project: dorb
-rubygems_version: 1.3.2
+rubygems_version: 1.3.3
 signing_key: 
 specification_version: 3
 summary: DataObjects MySQL Driver
