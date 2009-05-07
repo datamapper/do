@@ -19,7 +19,7 @@ GEM_SPEC = Gem::Specification.new do |s|
   s.add_development_dependency 'rspec', '~>1.2.0'
 
   # components, files and paths
-  s.files = FileList["lib/**/*.rb", "spec/**/*.rb", "tasks/**/*.rake",
+  s.files = FileList["lib/**/*.rb", "spec/**/*.rb", "tasks/**/*.rake", "ext/**/*",
                       "LICENSE", "Rakefile", "*.{rdoc,txt,yml}"]
 
   s.require_path = 'lib'
