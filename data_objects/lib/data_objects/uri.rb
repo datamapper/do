@@ -2,7 +2,6 @@ gem 'addressable', '~>2.0'
 require 'addressable/uri'
 
 module DataObjects
-  URI = Struct.new(:scheme, :user, :password, :host, :port, :path, :query, :fragment)
 
   # A DataObjects URI is of the form scheme://user:password@host:port/path#fragment
   #
@@ -15,7 +14,7 @@ module DataObjects
   # path:: The name or path to the database
   # query:: Parameters for the connection, for example encoding=utf8
   # fragment:: Not currently known to be in use, but available to the adapters
-  class URI
+  class URI < Struct.new(:scheme, :user, :password, :host, :port, :path, :query, :fragment)
     # Make a DataObjects::URI object by parsing a string. Simply delegates to Addressable::URI::parse.
     def self.parse(uri)
       return uri if uri.kind_of?(self)
