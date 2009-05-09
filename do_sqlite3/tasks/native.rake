@@ -24,5 +24,12 @@ begin
   end
 rescue LoadError
   warn "To cross-compile, install rake-compiler (gem install rake-compiler)"
-  setup_c_extension('do_sqlite3_ext', GEM_SPEC)
+
+  if (tasks_dir = ROOT.parent + 'tasks').directory?
+    require tasks_dir + 'ext_helper'
+    require tasks_dir + 'ext_helper_java'
+
+    setup_c_extension("#{GEM_SPEC.name}_ext", GEM_SPEC)
+    setup_java_extension("#{GEM_SPEC.name}_ext", GEM_SPEC)
+  end
 end
