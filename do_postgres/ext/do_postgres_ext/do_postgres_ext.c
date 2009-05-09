@@ -709,8 +709,8 @@ static VALUE cCommand_execute_non_query(int argc, VALUE *argv[], VALUE self) {
   PGresult *response;
   int status;
 
-  VALUE affected_rows;
-  VALUE insert_id;
+  VALUE affected_rows = Qnil;
+  VALUE insert_id = Qnil;
 
   VALUE query = build_query_from_args(self, argc, argv);
 
@@ -863,6 +863,7 @@ static VALUE cReader_values(VALUE self) {
   VALUE values = rb_iv_get(self, "@values");
   if(values == Qnil) {
     rb_raise(ePostgresError, "Reader not initialized");
+    return Qnil;
   } else {
     return values;
   }
