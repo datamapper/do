@@ -29,7 +29,6 @@ GEM_SPEC = Gem::Specification.new do |s|
   # project information
   s.homepage          = 'http://github.com/datamapper/do'
   s.rubyforge_project = 'dorb'
-  s.licenses          = ['MIT']
 
   # author and contributors
   s.author      = 'Dirkjan Bussink'

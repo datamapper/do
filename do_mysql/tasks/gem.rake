@@ -30,7 +30,6 @@ GEM_SPEC = Gem::Specification.new do |s|
   # project information
   s.homepage          = 'http://github.com/datamapper/do'
   s.rubyforge_project = 'dorb'
-  s.licenses          = ['MIT']
   s.extensions << 'ext/do_mysql_ext/extconf.rb'
 
   # author and contributors
