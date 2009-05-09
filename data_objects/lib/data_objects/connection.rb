@@ -6,8 +6,11 @@ rescue LoadError
 end
 
 module DataObjects
+  # An abstract connection to a DataObjects resource. The physical connection may be broken and re-established from time to time.
   class Connection
 
+    # Make a connection to the database using the DataObjects::URI given.
+    # Note that the physical connection may be delayed until the first command is issued, so success here doesn't necessarily mean you can connect.
     def self.new(uri_s)
       uri = DataObjects::URI::parse(uri_s)
 
@@ -40,9 +43,12 @@ module DataObjects
       DataObjects.const_get(driver_name.capitalize)::Connection.new(conn_uri)
     end
 
+    # Ensure that all Connection subclasses handle pooling and logging uniformly.
+    # See also Extlib::Pooling and DataObjects::Logger
     def self.inherited(target)
       target.class_eval do
 
+        # Allocate a Connection object from the pool, creating one if necessary. This method is active in Connection subclasses only.
         def self.new(*args)
           instance = allocate
           instance.send(:initialize, *args)
@@ -74,18 +80,21 @@ module DataObjects
     #####################################################
     # Standard API Definition
     #####################################################
+
+    # Show the URI for this connection
     def to_s
       @uri.to_s
     end
 
-    def initialize(uri)
+    def initialize(uri) #:nodoc:
       raise NotImplementedError.new
     end
 
-    def dispose
+    def dispose #:nodoc:
       raise NotImplementedError.new
     end
 
+    # Create a Command object of the right subclass using the given text
     def create_command(text)
       concrete_command.new(self, text)
     end
