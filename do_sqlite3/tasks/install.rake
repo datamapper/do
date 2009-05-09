@@ -13,4 +13,3 @@ desc "Uninstall #{GEM_SPEC.name} #{GEM_SPEC.version}"
 task :uninstall => [ :clean ] do
   sudo_gem "uninstall #{GEM_SPEC.name} -v#{GEM_SPEC.version} -I -x"
 end
-

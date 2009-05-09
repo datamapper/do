@@ -5,7 +5,7 @@ begin
   Rake::ExtensionTask.new('do_mysql_ext', GEM_SPEC) do |ext|
 
     mysql_lib = File.expand_path(File.join(File.dirname(__FILE__), '..', 'vendor', "mysql-#{BINARY_VERSION}-win32"))
-  
+
     # automatically add build options to avoid need of manual input
     if RUBY_PLATFORM =~ /mswin|mingw/ then
       ext.config_options << "--with-mysql-include=#{mysql_lib}/include"

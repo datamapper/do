@@ -2,7 +2,7 @@ begin
   gem('rake-compiler')
   require 'rake/clean'
   require 'rake/extensioncompiler'
- 
+
   # download postgres library and headers
   directory "vendor"
 
@@ -63,11 +63,11 @@ begin
 
   # clobber vendored packages
   CLOBBER.include('vendor')
- 
-  # vendor:sqlite3
+
+  # vendor:postgres
   task 'vendor:postgres' => ["vendor/pgsql/include/pg_config.h"]
- 
-  # hook into cross compilation vendored sqlite3 dependency
+
+  # hook into cross compilation vendored postgres dependency
   if RUBY_PLATFORM =~ /mingw|mswin/ then
     Rake::Task['compile'].prerequisites.unshift 'vendor:postgres'
   else

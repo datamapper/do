@@ -3,7 +3,7 @@ begin
   require 'rake/extensiontask'
 
   Rake::ExtensionTask.new('do_postgres_ext', GEM_SPEC) do |ext|
-  
+
     postgres_lib = File.expand_path(File.join(File.dirname(__FILE__), '..', 'vendor', 'pgsql'))
 
     # automatically add build options to avoid need of manual input

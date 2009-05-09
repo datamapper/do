@@ -2,10 +2,10 @@ begin
   gem('rake-compiler')
   require 'rake/clean'
   require 'rake/extensioncompiler'
- 
+
   # download mysql library and headers
   directory "vendor"
- 
+
   # only on Windows or cross platform compilation
   def dlltool(dllname, deffile, libfile)
     # define if we are using GCC or not
@@ -27,7 +27,7 @@ begin
       return "#{tool} /DEF:#{deffile} /OUT:#{libfile}"
     end
   end
- 
+
   file "vendor/mysql-noinstall-#{BINARY_VERSION}-win32.zip" => ['vendor'] do |t|
     base_version = BINARY_VERSION.gsub(/\.[0-9]+$/, '')
     url = "http://mysql.proserve.nl/Downloads/MySQL-#{base_version}/#{File.basename(t.name)}"
@@ -51,11 +51,11 @@ begin
 
   # clobber vendored packages
   CLOBBER.include('vendor')
- 
-  # vendor:sqlite3
+
+  # vendor:mysql
   task 'vendor:mysql' => ["vendor/mysql-#{BINARY_VERSION}-win32/include/mysql.h"]
- 
-  # hook into cross compilation vendored sqlite3 dependency
+
+  # hook into cross compilation vendored mysql dependency
   if RUBY_PLATFORM =~ /mingw|mswin/ then
     Rake::Task['compile'].prerequisites.unshift 'vendor:mysql'
   else
