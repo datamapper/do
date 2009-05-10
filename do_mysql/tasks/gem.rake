@@ -4,7 +4,6 @@ GEM_SPEC = Gem::Specification.new do |s|
   # basic information
   s.name        = "do_mysql"
   s.version     = DataObjects::Mysql::VERSION
-  s.platform    = Gem::Platform::RUBY
 
   # description and details
   s.summary     = 'DataObjects MySQL Driver'
@@ -15,12 +14,22 @@ GEM_SPEC = Gem::Specification.new do |s|
   s.add_dependency "extlib", "~>0.9.12"
   s.add_dependency "data_objects", DataObjects::Mysql::VERSION
 
+  if JRUBY
+    s.add_dependency "jdbc-mysql", ">=5.0.4"
+    s.add_dependency "do_jdbc", DataObjects::Mysql::VERSION
+    s.platform = "java"
+  else
+    s.platform    = Gem::Platform::RUBY
+    s.extensions << 'ext/do_postgres_ext/extconf.rb'
+  end
+
+
   # development dependencies
   s.add_development_dependency 'rspec', '~>1.2.0'
 
   # components, files and paths
   s.files = FileList["lib/**/*.rb", "spec/**/*.rb", "tasks/**/*.rake", "ext/**/*",
-                      "LICENSE", "Rakefile", "*.{rdoc,txt,yml}"]
+                      "LICENSE", "Rakefile", "*.{rdoc,txt,yml}", "lib/*.jar"]
 
   s.require_path = 'lib'
 
@@ -30,7 +39,6 @@ GEM_SPEC = Gem::Specification.new do |s|
   # project information
   s.homepage          = 'http://github.com/datamapper/do'
   s.rubyforge_project = 'dorb'
-  s.extensions << 'ext/do_mysql_ext/extconf.rb'
 
   # author and contributors
   s.author      = 'Dirkjan Bussink'
