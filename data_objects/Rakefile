@@ -12,5 +12,4 @@ SUDO    = (WINDOWS || JRUBY) ? '' : ('sudo' unless ENV['SUDOLESS'])
 
 Dir['tasks/*.rake'].each { |f| import f }
 
-CLOBBER.include("**/*.rbc")
-
+CLEAN.include(%w[ pkg/ **/*.rbc ])

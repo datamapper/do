@@ -13,4 +13,4 @@ BINARY_VERSION = '5.0.77'
 
 Dir['tasks/*.rake'].each { |f| import f }
 
-CLEAN.include(%w[**/*.rbc **/*.db **/*.{o,so,bundle,jar,log,a,gem,dSYM,obj,pdb,exp,DS_Store} ext/do_postgres_ext/Makefile ext-java/target tmp])
+CLEAN.include(%w[ {tmp,pkg}/ **/*.{o,so,bundle,jar,log,a,gem,dSYM,obj,pdb,exp,DS_Store,rbc,db} ext/do_postgres_ext/Makefile ext-java/target ])
