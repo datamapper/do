@@ -27,30 +27,19 @@ task :release do
   end
 end
 
-desc 'Run the specification'
-task :spec do
-  projects.each do |gem_name|
-    Dir.chdir(gem_name){ rake 'spec' }
-  end
-end
+tasks = {
+  :spec    => 'Run the specification',
+  :install => 'Install the do gems',
+  :package => 'Package the do gems',
+  :clean   => 'clean temporary files',
+  :clobber => 'clobber temporary files',
+}
 
-desc 'Install the do gems'
-task :install do
-  projects.each do |gem_name|
-    Dir.chdir(gem_name){ rake 'install' }
-  end
-end
-
-desc 'Package the do gems'
-task :package do
-  projects.each do |gem_name|
-    Dir.chdir(gem_name){ rake 'package' }
-  end
-end
-
-desc "clean temporary files"
-task :clean do
-  projects.each do |gem_name|
-    Dir.chdir(gem_name){ rake :clean }
+tasks.each do |name, description|
+  desc description
+  task name do
+    projects.each do |gem_name|
+      Dir.chdir(gem_name){ rake name }
+    end
   end
 end

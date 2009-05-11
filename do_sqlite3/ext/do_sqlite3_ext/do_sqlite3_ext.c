@@ -48,6 +48,8 @@ static ID ID_LOGGER;
 static ID ID_DEBUG;
 static ID ID_LEVEL;
 
+static VALUE mExtlib;
+
 static VALUE mDO;
 static VALUE cDO_Quoting;
 static VALUE cDO_Connection;
@@ -116,9 +118,6 @@ static void data_objects_debug(VALUE string, struct timeval* start) {
     gettimeofday(&stop, NULL);
 
     duration = (stop.tv_sec - start->tv_sec) * 1000000 + stop.tv_usec - start->tv_usec;
-    if(stop.tv_usec < start->tv_usec) {
-      duration += 1000000;
-    }
 
     snprintf(total_time, 32, "%.6f", duration / 1000000.0);
     message = (char *)calloc(length + strlen(total_time) + 4, sizeof(char));
@@ -266,11 +265,11 @@ static VALUE parse_time(char *date) {
   } else {
     // This is a datetime second precision
     tokens = sscanf(date, "%4d-%2d-%2d%*c%2d:%2d:%2d%3d:%2d", &year, &month, &day, &hour, &min, &sec, &hour_offset, &minute_offset);
+    usec = 0;
     if(tokens == 3) {
       hour = 0;
       min = 0;
       sec = 0;
-      usec = 0;
       hour_offset = 0;
       minute_offset = 0;
     }
@@ -381,13 +380,11 @@ static VALUE cConnection_initialize(VALUE self, VALUE uri) {
   int ret;
   VALUE path;
   sqlite3 *db;
-  int flags = 0;
 
   path = rb_funcall(uri, ID_PATH, 0);
 
 #ifdef HAVE_SQLITE3_OPEN_V2
-  flags = flags_from_uri(uri);
-  ret = sqlite3_open_v2(StringValuePtr(path), &db, flags, 0);
+  ret = sqlite3_open_v2(StringValuePtr(path), &db, flags_from_uri(uri), 0);
 #else
   ret = sqlite3_open(StringValuePtr(path), &db);
 #endif
@@ -455,11 +452,11 @@ static VALUE cCommand_set_types(int argc, VALUE *argv, VALUE self) {
   return array;
 }
 
-static VALUE cCommand_quote_boolean(VALUE self, VALUE value) {
+static VALUE cConnection_quote_boolean(VALUE self, VALUE value) {
   return rb_tainted_str_new2(value == Qtrue ? "'t'" : "'f'");
 }
 
-static VALUE cCommand_quote_string(VALUE self, VALUE string) {
+static VALUE cConnection_quote_string(VALUE self, VALUE string) {
   const char *source = StringValuePtr(string);
   char *escaped_with_quotes;
   VALUE result;
@@ -621,6 +618,7 @@ static VALUE cReader_values(VALUE self) {
   VALUE state = rb_iv_get(self, "@state");
   if ( state == Qnil || NUM2INT(state) != SQLITE_ROW ) {
     rb_raise(eSqlite3Error, "Reader is not initialized");
+    return Qnil;
   }
   else {
     return rb_iv_get(self, "@values");
@@ -642,9 +640,7 @@ void Init_do_sqlite3_ext() {
   // Get references classes needed for Date/Time parsing
   rb_cDate = RUBY_CLASS("Date");
   rb_cDateTime = RUBY_CLASS( "DateTime");
-  rb_cTime = RUBY_CLASS("Time");
   rb_cBigDecimal = RUBY_CLASS("BigDecimal");
-  rb_cByteArray = RUBY_CLASS("ByteArray");
 
   rb_funcall(rb_mKernel, rb_intern("require"), 1, rb_str_new2("data_objects"));
 
@@ -657,6 +653,10 @@ void Init_do_sqlite3_ext() {
   ID_LOGGER = rb_intern("logger");
   ID_DEBUG = rb_intern("debug");
   ID_LEVEL = rb_intern("level");
+
+  // Get references to the Extlib module
+  mExtlib = CONST_GET(rb_mKernel, "Extlib");
+  rb_cByteArray = CONST_GET(mExtlib, "ByteArray");
 
   // Get references to the DataObjects module and its classes
   mDO = CONST_GET(rb_mKernel, "DataObjects");
@@ -675,14 +675,13 @@ void Init_do_sqlite3_ext() {
   cConnection = SQLITE3_CLASS("Connection", cDO_Connection);
   rb_define_method(cConnection, "initialize", cConnection_initialize, 1);
   rb_define_method(cConnection, "dispose", cConnection_dispose, 0);
+  rb_define_method(cConnection, "quote_boolean", cConnection_quote_boolean, 1);
+  rb_define_method(cConnection, "quote_string", cConnection_quote_string, 1);
 
   cCommand = SQLITE3_CLASS("Command", cDO_Command);
-  rb_include_module(cCommand, cDO_Quoting);
   rb_define_method(cCommand, "set_types", cCommand_set_types, -1);
   rb_define_method(cCommand, "execute_non_query", cCommand_execute_non_query, -1);
   rb_define_method(cCommand, "execute_reader", cCommand_execute_reader, -1);
-  rb_define_method(cCommand, "quote_boolean", cCommand_quote_boolean, 1);
-  rb_define_method(cCommand, "quote_string", cCommand_quote_string, 1);
 
   cResult = SQLITE3_CLASS("Result", cDO_Result);
 

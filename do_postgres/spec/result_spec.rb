@@ -41,7 +41,9 @@ describe DataObjects::Postgres::Result do
 
       it 'should be retrievable through curr_val' do
         # This is actually the 4th record inserted
-        @connection.create_command("SELECT currval('users_id_seq')").execute_non_query.insert_id.should == 4
+        reader = @connection.create_command("SELECT currval('users_id_seq')").execute_reader
+        reader.next!
+        reader.values.first.should == 4
       end
 
     end

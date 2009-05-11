@@ -22,7 +22,7 @@ public enum RubyType {
     RATIONAL   ("Rational"),
     FLOAT      ("Float"),
     BIG_DECIMAL("BigDecimal"),
-    BYTE_ARRAY ("ByteArray"),       // Extlib: ByteArray < String
+    BYTE_ARRAY ("Extlib::ByteArray"),      // Extlib::ByteArray < String
     NIL        ("NilClass");
 
     private String rubyName;

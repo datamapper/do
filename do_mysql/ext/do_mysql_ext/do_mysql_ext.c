@@ -28,8 +28,10 @@
 #endif
 
 #ifdef _WIN32
+#define cCommand_execute cCommand_execute_sync
 #define do_int64 signed __int64
 #else
+#define cCommand_execute cCommand_execute_async
 #define do_int64 signed long long int
 #endif
 
@@ -48,6 +50,9 @@ static ID ID_STRFTIME;
 static ID ID_LOGGER;
 static ID ID_DEBUG;
 static ID ID_LEVEL;
+
+// Reference to Extlib module
+static VALUE mExtlib;
 
 // References to DataObjects base classes
 static VALUE mDO;
@@ -342,9 +347,6 @@ static void data_objects_debug(VALUE string, struct timeval* start) {
     gettimeofday(&stop, NULL);
 
     duration = (stop.tv_sec - start->tv_sec) * 1000000 + stop.tv_usec - start->tv_usec;
-    if(stop.tv_usec < start->tv_usec) {
-      duration += 1000000;
-    }
 
     snprintf(total_time, 32, "%.6f", duration / 1000000.0);
     message = (char *)calloc(length + strlen(total_time) + 4, sizeof(char));
@@ -380,6 +382,29 @@ static char * get_uri_option(VALUE query_hash, char * key) {
   return value;
 }
 
+#ifdef _WIN32
+static MYSQL_RES* cCommand_execute_sync(VALUE self, MYSQL* db, VALUE query) {
+  int retval;
+  struct timeval start;
+  char* str = RSTRING_PTR(query);
+  int len   = RSTRING_LEN(query);
+
+  VALUE connection = rb_iv_get(self, "@connection");
+
+  if(mysql_ping(db) && mysql_errno(db) == CR_SERVER_GONE_ERROR) {
+    CHECK_AND_RAISE(mysql_errno(db), "Mysql server has gone away. \
+                             Please report this issue to the Datamapper project. \
+                             Specify your at least your MySQL version when filing a ticket");
+  }
+  gettimeofday(&start, NULL);
+  retval = mysql_real_query(db, str, len);
+  CHECK_AND_RAISE(retval, str);
+
+  data_objects_debug(query, &start);
+
+  return mysql_store_result(db);
+}
+#else
 static MYSQL_RES* cCommand_execute_async(VALUE self, MYSQL* db, VALUE query) {
   int socket_fd;
   int retval;
@@ -428,6 +453,7 @@ static MYSQL_RES* cCommand_execute_async(VALUE self, MYSQL* db, VALUE query) {
 
   return mysql_store_result(db);
 }
+#endif
 
 static VALUE cConnection_initialize(VALUE self, VALUE uri) {
   VALUE r_host, r_user, r_password, r_path, r_query, r_port;
@@ -542,8 +568,8 @@ static VALUE cConnection_initialize(VALUE self, VALUE uri) {
   }
 
   // Disable sql_auto_is_null
-  cCommand_execute_async(self, db, rb_str_new2("SET sql_auto_is_null = 0"));
-  cCommand_execute_async(self, db, rb_str_new2("SET SESSION sql_mode = 'ANSI,NO_AUTO_VALUE_ON_ZERO,NO_DIR_IN_CREATE,NO_ENGINE_SUBSTITUTION,NO_UNSIGNED_SUBTRACTION,TRADITIONAL'"));
+  cCommand_execute(self, db, rb_str_new2("SET sql_auto_is_null = 0"));
+  cCommand_execute(self, db, rb_str_new2("SET SESSION sql_mode = 'ANSI,NO_AUTO_VALUE_ON_ZERO,NO_DIR_IN_CREATE,NO_ENGINE_SUBSTITUTION,NO_UNSIGNED_SUBTRACTION,TRADITIONAL'"));
 
   rb_iv_set(self, "@uri", uri);
   rb_iv_set(self, "@connection", Data_Wrap_Struct(rb_cObject, 0, 0, db));
@@ -631,23 +657,23 @@ static VALUE cCommand_set_types(int argc, VALUE *argv, VALUE self) {
   return array;
 }
 
-VALUE cCommand_quote_time(VALUE self, VALUE value) {
+VALUE cConnection_quote_time(VALUE self, VALUE value) {
   return rb_funcall(value, ID_STRFTIME, 1, RUBY_STRING("'%Y-%m-%d %H:%M:%S'"));
 }
 
 
-VALUE cCommand_quote_date_time(VALUE self, VALUE value) {
+VALUE cConnection_quote_date_time(VALUE self, VALUE value) {
   // TODO: Support non-local dates. we need to call #new_offset on the date to be
   // quoted and pass in the current locale's date offset (self.new_offset((hours * 3600).to_r / 86400)
   return rb_funcall(value, ID_STRFTIME, 1, RUBY_STRING("'%Y-%m-%d %H:%M:%S'"));
 }
 
-VALUE cCommand_quote_date(VALUE self, VALUE value) {
+VALUE cConnection_quote_date(VALUE self, VALUE value) {
   return rb_funcall(value, ID_STRFTIME, 1, RUBY_STRING("'%Y-%m-%d'"));
 }
 
-static VALUE cCommand_quote_string(VALUE self, VALUE string) {
-  MYSQL *db = DATA_PTR(rb_iv_get(rb_iv_get(self, "@connection"), "@connection"));
+static VALUE cConnection_quote_string(VALUE self, VALUE string) {
+  MYSQL *db = DATA_PTR(rb_iv_get(self, "@connection"));
   const char *source = RSTRING_PTR(string);
   int source_len     = RSTRING_LEN(string);
   char *escaped;
@@ -698,7 +724,7 @@ static VALUE cCommand_execute_non_query(int argc, VALUE *argv, VALUE self) {
   MYSQL *db = DATA_PTR(mysql_connection);
   query = build_query_from_args(self, argc, argv);
 
-  response = cCommand_execute_async(self, db, query);
+  response = cCommand_execute(self, db, query);
 
   affected_rows = mysql_affected_rows(db);
   mysql_free_result(response);
@@ -730,7 +756,7 @@ static VALUE cCommand_execute_reader(int argc, VALUE *argv, VALUE self) {
 
   query = build_query_from_args(self, argc, argv);
 
-  response = cCommand_execute_async(self, db, query);
+  response = cCommand_execute(self, db, query);
 
   if (!response) {
     return Qnil;
@@ -890,7 +916,10 @@ void Init_do_mysql_ext() {
   rb_cDate = RUBY_CLASS("Date");
   rb_cDateTime = RUBY_CLASS("DateTime");
   rb_cBigDecimal = RUBY_CLASS("BigDecimal");
-  rb_cByteArray = RUBY_CLASS("ByteArray");
+
+  // Get references to the Extlib module
+  mExtlib = CONST_GET(rb_mKernel, "Extlib");
+  rb_cByteArray = CONST_GET(mExtlib, "ByteArray");
 
   // Get references to the DataObjects module and its classes
   mDO = CONST_GET(rb_mKernel, "DataObjects");
@@ -912,16 +941,15 @@ void Init_do_mysql_ext() {
   rb_define_method(cConnection, "ssl_cipher", cConnection_ssl_cipher, 0);
   rb_define_method(cConnection, "character_set", cConnection_character_set , 0);
   rb_define_method(cConnection, "dispose", cConnection_dispose, 0);
+  rb_define_method(cConnection, "quote_string", cConnection_quote_string, 1);
+  rb_define_method(cConnection, "quote_date", cConnection_quote_date, 1);
+  rb_define_method(cConnection, "quote_time", cConnection_quote_time, 1);
+  rb_define_method(cConnection, "quote_datetime", cConnection_quote_date_time, 1);
 
   cCommand = DRIVER_CLASS("Command", cDO_Command);
-  rb_include_module(cCommand, cDO_Quoting);
   rb_define_method(cCommand, "set_types", cCommand_set_types, -1);
   rb_define_method(cCommand, "execute_non_query", cCommand_execute_non_query, -1);
   rb_define_method(cCommand, "execute_reader", cCommand_execute_reader, -1);
-  rb_define_method(cCommand, "quote_string", cCommand_quote_string, 1);
-  rb_define_method(cCommand, "quote_date", cCommand_quote_date, 1);
-  rb_define_method(cCommand, "quote_time", cCommand_quote_time, 1);
-  rb_define_method(cCommand, "quote_datetime", cCommand_quote_date_time, 1);
 
   // Non-Query result
   cResult = DRIVER_CLASS("Result", cDO_Result);

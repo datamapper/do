@@ -9,7 +9,6 @@ pkg/*
 Makefile
 **/*.db
 nbproject
-!do_jdbc/nbproject
 *.*~
 *.*#
 *.rbc
@@ -20,5 +19,8 @@ coverage
 do_*/lib/do_*_ext.jar
 do_*/**/target
 do_*/pkg
+do_*/tmp
+do_*/vendor
 bin/**
 .project
+*.swp

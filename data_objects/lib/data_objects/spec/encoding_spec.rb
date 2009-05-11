@@ -19,7 +19,7 @@ share_examples_for 'a driver supporting encodings' do
 
     describe 'sets the character set through the URI' do
       before do
-        @latin1_connection = DataObjects::Connection.new("#{CONFIG.scheme}://#{CONFIG.user}:#{CONFIG.password}@#{CONFIG.host}:#{CONFIG.port}/#{CONFIG.database}?encoding=latin1")
+        @latin1_connection = DataObjects::Connection.new("#{CONFIG.scheme}://#{CONFIG.user}:#{CONFIG.pass}@#{CONFIG.host}:#{CONFIG.port}#{CONFIG.database}?encoding=latin1")
       end
 
       after { @latin1_connection.close }

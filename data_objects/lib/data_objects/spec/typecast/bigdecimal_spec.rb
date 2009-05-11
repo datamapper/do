@@ -57,7 +57,7 @@ share_examples_for 'supporting BigDecimal' do
     it 'should return the correct entry' do
       @values.first.should == 2
     end
-    
+
   end
 
 end

@@ -6,12 +6,12 @@ require 'data_objects/spec/connection_spec'
 describe DataObjects::Postgres::Connection do
 
   before :all do
-    @driver = 'postgres'
-    @user   = 'postgres'
-    @password = ''
-    @host   = 'localhost'
-    @port   = '5432'
-    @database = 'do_test'
+    @driver = CONFIG.scheme
+    @user   = CONFIG.user
+    @password = CONFIG.pass
+    @host   = CONFIG.host
+    @port   = CONFIG.port
+    @database = CONFIG.database
   end
 
   it_should_behave_like 'a Connection'

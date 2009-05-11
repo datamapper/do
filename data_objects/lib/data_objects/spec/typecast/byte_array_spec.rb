@@ -29,7 +29,7 @@ share_examples_for 'supporting ByteArray' do
       end
 
       it 'should return the correctly typed result' do
-        @values.first.should be_kind_of(ByteArray)
+        @values.first.should be_kind_of(::Extlib::ByteArray)
       end
 
       it 'should return the correct result' do
@@ -42,7 +42,7 @@ share_examples_for 'supporting ByteArray' do
 
       before  do
         @command = @connection.create_command("SELECT cad_drawing FROM widgets WHERE ad_description = ?")
-        @command.set_types(ByteArray)
+        @command.set_types(::Extlib::ByteArray)
         @reader = @command.execute_reader('Buy this product now!')
         @reader.next!
         @values = @reader.values
@@ -53,7 +53,7 @@ share_examples_for 'supporting ByteArray' do
       end
 
       it 'should return the correctly typed result' do
-        @values.first.should be_kind_of(ByteArray)
+        @values.first.should be_kind_of(::Extlib::ByteArray)
       end
 
       it 'should return the correct result' do
@@ -67,7 +67,7 @@ share_examples_for 'supporting ByteArray' do
   describe 'writing a ByteArray' do
 
     before  do
-      @reader = @connection.create_command("SELECT id FROM widgets WHERE id = ?").execute_reader(ByteArray.new("2"))
+      @reader = @connection.create_command("SELECT id FROM widgets WHERE id = ?").execute_reader(::Extlib::ByteArray.new("2"))
       @reader.next!
       @values = @reader.values
     end

@@ -7,12 +7,12 @@ require 'cgi'
 describe DataObjects::Mysql::Connection do
 
   before :all do
-    @driver = 'mysql'
-    @user   = 'root'
-    @password = ''
-    @host   = 'localhost'
-    @port   = 3306
-    @database = 'do_test'
+    @driver = CONFIG.scheme
+    @user   = CONFIG.user
+    @password = CONFIG.pass
+    @host   = CONFIG.host
+    @port   = CONFIG.port
+    @database = CONFIG.database
     @ssl_query = %W[
       ssl_ca=#{CGI::escape(ssl_config[:ca_cert])}
       ssl_cert=#{CGI::escape(ssl_config[:client_cert])}
@@ -21,6 +21,6 @@ describe DataObjects::Mysql::Connection do
   end
 
   it_should_behave_like 'a Connection'
-  it_should_behave_like 'a Connection with authentication support'
+  #it_should_behave_like 'a Connection with authentication support'
   it_should_behave_like 'a Connection with SSL support'
 end

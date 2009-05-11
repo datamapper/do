@@ -1,47 +1,54 @@
 require "time" # httpdate
-# ==== Public DataObjects Logger API
-#
-# Logger taken from Merb :)
-#
-# To replace an existing logger with a new one:
-#  DataObjects::Logger.set_log(log{String, IO},level{Symbol, String})
-#
-# Available logging levels are
-#   DataObjects::Logger::{ Fatal, Error, Warn, Info, Debug }
-#
-# Logging via:
-#   DataObjects.logger.fatal(message<String>)
-#   DataObjects.logger.error(message<String>)
-#   DataObjects.logger.warn(message<String>)
-#   DataObjects.logger.info(message<String>)
-#   DataObjects.logger.debug(message<String>)
-#
-# Flush the buffer to
-#   DataObjects.logger.flush
-#
-# Remove the current log object
-#   DataObjects.logger.close
-#
-# ==== Private DataObjects Logger API
-#
-# To initialize the logger you create a new object, proxies to set_log.
-#   DataObjects::Logger.new(log{String, IO},level{Symbol, String})
-#
-# Logger will not create the file until something is actually logged
-# This avoids file creation on DataObjects init when it creates the
-# default logger.
+
 module DataObjects
 
-  class << self #:nodoc:
+  class << self
+    # The global logger for DataObjects
     attr_accessor :logger
   end
 
+  # ==== Public DataObjects Logger API
+  #
+  # Logger taken from Merb :)
+  #
+  # To replace an existing logger with a new one:
+  #  DataObjects::Logger.set_log(log{String, IO},level{Symbol, String})
+  #
+  # Available logging levels are
+  #   DataObjects::Logger::{ Fatal, Error, Warn, Info, Debug }
+  #
+  # Logging via:
+  #   DataObjects.logger.fatal(message<String>)
+  #   DataObjects.logger.error(message<String>)
+  #   DataObjects.logger.warn(message<String>)
+  #   DataObjects.logger.info(message<String>)
+  #   DataObjects.logger.debug(message<String>)
+  #
+  # Flush the buffer to
+  #   DataObjects.logger.flush
+  #
+  # Remove the current log object
+  #   DataObjects.logger.close
+  #
+  # ==== Private DataObjects Logger API
+  #
+  # To initialize the logger you create a new object, proxies to set_log.
+  #   DataObjects::Logger.new(log{String, IO},level{Symbol, String})
+  #
+  # Logger will not create the file until something is actually logged
+  # This avoids file creation on DataObjects init when it creates the
+  # default logger.
   class Logger
 
+    # Use asynchronous I/O?
     attr_accessor :aio
+    # delimiter to use between message sections
     attr_accessor :delimiter
+    # a symbol representing the log level from {:off, :fatal, :error, :warn, :info, :debug}
     attr_reader   :level
+    # Direct access to the buffer
     attr_reader   :buffer
+    # The name of the log file
     attr_reader   :log
 
     # @note
@@ -64,6 +71,7 @@ module DataObjects
       :debug => 0
     }
 
+    # Set the log level (use the level symbols as documented)
     def level=(new_level)
       @level = LEVELS[new_level.to_sym]
       reset_methods(:close)

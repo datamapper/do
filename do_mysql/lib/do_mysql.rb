@@ -30,11 +30,11 @@ if RUBY_PLATFORM =~ /java/
 
         def character_set
           # JDBC API does not provide an easy way to get the current character set
-          reader = self.create_command("SHOW VARIABLES LIKE 'character_set_database'").execute_reader
+          reader = self.create_command("SHOW VARIABLES LIKE 'character_set_client'").execute_reader
           reader.next!
           char_set = reader.values[1]
           reader.close
-          char_set
+          char_set.downcase
         end
 
       end

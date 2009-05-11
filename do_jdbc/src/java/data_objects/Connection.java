@@ -5,10 +5,8 @@ import java.io.UnsupportedEncodingException;
 import java.net.URISyntaxException;
 import java.sql.DriverManager;
 import java.sql.SQLException;
-import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
-import java.util.StringTokenizer;
+import java.util.Properties;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
 import javax.sql.DataSource;
@@ -77,6 +75,7 @@ public class Connection extends RubyObject {
         // System.out.println("============== initialize called " + uri);
         Ruby runtime = recv.getRuntime();
         String jdbcDriver = null;
+        String encoding = null;
         java.net.URI connectionUri;
 
         try {
@@ -106,7 +105,12 @@ public class Connection extends RubyObject {
             }
 
             jdbcDriver = query.get("driver");
-            //String protocol = query.get("protocol"); // XXX : not sure of the point of this
+            if (driver.supportsConnectionEncodings()) {
+                encoding = query.get("encoding");
+                if (encoding == null) {
+                    encoding = query.get("charset");
+                }
+            }
         }
 
         // Load JDBC Driver Class
@@ -123,6 +127,12 @@ public class Connection extends RubyObject {
             }
             // should be handled implicitly
             // DriverManager.registerDriver(driver);
+        }
+
+        // default encoding to UTF-8, if not specified
+        // TODO: encoding should be mapped from Ruby encoding type to Java encoding
+        if (driver.supportsConnectionEncodings() && encoding == null) {
+            encoding = "utf8";
         }
 
         java.sql.Connection conn;
@@ -151,16 +161,30 @@ public class Connection extends RubyObject {
                 if (!jdbcUri.startsWith("jdbc:")) {
                     jdbcUri = "jdbc:" + jdbcUri;
                 }
+                String username = userInfo.substring(0, userInfo.indexOf(":"));
+                String password = userInfo.substring(userInfo.indexOf(":") + 1);
 
-                conn = DriverManager.getConnection(jdbcUri,
-                        userInfo.substring(0, userInfo.indexOf(":")),
-                        userInfo.substring(userInfo.indexOf(":") + 1));
+                Properties props = driver.getDefaultConnectionProperties();
+                props.put("user", username);
+                props.put("password", password);
+
+                if (driver.supportsConnectionEncodings()) {
+                    driver.setEncodingProperty(props, encoding);
+                }
+
+                conn = DriverManager.getConnection(jdbcUri, props);
             } else {
                 String jdbcUri = connectionUri.toString();
                 if (!jdbcUri.startsWith("jdbc:")) {
                     jdbcUri = "jdbc:" + jdbcUri;
                 }
-                conn = DriverManager.getConnection(jdbcUri);
+
+                Properties props = driver.getDefaultConnectionProperties();
+                if (driver.supportsConnectionEncodings()) {
+                    driver.setEncodingProperty(props, encoding);
+                }
+
+                conn = DriverManager.getConnection(jdbcUri, props);
             }
 
         } catch (SQLException ex) {

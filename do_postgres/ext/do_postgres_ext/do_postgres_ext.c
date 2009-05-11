@@ -9,6 +9,22 @@
 #undef PACKAGE_STRING
 #undef PACKAGE_TARNAME
 #undef PACKAGE_VERSION
+
+#ifdef _WIN32
+/* On Windows this stuff is also defined by Postgres, but we don't
+   want to use Postgres' version actually */
+#undef fsync
+#undef vsnprintf
+#undef snprintf
+#undef sprintf
+#undef printf
+#define cCommand_execute cCommand_execute_sync
+#define do_int64 signed __int64
+#else
+#define cCommand_execute cCommand_execute_async
+#define do_int64 signed long long int
+#endif
+
 #include <ruby.h>
 #include <string.h>
 #include <math.h>
@@ -39,11 +55,6 @@
 #define RARRAY_LEN(a) RARRAY(a)->len
 #endif
 
-#ifdef _WIN32
-#define do_int64 signed __int64
-#else
-#define do_int64 signed long long int
-#endif
 
 // To store rb_intern values
 static ID ID_NEW_DATE;
@@ -53,6 +64,7 @@ static ID ID_LEVEL;
 static ID ID_TO_S;
 static ID ID_RATIONAL;
 
+static VALUE mExtlib;
 static VALUE mDO;
 static VALUE cDO_Quoting;
 static VALUE cDO_Connection;
@@ -90,9 +102,6 @@ static void data_objects_debug(VALUE string, struct timeval* start) {
     gettimeofday(&stop, NULL);
 
     duration = (stop.tv_sec - start->tv_sec) * 1000000 + stop.tv_usec - start->tv_usec;
-    if(stop.tv_usec < start->tv_usec) {
-      duration += 1000000;
-    }
 
     snprintf(total_time, 32, "%.6f", duration / 1000000.0);
     message = (char *)calloc(length + strlen(total_time) + 4, sizeof(char));
@@ -420,8 +429,8 @@ static VALUE build_query_from_args(VALUE klass, int count, VALUE *args[]) {
   return query;
 }
 
-static VALUE cCommand_quote_string(VALUE self, VALUE string) {
-  PGconn *db = DATA_PTR(rb_iv_get(rb_iv_get(self, "@connection"), "@connection"));
+static VALUE cConnection_quote_string(VALUE self, VALUE string) {
+  PGconn *db = DATA_PTR(rb_iv_get(self, "@connection"));
 
   const char *source = RSTRING_PTR(string);
   int source_len     = RSTRING_LEN(string);
@@ -445,8 +454,8 @@ static VALUE cCommand_quote_string(VALUE self, VALUE string) {
   return result;
 }
 
-static VALUE cCommand_quote_byte_array(VALUE self, VALUE string) {
-  PGconn *db = DATA_PTR(rb_iv_get(rb_iv_get(self, "@connection"), "@connection"));
+static VALUE cConnection_quote_byte_array(VALUE self, VALUE string) {
+  PGconn *db = DATA_PTR(rb_iv_get(self, "@connection"));
 
   const unsigned char *source = (unsigned char*) RSTRING_PTR(string);
   size_t source_len     = RSTRING_LEN(string);
@@ -471,6 +480,37 @@ static VALUE cCommand_quote_byte_array(VALUE self, VALUE string) {
   return result;
 }
 
+#ifdef _WIN32
+static PGresult* cCommand_execute_sync(PGconn *db, VALUE query) {
+  PGresult *response;
+  struct timeval start;
+  char* str = StringValuePtr(query);
+
+  while ((response = PQgetResult(db)) != NULL) {
+    PQclear(response);
+  }
+
+  gettimeofday(&start, NULL);
+
+  response = PQexec(db, str);
+
+  if (response == NULL) {
+    if(PQstatus(db) != CONNECTION_OK) {
+      PQreset(db);
+      if (PQstatus(db) == CONNECTION_OK) {
+        response = PQexec(db, str);
+      }
+    }
+
+    if(response == NULL) {
+      rb_raise(ePostgresError, PQerrorMessage(db));
+    }
+  }
+
+  data_objects_debug(query, &start);
+  return response;
+}
+#else
 static PGresult* cCommand_execute_async(PGconn *db, VALUE query) {
   int socket_fd;
   int retval;
@@ -525,6 +565,7 @@ static PGresult* cCommand_execute_async(PGconn *db, VALUE query) {
   data_objects_debug(query, &start);
   return PQgetResult(db);
 }
+#endif
 
 static VALUE cConnection_initialize(VALUE self, VALUE uri) {
   PGresult *result = NULL;
@@ -594,7 +635,7 @@ static VALUE cConnection_initialize(VALUE self, VALUE uri) {
     search_path_query = (char *)calloc(256, sizeof(char));
     snprintf(search_path_query, 256, "set search_path to %s;", search_path);
     r_query = rb_str_new2(search_path_query);
-    result = cCommand_execute_async(db, r_query);
+    result = cCommand_execute(db, r_query);
 
     if (PQresultStatus(result) != PGRES_COMMAND_OK) {
       free(search_path_query);
@@ -605,21 +646,21 @@ static VALUE cConnection_initialize(VALUE self, VALUE uri) {
   }
 
   r_options = rb_str_new2(backslash_off);
-  result = cCommand_execute_async(db, r_options);
+  result = cCommand_execute(db, r_options);
 
   if (PQresultStatus(result) != PGRES_COMMAND_OK) {
     rb_warn(PQresultErrorMessage(result));
   }
 
   r_options = rb_str_new2(standard_strings_on);
-  result = cCommand_execute_async(db, r_options);
+  result = cCommand_execute(db, r_options);
 
   if (PQresultStatus(result) != PGRES_COMMAND_OK) {
     rb_warn(PQresultErrorMessage(result));
   }
 
   r_options = rb_str_new2(warning_messages);
-  result = cCommand_execute_async(db, r_options);
+  result = cCommand_execute(db, r_options);
 
   if (PQresultStatus(result) != PGRES_COMMAND_OK) {
     rb_warn(PQresultErrorMessage(result));
@@ -668,18 +709,18 @@ static VALUE cCommand_execute_non_query(int argc, VALUE *argv[], VALUE self) {
   PGresult *response;
   int status;
 
-  VALUE affected_rows;
-  VALUE insert_id;
+  VALUE affected_rows = Qnil;
+  VALUE insert_id = Qnil;
 
   VALUE query = build_query_from_args(self, argc, argv);
 
-  response = cCommand_execute_async(db, query);
+  response = cCommand_execute(db, query);
 
   status = PQresultStatus(response);
 
   if ( status == PGRES_TUPLES_OK ) {
     insert_id = INT2NUM(atoi(PQgetvalue(response, 0, 0)));
-    affected_rows = INT2NUM(1);
+    affected_rows = INT2NUM(atoi(PQcmdTuples(response)));
   }
   else if ( status == PGRES_COMMAND_OK ) {
     insert_id = Qnil;
@@ -716,7 +757,7 @@ static VALUE cCommand_execute_reader(int argc, VALUE *argv[], VALUE self) {
 
   query = build_query_from_args(self, argc, argv);
 
-  response = cCommand_execute_async(db, query);
+  response = cCommand_execute(db, query);
 
   if ( PQresultStatus(response) != PGRES_TUPLES_OK ) {
     char *message = PQresultErrorMessage(response);
@@ -822,6 +863,7 @@ static VALUE cReader_values(VALUE self) {
   VALUE values = rb_iv_get(self, "@values");
   if(values == Qnil) {
     rb_raise(ePostgresError, "Reader not initialized");
+    return Qnil;
   } else {
     return values;
   }
@@ -842,9 +884,7 @@ void Init_do_postgres_ext() {
   // Get references classes needed for Date/Time parsing
   rb_cDate = CONST_GET(rb_mKernel, "Date");
   rb_cDateTime = CONST_GET(rb_mKernel, "DateTime");
-  rb_cTime = CONST_GET(rb_mKernel, "Time");
   rb_cBigDecimal = CONST_GET(rb_mKernel, "BigDecimal");
-  rb_cByteArray = CONST_GET(rb_mKernel, "ByteArray");
 
   rb_funcall(rb_mKernel, rb_intern("require"), 1, rb_str_new2("data_objects"));
 
@@ -858,6 +898,10 @@ void Init_do_postgres_ext() {
   ID_LEVEL = rb_intern("level");
   ID_TO_S = rb_intern("to_s");
   ID_RATIONAL = rb_intern("Rational");
+
+  // Get references to the Extlib module
+  mExtlib = CONST_GET(rb_mKernel, "Extlib");
+  rb_cByteArray = CONST_GET(mExtlib, "ByteArray");
 
   // Get references to the DataObjects module and its classes
   mDO = CONST_GET(rb_mKernel, "DataObjects");
@@ -875,14 +919,13 @@ void Init_do_postgres_ext() {
   rb_define_method(cConnection, "initialize", cConnection_initialize, 1);
   rb_define_method(cConnection, "dispose", cConnection_dispose, 0);
   rb_define_method(cConnection, "character_set", cConnection_character_set , 0);
+  rb_define_method(cConnection, "quote_string", cConnection_quote_string, 1);
+  rb_define_method(cConnection, "quote_byte_array", cConnection_quote_byte_array, 1);
 
   cCommand = POSTGRES_CLASS("Command", cDO_Command);
-  rb_include_module(cCommand, cDO_Quoting);
   rb_define_method(cCommand, "set_types", cCommand_set_types, -1);
   rb_define_method(cCommand, "execute_non_query", cCommand_execute_non_query, -1);
   rb_define_method(cCommand, "execute_reader", cCommand_execute_reader, -1);
-  rb_define_method(cCommand, "quote_string", cCommand_quote_string, 1);
-  rb_define_method(cCommand, "quote_byte_array", cCommand_quote_byte_array, 1);
 
   cResult = POSTGRES_CLASS("Result", cDO_Result);
 

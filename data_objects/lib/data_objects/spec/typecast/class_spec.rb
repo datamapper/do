@@ -57,7 +57,7 @@ share_examples_for 'supporting Class' do
     it 'should return the correct entry' do
       @values.first.should == "String"
     end
-    
+
   end
 
 end
