@@ -16,7 +16,6 @@ require 'date'
 require 'base64'
 
 require File.expand_path(File.join(File.dirname(__FILE__), 'do_sqlserver', 'version'))
-require File.expand_path(File.join(File.dirname(__FILE__), 'do_sqlserver', 'transaction'))
 
 if RUBY_PLATFORM !~ /java/
   module DataObjects
@@ -44,7 +43,7 @@ if RUBY_PLATFORM !~ /java/
           @connection = DBI.connect(connection_string, user, password)
 
           set_date_format = create_command("SET DATEFORMAT YMD").execute_non_query
-          p set_date_format
+          #p set_date_format
           options_reader = create_command("DBCC USEROPTIONS").execute_reader
           while options_reader.next!
             key, value = *options_reader.values

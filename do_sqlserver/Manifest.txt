@@ -3,6 +3,7 @@ Manifest.txt
 README.rdoc
 Rakefile
 lib/do_sqlserver.rb
+lib/do_sqlserver/version.rb
 spec/do_sqlserver_spec.rb
 spec/spec.opts
 spec/spec_helper.rb
