@@ -1,0 +1,196 @@
+require 'ruby-debug'
+require 'rubygems'
+require 'data_objects'
+
+if RUBY_PLATFORM =~ /java/
+  require 'do_jdbc'
+  require 'java'
+  gem 'jdbc-sqlserver'
+  require 'jdbc/sqlserver' # the JDBC driver, packaged as a gem
+else
+  require 'dbi' unless defined?(DBI)
+  #require 'core_ext/dbi'           # A hack to work around ODBC millisecond handling in Timestamps
+end
+require 'bigdecimal'
+require 'date'
+require 'base64'
+
+require File.expand_path(File.join(File.dirname(__FILE__), 'do_sqlserver', 'version'))
+require File.expand_path(File.join(File.dirname(__FILE__), 'do_sqlserver', 'transaction'))
+
+if RUBY_PLATFORM !~ /java/
+  module DataObjects
+    module Sqlserver
+      Mode = begin
+          require "ADO"
+          :ado
+        rescue LoadError => e
+          :odbc
+        end
+
+      class Connection < DataObjects::Connection
+        def initialize uri
+          # REVISIT: Allow uri.query to modify this connection's mode?
+          #host = uri.host.blank? ? "localhost" : uri.host
+          host = uri.host.blank? ? nil : uri.host
+          user = uri.user || "sa"
+          password = uri.password || ""
+          path = uri.path.sub(%r{^/}, '')
+          if Mode == :ado
+            connection_string = "DBI:ADO:Provider=SQLOLEDB;Data Source=#{host};Initial Catalog=#{path};User ID=#{user};Password=#{password};"
+          else
+            connection_string = "DBI:ODBC:#{path}"
+          end
+          @connection = DBI.connect(connection_string, user, password)
+
+          set_date_format = create_command("SET DATEFORMAT YMD").execute_non_query
+          p set_date_format
+          options_reader = create_command("DBCC USEROPTIONS").execute_reader
+          while options_reader.next!
+            key, value = *options_reader.values
+            value = options_reader.values
+            case key
+            when "textsize"                     # "64512"
+            when "language"                     # "us_english", "select * from master..syslanguages" for info
+            when "dateformat"                   # "ymd"
+            when "datefirst"                    # "7" = Sunday, first day of the week, change with "SET DATEFIRST"
+            when "quoted_identifier"            # "SET"
+            when "ansi_null_dflt_on"            # "SET"
+            when "ansi_defaults"                # "SET"
+            when "ansi_warnings"                # "SET"
+            when "ansi_padding"                 # "SET"
+            when "ansi_nulls"                   # "SET"
+            when "concat_null_yields_null"      # "SET"
+            else
+            end
+          end
+        end
+
+        def using_socket?
+          # This might be an unnecessary feature dragged from the mysql driver
+          raise "Not yet implemented"
+        end
+
+        def character_set
+          raise "Not yet implemented"
+        end
+
+        def dispose
+          raw_connection.disconnect rescue nil
+        end
+
+        def raw
+          @connection
+        end
+      end
+
+      class Command < DataObjects::Command
+        def set_types *t
+          raise "Not yet implemented"
+        end
+
+        def execute_non_query *args
+          handle = @connection.raw.execute(@text)
+          handle.finish if handle
+
+          # Get the inserted ID and the count of affected rows:
+          id, row_count = nil, nil
+          if (handle = @connection.raw.execute('SELECT SCOPE_IDENTITY(), @@ROWCOUNT'))
+            id, row_count = *Array(Array(handle)[0])
+            handle.finish
+          end
+          Result.new(self, row_count, id)
+        end
+
+        def execute_reader *args
+          handle = @connection.raw.execute(@text)
+          Reader.new(self, handle)
+        end
+      end
+
+      class Result < DataObjects::Result
+      end
+
+      # REVISIT: There is no data type conversion happening here. That will make DataObjects sad.
+      class Reader < DataObjects::Reader
+        def initialize command, handle
+          @command, @handle = command, handle
+          return unless @handle
+
+          @fields = handle.column_names
+
+          # REVISIT: Prefetch results like AR's adapter does. ADO is a bit strange about handle lifetimes, don't move this until you can test it.
+          @rows = []
+          @handle.each do |row|
+            @rows << row.map { |value| value }
+          end
+          @handle.finish if @handle
+          @current_row = -1
+        end
+
+        def close
+          @handle.finish if @handle && @handle.respond_to?(:finish) && !@handle.finished?
+        end
+
+        def next!
+          (@current_row += 1) < @rows.size
+        end
+
+        def values
+          raise StandardError.new("First row has not been fetched") if @current_row < 0
+          raise StandardError.new("Last row has been processed") if @current_row >= @rows.size
+          @rows[@current_row]
+        end
+
+        def fields
+          @fields
+        end
+
+        def field_count
+          @fields.size
+        end
+
+        # REVISIT: This is being deprecated
+        def row_count
+          @rows.size
+        end
+      end
+
+    end
+  end
+
+else
+
+  # Another way of loading the JDBC Class. This seems to be more reliable
+  # than Class.forName() within the data_objects.Connection Java class,
+  # which is currently not working as expected.
+  import 'com.sqlserver.jdbc.Driver'
+
+  module DataObjects
+    module Sqlserver
+      class Connection
+        def self.pool_size
+          20
+        end
+
+        def using_socket?
+          @using_socket
+        end
+
+=begin
+        # REVISIT: Does this problem even exist for Sqlserver?
+        def character_set
+          # JDBC API does not provide an easy way to get the current character set
+          reader = self.create_command("SHOW VARIABLES LIKE 'character_set_client'").execute_reader
+          reader.next!
+          char_set = reader.values[1]
+          reader.close
+          char_set.downcase
+        end
+=end
+
+      end
+    end
+  end
+
+end

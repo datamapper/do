@@ -1,0 +1,9 @@
+History.txt
+Manifest.txt
+README.rdoc
+Rakefile
+lib/do_sqlserver.rb
+spec/do_sqlserver_spec.rb
+spec/spec.opts
+spec/spec_helper.rb
+tasks/rspec.rake
