@@ -226,6 +226,14 @@ public class Connection extends RubyObject {
         return runtime.getTrue();
     }
 
+    // ------------------------------------------------ ADDITIONAL JRUBY METHODS
+
+    @JRubyMethod(required = 1)
+    public static IRubyObject quote_string(IRubyObject recv, IRubyObject value) {
+        String quoted = driver.quoteString(value.asJavaString());
+        return recv.getRuntime().newString(quoted);
+    }
+
     // -------------------------------------------------- PRIVATE HELPER METHODS
     private static IRubyObject wrappedConnection(IRubyObject recv, java.sql.Connection c) {
         return Java.java_to_ruby(recv, JavaObject.wrap(recv.getRuntime(), c), Block.NULL_BLOCK);

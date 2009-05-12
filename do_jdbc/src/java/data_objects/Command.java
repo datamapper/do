@@ -65,7 +65,6 @@ public class Command extends RubyObject {
                                                final String errorName,
                                                final DriverDefinition driverDefinition) {
         RubyModule doModule = runtime.getModule(DATA_OBJECTS_MODULE_NAME);
-        RubyModule quotingModule = (RubyModule) doModule.getConstant("Quoting");
         RubyClass superClass = doModule.getClass(RUBY_CLASS_NAME);
         RubyModule driverModule = (RubyModule) doModule.getConstant(moduleName);
         RubyClass commandClass = runtime.defineClassUnder("Command",
@@ -74,7 +73,6 @@ public class Command extends RubyObject {
         Command.driver = driverDefinition;
         Command.moduleName = moduleName;
         Command.errorName = errorName;
-        commandClass.includeModule(quotingModule);
         commandClass.defineAnnotatedMethods(Command.class);
         return commandClass;
     }
@@ -353,14 +351,6 @@ public class Command extends RubyObject {
 
         api.setInstanceVariable(recv, "@field_types", type_strings);
         return types;
-    }
-
-    // ------------------------------------------------ ADDITIONAL JRUBY METHODS
-
-    @JRubyMethod(required = 1)
-    public static IRubyObject quote_string(IRubyObject recv, IRubyObject value) {
-        String quoted = driver.quoteString(value.asJavaString());
-        return recv.getRuntime().newString(quoted);
     }
 
     // ---------------------------------------------------------- HELPER METHODS
