@@ -40,10 +40,17 @@ if RUBY_PLATFORM !~ /java/
           else
             connection_string = "DBI:ODBC:#{path}"
           end
-          @connection = DBI.connect(connection_string, user, password)
+
+          begin
+            @connection = DBI.connect(connection_string, user, password)
+          rescue DBI::DatabaseError => e
+            # Place to debug connection failures
+            raise
+          end
+
+          @encoding = uri.query && uri.query["encoding"] || "utf8"
 
           set_date_format = create_command("SET DATEFORMAT YMD").execute_non_query
-          #p set_date_format
           options_reader = create_command("DBCC USEROPTIONS").execute_reader
           while options_reader.next!
             key, value = *options_reader.values
@@ -71,11 +78,14 @@ if RUBY_PLATFORM !~ /java/
         end
 
         def character_set
-          raise "Not yet implemented"
+          @encoding
         end
 
         def dispose
-          raw_connection.disconnect rescue nil
+          @connection.disconnect
+          true
+        rescue
+          false
         end
 
         def raw
@@ -84,25 +94,50 @@ if RUBY_PLATFORM !~ /java/
       end
 
       class Command < DataObjects::Command
+        # Theoretically, SCOPE_IDENTIY should be preferred, but there are cases where it returns a stale ID, and I don't know why.
+        #IDENTITY_ROWCOUNT_QUERY = 'SELECT SCOPE_IDENTITY(), @@ROWCOUNT'
+        IDENTITY_ROWCOUNT_QUERY = 'SELECT @@IDENTITY, @@ROWCOUNT'
+
+        attr_reader :types
+
         def set_types *t
-          raise "Not yet implemented"
+          @types = t.flatten
         end
 
         def execute_non_query *args
-          handle = @connection.raw.execute(@text)
-          handle.finish if handle
+          DataObjects::Sqlserver.check_params @text, args
+          begin
+            handle = @connection.raw.execute(@text, *args)
+          rescue DBI::DatabaseError => e
+            handle = @connection.raw.handle
+            handle.finish if handle && handle.respond_to?(:finish) && !handle.finished?
+            DataObjects::Sqlserver.raise_db_error(e, @text, args)
+          end
+          handle.finish if handle && handle.respond_to?(:finish) && !handle.finished?
 
           # Get the inserted ID and the count of affected rows:
-          id, row_count = nil, nil
-          if (handle = @connection.raw.execute('SELECT SCOPE_IDENTITY(), @@ROWCOUNT'))
-            id, row_count = *Array(Array(handle)[0])
+          inserted_id, row_count = nil, nil
+          if (handle = @connection.raw.execute(IDENTITY_ROWCOUNT_QUERY))
+            row1 = Array(Array(handle)[0])
+            inserted_id, row_count = row1[0].to_i, row1[1].to_i
             handle.finish
           end
-          Result.new(self, row_count, id)
+          Result.new(self, row_count, inserted_id)
         end
 
         def execute_reader *args
-          handle = @connection.raw.execute(@text)
+          DataObjects::Sqlserver.check_params @text, args
+          begin
+            handle = @connection.raw.execute(@text, *args)
+          rescue DBI::DatabaseError => e
+            handle = @connection.raw.handle
+            DataObjects::Sqlserver.raise_db_error(e, @text, args)
+            handle.finish if handle && handle.respond_to?(:finish) && !handle.finished?
+          rescue
+            handle = @connection.raw.handle
+            handle.finish if handle && handle.respond_to?(:finish) && !handle.finished?
+            raise
+          end
           Reader.new(self, handle)
         end
       end
@@ -120,15 +155,27 @@ if RUBY_PLATFORM !~ /java/
 
           # REVISIT: Prefetch results like AR's adapter does. ADO is a bit strange about handle lifetimes, don't move this until you can test it.
           @rows = []
-          @handle.each do |row|
-            @rows << row.map { |value| value }
+          types = @command.types
+          if types && types.size != @fields.size
+            @handle.finish if @handle && @handle.respond_to?(:finish) && !@handle.finished?
+            raise ArgumentError, "Field-count mismatch. Expected #{types.size} fields, but the query yielded #{@fields.size}"
           end
-          @handle.finish if @handle
+          @handle.each do |row|
+            field = -1
+            @rows << row.map { |value| field += 1; types ? types[field].new(value) : value }
+          end
+          @handle.finish if @handle && @handle.respond_to?(:finish) && !@handle.finished?
           @current_row = -1
         end
 
         def close
-          @handle.finish if @handle && @handle.respond_to?(:finish) && !@handle.finished?
+          if @handle
+            @handle.finish if  @handle.respond_to?(:finish) && !@handle.finished?
+            @handle = nil
+            true
+          else
+            false
+          end
         end
 
         def next!
@@ -155,7 +202,32 @@ if RUBY_PLATFORM !~ /java/
         end
       end
 
+    private
+      def self.check_params cmd, args
+        actual = args.size
+        expected = param_count(cmd)
+        raise ArgumentError.new("Binding mismatch: #{actual} for #{expected}") if actual != expected
+      end
+
+      def self.raise_db_error(e, cmd, args)
+        msg = e.to_str
+        case msg
+        when /Too much parameters/, /No data found/
+          #puts "'#{cmd}' (#{args.map{|a| a.inspect}*", "}): #{e.to_str}"
+          check_params(cmd, args)
+        else
+          #puts "'#{cmd}' (#{args.map{|a| a.inspect}*", "}): #{e.to_str}"
+          #debugger
+        end
+        raise
+      end
+
+      def self.param_count cmd
+        cmd.gsub(/'[^']*'/,'').scan(/\?/).size
+      end
+
     end
+
   end
 
 else
