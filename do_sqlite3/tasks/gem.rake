@@ -20,7 +20,7 @@ GEM_SPEC = Gem::Specification.new do |s|
     s.platform = "java"
   else
     s.platform    = Gem::Platform::RUBY
-    s.extensions << 'ext/do_postgres_ext/extconf.rb'
+    s.extensions << 'ext/do_sqlite3_ext/extconf.rb'
   end
 
   # development dependencies
