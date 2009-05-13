@@ -518,18 +518,19 @@ static VALUE cConnection_initialize(VALUE self, VALUE uri) {
   if (!encoding) { encoding = "utf8"; }
 
 #ifdef HAVE_MYSQL_SSL_SET
-  char *ssl, *ssl_key, *ssl_cert, *ssl_ca, *ssl_capath, *ssl_cipher;
+  char *ssl_client_key, *ssl_client_cert, *ssl_ca_cert, *ssl_ca_path, *ssl_cipher;
+  VALUE r_ssl;
 
-  ssl = get_uri_option(r_query, "ssl");
+  if(rb_obj_is_kind_of(r_query, rb_cHash) &&
+     (r_ssl = rb_hash_aref(r_query, RUBY_STRING("ssl"))) &&
+      rb_obj_is_kind_of(r_ssl, rb_cHash)) {
+    ssl_client_key  = get_uri_option(r_ssl, "client_key");
+    ssl_client_cert = get_uri_option(r_ssl, "client_cert");
+    ssl_ca_cert     = get_uri_option(r_ssl, "ca_cert");
+    ssl_ca_path     = get_uri_option(r_ssl, "ca_path");
+    ssl_cipher      = get_uri_option(r_ssl, "cipher");
 
-  if (ssl != NULL && 0 == strcasecmp(ssl, "true")) {
-    ssl_key    = get_uri_option(r_query, "ssl_key");
-    ssl_cert   = get_uri_option(r_query, "ssl_cert");
-    ssl_ca     = get_uri_option(r_query, "ssl_ca");
-    ssl_capath = get_uri_option(r_query, "ssl_capath");
-    ssl_cipher = get_uri_option(r_query, "ssl_cipher");
-
-    mysql_ssl_set(db, ssl_key, ssl_cert, ssl_ca, ssl_capath, ssl_cipher);
+    mysql_ssl_set(db, ssl_client_key, ssl_client_cert, ssl_ca_cert, ssl_ca_path, ssl_cipher);
   }
 #endif
 
@@ -599,6 +600,16 @@ static VALUE cConnection_is_using_socket(VALUE self) {
 
 static VALUE cConnection_ssl_cipher(VALUE self) {
   return rb_iv_get(self, "@ssl_cipher");
+}
+
+static VALUE cConnection_secure(VALUE self) {
+  VALUE blank_cipher = rb_funcall(rb_iv_get(self, "@ssl_cipher"), rb_intern("blank?"), 0);
+  
+  if (blank_cipher == Qtrue) {
+    return Qfalse;
+  } else {
+    return Qtrue;
+  }
 }
 
 static VALUE cConnection_dispose(VALUE self) {
@@ -939,6 +950,7 @@ void Init_do_mysql_ext() {
   rb_define_method(cConnection, "initialize", cConnection_initialize, 1);
   rb_define_method(cConnection, "using_socket?", cConnection_is_using_socket, 0);
   rb_define_method(cConnection, "ssl_cipher", cConnection_ssl_cipher, 0);
+  rb_define_method(cConnection, "secure?", cConnection_secure, 0);
   rb_define_method(cConnection, "character_set", cConnection_character_set , 0);
   rb_define_method(cConnection, "dispose", cConnection_dispose, 0);
   rb_define_method(cConnection, "quote_string", cConnection_quote_string, 1);

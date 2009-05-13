@@ -13,14 +13,28 @@ describe DataObjects::Mysql::Connection do
     @host   = CONFIG.host
     @port   = CONFIG.port
     @database = CONFIG.database
-    @ssl_query = %W[
-      ssl_ca=#{CGI::escape(ssl_config[:ca_cert])}
-      ssl_cert=#{CGI::escape(ssl_config[:client_cert])}
-      ssl_key=#{CGI::escape(ssl_config[:client_key])}
-    ].join('&')
+    @ssl    = CONFIG.ssl
   end
 
   it_should_behave_like 'a Connection'
   #it_should_behave_like 'a Connection with authentication support'
   it_should_behave_like 'a Connection with SSL support'
+
+  if DataObjectsSpecHelpers.test_environment_supports_ssl?
+
+    describe 'connecting with SSL' do
+
+      it 'should connect with a specified SSL cipher' do
+        DataObjects::Connection.new("#{CONFIG.uri}?#{CONFIG.ssl}&ssl[cipher]=#{SSLHelpers::CONFIG.cipher}").
+          ssl_cipher.should == SSLHelpers::CONFIG.cipher
+      end
+      
+      it 'should raise an error with an invalid SSL cipher' do
+        lambda { DataObjects::Connection.new("#{CONFIG.uri}?#{CONFIG.ssl}&ssl[cipher]=invalid") }.
+          should raise_error
+      end
+    end
+    
+  end
+
 end

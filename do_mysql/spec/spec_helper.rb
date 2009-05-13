@@ -46,6 +46,7 @@ CONFIG.pass     = ENV['DO_MYSQL_PASS'] || ''
 CONFIG.host     = ENV['DO_MYSQL_HOST'] || 'localhost'
 CONFIG.port     = ENV['DO_MYSQL_PORT'] || '3306'
 CONFIG.database = ENV['DO_MYSQL_DATABASE'] || '/do_test'
+CONFIG.ssl      = SSLHelpers.query(:ca_cert, :client_cert, :client_key)
 
 CONFIG.uri = ENV["DO_MYSQL_SPEC_URI"] ||"#{CONFIG.scheme}://#{CONFIG.user}:#{CONFIG.pass}@#{CONFIG.host}:#{CONFIG.port}#{CONFIG.database}"
 CONFIG.sleep = "SELECT sleep(1)"
@@ -129,13 +130,31 @@ module DataObjectsSpecHelpers
 
   end
 
-  def test_environment_supports_ssl?(ssl_config)
+  def self.test_environment_ssl_config
+    ssl_config = SSLHelpers::CONFIG
+
+    message =  "\nYou can configure MySQL via my.cnf with the following options in [mysqld]:\n"
+    message << "ssl_ca=#{ssl_config.ca_cert}\n"
+    message << "ssl_cert=#{ssl_config.server_cert}\n"
+    message << "ssl_key=#{ssl_config.server_key}\n"
+    message << "ssl_cipher=#{ssl_config.cipher}\n"
+    
+    message << "\nOr you can use the following command line options:\n"
+    message << "--ssl-ca #{ssl_config.ca_cert} "
+    message << "--ssl-cert #{ssl_config.server_cert} "
+    message << "--ssl-key #{ssl_config.server_key} "
+    message << "--ssl-cipher #{ssl_config.cipher} "
+    message
+  end
+  
+  def self.test_environment_ssl_config_errors
     conn = DataObjects::Connection.new(CONFIG.uri)
 
     ssl_variables = conn.create_command(<<-EOF).execute_reader
       SHOW VARIABLES LIKE '%ssl%'
     EOF
 
+    ssl_config = SSLHelpers::CONFIG
     current_config = { }
 
     while ssl_variables.next!
@@ -153,36 +172,29 @@ module DataObjectsSpecHelpers
       errors << "SSL was not enabled"
     end
 
-    if current_config[:ssl_ca] != ssl_config[:ca_cert]
-      errors << "the CA certificate wasn't set (it was set to '#{current_config[:ssl_ca]}')"
+    if current_config[:ssl_ca] != ssl_config.ca_cert
+      errors << "The CA certificate is not configured (it was set to '#{current_config[:ssl_ca]}')"
     end
 
-    if current_config[:ssl_cert] != ssl_config[:server_cert]
-      errors << "the server certificate wasn't set (it was set to '#{current_config[:ssl_cert]}')"
+    if current_config[:ssl_cert] != ssl_config.server_cert
+      errors << "The server certificate is not configured (it was set to '#{current_config[:ssl_cert]}')"
     end
 
-    if current_config[:ssl_key] != ssl_config[:server_key]
-      errors << "the server key wasn't set, (it was set to '#{current_config[:ssl_key]}')"
+    if current_config[:ssl_key] != ssl_config.server_key
+      errors << "The server key is not configured, (it was set to '#{current_config[:ssl_key]}')"
     end
 
-    if current_config[:ssl_cipher] != ssl_config[:cipher]
-      errors << "the cipher wasn't set, (it was set to '#{current_config[:ssl_cipher]}')"
+    if current_config[:ssl_cipher] != ssl_config.cipher
+      errors << "The cipher is not configured, (it was set to '#{current_config[:ssl_cipher]}')"
     end
 
-    if errors.any?
-      message = "MySQL is not configured for the SSL testing environment because #{errors.join(', ')}.\n"
-      message << "Use the following options:\n"
-      message << "--ssl "
-      message << "--ssl-ca #{ssl_config[:ca_cert]} "
-      message << "--ssl-cert #{ssl_config[:server_cert]} "
-      message << "--ssl-key #{ssl_config[:server_key]} "
-      message << "--ssl-cipher #{ssl_config[:cipher]} "
-      return false, message
-    end
-
-    return true, ""
+    errors
   ensure
     conn.close
+  end
+  
+  def self.test_environment_supports_ssl?
+    test_environment_ssl_config_errors.empty?
   end
 
 end

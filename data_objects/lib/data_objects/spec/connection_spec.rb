@@ -106,47 +106,21 @@ share_examples_for 'a Connection with authentication support' do
 end
 
 share_examples_for 'a Connection with SSL support' do
-  include SSLHelpers
 
-  before :all do
-    @supports_ssl, @message = test_environment_supports_ssl?(ssl_config)
-  end
-
-  def ssl_uri(query = '')
-    result = "#{CONFIG.uri}?ssl=true"
-    result << '&' << @ssl_query unless @ssl_query.blank?
-    result << '&' << query unless query.blank?
-    result
-  end
-
-  describe 'connecting with SSL' do
-
-    it 'should connect with an SSL cipher' do
-      pending_if(@message, !@supports_ssl) do
-        DataObjects::Connection.new(ssl_uri).ssl_cipher.should_not be_blank
+  if DataObjectsSpecHelpers.test_environment_supports_ssl?
+    describe 'connecting with SSL' do
+      
+      it 'should connect securely' do
+        DataObjects::Connection.new("#{CONFIG.uri}?#{CONFIG.ssl}").secure?.should be_true
       end
+    
     end
-
-    it 'should connect with a specified SSL cipher' do
-      pending_if(@message, !@supports_ssl) do
-        DataObjects::Connection.new(ssl_uri("ssl_cipher=#{ssl_config[:cipher]}")).
-          ssl_cipher.should == ssl_config[:cipher]
-      end
-    end
-
-    it 'should raise an error with an invalid SSL cipher' do
-      pending_if(@message, !@supports_ssl) do
-        lambda { DataObjects::Connection.new(ssl_uri('ssl_cipher=someinvalidcipher')) }.
-          should raise_error
-      end
-    end
-
   end
 
   describe 'connecting without SSL' do
 
-    it 'should not connect with an SSL cipher' do
-      DataObjects::Connection.new(CONFIG.uri).ssl_cipher.should be_nil
+    it 'should not connect securely' do
+      DataObjects::Connection.new(CONFIG.uri).secure?.should be_false
     end
 
   end
