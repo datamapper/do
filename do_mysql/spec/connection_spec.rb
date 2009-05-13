@@ -24,6 +24,11 @@ describe DataObjects::Mysql::Connection do
 
     describe 'connecting with SSL' do
 
+      it 'should raise an error when passed ssl=true' do
+        lambda { DataObjects::Connection.new("#{CONFIG.uri}?ssl=true") }.
+          should raise_error
+      end
+
       it 'should connect with a specified SSL cipher' do
         DataObjects::Connection.new("#{CONFIG.uri}?#{CONFIG.ssl}&ssl[cipher]=#{SSLHelpers::CONFIG.cipher}").
           ssl_cipher.should == SSLHelpers::CONFIG.cipher

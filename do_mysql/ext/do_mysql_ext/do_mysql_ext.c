@@ -521,16 +521,20 @@ static VALUE cConnection_initialize(VALUE self, VALUE uri) {
   char *ssl_client_key, *ssl_client_cert, *ssl_ca_cert, *ssl_ca_path, *ssl_cipher;
   VALUE r_ssl;
 
-  if(rb_obj_is_kind_of(r_query, rb_cHash) &&
-     (r_ssl = rb_hash_aref(r_query, RUBY_STRING("ssl"))) &&
-      rb_obj_is_kind_of(r_ssl, rb_cHash)) {
-    ssl_client_key  = get_uri_option(r_ssl, "client_key");
-    ssl_client_cert = get_uri_option(r_ssl, "client_cert");
-    ssl_ca_cert     = get_uri_option(r_ssl, "ca_cert");
-    ssl_ca_path     = get_uri_option(r_ssl, "ca_path");
-    ssl_cipher      = get_uri_option(r_ssl, "cipher");
+  if(rb_obj_is_kind_of(r_query, rb_cHash)) {
+    r_ssl = rb_hash_aref(r_query, RUBY_STRING("ssl"));
 
-    mysql_ssl_set(db, ssl_client_key, ssl_client_cert, ssl_ca_cert, ssl_ca_path, ssl_cipher);
+    if(rb_obj_is_kind_of(r_ssl, rb_cHash)) {
+      ssl_client_key  = get_uri_option(r_ssl, "client_key");
+      ssl_client_cert = get_uri_option(r_ssl, "client_cert");
+      ssl_ca_cert     = get_uri_option(r_ssl, "ca_cert");
+      ssl_ca_path     = get_uri_option(r_ssl, "ca_path");
+      ssl_cipher      = get_uri_option(r_ssl, "cipher");
+
+      mysql_ssl_set(db, ssl_client_key, ssl_client_cert, ssl_ca_cert, ssl_ca_path, ssl_cipher);
+    } else if(r_ssl != Qnil) {
+      rb_raise(eArgumentError, "ssl must be passed a hash");
+    }
   }
 #endif
 
