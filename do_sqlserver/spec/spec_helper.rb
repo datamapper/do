@@ -68,46 +68,46 @@ module DataObjectsSpecHelpers
     EOF
 
     conn.create_command(<<-EOF).execute_non_query
-      CREATE TABLE [users] (
-        [id] int NOT NULL IDENTITY,
-        [name] varchar(200) default 'Billy' NULL,
-        [fired_at] timestamp,
-        PRIMARY KEY ([id])
+      CREATE TABLE "users" (
+        "id" int NOT NULL IDENTITY,
+        "name" varchar(200) default 'Billy' NULL,
+        "fired_at" timestamp,
+        PRIMARY KEY ("id")
       );
     EOF
 
     conn.create_command(<<-EOF).execute_non_query
-      CREATE TABLE [invoices] (
-        [id] int NOT NULL IDENTITY,
-        [invoice_number] varchar(50) NOT NULL,
-        PRIMARY KEY ([id])
+      CREATE TABLE "invoices" (
+        "id" int NOT NULL IDENTITY,
+        "invoice_number" varchar(50) NOT NULL,
+        PRIMARY KEY ("id")
       );
     EOF
 
     conn.create_command(<<-EOF).execute_non_query
-      CREATE TABLE [widgets] (
-        [id] int NOT NULL IDENTITY,
-        [code] char(8) default 'A14' NULL,
-        [name] varchar(200) default 'Super Widget' NULL,
-        [shelf_location] text NULL,
-        [description] text NULL,
-        [image_data] image NULL,
-        [ad_description] varchar(8000) NULL,
-        [ad_image] image NULL,
-        [whitepaper_text] text NULL,
-        [cad_drawing] image NULL,
-        [flags] tinyint default 0,
-        [number_in_stock] smallint default 500,
-        [number_sold] int default 0,
-        [super_number] bigint default 9223372036854775807,
-        [weight] float default 1.23,
-        [cost1] real default 10.23,
-        [cost2] decimal(8,2) default 50.23,
-        -- [release_date] date default '2008-02-14',
-        [release_datetime] datetime default '2008-02-14 00:31:12',
-        [release_timestamp] timestamp /* default '2008-02-14 00:31:31' */,
-        -- [status] enum('active','out of stock') NOT NULL default 'active',
-        PRIMARY KEY ([id])
+      CREATE TABLE "widgets" (
+        "id" int NOT NULL IDENTITY,
+        "code" char(8) default 'A14' NULL,
+        "name" varchar(200) default 'Super Widget' NULL,
+        "shelf_location" text NULL,
+        "description" text NULL,
+        "image_data" image NULL,
+        "ad_description" varchar(8000) NULL,
+        "ad_image" image NULL,
+        "whitepaper_text" text NULL,
+        "cad_drawing" image NULL,
+        "flags" tinyint default 0,
+        "number_in_stock" smallint default 500,
+        "number_sold" int default 0,
+        "super_number" bigint default 9223372036854775807,
+        "weight" float default 1.23,
+        "cost1" real default 10.23,
+        "cost2" decimal(8,2) default 50.23,
+        -- "release_date" date default '2008-02-14',
+        "release_datetime" datetime default '2008-02-14 00:31:12',
+        "release_timestamp" timestamp /* default '2008-02-14 00:31:31' */,
+        -- "status" enum('active','out of stock') NOT NULL default 'active',
+        PRIMARY KEY ("id")
       );
     EOF
 

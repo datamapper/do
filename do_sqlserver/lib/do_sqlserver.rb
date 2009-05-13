@@ -162,7 +162,17 @@ if RUBY_PLATFORM !~ /java/
           end
           @handle.each do |row|
             field = -1
-            @rows << row.map { |value| field += 1; types ? types[field].new(value) : value }
+            @rows << row.map do |value|
+              field += 1
+              next value unless types
+              if (t = types[field]) == Integer
+                Integer(value)
+              elsif t == Float
+                Float(value)
+              else
+                t.new(value)
+              end
+            end
           end
           @handle.finish if @handle && @handle.respond_to?(:finish) && !@handle.finished?
           @current_row = -1
@@ -216,6 +226,7 @@ if RUBY_PLATFORM !~ /java/
           #puts "'#{cmd}' (#{args.map{|a| a.inspect}*", "}): #{e.to_str}"
           check_params(cmd, args)
         else
+          e.errstr << " running '#{cmd}'"
           #puts "'#{cmd}' (#{args.map{|a| a.inspect}*", "}): #{e.to_str}"
           #debugger
         end
