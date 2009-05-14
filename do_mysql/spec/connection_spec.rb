@@ -26,7 +26,7 @@ describe DataObjects::Mysql::Connection do
 
       it 'should raise an error when passed ssl=true' do
         lambda { DataObjects::Connection.new("#{CONFIG.uri}?ssl=true") }.
-          should raise_error
+          should raise_error(ArgumentError)
       end
 
       it 'should raise an error when passed a nonexistent client certificate' do
