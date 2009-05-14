@@ -29,18 +29,18 @@ describe DataObjects::Mysql::Connection do
           should raise_error
       end
 
-      it 'should raise an error when passed an invalid client certificate' do
-        lambda { DataObjects::Connection.new("#{CONFIG.uri}?ssl[client_cert]=invalid") }.
+      it 'should raise an error when passed a nonexistent client certificate' do
+        lambda { DataObjects::Connection.new("#{CONFIG.uri}?ssl[client_cert]=nonexistent") }.
           should raise_error(ArgumentError)
       end
 
-      it 'should raise an error when passed an invalid client key' do
-        lambda { DataObjects::Connection.new("#{CONFIG.uri}?ssl[client_key]=invalid") }.
+      it 'should raise an error when passed a nonexistent client key' do
+        lambda { DataObjects::Connection.new("#{CONFIG.uri}?ssl[client_key]=nonexistent") }.
           should raise_error(ArgumentError)
       end
 
-      it 'should raise an error when passed an invalid ca certificate' do
-        lambda { DataObjects::Connection.new("#{CONFIG.uri}?ssl[ca_cert]=invalid") }.
+      it 'should raise an error when passed a nonexistent ca certificate' do
+        lambda { DataObjects::Connection.new("#{CONFIG.uri}?ssl[ca_cert]=nonexistent") }.
           should raise_error(ArgumentError)
       end
 
