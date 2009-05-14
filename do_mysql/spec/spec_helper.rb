@@ -190,7 +190,7 @@ module DataObjectsSpecHelpers
 
     errors
   ensure
-    conn.close
+    conn.close if conn
   end
   
   def self.test_environment_supports_ssl?
