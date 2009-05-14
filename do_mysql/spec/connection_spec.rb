@@ -29,6 +29,21 @@ describe DataObjects::Mysql::Connection do
           should raise_error
       end
 
+      it 'should raise an error when passed an invalid client certificate' do
+        lambda { DataObjects::Connection.new("#{CONFIG.uri}?ssl[client_cert]=invalid") }.
+          should raise_error(ArgumentError)
+      end
+
+      it 'should raise an error when passed an invalid client key' do
+        lambda { DataObjects::Connection.new("#{CONFIG.uri}?ssl[client_key]=invalid") }.
+          should raise_error(ArgumentError)
+      end
+
+      it 'should raise an error when passed an invalid ca certificate' do
+        lambda { DataObjects::Connection.new("#{CONFIG.uri}?ssl[ca_cert]=invalid") }.
+          should raise_error(ArgumentError)
+      end
+
       it 'should connect with a specified SSL cipher' do
         DataObjects::Connection.new("#{CONFIG.uri}?#{CONFIG.ssl}&ssl[cipher]=#{SSLHelpers::CONFIG.cipher}").
           ssl_cipher.should == SSLHelpers::CONFIG.cipher
@@ -38,6 +53,7 @@ describe DataObjects::Mysql::Connection do
         lambda { DataObjects::Connection.new("#{CONFIG.uri}?#{CONFIG.ssl}&ssl[cipher]=invalid") }.
           should raise_error
       end
+      
     end
     
   end

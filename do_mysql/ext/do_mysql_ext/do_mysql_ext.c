@@ -382,6 +382,13 @@ static char * get_uri_option(VALUE query_hash, char * key) {
   return value;
 }
 
+static void assert_file_exists(char * file, char * message) {
+  if (file == NULL) { return; }
+  if (rb_funcall(rb_cFile, rb_intern("exist?"), 1, RUBY_STRING(file)) == Qfalse) {
+    rb_raise(eArgumentError, message);
+  }
+}
+
 #ifdef _WIN32
 static MYSQL_RES* cCommand_execute_sync(VALUE self, MYSQL* db, VALUE query) {
   int retval;
@@ -530,6 +537,10 @@ static VALUE cConnection_initialize(VALUE self, VALUE uri) {
       ssl_ca_cert     = get_uri_option(r_ssl, "ca_cert");
       ssl_ca_path     = get_uri_option(r_ssl, "ca_path");
       ssl_cipher      = get_uri_option(r_ssl, "cipher");
+
+      assert_file_exists(ssl_client_key,  "client_key doesn't exist");
+      assert_file_exists(ssl_client_cert, "client_cert doesn't exist");
+      assert_file_exists(ssl_ca_cert,     "ca_cert doesn't exist");
 
       mysql_ssl_set(db, ssl_client_key, ssl_client_cert, ssl_ca_cert, ssl_ca_path, ssl_cipher);
     } else if(r_ssl != Qnil) {
