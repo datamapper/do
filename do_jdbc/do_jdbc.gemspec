@@ -1,7 +1,7 @@
 --- !ruby/object:Gem::Specification 
 name: do_jdbc
 version: !ruby/object:Gem::Version 
-  version: 0.9.12
+  version: 0.9.13
 platform: java
 authors: 
 - Alex Coles
@@ -40,7 +40,7 @@ dependencies:
     requirements: 
     - - "="
       - !ruby/object:Gem::Version 
-        version: 0.9.12
+        version: 0.9.13
     version: 
 - !ruby/object:Gem::Dependency 
   name: rspec

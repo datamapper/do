@@ -1,7 +1,7 @@
 --- !ruby/object:Gem::Specification 
 name: data_objects
 version: !ruby/object:Gem::Version 
-  version: 0.9.12
+  version: 0.9.13
 platform: ruby
 authors: 
 - Dirkjan Bussink
@@ -9,7 +9,7 @@ autorequire:
 bindir: bin
 cert_chain: []
 
-date: 2009-05-05 00:00:00 +02:00
+date: 2009-05-17 00:00:00 +02:00
 default_executable: 
 dependencies: 
 - !ruby/object:Gem::Dependency 
@@ -98,11 +98,12 @@ files:
 - LICENSE
 - Rakefile
 - History.txt
+- Manifest.txt
 - README.txt
-has_rdoc: false
+has_rdoc: true
 homepage: http://github.com/datamapper/do
-licenses: 
-- MIT
+licenses: []
+
 post_install_message: 
 rdoc_options: []
 
@@ -122,8 +123,8 @@ required_rubygems_version: !ruby/object:Gem::Requirement
   version: 
 requirements: []
 
-rubyforge_project: extlib
-rubygems_version: 1.3.2
+rubyforge_project: dorb
+rubygems_version: 1.3.3
 signing_key: 
 specification_version: 3
 summary: DataObjects basic API and shared driver specifications
