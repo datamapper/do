@@ -1,3 +1,7 @@
+== 0.9.12 2009-05-17
+* Improvements
+  * Windows support
+
 == 0.9.11 2009-01-19
 * Improvements
   * Ruby 1.9 support

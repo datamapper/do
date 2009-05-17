@@ -8,7 +8,7 @@ end
 if defined?(RubyForge) then
   if defined?(GEM_SPEC) then
     desc 'Package and upload to RubyForge'
-    task :release => [:package] do |t|
+    task :release do |t|
       ver = ENV['VERSION'] or fail "Must supply VERSION (rake release VERSION=x.y.z)."
 
       # compare versions to avoid mistakes
@@ -66,7 +66,7 @@ if defined?(RubyForge) then
       rf.add_release GEM_SPEC.rubyforge_project, GEM_SPEC.name, GEM_SPEC.version, *files
       puts "Done."
     end
-    Rake::Task['release'].prerequisites.unshift('clean', 'cross', 'native')
+    #Rake::Task['release'].prerequisites.unshift('clean', 'cross', 'native')
   else
     warn "no GEM_SPEC is found or defined. 'release' task cannot work without it."
   end
