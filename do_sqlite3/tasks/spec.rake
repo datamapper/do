@@ -1,4 +1,5 @@
 # Specs
+require 'spec/rake/spectask'
 
 desc 'Run specifications'
 Spec::Rake::SpecTask.new(:spec => [ :clean, :compile ]) do |t|

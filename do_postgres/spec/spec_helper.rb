@@ -47,7 +47,7 @@ CONFIG.host     = ENV['DO_POSTGRES_HOST'] || 'localhost'
 CONFIG.port     = ENV['DO_POSTGRES_PORT'] || '5432'
 CONFIG.database = ENV['DO_POSTGRES_DATABASE'] || '/do_test'
 
-CONFIG.uri = ENV["DO_POSTGRES_SPEC_URI"] ||"#{CONFIG.scheme}://#{CONFIG.user}:#{CONFIG.pass}@#{CONFIG.host}:#{CONFIG.port}/#{CONFIG.database}"
+CONFIG.uri = ENV["DO_POSTGRES_SPEC_URI"] ||"#{CONFIG.scheme}://#{CONFIG.user}:#{CONFIG.pass}@#{CONFIG.host}:#{CONFIG.port}#{CONFIG.database}"
 CONFIG.sleep = "SELECT pg_sleep(1)"
 
 module DataObjectsSpecHelpers

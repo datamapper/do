@@ -709,8 +709,8 @@ static VALUE cCommand_execute_non_query(int argc, VALUE *argv[], VALUE self) {
   PGresult *response;
   int status;
 
-  VALUE affected_rows;
-  VALUE insert_id;
+  VALUE affected_rows = Qnil;
+  VALUE insert_id = Qnil;
 
   VALUE query = build_query_from_args(self, argc, argv);
 
@@ -720,7 +720,7 @@ static VALUE cCommand_execute_non_query(int argc, VALUE *argv[], VALUE self) {
 
   if ( status == PGRES_TUPLES_OK ) {
     insert_id = INT2NUM(atoi(PQgetvalue(response, 0, 0)));
-    affected_rows = INT2NUM(1);
+    affected_rows = INT2NUM(atoi(PQcmdTuples(response)));
   }
   else if ( status == PGRES_COMMAND_OK ) {
     insert_id = Qnil;
@@ -863,6 +863,7 @@ static VALUE cReader_values(VALUE self) {
   VALUE values = rb_iv_get(self, "@values");
   if(values == Qnil) {
     rb_raise(ePostgresError, "Reader not initialized");
+    return Qnil;
   } else {
     return values;
   }

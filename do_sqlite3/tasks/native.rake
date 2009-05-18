@@ -8,7 +8,7 @@ begin
     Rake::Task['compile:jruby'].invoke
   end
 
-  Rake::ExtensionTask.new('do_sqlite3_ext', HOE.spec) do |ext|
+  Rake::ExtensionTask.new('do_sqlite3_ext', GEM_SPEC) do |ext|
 
     sqlite3_lib = File.expand_path(File.join(File.dirname(__FILE__), '..', 'vendor', 'sqlite3'))
 
@@ -24,5 +24,12 @@ begin
   end
 rescue LoadError
   warn "To cross-compile, install rake-compiler (gem install rake-compiler)"
-  setup_c_extension('do_sqlite3_ext', HOE.spec)
+
+  if (tasks_dir = ROOT.parent + 'tasks').directory?
+    require tasks_dir + 'ext_helper'
+    require tasks_dir + 'ext_helper_java'
+
+    setup_c_extension("#{GEM_SPEC.name}_ext", GEM_SPEC)
+    setup_java_extension("#{GEM_SPEC.name}_ext", GEM_SPEC)
+  end
 end

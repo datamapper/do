@@ -9,7 +9,6 @@ pkg/*
 Makefile
 **/*.db
 nbproject
-!do_jdbc/nbproject
 *.*~
 *.*#
 *.rbc
@@ -24,3 +23,4 @@ do_*/tmp
 do_*/vendor
 bin/**
 .project
+*.swp

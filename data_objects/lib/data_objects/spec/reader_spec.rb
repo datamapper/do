@@ -52,7 +52,23 @@ share_examples_for 'a Reader' do
 
     end
 
+    describe 'when the reader is moved to the second result' do
+
+      before  do
+        @reader.next!; @reader.next!
+      end
+
+      it 'should return the correct first set of in the reader' do
+        @reader.values.should == ["W0000002", "Widget 2"]
+      end
+
+    end
+
     describe 'when the reader is moved to the end' do
+
+      before do
+        while @reader.next! ; end
+      end
 
       it 'should raise an error again' do
         lambda { @reader.values }.should raise_error
