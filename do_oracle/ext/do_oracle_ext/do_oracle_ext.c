@@ -1,12 +1,12 @@
 // #include <oci.h>
 
-#ifdef _WIN32
-#define cCommand_execute cCommand_execute_sync
-#define do_int64 signed __int64
-#else
-#define cCommand_execute cCommand_execute_async
-#define do_int64 signed long long int
-#endif
+// #ifdef _WIN32
+// #define cCommand_execute cCommand_execute_sync
+// #define do_int64 signed __int64
+// #else
+// #define cCommand_execute cCommand_execute_async
+// #define do_int64 signed long long int
+// #endif
 
 #include <ruby.h>
 #include <string.h>
@@ -87,16 +87,25 @@ static VALUE cConnection_dispose(VALUE self) {
 
 
 static VALUE cCommand_execute(VALUE oci8_conn, VALUE sql, int argc, VALUE *argv[]) {
+  // Count number of ? in sql and replace them with :n as needed by OCI8
+  // compare number of ? with argc
+  
+  VALUE replaced_sql = rb_funcall(cConnection, rb_intern("replace_argument_placeholders"), 2, sql, INT2NUM(argc));
+  
   // Construct argument list for OCI8#exec method
   VALUE *args = (VALUE *)calloc(argc + 1, sizeof(VALUE));
-  args[0] = sql;
+  args[0] = replaced_sql;
   int i;
   for ( i = 0; i < argc; i++) {
-    args[i + 1] = *argv[i];
+    // replace nil value with '' as otherwise OCI8 cannot get bind variable type
+    // '' will be inserted as NULL by Oracle
+    args[i + 1] = (argv[i] == Qnil) ? RUBY_STRING("") : (VALUE)argv[i];
   }
 
-  VALUE affected_rows = rb_funcall2(oci8_conn, rb_intern("exec"), argc + 1, args);
+  VALUE affected_rows = Qnil;
+  affected_rows = rb_funcall2(oci8_conn, rb_intern("exec"), argc + 1, args);
 
+  free(args);
   return affected_rows;
 }
 

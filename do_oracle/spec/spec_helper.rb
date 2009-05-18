@@ -55,29 +55,40 @@ CONFIG.sleep = "BEGIN DBMS_LOCK.sleep(seconds => 1); END;"
 
 module DataObjectsSpecHelpers
 
+  def drop_table_and_seq(conn, table_name)
+    begin
+      conn.create_command("DROP TABLE #{table_name}").execute_non_query
+    rescue OCIError => error
+      raise unless error.to_s =~ /^ORA-00942/
+    end
+    begin
+      conn.create_command("DROP SEQUENCE #{table_name}_seq").execute_non_query
+    rescue OCIError => error
+      raise unless error.to_s =~ /^ORA-02289/
+    end
+  end
+  
+  def create_seq_and_trigger(conn, table_name)
+    conn.create_command("CREATE SEQUENCE #{table_name}_seq").execute_non_query
+    conn.create_command(<<-EOF).execute_non_query
+    CREATE OR REPLACE TRIGGER #{table_name}_pkt
+    BEFORE INSERT ON #{table_name} FOR EACH ROW
+    BEGIN
+      IF inserting THEN
+        IF :new.id IS NULL THEN
+          SELECT #{table_name}_seq.NEXTVAL INTO :new.id FROM dual;
+        END IF;
+      END IF;
+    END;
+    EOF
+  end
+
   def setup_test_environment
     conn = DataObjects::Connection.new(CONFIG.uri)
 
-    conn.create_command(<<-EOF).execute_non_query rescue nil
-      DROP TABLE invoices
-    EOF
-    conn.create_command(<<-EOF).execute_non_query rescue nil
-      DROP SEQUENCE invoices_seq
-    EOF
-
-    conn.create_command(<<-EOF).execute_non_query rescue nil
-      DROP TABLE users
-    EOF
-    conn.create_command(<<-EOF).execute_non_query rescue nil
-      DROP SEQUENCE users_seq
-    EOF
-
-    conn.create_command(<<-EOF).execute_non_query rescue nil
-      DROP TABLE widgets
-    EOF
-    conn.create_command(<<-EOF).execute_non_query rescue nil
-      DROP SEQUENCE widgets_seq
-    EOF
+    drop_table_and_seq(conn, "invoices")
+    drop_table_and_seq(conn, "users")
+    drop_table_and_seq(conn, "widgets")
 
     conn.create_command(<<-EOF).execute_non_query
       CREATE TABLE users (
@@ -86,19 +97,15 @@ module DataObjectsSpecHelpers
         fired_at timestamp
       )
     EOF
-    conn.create_command(<<-EOF).execute_non_query
-      CREATE SEQUENCE users_seq
-    EOF
-
+    create_seq_and_trigger(conn, "users")
+    
     conn.create_command(<<-EOF).execute_non_query
       CREATE TABLE invoices (
         id NUMBER(38,0) PRIMARY KEY NOT NULL,
         invoice_number VARCHAR2(50) NOT NULL
       )
     EOF
-    conn.create_command(<<-EOF).execute_non_query
-      CREATE SEQUENCE invoices_seq
-    EOF
+    create_seq_and_trigger(conn, "invoices")
 
     conn.create_command(<<-EOF).execute_non_query
       CREATE TABLE widgets (
@@ -124,16 +131,14 @@ module DataObjectsSpecHelpers
         release_timestamp TIMESTAMP WITH TIME ZONE DEFAULT '2008-02-14 00:31:31'
       )
     EOF
-    conn.create_command(<<-EOF).execute_non_query
-      CREATE SEQUENCE widgets_seq
-    EOF
+    create_seq_and_trigger(conn, "widgets")
 
     1.upto(16) do |n|
       # conn.create_command(<<-EOF).execute_non_query
       #   insert into widgets(code, name, shelf_location, description, image_data, ad_description, ad_image, whitepaper_text, cad_drawing, super_number, weight) VALUES ('W#{n.to_s.rjust(7,"0")}', 'Widget #{n}', 'A14', 'This is a description', 'IMAGE DATA', 'Buy this product now!', 'AD IMAGE DATA', 'String', 'CAD \\001 \\000 DRAWING', 1234, 13.4);
       # EOF
       conn.create_command(<<-EOF).execute_non_query
-        insert into widgets(id, code, name, shelf_location, description, ad_description, whitepaper_text, super_number, weight) VALUES (widgets_seq.nextval, 'W#{n.to_s.rjust(7,"0")}', 'Widget #{n}', 'A14', 'This is a description', 'Buy this product now!', 'String', 1234, 13.4)
+        insert into widgets(code, name, shelf_location, description, ad_description, whitepaper_text, super_number, weight) VALUES ('W#{n.to_s.rjust(7,"0")}', 'Widget #{n}', 'A14', 'This is a description', 'Buy this product now!', 'String', 1234, 13.4)
       EOF
     end
 
