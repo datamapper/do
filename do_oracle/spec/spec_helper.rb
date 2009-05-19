@@ -51,7 +51,7 @@ CONFIG.port     = ENV['DO_ORACLE_PORT'] || '1521'
 CONFIG.database = ENV['DO_ORACLE_DATABASE'] || '/orcl'
 
 CONFIG.uri = ENV["DO_ORACLE_SPEC_URI"] ||"#{CONFIG.scheme}://#{CONFIG.user}:#{CONFIG.pass}@#{CONFIG.host}:#{CONFIG.port}#{CONFIG.database}"
-CONFIG.sleep = "BEGIN DBMS_LOCK.sleep(seconds => 1); END;"
+CONFIG.sleep = "BEGIN SYS.DBMS_LOCK.sleep(seconds => 0.5); END;"
 
 module DataObjectsSpecHelpers
 
@@ -113,9 +113,9 @@ module DataObjectsSpecHelpers
         code CHAR(8) DEFAULT 'A14',
         name VARCHAR2(200) DEFAULT 'Super Widget',
         shelf_location VARCHAR2(4000),
-        description CLOB,
+        description VARCHAR2(4000),
         image_data BLOB,
-        ad_description CLOB,
+        ad_description VARCHAR2(4000),
         ad_image BLOB,
         whitepaper_text CLOB,
         cad_drawing BLOB,
@@ -151,7 +151,6 @@ module DataObjectsSpecHelpers
     EOF
 
     conn.close
-
   end
 
 end

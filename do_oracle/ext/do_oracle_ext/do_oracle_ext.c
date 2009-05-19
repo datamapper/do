@@ -1,5 +1,3 @@
-// #include <oci.h>
-
 // #ifdef _WIN32
 // #define cCommand_execute cCommand_execute_sync
 // #define do_int64 signed __int64
@@ -47,6 +45,22 @@ static ID ID_LEVEL;
 static ID ID_TO_S;
 static ID ID_RATIONAL;
 
+static ID ID_NUMBER;
+static ID ID_VARCHAR2;
+static ID ID_CHAR;
+static ID ID_DATE;
+static ID ID_TIMESTAMP;
+static ID ID_TIMESTAMP_TZ;
+static ID ID_TIMESTAMP_LTZ;
+static ID ID_CLOB;
+static ID ID_BLOB;
+static ID ID_LONG;
+static ID ID_RAW;
+static ID ID_LONG_RAW;
+static ID ID_BFILE;
+static ID ID_BINARY_FLOAT;
+static ID ID_BINARY_DOUBLE;
+
 static VALUE mExtlib;
 static VALUE mDO;
 static VALUE cDO_Quoting;
@@ -61,6 +75,7 @@ static VALUE rb_cBigDecimal;
 static VALUE rb_cByteArray;
 
 static VALUE cOCI8;
+static VALUE cOCI8_Cursor;
 
 static VALUE mOracle;
 static VALUE cConnection;
@@ -70,6 +85,64 @@ static VALUE cReader;
 
 static VALUE eArgumentError;
 static VALUE eOracleError;
+
+/* ===== Typecasting Functions ===== */
+
+static VALUE infer_ruby_type(VALUE type, VALUE scale) {
+  ID type_id = SYM2ID(type);
+  
+  if (type_id == ID_NUMBER)
+    return scale != Qnil && NUM2INT(scale) == 0 ? rb_cInteger : rb_cBigDecimal;
+  else if (type_id == ID_VARCHAR2 || type_id == ID_CHAR || type_id == ID_CLOB || type_id == ID_LONG)
+    return rb_cString;
+  else if (type_id == ID_DATE)
+    return rb_cDateTime;
+  else if (type_id == ID_TIMESTAMP || type_id == ID_TIMESTAMP_TZ || type_id == ID_TIMESTAMP_LTZ)
+    return rb_cDateTime;
+  else if (type_id == ID_BLOB || type_id == ID_RAW || type_id == ID_LONG_RAW || type_id == ID_BFILE)
+    return rb_cByteArray;
+  else if (type_id == ID_BINARY_FLOAT || type_id == ID_BINARY_DOUBLE)
+    return rb_cFloat;
+  else
+    return rb_cString;
+}
+
+static VALUE typecast(VALUE value, const VALUE type) {
+
+  return value;
+  // if (type == rb_cInteger) {
+  //   return rb_cstr2inum(value, 10);
+  // } else if (type == rb_cString) {
+  //   return TAINTED_STRING(value, length);
+  // } else if (type == rb_cFloat) {
+  //   return rb_float_new(rb_cstr_to_dbl(value, Qfalse));
+  // } else if (type == rb_cBigDecimal) {
+  //   return rb_funcall(rb_cBigDecimal, ID_NEW, 1, TAINTED_STRING(value, length));
+  // } else if (type == rb_cDate) {
+  //   return parse_date(value);
+  // } else if (type == rb_cDateTime) {
+  //   return parse_date_time(value);
+  // } else if (type == rb_cTime) {
+  //   return parse_time(value);
+  // } else if (type == rb_cTrueClass) {
+  //   return *value == 't' ? Qtrue : Qfalse;
+  // } else if (type == rb_cByteArray) {
+  //   size_t new_length = 0;
+  //   char* unescaped = (char *)PQunescapeBytea((unsigned char*)value, &new_length);
+  //   VALUE byte_array = rb_funcall(rb_cByteArray, ID_NEW, 1, TAINTED_STRING(unescaped, new_length));
+  //   PQfreemem(unescaped);
+  //   return byte_array;
+  // } else if (type == rb_cClass) {
+  //   return rb_funcall(rb_cObject, rb_intern("full_const_get"), 1, TAINTED_STRING(value, length));
+  // } else if (type == rb_cObject) {
+  //   return rb_marshal_load(rb_str_new2(value));
+  // } else if (type == rb_cNilClass) {
+  //   return Qnil;
+  // } else {
+  //   return TAINTED_STRING(value, length);
+  // }
+
+}
 
 /* ====== Public API ======= */
 static VALUE cConnection_dispose(VALUE self) {
@@ -83,6 +156,39 @@ static VALUE cConnection_dispose(VALUE self) {
   rb_iv_set(self, "@connection", Qnil);
 
   return Qtrue;
+}
+
+static VALUE cCommand_set_types(int argc, VALUE *argv, VALUE self) {
+  VALUE type_strings = rb_ary_new();
+  VALUE array = rb_ary_new();
+
+  int i, j;
+
+  for ( i = 0; i < argc; i++) {
+    rb_ary_push(array, argv[i]);
+  }
+
+  for (i = 0; i < RARRAY_LEN(array); i++) {
+    VALUE entry = rb_ary_entry(array, i);
+    if(TYPE(entry) == T_CLASS) {
+      rb_ary_push(type_strings, entry);
+    } else if (TYPE(entry) == T_ARRAY) {
+      for (j = 0; j < RARRAY_LEN(entry); j++) {
+        VALUE sub_entry = rb_ary_entry(entry, j);
+        if(TYPE(sub_entry) == T_CLASS) {
+          rb_ary_push(type_strings, sub_entry);
+        } else {
+          rb_raise(eArgumentError, "Invalid type given");
+        }
+      }
+    } else {
+      rb_raise(eArgumentError, "Invalid type given");
+    }
+  }
+
+  rb_iv_set(self, "@field_types", type_strings);
+
+  return array;
 }
 
 
@@ -99,7 +205,7 @@ static VALUE cCommand_execute(VALUE oci8_conn, VALUE sql, int argc, VALUE *argv[
   for ( i = 0; i < argc; i++) {
     // replace nil value with '' as otherwise OCI8 cannot get bind variable type
     // '' will be inserted as NULL by Oracle
-    args[i + 1] = (argv[i] == Qnil) ? RUBY_STRING("") : (VALUE)argv[i];
+    args[i + 1] = NIL_P(argv[i]) ? RUBY_STRING("") : (VALUE)argv[i];
   }
 
   VALUE affected_rows = Qnil;
@@ -151,6 +257,9 @@ static VALUE cConnection_initialize(VALUE self, VALUE uri) {
   }
 
   oci8_conn = rb_funcall(cOCI8, ID_NEW, 3, r_user, r_password, RUBY_STRING(connect_string));
+
+  // Enable non-blocking mode
+  rb_funcall(oci8_conn, rb_intern("non_blocking="), 1, Qtrue);
   
   cCommand_execute(oci8_conn,
       RUBY_STRING("alter session set nls_date_format = 'YYYY-MM-DD HH24:MI:SS'"),
@@ -185,6 +294,138 @@ static VALUE cCommand_execute_non_query(int argc, VALUE *argv[], VALUE self) {
   return rb_funcall(cResult, ID_NEW, 3, self, affected_rows, insert_id);
 }
 
+static VALUE cCommand_execute_reader(int argc, VALUE *argv[], VALUE self) {
+  VALUE reader, query;
+  VALUE field_names, field_types;
+  VALUE column_metadata, column;
+  
+  int i;
+  int field_count;
+  int infer_types = 0;
+
+  VALUE connection = rb_iv_get(self, "@connection");
+  VALUE oci8_conn = rb_iv_get(connection, "@connection");
+  if (Qnil == oci8_conn) {
+    rb_raise(eOracleError, "This connection has already been closed.");
+  }
+
+  query = rb_iv_get(self, "@text");
+
+  VALUE cursor = cCommand_execute(oci8_conn, query, argc, argv);
+
+  if (rb_obj_class(cursor) != cOCI8_Cursor) {
+    rb_raise(eOracleError, "\"%s\" is invalid SELECT query", StringValuePtr(query));
+  }
+
+  column_metadata = rb_funcall(cursor, rb_intern("column_metadata"), 0);
+  field_count = RARRAY_LEN(column_metadata);
+
+  reader = rb_funcall(cReader, ID_NEW, 0);
+  rb_iv_set(reader, "@reader", cursor);
+  rb_iv_set(reader, "@field_count", INT2NUM(field_count));
+  // TODO: what should be stored in @row_count? After execute we don't know total row_count
+  // rb_iv_set(reader, "@row_count", INT2NUM(rb_funcall(cursor, rb_intern("row_count"), 0));
+  // rb_iv_set(reader, "@row_count", INT2NUM(0));
+
+  field_names = rb_ary_new();
+  field_types = rb_iv_get(self, "@field_types");
+
+  if ( field_types == Qnil || 0 == RARRAY_LEN(field_types) ) {
+    field_types = rb_ary_new();
+    infer_types = 1;
+  } else if (RARRAY_LEN(field_types) != field_count) {
+    // Whoops...  wrong number of types passed to set_types.  Close the reader and raise
+    // and error
+    rb_funcall(reader, rb_intern("close"), 0);
+    rb_raise(eArgumentError, "Field-count mismatch. Expected %ld fields, but the query yielded %d", RARRAY_LEN(field_types), field_count);
+  }
+
+  for ( i = 0; i < field_count; i++ ) {
+    column = rb_ary_entry(column_metadata, i);
+    // TODO: should field names be in downcase (as returned from Oracle) or in upcase?
+    rb_ary_push(field_names, rb_iv_get(column, "@name"));
+    if ( infer_types == 1 ) {
+      rb_ary_push(field_types,
+        infer_ruby_type(rb_iv_get(column, "@data_type"), rb_iv_get(column, "@scale"))
+      );
+    }
+  }
+
+  rb_iv_set(reader, "@position", INT2NUM(0));
+  rb_iv_set(reader, "@fields", field_names);
+  rb_iv_set(reader, "@field_types", field_types);
+
+  return reader;
+}
+
+static VALUE cReader_close(VALUE self) {
+  VALUE cursor = rb_iv_get(self, "@reader");
+
+  if (Qnil == cursor)
+    return Qfalse;
+
+  rb_funcall(cursor, rb_intern("close"), 0);
+
+  rb_iv_set(self, "@reader", Qnil);
+  return Qtrue;
+}
+
+static VALUE cReader_next(VALUE self) {
+  VALUE cursor = rb_iv_get(self, "@reader");
+
+  int field_count;
+  int i;
+
+  if (Qnil == cursor)
+    return Qfalse;
+
+  VALUE row = rb_ary_new();
+  VALUE field_types, field_type;
+  VALUE value;
+
+  VALUE fetch_result = rb_funcall(cursor, rb_intern("fetch"), 0);
+  
+  if (Qnil == fetch_result) {
+    rb_iv_set(self, "@values", Qnil);
+    return Qfalse;
+  }
+
+  field_count = NUM2INT(rb_iv_get(self, "@field_count"));
+  field_types = rb_iv_get(self, "@field_types");
+
+  for ( i = 0; i < field_count; i++ ) {
+    field_type = rb_ary_entry(field_types, i);
+    value = rb_ary_entry(fetch_result, i);
+    // Always return nil if the value returned from Oracle is null
+    if (Qnil != value) {
+      value = typecast(value, field_type);
+    }
+
+    rb_ary_push(row, value);
+  }
+
+  rb_iv_set(self, "@values", row);
+  return Qtrue;
+}
+
+static VALUE cReader_values(VALUE self) {
+
+  VALUE values = rb_iv_get(self, "@values");
+  if(values == Qnil) {
+    rb_raise(eOracleError, "Reader not initialized");
+    return Qnil;
+  } else {
+    return values;
+  }
+}
+
+static VALUE cReader_fields(VALUE self) {
+  return rb_iv_get(self, "@fields");
+}
+
+static VALUE cReader_field_count(VALUE self) {
+  return rb_iv_get(self, "@field_count");
+}
 
 
 void Init_do_oracle_ext() {
@@ -210,12 +451,30 @@ void Init_do_oracle_ext() {
   ID_TO_S = rb_intern("to_s");
   ID_RATIONAL = rb_intern("Rational");
 
+  ID_NUMBER = rb_intern("number");
+  ID_VARCHAR2 = rb_intern("varchar2");
+  ID_CHAR = rb_intern("char");
+  ID_DATE = rb_intern("date");
+  ID_TIMESTAMP = rb_intern("timestamp");
+  ID_TIMESTAMP_TZ = rb_intern("timestamp_tz");
+  ID_TIMESTAMP_LTZ = rb_intern("timestamp_ltz");
+  ID_CLOB = rb_intern("clob");
+  ID_BLOB = rb_intern("blob");
+  ID_LONG = rb_intern("long");
+  ID_RAW = rb_intern("raw");
+  ID_LONG_RAW = rb_intern("long_raw");
+  ID_BFILE = rb_intern("bfile");
+  ID_BINARY_FLOAT = rb_intern("binary_float");
+  ID_BINARY_DOUBLE = rb_intern("binary_double");
+
+
   // Get references to the Extlib module
   mExtlib = CONST_GET(rb_mKernel, "Extlib");
   rb_cByteArray = CONST_GET(mExtlib, "ByteArray");
 
   // Get reference to OCI8 class
   cOCI8 = CONST_GET(rb_mKernel, "OCI8");
+  cOCI8_Cursor = CONST_GET(cOCI8, "Cursor");
 
   // Get references to the DataObjects module and its classes
   mDO = CONST_GET(rb_mKernel, "DataObjects");
@@ -237,20 +496,17 @@ void Init_do_oracle_ext() {
   // rb_define_method(cConnection, "quote_byte_array", cConnection_quote_byte_array, 1);
 
   cCommand = ORACLE_CLASS("Command", cDO_Command);
-  // rb_define_method(cCommand, "set_types", cCommand_set_types, -1);
+  rb_define_method(cCommand, "set_types", cCommand_set_types, -1);
   rb_define_method(cCommand, "execute_non_query", cCommand_execute_non_query, -1);
-  // rb_define_method(cCommand, "execute_reader", cCommand_execute_reader, -1);
+  rb_define_method(cCommand, "execute_reader", cCommand_execute_reader, -1);
 
   cResult = ORACLE_CLASS("Result", cDO_Result);
 
   cReader = ORACLE_CLASS("Reader", cDO_Reader);
-  // rb_define_method(cReader, "close", cReader_close, 0);
-  // rb_define_method(cReader, "next!", cReader_next, 0);
-  // rb_define_method(cReader, "values", cReader_values, 0);
-  // rb_define_method(cReader, "fields", cReader_fields, 0);
-  // rb_define_method(cReader, "field_count", cReader_field_count, 0);
+  rb_define_method(cReader, "close", cReader_close, 0);
+  rb_define_method(cReader, "next!", cReader_next, 0);
+  rb_define_method(cReader, "values", cReader_values, 0);
+  rb_define_method(cReader, "fields", cReader_fields, 0);
+  rb_define_method(cReader, "field_count", cReader_field_count, 0);
 
-  // // Initialize global OCI Environment
-  // oci_make_envhp();
-  // oci_make_errhp();
 }
