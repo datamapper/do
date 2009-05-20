@@ -1,10 +1,10 @@
 --- !ruby/object:Gem::Specification 
-name: do_mysql
+name: do_jdbc
 version: !ruby/object:Gem::Version 
   version: 0.9.13
-platform: ruby
+platform: java
 authors: 
-- Dirkjan Bussink
+- Alex Coles
 autorequire: 
 bindir: bin
 cert_chain: []
@@ -52,51 +52,31 @@ dependencies:
       - !ruby/object:Gem::Version 
         version: 1.2.0
     version: 
-description: Implements the DataObjects API for MySQL
-email: d.bussink@gmail.com
+description: Provides JDBC support for usage in DO drivers for JRuby
+email: alex@alexcolesportfolio.com
 executables: []
 
-extensions: 
-- ext/do_mysql_ext/extconf.rb
+extensions: []
+
 extra_rdoc_files: []
 
 files: 
-- lib/do_mysql/transaction.rb
-- lib/do_mysql/version.rb
-- lib/do_mysql.rb
-- spec/command_spec.rb
-- spec/connection_spec.rb
-- spec/encoding_spec.rb
-- spec/lib/rspec_immediate_feedback_formatter.rb
-- spec/reader_spec.rb
-- spec/result_spec.rb
-- spec/spec_helper.rb
-- spec/typecast/array_spec.rb
-- spec/typecast/bigdecimal_spec.rb
-- spec/typecast/boolean_spec.rb
-- spec/typecast/byte_array_spec.rb
-- spec/typecast/class_spec.rb
-- spec/typecast/date_spec.rb
-- spec/typecast/datetime_spec.rb
-- spec/typecast/float_spec.rb
-- spec/typecast/integer_spec.rb
-- spec/typecast/nil_spec.rb
-- spec/typecast/range_spec.rb
-- spec/typecast/string_spec.rb
-- spec/typecast/time_spec.rb
+- lib/do_jdbc/date_formatter.rb
+- lib/do_jdbc/datetime_formatter.rb
+- lib/do_jdbc/time_formatter.rb
+- lib/do_jdbc/version.rb
+- lib/do_jdbc.rb
 - tasks/gem.rake
 - tasks/install.rake
 - tasks/native.rake
 - tasks/release.rake
-- tasks/retrieve.rake
-- tasks/spec.rake
-- ext/do_mysql_ext/extconf.rb
-- ext/do_mysql_ext/do_mysql_ext.c
-- LICENSE
+- MIT-LICENSE
+- GPL-LICENSE
 - Rakefile
 - History.txt
 - Manifest.txt
 - README.txt
+- lib/do_jdbc_internal.jar
 has_rdoc: true
 homepage: http://github.com/datamapper/do
 licenses: []
@@ -124,6 +104,6 @@ rubyforge_project: dorb
 rubygems_version: 1.3.3
 signing_key: 
 specification_version: 3
-summary: DataObjects MySQL Driver
+summary: DataObjects JDBC support library
 test_files: []
 

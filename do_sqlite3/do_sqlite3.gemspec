@@ -1,7 +1,7 @@
 --- !ruby/object:Gem::Specification 
 name: do_sqlite3
 version: !ruby/object:Gem::Version 
-  version: 0.9.12
+  version: 0.9.13
 platform: ruby
 authors: 
 - Dirkjan Bussink
@@ -9,7 +9,7 @@ autorequire:
 bindir: bin
 cert_chain: []
 
-date: 2009-05-07 00:00:00 +02:00
+date: 2009-05-17 00:00:00 +02:00
 default_executable: 
 dependencies: 
 - !ruby/object:Gem::Dependency 
@@ -40,7 +40,7 @@ dependencies:
     requirements: 
     - - "="
       - !ruby/object:Gem::Version 
-        version: 0.9.12
+        version: 0.9.13
     version: 
 - !ruby/object:Gem::Dependency 
   name: rspec
@@ -89,10 +89,8 @@ files:
 - tasks/release.rake
 - tasks/retrieve.rake
 - tasks/spec.rake
-- ext/do_sqlite3_ext
-- ext/do_sqlite3_ext/do_sqlite3_ext.c
 - ext/do_sqlite3_ext/extconf.rb
-- ext/do_sqlite3_ext/Makefile
+- ext/do_sqlite3_ext/do_sqlite3_ext.c
 - LICENSE
 - Rakefile
 - History.txt
@@ -100,8 +98,8 @@ files:
 - README.txt
 has_rdoc: true
 homepage: http://github.com/datamapper/do
-licenses: 
-- MIT
+licenses: []
+
 post_install_message: 
 rdoc_options: []
 
