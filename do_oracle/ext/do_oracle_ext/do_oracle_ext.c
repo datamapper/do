@@ -45,6 +45,8 @@ static ID ID_LEVEL;
 static ID ID_TO_S;
 static ID ID_RATIONAL;
 
+static ID ID_NAME;
+
 static ID ID_NUMBER;
 static ID ID_VARCHAR2;
 static ID ID_CHAR;
@@ -343,7 +345,7 @@ static VALUE cCommand_execute_reader(int argc, VALUE *argv[], VALUE self) {
   for ( i = 0; i < field_count; i++ ) {
     column = rb_ary_entry(column_metadata, i);
     // TODO: should field names be in downcase (as returned from Oracle) or in upcase?
-    rb_ary_push(field_names, rb_iv_get(column, "@name"));
+    rb_ary_push(field_names, rb_funcall(column, ID_NAME, 0));
     if ( infer_types == 1 ) {
       rb_ary_push(field_types,
         infer_ruby_type(rb_iv_get(column, "@data_type"), rb_iv_get(column, "@scale"))
@@ -354,6 +356,8 @@ static VALUE cCommand_execute_reader(int argc, VALUE *argv[], VALUE self) {
   rb_iv_set(reader, "@position", INT2NUM(0));
   rb_iv_set(reader, "@fields", field_names);
   rb_iv_set(reader, "@field_types", field_types);
+
+  rb_iv_set(reader, "@last_row", Qfalse);
 
   return reader;
 }
@@ -376,7 +380,7 @@ static VALUE cReader_next(VALUE self) {
   int field_count;
   int i;
 
-  if (Qnil == cursor)
+  if (Qnil == cursor || Qtrue == rb_iv_get(self, "@last_row"))
     return Qfalse;
 
   VALUE row = rb_ary_new();
@@ -387,6 +391,7 @@ static VALUE cReader_next(VALUE self) {
   
   if (Qnil == fetch_result) {
     rb_iv_set(self, "@values", Qnil);
+    rb_iv_set(self, "@last_row", Qtrue);
     return Qfalse;
   }
 
@@ -450,6 +455,8 @@ void Init_do_oracle_ext() {
   ID_LEVEL = rb_intern("level");
   ID_TO_S = rb_intern("to_s");
   ID_RATIONAL = rb_intern("Rational");
+
+  ID_NAME = rb_intern("name");
 
   ID_NUMBER = rb_intern("number");
   ID_VARCHAR2 = rb_intern("varchar2");
