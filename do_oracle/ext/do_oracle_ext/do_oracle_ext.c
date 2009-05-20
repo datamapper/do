@@ -194,11 +194,12 @@ static VALUE cCommand_set_types(int argc, VALUE *argv, VALUE self) {
 }
 
 
-static VALUE cCommand_execute(VALUE oci8_conn, VALUE sql, int argc, VALUE *argv[]) {
+static VALUE cCommand_execute(VALUE oci8_conn, VALUE sql, int argc, VALUE *argv[], VALUE self) {
   // Count number of ? in sql and replace them with :n as needed by OCI8
   // compare number of ? with argc
   
-  VALUE replaced_sql = rb_funcall(cConnection, rb_intern("replace_argument_placeholders"), 2, sql, INT2NUM(argc));
+  VALUE replaced_sql = Qnil == self ? sql :
+  rb_funcall(self, rb_intern("replace_argument_placeholders"), 2, sql, INT2NUM(argc));
   
   // Construct argument list for OCI8#exec method
   VALUE *args = (VALUE *)calloc(argc + 1, sizeof(VALUE));
@@ -265,13 +266,13 @@ static VALUE cConnection_initialize(VALUE self, VALUE uri) {
   
   cCommand_execute(oci8_conn,
       RUBY_STRING("alter session set nls_date_format = 'YYYY-MM-DD HH24:MI:SS'"),
-      0, NULL);
+      0, NULL, Qnil);
   cCommand_execute(oci8_conn,
       RUBY_STRING("alter session set nls_timestamp_format = 'YYYY-MM-DD HH24:MI:SS.FF'"),
-      0, NULL);
+      0, NULL, Qnil);
   cCommand_execute(oci8_conn,
       RUBY_STRING("alter session set nls_timestamp_tz_format = 'YYYY-MM-DD HH24:MI:SS.FF'"),
-      0, NULL);
+      0, NULL, Qnil);
 
   rb_iv_set(self, "@uri", uri);
   rb_iv_set(self, "@connection", oci8_conn);
@@ -291,7 +292,7 @@ static VALUE cCommand_execute_non_query(int argc, VALUE *argv[], VALUE self) {
   VALUE affected_rows = Qnil;
   VALUE insert_id = Qnil;
 
-  affected_rows = cCommand_execute(oci8_conn, query, argc, argv);
+  affected_rows = cCommand_execute(oci8_conn, query, argc, argv, self);
 
   return rb_funcall(cResult, ID_NEW, 3, self, affected_rows, insert_id);
 }
@@ -313,7 +314,7 @@ static VALUE cCommand_execute_reader(int argc, VALUE *argv[], VALUE self) {
 
   query = rb_iv_get(self, "@text");
 
-  VALUE cursor = cCommand_execute(oci8_conn, query, argc, argv);
+  VALUE cursor = cCommand_execute(oci8_conn, query, argc, argv, self);
 
   if (rb_obj_class(cursor) != cOCI8_Cursor) {
     rb_raise(eOracleError, "\"%s\" is invalid SELECT query", StringValuePtr(query));

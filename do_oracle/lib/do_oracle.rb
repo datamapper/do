@@ -14,14 +14,14 @@ require File.expand_path(File.join(File.dirname(__FILE__), 'do_oracle', 'version
 if RUBY_PLATFORM !~ /java/
   module DataObjects
     module Oracle
-      class Connection
+      class Command
         private
         
         # Replace ? placeholders with :n argument placeholders in string of SQL
         # as required by OCI8#exec method
         # Compare number of ? placeholders with number of passed arguments
         # and raise exception if different
-        def self.replace_argument_placeholders(sql_string, args_count)
+        def replace_argument_placeholders(sql_string, args_count)
           sql = sql_string
 
           replacements = 0
