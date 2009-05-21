@@ -22,16 +22,20 @@ if RUBY_PLATFORM !~ /java/
         # Compare number of ? placeholders with number of passed arguments
         # and raise exception if different
         def replace_argument_placeholders(sql_string, args_count)
-          sql = sql_string
-
+          sql = sql_string.dup
+          
           replacements = 0
           mismatch     = false
-
+          
           sql.gsub!(/\?/) do |x|
             replacements += 1
             ":#{replacements}"
           end
-
+          
+          if sql =~ /^\s*INSERT.+RETURNING.+INTO :insert_id$/i
+            @insert_id_present = true
+          end
+          
           if args_count != replacements
             raise ArgumentError, "Binding mismatch: #{args_count} for #{replacements}"
           else

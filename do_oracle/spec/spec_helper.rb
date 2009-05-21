@@ -51,7 +51,7 @@ CONFIG.port     = ENV['DO_ORACLE_PORT'] || '1521'
 CONFIG.database = ENV['DO_ORACLE_DATABASE'] || '/orcl'
 
 CONFIG.uri = ENV["DO_ORACLE_SPEC_URI"] ||"#{CONFIG.scheme}://#{CONFIG.user}:#{CONFIG.pass}@#{CONFIG.host}:#{CONFIG.port}#{CONFIG.database}"
-CONFIG.sleep = "BEGIN SYS.DBMS_LOCK.sleep(seconds => 0.5); END;"
+CONFIG.sleep = "BEGIN SYS.DBMS_LOCK.sleep(seconds => 1); END;"
 
 module DataObjectsSpecHelpers
 
@@ -83,7 +83,7 @@ module DataObjectsSpecHelpers
     EOF
   end
 
-  def setup_test_environment
+  def setup_test_environment(insert_data = true)
     conn = DataObjects::Connection.new(CONFIG.uri)
 
     drop_table_and_seq(conn, "invoices")
@@ -133,22 +133,34 @@ module DataObjectsSpecHelpers
     EOF
     create_seq_and_trigger(conn, "widgets")
 
-    1.upto(16) do |n|
-      # conn.create_command(<<-EOF).execute_non_query
-      #   insert into widgets(code, name, shelf_location, description, image_data, ad_description, ad_image, whitepaper_text, cad_drawing, super_number, weight) VALUES ('W#{n.to_s.rjust(7,"0")}', 'Widget #{n}', 'A14', 'This is a description', 'IMAGE DATA', 'Buy this product now!', 'AD IMAGE DATA', 'String', 'CAD \\001 \\000 DRAWING', 1234, 13.4);
-      # EOF
+    if insert_data
+      command = conn.create_command(<<-EOF)
+        insert into widgets(code, name, shelf_location, description, image_data,
+          ad_description, ad_image, whitepaper_text, cad_drawing, super_number, weight)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      EOF
+    
+      1.upto(16) do |n|
+        # conn.create_command(<<-EOF).execute_non_query
+        #   insert into widgets(code, name, shelf_location, description, image_data, ad_description, ad_image, whitepaper_text, cad_drawing, super_number, weight) VALUES ('W#{n.to_s.rjust(7,"0")}', 'Widget #{n}', 'A14', 'This is a description', 'IMAGE DATA', 'Buy this product now!', 'AD IMAGE DATA', 'String', 'CAD \\001 \\000 DRAWING', 1234, 13.4);
+        # EOF
+        # conn.create_command(<<-EOF).execute_non_query
+        #   insert into widgets(code, name, shelf_location, description, ad_description, whitepaper_text, super_number, weight) VALUES ('W#{n.to_s.rjust(7,"0")}', 'Widget #{n}', 'A14', 'This is a description', 'Buy this product now!', 'String', 1234, 13.4)
+        # EOF
+        command.execute_non_query(
+          "W#{n.to_s.rjust(7,"0")}", "Widget #{n}", 'A14', 'This is a description', nil,
+          'Buy this product now!', nil, 'String', nil, 1234, 13.4
+        )
+      end
+
       conn.create_command(<<-EOF).execute_non_query
-        insert into widgets(code, name, shelf_location, description, ad_description, whitepaper_text, super_number, weight) VALUES ('W#{n.to_s.rjust(7,"0")}', 'Widget #{n}', 'A14', 'This is a description', 'Buy this product now!', 'String', 1234, 13.4)
+        update widgets set flags = 1 where id = 2
+      EOF
+
+      conn.create_command(<<-EOF).execute_non_query
+        update widgets set ad_description = NULL where id = 3
       EOF
     end
-
-    conn.create_command(<<-EOF).execute_non_query
-      update widgets set flags = 1 where id = 2
-    EOF
-
-    conn.create_command(<<-EOF).execute_non_query
-      update widgets set ad_description = NULL where id = 3
-    EOF
 
     conn.close
   end

@@ -88,6 +88,22 @@ static VALUE cReader;
 static VALUE eArgumentError;
 static VALUE eOracleError;
 
+
+static char * get_uri_option(VALUE query_hash, char * key) {
+  VALUE query_value;
+  char * value = NULL;
+
+  if(!rb_obj_is_kind_of(query_hash, rb_cHash)) { return NULL; }
+
+  query_value = rb_hash_aref(query_hash, RUBY_STRING(key));
+
+  if (Qnil != query_value) {
+    value = StringValuePtr(query_value);
+  }
+
+  return value;
+}
+
 /* ===== Typecasting Functions ===== */
 
 static VALUE infer_ruby_type(VALUE type, VALUE scale) {
@@ -193,35 +209,77 @@ static VALUE cCommand_set_types(int argc, VALUE *argv, VALUE self) {
   return array;
 }
 
+typedef struct {
+  VALUE self;
+  VALUE cursor;
+  VALUE statement_type;
+  int argc;
+  VALUE *argv;
+} cCommand_execute_try_t;
+
+static VALUE cCommand_execute_try(cCommand_execute_try_t *arg);
+static VALUE cCommand_execute_ensure(cCommand_execute_try_t *arg);
+
 
 static VALUE cCommand_execute(VALUE oci8_conn, VALUE sql, int argc, VALUE *argv[], VALUE self) {
   // Count number of ? in sql and replace them with :n as needed by OCI8
   // compare number of ? with argc
+  // set @insert_id_present if sql is INSERT ... RETURNING ... INTO :insert_id  
+  VALUE replaced_sql = NIL_P(self) ? sql :
+    rb_funcall(self, rb_intern("replace_argument_placeholders"), 2, sql, INT2NUM(argc));
   
-  VALUE replaced_sql = Qnil == self ? sql :
-  rb_funcall(self, rb_intern("replace_argument_placeholders"), 2, sql, INT2NUM(argc));
-  
-  // Construct argument list for OCI8#exec method
-  VALUE *args = (VALUE *)calloc(argc + 1, sizeof(VALUE));
-  args[0] = replaced_sql;
-  int i;
-  for ( i = 0; i < argc; i++) {
-    // replace nil value with '' as otherwise OCI8 cannot get bind variable type
-    // '' will be inserted as NULL by Oracle
-    args[i + 1] = NIL_P(argv[i]) ? RUBY_STRING("") : (VALUE)argv[i];
-  }
-
-  VALUE affected_rows = Qnil;
-  affected_rows = rb_funcall2(oci8_conn, rb_intern("exec"), argc + 1, args);
-
-  free(args);
-  return affected_rows;
+  cCommand_execute_try_t arg;
+  arg.self = self;
+  arg.cursor = rb_funcall(oci8_conn, rb_intern("parse"), 1, replaced_sql);
+  arg.statement_type = rb_funcall(arg.cursor, rb_intern("type"), 0);
+  arg.argc = argc;
+  arg.argv = (VALUE *)argv;
+    
+  return rb_ensure(cCommand_execute_try, (VALUE)&arg, cCommand_execute_ensure, (VALUE)&arg);
 }
 
+static VALUE cCommand_execute_try(cCommand_execute_try_t *arg) {
+  VALUE result = Qnil;
+  
+  int insert_id_present = (!NIL_P(arg->self) && rb_iv_get(arg->self, "@insert_id_present") == Qtrue);
+  
+  if (insert_id_present)
+    rb_funcall(arg->cursor, rb_intern("bind_param"), 2, RUBY_STRING(":insert_id"), INT2NUM(0));
+
+  int i;
+  for (i = 0; i < arg->argc; i++) {
+    // replace nil value with '' as otherwise OCI8 cannot get bind variable type
+    // '' will be inserted as NULL by Oracle
+    if (NIL_P((arg->argv)[i]))
+      (arg->argv)[i] = RUBY_STRING("");
+  }
+
+  result = rb_funcall2(arg->cursor, rb_intern("exec"), arg->argc, arg->argv);
+
+  if (insert_id_present) {
+    VALUE insert_id = rb_funcall(arg->cursor, rb_intern("[]"), 1, RUBY_STRING(":insert_id"));
+    rb_iv_set(arg->self, "@insert_id", insert_id);
+  }
+
+  if (SYM2ID(arg->statement_type) == rb_intern("select_stmt"))
+    return arg->cursor;
+  else {
+    return result;
+  }
+
+}
+
+static VALUE cCommand_execute_ensure(cCommand_execute_try_t *arg) {
+  if (SYM2ID(arg->statement_type) != rb_intern("select_stmt"))
+    rb_funcall(arg->cursor, rb_intern("close"), 0);
+  return Qnil;
+}
 
 static VALUE cConnection_initialize(VALUE self, VALUE uri) {
   VALUE r_host, r_port, r_path, r_user, r_password;
-  // VALUE r_query, r_options;
+  VALUE r_query;
+  char *non_blocking = NULL;
+  
   char *host = "localhost", *port = "1521", *path = NULL;
   // char *user = NULL, *password = NULL;
   char *connect_string;
@@ -261,8 +319,17 @@ static VALUE cConnection_initialize(VALUE self, VALUE uri) {
 
   oci8_conn = rb_funcall(cOCI8, ID_NEW, 3, r_user, r_password, RUBY_STRING(connect_string));
 
+  // Pull the querystring off the URI
+  r_query = rb_funcall(uri, rb_intern("query"), 0);
+
+  non_blocking = get_uri_option(r_query, "non_blocking");
   // Enable non-blocking mode
-  rb_funcall(oci8_conn, rb_intern("non_blocking="), 1, Qtrue);
+  if (non_blocking != NULL && strcmp(non_blocking, "true") == 0)
+    rb_funcall(oci8_conn, rb_intern("non_blocking="), 1, Qtrue);
+  // By default enable auto-commit mode
+  rb_funcall(oci8_conn, rb_intern("autocommit="), 1, Qtrue);
+  // Set prefetch rows to 100 to increase fetching performance SELECTs with many rows
+  rb_funcall(oci8_conn, rb_intern("prefetch_rows="), 1, INT2NUM(100));
   
   cCommand_execute(oci8_conn,
       RUBY_STRING("alter session set nls_date_format = 'YYYY-MM-DD HH24:MI:SS'"),
@@ -289,10 +356,11 @@ static VALUE cCommand_execute_non_query(int argc, VALUE *argv[], VALUE self) {
 
   VALUE query = rb_iv_get(self, "@text");
 
-  VALUE affected_rows = Qnil;
-  VALUE insert_id = Qnil;
+  VALUE affected_rows = cCommand_execute(oci8_conn, query, argc, argv, self);
+  if (affected_rows == Qtrue)
+    affected_rows = INT2NUM(0);
 
-  affected_rows = cCommand_execute(oci8_conn, query, argc, argv, self);
+  VALUE insert_id = rb_iv_get(self, "@insert_id");
 
   return rb_funcall(cResult, ID_NEW, 3, self, affected_rows, insert_id);
 }

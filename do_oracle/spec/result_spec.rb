@@ -11,8 +11,7 @@ describe DataObjects::Oracle::Result do
   include DataObjectsSpecHelpers
 
   before :all do
-    puts "DEBUG: setup_test_environment"
-    setup_test_environment
+    setup_test_environment(false)
   end
 
   describe 'without using RETURNING' do
@@ -59,7 +58,7 @@ describe DataObjects::Oracle::Result do
 
     before :each do
       @connection = DataObjects::Connection.new(CONFIG.uri)
-      @result    = @connection.create_command("INSERT INTO users (name) VALUES (?) RETURNING id INTO :id").execute_non_query("monkey")
+      @result    = @connection.create_command("INSERT INTO users (name) VALUES (?) RETURNING id INTO :insert_id").execute_non_query("monkey")
     end
 
     after :each do
@@ -81,7 +80,7 @@ describe DataObjects::Oracle::Result do
     describe 'insert_id' do
 
       it 'should return the generated key value' do
-        @result.insert_id.should == 2
+        @result.insert_id.should == 1
       end
 
     end
