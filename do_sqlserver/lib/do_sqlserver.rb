@@ -127,6 +127,7 @@ if RUBY_PLATFORM !~ /java/
 
         def execute_reader *args
           DataObjects::Sqlserver.check_params @text, args
+          massage_limit_and_offset args
           begin
             handle = @connection.raw.execute(@text, *args)
           rescue DBI::DatabaseError => e
@@ -139,6 +140,28 @@ if RUBY_PLATFORM !~ /java/
             raise
           end
           Reader.new(self, handle)
+        end
+
+      private
+        def massage_limit_and_offset args
+          @text.sub!(%r{SELECT (.*) ORDER BY (.*) LIMIT ([?0-9]*)( OFFSET ([?0-9]*))?}) {
+            what, order, limit, offset = $1, $2, $3, $5
+
+            # LIMIT and OFFSET will probably be set by args. We need exact values, so must
+            # do substitution here, and remove those args from the array. This is made easier
+            # because LIMIT and OFFSET are always the last args in the array.
+            offset = args.pop if offset == '?'
+            limit = args.pop if limit == '?'
+            offset = offset.to_i
+            limit = limit.to_i
+
+            # Reverse the sort direction of each field in the ORDER BY:
+            rev_order = order.split(/, */).map{ |f|
+              f =~ /(.*) DESC *$/ ? $1 : f+" DESC"
+            }*", "
+
+            "SELECT TOP #{limit} * FROM (SELECT TOP #{offset+limit} #{what} ORDER BY #{rev_order}) ORDER BY #{order}"
+          }
         end
       end
 
