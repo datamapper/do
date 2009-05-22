@@ -104,6 +104,49 @@ static char * get_uri_option(VALUE query_hash, char * key) {
   return value;
 }
 
+/* ====== Time/Date Parsing Helper Functions ====== */
+
+static VALUE parse_date(VALUE r_value) {
+  VALUE time_array, year, month, day;
+
+  if (rb_obj_class(r_value) == rb_cTime) {
+    time_array = rb_funcall(r_value, rb_intern("to_a"), 0);
+    year = rb_ary_entry(time_array, 5);
+    month = rb_ary_entry(time_array, 4);
+    day = rb_ary_entry(time_array, 3);
+  } else {
+    year = rb_funcall(r_value, rb_intern("year"), 0);
+    month = rb_funcall(r_value, rb_intern("month"), 0);
+    day = rb_funcall(r_value, rb_intern("day"), 0);
+  }
+
+  return rb_funcall(rb_cDate, rb_intern("new"), 3, year, month, day);
+}
+
+static VALUE parse_date_time(VALUE r_value) {
+  VALUE time_array, year, month, day, hour, min, sec, utc_offset, offset;
+
+  if (rb_obj_class(r_value) == rb_cDateTime) {
+    return r_value;
+  } else if (rb_obj_class(r_value) == rb_cTime) {
+    time_array = rb_funcall(r_value, rb_intern("to_a"), 0);
+    year = rb_ary_entry(time_array, 5);
+    month = rb_ary_entry(time_array, 4);
+    day = rb_ary_entry(time_array, 3);
+    hour = rb_ary_entry(time_array, 2);
+    min = rb_ary_entry(time_array, 1);
+    sec = rb_ary_entry(time_array, 0);
+    utc_offset = rb_funcall(r_value, rb_intern("utc_offset"),0 );
+    offset = rb_funcall(rb_mKernel, ID_RATIONAL, 2, utc_offset, INT2NUM(86400));
+    return rb_funcall(rb_cDateTime, rb_intern("civil"), 7, year, month, day, hour, min, sec, offset);
+  } else {
+    // year = rb_funcall(r_value, rb_intern("year"), 0);
+    // month = rb_funcall(r_value, rb_intern("month"), 0);
+    // day = rb_funcall(r_value, rb_intern("day"), 0);
+    return Qnil;
+  }
+}
+
 /* ===== Typecasting Functions ===== */
 
 static VALUE infer_ruby_type(VALUE type, VALUE scale) {
@@ -125,21 +168,22 @@ static VALUE infer_ruby_type(VALUE type, VALUE scale) {
     return rb_cString;
 }
 
-static VALUE typecast(VALUE value, const VALUE type) {
+static VALUE typecast(VALUE r_value, const VALUE type) {
 
-  return value;
-  // if (type == rb_cInteger) {
-  //   return rb_cstr2inum(value, 10);
-  // } else if (type == rb_cString) {
-  //   return TAINTED_STRING(value, length);
-  // } else if (type == rb_cFloat) {
-  //   return rb_float_new(rb_cstr_to_dbl(value, Qfalse));
-  // } else if (type == rb_cBigDecimal) {
-  //   return rb_funcall(rb_cBigDecimal, ID_NEW, 1, TAINTED_STRING(value, length));
-  // } else if (type == rb_cDate) {
-  //   return parse_date(value);
-  // } else if (type == rb_cDateTime) {
-  //   return parse_date_time(value);
+  if (type == rb_cInteger) {
+    // return rb_cstr2inum(value, 10);
+    return TYPE(r_value) == T_FIXNUM || TYPE(r_value) == T_BIGNUM ? r_value : rb_funcall(r_value, rb_intern("to_i"), 0);
+  } else if (type == rb_cString) {
+    return TYPE(r_value) == T_STRING ? r_value : rb_funcall(r_value, rb_intern("to_s"), 0);
+  } else if (type == rb_cFloat) {
+    return TYPE(r_value) == T_FLOAT ? r_value : rb_funcall(r_value, rb_intern("to_f"), 0);
+  } else if (type == rb_cBigDecimal) {
+    VALUE r_string = TYPE(r_value) == T_STRING ? r_value : rb_funcall(r_value, rb_intern("to_s"), 0);
+    return rb_funcall(rb_cBigDecimal, ID_NEW, 1, r_string);
+  } else if (type == rb_cDate) {
+    return parse_date(r_value);
+  } else if (type == rb_cDateTime) {
+    return parse_date_time(r_value);
   // } else if (type == rb_cTime) {
   //   return parse_time(value);
   // } else if (type == rb_cTrueClass) {
@@ -156,10 +200,21 @@ static VALUE typecast(VALUE value, const VALUE type) {
   //   return rb_marshal_load(rb_str_new2(value));
   // } else if (type == rb_cNilClass) {
   //   return Qnil;
-  // } else {
-  //   return TAINTED_STRING(value, length);
-  // }
+  } else {
+    return r_value;
+  }
 
+}
+
+static VALUE typecast_bind_value(VALUE r_value) {
+  // replace nil value with '' as otherwise OCI8 cannot get bind variable type
+  // '' will be inserted as NULL by Oracle
+  if (NIL_P(r_value))
+    return RUBY_STRING("");
+  else if (rb_obj_class(r_value) == rb_cBigDecimal)
+    return rb_funcall(r_value, rb_intern("to_s"), 1, RUBY_STRING("F"));
+  else
+    return r_value;
 }
 
 /* ====== Public API ======= */
@@ -248,10 +303,7 @@ static VALUE cCommand_execute_try(cCommand_execute_try_t *arg) {
 
   int i;
   for (i = 0; i < arg->argc; i++) {
-    // replace nil value with '' as otherwise OCI8 cannot get bind variable type
-    // '' will be inserted as NULL by Oracle
-    if (NIL_P((arg->argv)[i]))
-      (arg->argv)[i] = RUBY_STRING("");
+    (arg->argv)[i] = typecast_bind_value((arg->argv)[i]);
   }
 
   result = rb_funcall2(arg->cursor, rb_intern("exec"), arg->argc, arg->argv);

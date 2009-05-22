@@ -3,7 +3,9 @@
 require File.expand_path(File.join(File.dirname(__FILE__), '..', 'spec_helper'))
 require 'data_objects/spec/typecast/date_spec'
 
-describe 'DataObjects::Mysql with Date' do
+describe 'DataObjects::Oracle with Date' do
   it_should_behave_like 'supporting Date'
-  it_should_behave_like 'supporting Date autocasting'
+
+  # Oracle will cast DATE type to Time
+  # it_should_behave_like 'supporting Date autocasting'
 end
