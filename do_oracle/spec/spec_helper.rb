@@ -150,8 +150,8 @@ module DataObjectsSpecHelpers
         #   insert into widgets(code, name, shelf_location, description, ad_description, whitepaper_text, super_number, weight) VALUES ('W#{n.to_s.rjust(7,"0")}', 'Widget #{n}', 'A14', 'This is a description', 'Buy this product now!', 'String', 1234, 13.4)
         # EOF
         command.execute_non_query(
-          "W#{n.to_s.rjust(7,"0")}", "Widget #{n}", 'A14', 'This is a description', nil,
-          'Buy this product now!', nil, 'String', nil, 1234, 13.4,
+          "W#{n.to_s.rjust(7,"0")}", "Widget #{n}", 'A14', 'This is a description', ::Extlib::ByteArray.new('IMAGE DATA'),
+          'Buy this product now!', ::Extlib::ByteArray.new('AD IMAGE DATA'), 'String', ::Extlib::ByteArray.new("CAD \001 \000 DRAWING"), 1234, 13.4,
           Time.local(2008,2,14,0,31,12), Time.local(2008,2,14,0,31,12)
         )
       end

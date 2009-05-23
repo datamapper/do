@@ -78,6 +78,8 @@ static VALUE rb_cByteArray;
 
 static VALUE cOCI8;
 static VALUE cOCI8_Cursor;
+static VALUE cOCI8_BLOB;
+static VALUE cOCI8_CLOB;
 
 static VALUE mOracle;
 static VALUE cConnection;
@@ -305,16 +307,29 @@ static VALUE parse_time(VALUE r_value) {
   } else {
     // Something went terribly wrong
     rb_raise(eOracleError, "Couldn't parse time from class %s object", rb_obj_classname(r_value));
+  }  
+}
+
+static VALUE parse_boolean(VALUE r_value) {
+  if (TYPE(r_value) == T_FIXNUM || TYPE(r_value) == T_BIGNUM) {
+    return NUM2INT(r_value) >= 1 ? Qtrue : Qfalse;
+  } else if (TYPE(r_value) == T_STRING) {
+    char value = NIL_P(r_value) || RSTRING_LEN(r_value) == 0 ? '\0' : *(RSTRING_PTR(r_value));
+    return value == 'Y' || value == 'y' || value == 'T' || value == 't' ? Qtrue : Qfalse;
+  } else {
+    // Something went terribly wrong
+    rb_raise(eOracleError, "Couldn't parse boolean from class %s object", rb_obj_classname(r_value));
   }
 }
 
 /* ===== Typecasting Functions ===== */
 
-static VALUE infer_ruby_type(VALUE type, VALUE scale) {
+static VALUE infer_ruby_type(VALUE type, VALUE precision, VALUE scale) {
   ID type_id = SYM2ID(type);
   
   if (type_id == ID_NUMBER)
-    return scale != Qnil && NUM2INT(scale) == 0 ? rb_cInteger : rb_cBigDecimal;
+    return scale != Qnil && NUM2INT(scale) == 0 ?
+            (NUM2INT(precision) == 1 ? rb_cTrueClass : rb_cInteger) : rb_cBigDecimal;
   else if (type_id == ID_VARCHAR2 || type_id == ID_CHAR || type_id == ID_CLOB || type_id == ID_LONG)
     return rb_cString;
   else if (type_id == ID_DATE)
@@ -350,15 +365,11 @@ static VALUE typecast(VALUE r_value, const VALUE type) {
     return parse_date_time(r_value);
   } else if (type == rb_cTime) {
     return parse_time(r_value);
-
-  // } else if (type == rb_cTrueClass) {
-  //   return *value == 't' ? Qtrue : Qfalse;
-  // } else if (type == rb_cByteArray) {
-  //   size_t new_length = 0;
-  //   char* unescaped = (char *)PQunescapeBytea((unsigned char*)value, &new_length);
-  //   VALUE byte_array = rb_funcall(rb_cByteArray, ID_NEW, 1, TAINTED_STRING(unescaped, new_length));
-  //   PQfreemem(unescaped);
-  //   return byte_array;
+  } else if (type == rb_cTrueClass) {
+    return parse_boolean(r_value);
+  } else if (type == rb_cByteArray) {
+    VALUE r_data = rb_funcall(r_value, rb_intern("read"), 0);
+    return rb_funcall(rb_cByteArray, ID_NEW, 1, r_data);
   // } else if (type == rb_cClass) {
   //   return rb_funcall(rb_cObject, rb_intern("full_const_get"), 1, TAINTED_STRING(value, length));
   // } else if (type == rb_cObject) {
@@ -371,13 +382,20 @@ static VALUE typecast(VALUE r_value, const VALUE type) {
 
 }
 
-static VALUE typecast_bind_value(VALUE r_value) {
+static VALUE typecast_bind_value(VALUE oci8_conn, VALUE r_value) {
   // replace nil value with '' as otherwise OCI8 cannot get bind variable type
   // '' will be inserted as NULL by Oracle
   if (NIL_P(r_value))
     return RUBY_STRING("");
   else if (rb_obj_class(r_value) == rb_cBigDecimal)
     return rb_funcall(r_value, rb_intern("to_s"), 1, RUBY_STRING("F"));
+  else if (rb_obj_class(r_value) == rb_cTrueClass)
+    return INT2NUM(1);
+  else if (rb_obj_class(r_value) == rb_cFalseClass)
+    return INT2NUM(0);
+  else if (rb_obj_class(r_value) == rb_cByteArray)
+    // OCI8::BLOB.new(conn, r_value)
+    return rb_funcall(cOCI8_BLOB, ID_NEW, 2, oci8_conn, r_value);
   else
     return r_value;
 }
@@ -431,6 +449,7 @@ static VALUE cCommand_set_types(int argc, VALUE *argv, VALUE self) {
 
 typedef struct {
   VALUE self;
+  VALUE oci8_conn;
   VALUE cursor;
   VALUE statement_type;
   int argc;
@@ -450,6 +469,7 @@ static VALUE cCommand_execute(VALUE oci8_conn, VALUE sql, int argc, VALUE *argv[
   
   cCommand_execute_try_t arg;
   arg.self = self;
+  arg.oci8_conn = oci8_conn;
   arg.cursor = rb_funcall(oci8_conn, rb_intern("parse"), 1, replaced_sql);
   arg.statement_type = rb_funcall(arg.cursor, rb_intern("type"), 0);
   arg.argc = argc;
@@ -468,7 +488,7 @@ static VALUE cCommand_execute_try(cCommand_execute_try_t *arg) {
 
   int i;
   for (i = 0; i < arg->argc; i++) {
-    (arg->argv)[i] = typecast_bind_value((arg->argv)[i]);
+    (arg->argv)[i] = typecast_bind_value(arg->oci8_conn, (arg->argv)[i]);
   }
 
   result = rb_funcall2(arg->cursor, rb_intern("exec"), arg->argc, arg->argv);
@@ -648,7 +668,9 @@ static VALUE cCommand_execute_reader(int argc, VALUE *argv[], VALUE self) {
     rb_ary_push(field_names, rb_funcall(column, ID_NAME, 0));
     if ( infer_types == 1 ) {
       rb_ary_push(field_types,
-        infer_ruby_type(rb_iv_get(column, "@data_type"), rb_iv_get(column, "@scale"))
+        infer_ruby_type(rb_iv_get(column, "@data_type"),
+          rb_funcall(column, rb_intern("precision"), 0),
+          rb_funcall(column, rb_intern("scale"), 0))
       );
     }
   }
@@ -782,6 +804,8 @@ void Init_do_oracle_ext() {
   // Get reference to OCI8 class
   cOCI8 = CONST_GET(rb_mKernel, "OCI8");
   cOCI8_Cursor = CONST_GET(cOCI8, "Cursor");
+  cOCI8_BLOB = CONST_GET(cOCI8, "BLOB");
+  cOCI8_CLOB = CONST_GET(cOCI8, "CLOB");
 
   // Get references to the DataObjects module and its classes
   mDO = CONST_GET(rb_mKernel, "DataObjects");

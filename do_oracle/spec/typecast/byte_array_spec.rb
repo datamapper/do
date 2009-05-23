@@ -3,6 +3,6 @@
 require File.expand_path(File.join(File.dirname(__FILE__), '..', 'spec_helper'))
 require 'data_objects/spec/typecast/byte_array_spec'
 
-describe 'DataObjects::Mysql with ByteArray' do
+describe 'DataObjects::Oracle with ByteArray' do
   it_should_behave_like 'supporting ByteArray'
 end
