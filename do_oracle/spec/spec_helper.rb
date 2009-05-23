@@ -11,9 +11,6 @@ require 'ostruct'
 require 'pathname'
 require 'fileutils'
 
-gem 'ruby-oci8', '>=2.0.2'
-require 'oci8'
-
 # put data_objects from repository in the load path
 # DO NOT USE installed gem of data_objects!
 $:.unshift File.expand_path(File.join(File.dirname(__FILE__), '..', '..', 'data_objects', 'lib'))
@@ -41,6 +38,9 @@ at_exit { DataObjects.logger.flush }
 Spec::Runner.configure do |config|
   config.include(DataObjects::Spec::PendingHelpers)
 end
+
+# Test with Eastern European Time
+# ENV['TZ'] = 'EET'
 
 CONFIG = OpenStruct.new
 CONFIG.scheme   = 'oracle'
@@ -127,8 +127,8 @@ module DataObjectsSpecHelpers
         cost1 FLOAT DEFAULT 10.23,
         cost2 NUMBER(8,2) DEFAULT 50.23,
         release_date DATE DEFAULT '2008-02-14',
-        release_datetime TIMESTAMP DEFAULT '2008-02-14 00:31:12',
-        release_timestamp TIMESTAMP WITH TIME ZONE DEFAULT '2008-02-14 00:31:31'
+        release_datetime DATE DEFAULT '2008-02-14 00:31:12',
+        release_timestamp TIMESTAMP WITH TIME ZONE DEFAULT '2008-02-14 00:31:12 #{"%+03d" % (Time.local(2008,2,14,0,31,12).utc_offset/3600)}:00'
       )
     EOF
     create_seq_and_trigger(conn, "widgets")
@@ -136,8 +136,10 @@ module DataObjectsSpecHelpers
     if insert_data
       command = conn.create_command(<<-EOF)
         insert into widgets(code, name, shelf_location, description, image_data,
-          ad_description, ad_image, whitepaper_text, cad_drawing, super_number, weight)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          ad_description, ad_image, whitepaper_text, cad_drawing, super_number, weight
+          ,release_datetime, release_timestamp)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+          ,?, ?)
       EOF
     
       1.upto(16) do |n|
@@ -149,7 +151,8 @@ module DataObjectsSpecHelpers
         # EOF
         command.execute_non_query(
           "W#{n.to_s.rjust(7,"0")}", "Widget #{n}", 'A14', 'This is a description', nil,
-          'Buy this product now!', nil, 'String', nil, 1234, 13.4
+          'Buy this product now!', nil, 'String', nil, 1234, 13.4,
+          Time.local(2008,2,14,0,31,12), Time.local(2008,2,14,0,31,12)
         )
       end
 

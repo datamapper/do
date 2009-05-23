@@ -5,6 +5,11 @@ if RUBY_PLATFORM =~ /java/
   require 'java'
   # gem 'jdbc-mysql'
   # require 'jdbc/mysql' # the JDBC driver, packaged as a gem
+
+else # MRI and Ruby 1.9
+  gem 'ruby-oci8', '>=2.0.2'
+  require 'oci8'
+  require File.expand_path(File.join(File.dirname(__FILE__), 'oci8_patch'))
 end
 
 require 'do_oracle_ext'

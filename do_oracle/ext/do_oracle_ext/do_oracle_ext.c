@@ -1,10 +1,10 @@
-// #ifdef _WIN32
+#ifdef _WIN32
 // #define cCommand_execute cCommand_execute_sync
-// #define do_int64 signed __int64
-// #else
+#define do_int64 signed __int64
+#else
 // #define cCommand_execute cCommand_execute_async
-// #define do_int64 signed long long int
-// #endif
+#define do_int64 signed long long int
+#endif
 
 #include <ruby.h>
 #include <string.h>
@@ -105,45 +105,206 @@ static char * get_uri_option(VALUE query_hash, char * key) {
 }
 
 /* ====== Time/Date Parsing Helper Functions ====== */
+static void reduce( do_int64 *numerator, do_int64 *denominator ) {
+  do_int64 a, b, c;
+  a = *numerator;
+  b = *denominator;
+  while ( a != 0 ) {
+    c = a; a = b % a; b = c;
+  }
+  *numerator = *numerator / b;
+  *denominator = *denominator / b;
+}
+
+// Generate the date integer which Date.civil_to_jd returns
+static int jd_from_date(int year, int month, int day) {
+  int a, b;
+  if ( month <= 2 ) {
+    year -= 1;
+    month += 12;
+  }
+  a = year / 100;
+  b = 2 - a + (a / 4);
+  return floor(365.25 * (year + 4716)) + floor(30.6001 * (month + 1)) + day + b - 1524;
+}
+
+// Creates a Rational for use as a Timezone offset to be passed to DateTime.new!
+static VALUE seconds_to_offset(do_int64 num) {
+  do_int64 den = 86400;
+  reduce(&num, &den);
+  return rb_funcall(rb_mKernel, ID_RATIONAL, 2, rb_ll2inum(num), rb_ll2inum(den));
+}
+
+static VALUE timezone_to_offset(int hour_offset, int minute_offset) {
+  do_int64 seconds = 0;
+
+  seconds += hour_offset * 3600;
+  seconds += minute_offset * 60;
+
+  return seconds_to_offset(seconds);
+}
+
+
+// Implementation using Ruby methods
+
+// static VALUE parse_date(VALUE r_value) {
+//   VALUE time_array, year, month, day;
+// 
+//   if (rb_obj_class(r_value) == rb_cTime) {
+//     time_array = rb_funcall(r_value, rb_intern("to_a"), 0);
+//     year = rb_ary_entry(time_array, 5);
+//     month = rb_ary_entry(time_array, 4);
+//     day = rb_ary_entry(time_array, 3);
+//   } else {
+//     year = rb_funcall(r_value, rb_intern("year"), 0);
+//     month = rb_funcall(r_value, rb_intern("month"), 0);
+//     day = rb_funcall(r_value, rb_intern("day"), 0);
+//   }
+// 
+//   return rb_funcall(rb_cDate, rb_intern("new"), 3, year, month, day);
+// }
+
+// Implementation using C functions
 
 static VALUE parse_date(VALUE r_value) {
-  VALUE time_array, year, month, day;
+  VALUE time_array;
+  int year, month, day;
+  int jd, ajd;
+  VALUE rational;
 
   if (rb_obj_class(r_value) == rb_cTime) {
     time_array = rb_funcall(r_value, rb_intern("to_a"), 0);
-    year = rb_ary_entry(time_array, 5);
-    month = rb_ary_entry(time_array, 4);
-    day = rb_ary_entry(time_array, 3);
-  } else {
-    year = rb_funcall(r_value, rb_intern("year"), 0);
-    month = rb_funcall(r_value, rb_intern("month"), 0);
-    day = rb_funcall(r_value, rb_intern("day"), 0);
-  }
+    year = NUM2INT(rb_ary_entry(time_array, 5));
+    month = NUM2INT(rb_ary_entry(time_array, 4));
+    day = NUM2INT(rb_ary_entry(time_array, 3));
 
-  return rb_funcall(rb_cDate, rb_intern("new"), 3, year, month, day);
+    jd = jd_from_date(year, month, day);
+
+    // Math from Date.jd_to_ajd
+    ajd = jd * 2 - 1;
+    rational = rb_funcall(rb_mKernel, ID_RATIONAL, 2, INT2NUM(ajd), INT2NUM(2));
+
+    return rb_funcall(rb_cDate, ID_NEW_DATE, 3, rational, INT2NUM(0), INT2NUM(2299161));
+
+  } else if (rb_obj_class(r_value) == rb_cDate) {
+    return r_value;
+
+  } else if (rb_obj_class(r_value) == rb_cDateTime) {
+    rational = rb_iv_get(r_value, "@ajd");
+    return rb_funcall(rb_cDate, ID_NEW_DATE, 3, rational, INT2NUM(0), INT2NUM(2299161));
+    
+  } else {
+    // Something went terribly wrong
+    rb_raise(eOracleError, "Couldn't parse date from class %s object", rb_obj_classname(r_value));
+  }
 }
 
+// Implementation using Ruby methods
+
+// static VALUE parse_date_time(VALUE r_value) {
+//   VALUE time_array, year, month, day, hour, min, sec, utc_offset, offset;
+// 
+//   if (rb_obj_class(r_value) == rb_cDateTime) {
+//     return r_value;
+//   } else if (rb_obj_class(r_value) == rb_cTime) {
+//     time_array = rb_funcall(r_value, rb_intern("to_a"), 0);
+//     year = rb_ary_entry(time_array, 5);
+//     month = rb_ary_entry(time_array, 4);
+//     day = rb_ary_entry(time_array, 3);
+//     hour = rb_ary_entry(time_array, 2);
+//     min = rb_ary_entry(time_array, 1);
+//     sec = rb_ary_entry(time_array, 0);
+//     utc_offset = rb_funcall(r_value, rb_intern("utc_offset"),0 );
+//     offset = rb_funcall(rb_mKernel, ID_RATIONAL, 2, utc_offset, INT2NUM(86400));
+//     return rb_funcall(rb_cDateTime, rb_intern("civil"), 7, year, month, day, hour, min, sec, offset);
+//   } else {
+//     // year = rb_funcall(r_value, rb_intern("year"), 0);
+//     // month = rb_funcall(r_value, rb_intern("month"), 0);
+//     // day = rb_funcall(r_value, rb_intern("day"), 0);
+//     return Qnil;
+//   }
+// }
+
+// Implementation using C functions
+
 static VALUE parse_date_time(VALUE r_value) {
-  VALUE time_array, year, month, day, hour, min, sec, utc_offset, offset;
+  VALUE ajd, offset;
+
+  VALUE time_array;
+  int year, month, day, hour, min, sec, hour_offset, minute_offset;
+  // int usec;
+  int jd;
+  do_int64 num, den;
+
+  long int gmt_offset;
+  int is_dst;
+
+  // time_t rawtime;
+  // struct tm * timeinfo;
+
+  // int tokens_read, max_tokens;
 
   if (rb_obj_class(r_value) == rb_cDateTime) {
     return r_value;
   } else if (rb_obj_class(r_value) == rb_cTime) {
     time_array = rb_funcall(r_value, rb_intern("to_a"), 0);
-    year = rb_ary_entry(time_array, 5);
-    month = rb_ary_entry(time_array, 4);
-    day = rb_ary_entry(time_array, 3);
-    hour = rb_ary_entry(time_array, 2);
-    min = rb_ary_entry(time_array, 1);
-    sec = rb_ary_entry(time_array, 0);
-    utc_offset = rb_funcall(r_value, rb_intern("utc_offset"),0 );
-    offset = rb_funcall(rb_mKernel, ID_RATIONAL, 2, utc_offset, INT2NUM(86400));
-    return rb_funcall(rb_cDateTime, rb_intern("civil"), 7, year, month, day, hour, min, sec, offset);
+    year = NUM2INT(rb_ary_entry(time_array, 5));
+    month = NUM2INT(rb_ary_entry(time_array, 4));
+    day = NUM2INT(rb_ary_entry(time_array, 3));
+    hour = NUM2INT(rb_ary_entry(time_array, 2));
+    min = NUM2INT(rb_ary_entry(time_array, 1));
+    sec = NUM2INT(rb_ary_entry(time_array, 0));
+
+    is_dst = rb_ary_entry(time_array, 8) == Qtrue ? 3600 : 0;
+    gmt_offset = NUM2INT(rb_funcall(r_value, rb_intern("utc_offset"),0 ));
+
+    if ( is_dst > 0 )
+      gmt_offset -= is_dst;
+
+    hour_offset = -(gmt_offset / 3600);
+    minute_offset = -(gmt_offset % 3600 / 60);
+
+    jd = jd_from_date(year, month, day);
+
+    // Generate ajd with fractional days for the time
+    // Extracted from Date#jd_to_ajd, Date#day_fraction_to_time, and Rational#+ and #-
+    num = (hour * 1440) + (min * 24);
+
+    // Modify the numerator so when we apply the timezone everything works out
+    num -= (hour_offset * 1440) + (minute_offset * 24);
+
+    den = (24 * 1440);
+    reduce(&num, &den);
+
+    num = (num * 86400) + (sec * den);
+    den = den * 86400;
+    reduce(&num, &den);
+
+    num = (jd * den) + num;
+
+    num = num * 2;
+    num = num - den;
+    den = den * 2;
+
+    reduce(&num, &den);
+
+    ajd = rb_funcall(rb_mKernel, ID_RATIONAL, 2, rb_ull2inum(num), rb_ull2inum(den));
+    offset = timezone_to_offset(hour_offset, minute_offset);
+
+    return rb_funcall(rb_cDateTime, ID_NEW_DATE, 3, ajd, offset, INT2NUM(2299161));
   } else {
-    // year = rb_funcall(r_value, rb_intern("year"), 0);
-    // month = rb_funcall(r_value, rb_intern("month"), 0);
-    // day = rb_funcall(r_value, rb_intern("day"), 0);
-    return Qnil;
+    // Something went terribly wrong
+    rb_raise(eOracleError, "Couldn't parse datetime from class %s object", rb_obj_classname(r_value));
+  }
+
+}
+
+static VALUE parse_time(VALUE r_value) {
+  if (rb_obj_class(r_value) == rb_cTime) {
+    return r_value;
+  } else {
+    // Something went terribly wrong
+    rb_raise(eOracleError, "Couldn't parse time from class %s object", rb_obj_classname(r_value));
   }
 }
 
@@ -157,9 +318,13 @@ static VALUE infer_ruby_type(VALUE type, VALUE scale) {
   else if (type_id == ID_VARCHAR2 || type_id == ID_CHAR || type_id == ID_CLOB || type_id == ID_LONG)
     return rb_cString;
   else if (type_id == ID_DATE)
-    return rb_cDateTime;
+    // return rb_cDateTime;
+    // by default map DATE type to Time class as it is much faster than DateTime class
+    return rb_cTime;
   else if (type_id == ID_TIMESTAMP || type_id == ID_TIMESTAMP_TZ || type_id == ID_TIMESTAMP_LTZ)
-    return rb_cDateTime;
+    // return rb_cDateTime;
+    // by default map TIMESTAMP type to Time class as it is much faster than DateTime class
+    return rb_cTime;
   else if (type_id == ID_BLOB || type_id == ID_RAW || type_id == ID_LONG_RAW || type_id == ID_BFILE)
     return rb_cByteArray;
   else if (type_id == ID_BINARY_FLOAT || type_id == ID_BINARY_DOUBLE)
@@ -171,7 +336,6 @@ static VALUE infer_ruby_type(VALUE type, VALUE scale) {
 static VALUE typecast(VALUE r_value, const VALUE type) {
 
   if (type == rb_cInteger) {
-    // return rb_cstr2inum(value, 10);
     return TYPE(r_value) == T_FIXNUM || TYPE(r_value) == T_BIGNUM ? r_value : rb_funcall(r_value, rb_intern("to_i"), 0);
   } else if (type == rb_cString) {
     return TYPE(r_value) == T_STRING ? r_value : rb_funcall(r_value, rb_intern("to_s"), 0);
@@ -184,8 +348,9 @@ static VALUE typecast(VALUE r_value, const VALUE type) {
     return parse_date(r_value);
   } else if (type == rb_cDateTime) {
     return parse_date_time(r_value);
-  // } else if (type == rb_cTime) {
-  //   return parse_time(value);
+  } else if (type == rb_cTime) {
+    return parse_time(r_value);
+
   // } else if (type == rb_cTrueClass) {
   //   return *value == 't' ? Qtrue : Qfalse;
   // } else if (type == rb_cByteArray) {
@@ -331,6 +496,8 @@ static VALUE cConnection_initialize(VALUE self, VALUE uri) {
   VALUE r_host, r_port, r_path, r_user, r_password;
   VALUE r_query;
   char *non_blocking = NULL;
+  char *time_zone = NULL;
+  char set_time_zone_command[80];
   
   char *host = "localhost", *port = "1521", *path = NULL;
   // char *user = NULL, *password = NULL;
@@ -382,6 +549,18 @@ static VALUE cConnection_initialize(VALUE self, VALUE uri) {
   rb_funcall(oci8_conn, rb_intern("autocommit="), 1, Qtrue);
   // Set prefetch rows to 100 to increase fetching performance SELECTs with many rows
   rb_funcall(oci8_conn, rb_intern("prefetch_rows="), 1, INT2NUM(100));
+
+  // Set session time zone
+  // at first look for option in connection string
+  time_zone = get_uri_option(r_query, "time_zone");
+  // if no option specified then look in TZ environment variable
+  if (time_zone == NULL) {
+    time_zone = getenv("TZ");
+  }
+  if (time_zone) {
+    snprintf(set_time_zone_command, 80, "alter session set time_zone = '%s'", time_zone);
+    cCommand_execute(oci8_conn, RUBY_STRING(set_time_zone_command), 0, NULL, Qnil);
+  }
   
   cCommand_execute(oci8_conn,
       RUBY_STRING("alter session set nls_date_format = 'YYYY-MM-DD HH24:MI:SS'"),
@@ -390,7 +569,7 @@ static VALUE cConnection_initialize(VALUE self, VALUE uri) {
       RUBY_STRING("alter session set nls_timestamp_format = 'YYYY-MM-DD HH24:MI:SS.FF'"),
       0, NULL, Qnil);
   cCommand_execute(oci8_conn,
-      RUBY_STRING("alter session set nls_timestamp_tz_format = 'YYYY-MM-DD HH24:MI:SS.FF'"),
+      RUBY_STRING("alter session set nls_timestamp_tz_format = 'YYYY-MM-DD HH24:MI:SS.FF TZH:TZM'"),
       0, NULL, Qnil);
 
   rb_iv_set(self, "@uri", uri);
