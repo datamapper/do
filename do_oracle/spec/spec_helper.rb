@@ -118,6 +118,7 @@ module DataObjectsSpecHelpers
         ad_description VARCHAR2(4000),
         ad_image BLOB,
         whitepaper_text CLOB,
+        class_name VARCHAR2(4000),
         cad_drawing BLOB,
         flags NUMBER(1) default 0,
         number_in_stock NUMBER(38,0) DEFAULT 500,
@@ -136,9 +137,10 @@ module DataObjectsSpecHelpers
     if insert_data
       command = conn.create_command(<<-EOF)
         insert into widgets(code, name, shelf_location, description, image_data,
-          ad_description, ad_image, whitepaper_text, cad_drawing, super_number, weight
+          ad_description, ad_image, whitepaper_text,
+          class_name, cad_drawing, super_number, weight
           ,release_datetime, release_timestamp)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
           ,?, ?)
       EOF
     
@@ -151,7 +153,8 @@ module DataObjectsSpecHelpers
         # EOF
         command.execute_non_query(
           "W#{n.to_s.rjust(7,"0")}", "Widget #{n}", 'A14', 'This is a description', ::Extlib::ByteArray.new('IMAGE DATA'),
-          'Buy this product now!', ::Extlib::ByteArray.new('AD IMAGE DATA'), 'String', ::Extlib::ByteArray.new("CAD \001 \000 DRAWING"), 1234, 13.4,
+          'Buy this product now!', ::Extlib::ByteArray.new('AD IMAGE DATA'), '1234567890'*500,
+          'String', ::Extlib::ByteArray.new("CAD \001 \000 DRAWING"), 1234, 13.4,
           Time.local(2008,2,14,0,31,12), Time.local(2008,2,14,0,31,12)
         )
       end

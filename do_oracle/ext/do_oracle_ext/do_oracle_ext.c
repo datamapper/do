@@ -349,33 +349,53 @@ static VALUE infer_ruby_type(VALUE type, VALUE precision, VALUE scale) {
 }
 
 static VALUE typecast(VALUE r_value, const VALUE type) {
-
+  VALUE r_data;
+  
   if (type == rb_cInteger) {
     return TYPE(r_value) == T_FIXNUM || TYPE(r_value) == T_BIGNUM ? r_value : rb_funcall(r_value, rb_intern("to_i"), 0);
+
   } else if (type == rb_cString) {
-    return TYPE(r_value) == T_STRING ? r_value : rb_funcall(r_value, rb_intern("to_s"), 0);
+    if (TYPE(r_value) == T_STRING)
+      return r_value;
+    else if (rb_obj_class(r_value) == cOCI8_CLOB)
+      return rb_funcall(r_value, rb_intern("read"), 0);
+    else
+      return rb_funcall(r_value, rb_intern("to_s"), 0);
+
   } else if (type == rb_cFloat) {
     return TYPE(r_value) == T_FLOAT ? r_value : rb_funcall(r_value, rb_intern("to_f"), 0);
+
   } else if (type == rb_cBigDecimal) {
     VALUE r_string = TYPE(r_value) == T_STRING ? r_value : rb_funcall(r_value, rb_intern("to_s"), 0);
     return rb_funcall(rb_cBigDecimal, ID_NEW, 1, r_string);
+
   } else if (type == rb_cDate) {
     return parse_date(r_value);
+
   } else if (type == rb_cDateTime) {
     return parse_date_time(r_value);
+
   } else if (type == rb_cTime) {
     return parse_time(r_value);
+
   } else if (type == rb_cTrueClass) {
     return parse_boolean(r_value);
+
   } else if (type == rb_cByteArray) {
-    VALUE r_data = rb_funcall(r_value, rb_intern("read"), 0);
+    if (rb_obj_class(r_value) == cOCI8_BLOB)
+      r_data = rb_funcall(r_value, rb_intern("read"), 0);
+    else
+      r_data = r_value;
     return rb_funcall(rb_cByteArray, ID_NEW, 1, r_data);
-  // } else if (type == rb_cClass) {
-  //   return rb_funcall(rb_cObject, rb_intern("full_const_get"), 1, TAINTED_STRING(value, length));
+
+  } else if (type == rb_cClass) {
+    return rb_funcall(rb_cObject, rb_intern("full_const_get"), 1, r_value);
   // } else if (type == rb_cObject) {
   //   return rb_marshal_load(rb_str_new2(value));
-  // } else if (type == rb_cNilClass) {
-  //   return Qnil;
+
+  } else if (type == rb_cNilClass) {
+    return Qnil;
+
   } else {
     return r_value;
   }
@@ -383,19 +403,24 @@ static VALUE typecast(VALUE r_value, const VALUE type) {
 }
 
 static VALUE typecast_bind_value(VALUE oci8_conn, VALUE r_value) {
+  VALUE r_class = rb_obj_class(r_value);
   // replace nil value with '' as otherwise OCI8 cannot get bind variable type
   // '' will be inserted as NULL by Oracle
   if (NIL_P(r_value))
     return RUBY_STRING("");
-  else if (rb_obj_class(r_value) == rb_cBigDecimal)
+  else if (r_class == rb_cString)
+    // if string is longer than 4000 characters then convert to CLOB
+    return RSTRING_LEN(r_value) <= 4000 ? r_value : rb_funcall(cOCI8_CLOB, ID_NEW, 2, oci8_conn, r_value);
+  else if (r_class == rb_cBigDecimal)
     return rb_funcall(r_value, rb_intern("to_s"), 1, RUBY_STRING("F"));
-  else if (rb_obj_class(r_value) == rb_cTrueClass)
+  else if (r_class == rb_cTrueClass)
     return INT2NUM(1);
-  else if (rb_obj_class(r_value) == rb_cFalseClass)
+  else if (r_class == rb_cFalseClass)
     return INT2NUM(0);
-  else if (rb_obj_class(r_value) == rb_cByteArray)
-    // OCI8::BLOB.new(conn, r_value)
+  else if (r_class == rb_cByteArray)
     return rb_funcall(cOCI8_BLOB, ID_NEW, 2, oci8_conn, r_value);
+  else if (r_class == rb_cClass)
+    return rb_funcall(r_value, rb_intern("to_s"), 0);
   else
     return r_value;
 }
