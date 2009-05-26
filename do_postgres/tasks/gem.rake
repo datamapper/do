@@ -18,17 +18,20 @@ GEM_SPEC = Gem::Specification.new do |s|
     s.add_dependency "jdbc-postgres", ">=8.2"
     s.add_dependency "do_jdbc", DataObjects::Postgres::VERSION
     s.platform = "java"
+    # components, files and paths
+    s.files = FileList["lib/**/*.rb", "spec/**/*.rb", "tasks/**/*.rake",
+                        "LICENSE", "Rakefile", "*.{rdoc,txt,yml}", "lib/*.jar"]
   else
     s.platform    = Gem::Platform::RUBY
     s.extensions << 'ext/do_postgres_ext/extconf.rb'
+    # components, files and paths
+    s.files = FileList["lib/**/*.rb", "spec/**/*.rb", "tasks/**/*.rake", "ext/**/*.{rb,c}",
+                        "LICENSE", "Rakefile", "*.{rdoc,txt,yml}"]
   end
 
   # development dependencies
   s.add_development_dependency 'rspec', '~>1.2.0'
 
-  # components, files and paths
-  s.files = FileList["lib/**/*.rb", "spec/**/*.rb", "tasks/**/*.rake", "ext/**/*",
-                      "LICENSE", "Rakefile", "*.{rdoc,txt,yml}", "lib/*.jar"]
 
   s.require_path = 'lib'
 
