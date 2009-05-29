@@ -390,6 +390,8 @@ static VALUE typecast(VALUE r_value, const VALUE type) {
 
   } else if (type == rb_cClass) {
     return rb_funcall(rb_cObject, rb_intern("full_const_get"), 1, r_value);
+
+  // TODO: why is this mapping necessary?
   // } else if (type == rb_cObject) {
   //   return rb_marshal_load(rb_str_new2(value));
 
@@ -477,50 +479,64 @@ typedef struct {
   VALUE oci8_conn;
   VALUE cursor;
   VALUE statement_type;
-  int argc;
-  VALUE *argv;
+  VALUE args;
 } cCommand_execute_try_t;
 
 static VALUE cCommand_execute_try(cCommand_execute_try_t *arg);
 static VALUE cCommand_execute_ensure(cCommand_execute_try_t *arg);
 
-
-static VALUE cCommand_execute(VALUE oci8_conn, VALUE sql, int argc, VALUE *argv[], VALUE self) {
-  // Count number of ? in sql and replace them with :n as needed by OCI8
-  // compare number of ? with argc
-  // set @insert_id_present if sql is INSERT ... RETURNING ... INTO :insert_id  
-  VALUE replaced_sql = NIL_P(self) ? sql :
-    rb_funcall(self, rb_intern("replace_argument_placeholders"), 2, sql, INT2NUM(argc));
+static VALUE execute_sql(VALUE oci8_conn, VALUE sql) {
+  cCommand_execute_try_t arg;
+  arg.self = Qnil;
+  arg.oci8_conn = oci8_conn;
+  arg.cursor = rb_funcall(oci8_conn, rb_intern("parse"), 1, sql);
+  arg.statement_type = rb_funcall(arg.cursor, rb_intern("type"), 0);
+  arg.args = Qnil;
   
+  return rb_ensure(cCommand_execute_try, (VALUE)&arg, cCommand_execute_ensure, (VALUE)&arg);
+}
+
+// called by Command#execute that is written in Ruby
+static VALUE cCommand_execute_internal(VALUE self, VALUE oci8_conn, VALUE sql, VALUE args) {
   cCommand_execute_try_t arg;
   arg.self = self;
   arg.oci8_conn = oci8_conn;
-  arg.cursor = rb_funcall(oci8_conn, rb_intern("parse"), 1, replaced_sql);
+  arg.cursor = rb_funcall(oci8_conn, rb_intern("parse"), 1, sql);
   arg.statement_type = rb_funcall(arg.cursor, rb_intern("type"), 0);
-  arg.argc = argc;
-  arg.argv = (VALUE *)argv;
+  arg.args = args;
     
   return rb_ensure(cCommand_execute_try, (VALUE)&arg, cCommand_execute_ensure, (VALUE)&arg);
 }
 
 static VALUE cCommand_execute_try(cCommand_execute_try_t *arg) {
   VALUE result = Qnil;
+  int insert_id_present;
   
-  int insert_id_present = (!NIL_P(arg->self) && rb_iv_get(arg->self, "@insert_id_present") == Qtrue);
-  
-  if (insert_id_present)
-    rb_funcall(arg->cursor, rb_intern("bind_param"), 2, RUBY_STRING(":insert_id"), INT2NUM(0));
+  // no arguments given
+  if NIL_P(arg->args) {
+    result = rb_funcall(arg->cursor, rb_intern("exec"), 0);
+  // arguments given - need to typecast
+  } else {
+    insert_id_present = (!NIL_P(arg->self) && rb_iv_get(arg->self, "@insert_id_present") == Qtrue);
 
-  int i;
-  for (i = 0; i < arg->argc; i++) {
-    (arg->argv)[i] = typecast_bind_value(arg->oci8_conn, (arg->argv)[i]);
-  }
+    if (insert_id_present)
+      rb_funcall(arg->cursor, rb_intern("bind_param"), 2, RUBY_STRING(":insert_id"), INT2NUM(0));
 
-  result = rb_funcall2(arg->cursor, rb_intern("exec"), arg->argc, arg->argv);
+    int i;
+    VALUE r_orig_value, r_new_value;
+    for (i = 0; i < RARRAY_LEN(arg->args); i++) {
+      r_orig_value = rb_ary_entry(arg->args, i);
+      r_new_value = typecast_bind_value(arg->oci8_conn, r_orig_value);
+      if (r_orig_value != r_new_value)
+        rb_ary_store(arg->args, i, r_new_value);
+    }
 
-  if (insert_id_present) {
-    VALUE insert_id = rb_funcall(arg->cursor, rb_intern("[]"), 1, RUBY_STRING(":insert_id"));
-    rb_iv_set(arg->self, "@insert_id", insert_id);
+    result = rb_apply(arg->cursor, rb_intern("exec"), arg->args);
+
+    if (insert_id_present) {
+      VALUE insert_id = rb_funcall(arg->cursor, rb_intern("[]"), 1, RUBY_STRING(":insert_id"));
+      rb_iv_set(arg->self, "@insert_id", insert_id);
+    }
   }
 
   if (SYM2ID(arg->statement_type) == rb_intern("select_stmt"))
@@ -545,7 +561,6 @@ static VALUE cConnection_initialize(VALUE self, VALUE uri) {
   char set_time_zone_command[80];
   
   char *host = "localhost", *port = "1521", *path = NULL;
-  // char *user = NULL, *password = NULL;
   char *connect_string;
   int connect_string_length;
   VALUE oci8_conn;
@@ -604,18 +619,12 @@ static VALUE cConnection_initialize(VALUE self, VALUE uri) {
   }
   if (time_zone) {
     snprintf(set_time_zone_command, 80, "alter session set time_zone = '%s'", time_zone);
-    cCommand_execute(oci8_conn, RUBY_STRING(set_time_zone_command), 0, NULL, Qnil);
+    execute_sql(oci8_conn, RUBY_STRING(set_time_zone_command));
   }
   
-  cCommand_execute(oci8_conn,
-      RUBY_STRING("alter session set nls_date_format = 'YYYY-MM-DD HH24:MI:SS'"),
-      0, NULL, Qnil);
-  cCommand_execute(oci8_conn,
-      RUBY_STRING("alter session set nls_timestamp_format = 'YYYY-MM-DD HH24:MI:SS.FF'"),
-      0, NULL, Qnil);
-  cCommand_execute(oci8_conn,
-      RUBY_STRING("alter session set nls_timestamp_tz_format = 'YYYY-MM-DD HH24:MI:SS.FF TZH:TZM'"),
-      0, NULL, Qnil);
+  execute_sql(oci8_conn, RUBY_STRING("alter session set nls_date_format = 'YYYY-MM-DD HH24:MI:SS'"));
+  execute_sql(oci8_conn, RUBY_STRING("alter session set nls_timestamp_format = 'YYYY-MM-DD HH24:MI:SS.FF'"));
+  execute_sql(oci8_conn, RUBY_STRING("alter session set nls_timestamp_tz_format = 'YYYY-MM-DD HH24:MI:SS.FF TZH:TZM'"));
 
   rb_iv_set(self, "@uri", uri);
   rb_iv_set(self, "@connection", oci8_conn);
@@ -624,15 +633,7 @@ static VALUE cConnection_initialize(VALUE self, VALUE uri) {
 }
 
 static VALUE cCommand_execute_non_query(int argc, VALUE *argv[], VALUE self) {
-  VALUE connection = rb_iv_get(self, "@connection");
-  VALUE oci8_conn = rb_iv_get(connection, "@connection");
-  if (Qnil == oci8_conn) {
-    rb_raise(eOracleError, "This connection has already been closed.");
-  }
-
-  VALUE query = rb_iv_get(self, "@text");
-
-  VALUE affected_rows = cCommand_execute(oci8_conn, query, argc, argv, self);
+  VALUE affected_rows = rb_funcall2(self, rb_intern("execute"), argc, (VALUE *)argv);
   if (affected_rows == Qtrue)
     affected_rows = INT2NUM(0);
 
@@ -650,15 +651,7 @@ static VALUE cCommand_execute_reader(int argc, VALUE *argv[], VALUE self) {
   int field_count;
   int infer_types = 0;
 
-  VALUE connection = rb_iv_get(self, "@connection");
-  VALUE oci8_conn = rb_iv_get(connection, "@connection");
-  if (Qnil == oci8_conn) {
-    rb_raise(eOracleError, "This connection has already been closed.");
-  }
-
-  query = rb_iv_get(self, "@text");
-
-  VALUE cursor = cCommand_execute(oci8_conn, query, argc, argv, self);
+  VALUE cursor = rb_funcall2(self, rb_intern("execute"), argc, (VALUE *)argv);
 
   if (rb_obj_class(cursor) != cOCI8_Cursor) {
     rb_raise(eOracleError, "\"%s\" is invalid SELECT query", StringValuePtr(query));
@@ -847,14 +840,12 @@ void Init_do_oracle_ext() {
   cConnection = ORACLE_CLASS("Connection", cDO_Connection);
   rb_define_method(cConnection, "initialize", cConnection_initialize, 1);
   rb_define_method(cConnection, "dispose", cConnection_dispose, 0);
-  // rb_define_method(cConnection, "character_set", cConnection_character_set , 0);
-  // rb_define_method(cConnection, "quote_string", cConnection_quote_string, 1);
-  // rb_define_method(cConnection, "quote_byte_array", cConnection_quote_byte_array, 1);
 
   cCommand = ORACLE_CLASS("Command", cDO_Command);
   rb_define_method(cCommand, "set_types", cCommand_set_types, -1);
   rb_define_method(cCommand, "execute_non_query", cCommand_execute_non_query, -1);
   rb_define_method(cCommand, "execute_reader", cCommand_execute_reader, -1);
+  rb_define_method(cCommand, "execute_internal", cCommand_execute_internal, 3);
 
   cResult = ORACLE_CLASS("Result", cDO_Result);
 

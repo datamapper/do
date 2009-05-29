@@ -22,6 +22,14 @@ if RUBY_PLATFORM !~ /java/
       class Command
         private
         
+        def execute(*args)
+          oci8_conn = @connection.instance_variable_get("@connection")
+          raise OracleError, "This connection has already been closed." unless oci8_conn
+          
+          sql = replace_argument_placeholders(@text, args.size)
+          execute_internal(oci8_conn, sql, args)
+        end
+        
         # Replace ? placeholders with :n argument placeholders in string of SQL
         # as required by OCI8#exec method
         # Compare number of ? placeholders with number of passed arguments
