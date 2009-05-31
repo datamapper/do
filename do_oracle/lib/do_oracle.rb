@@ -26,33 +26,50 @@ if RUBY_PLATFORM !~ /java/
           oci8_conn = @connection.instance_variable_get("@connection")
           raise OracleError, "This connection has already been closed." unless oci8_conn
           
-          sql = replace_argument_placeholders(@text, args.size)
-          execute_internal(oci8_conn, sql, args)
+          sql, bind_variables = replace_argument_placeholders(@text, args)
+          execute_internal(oci8_conn, sql, bind_variables)
         end
         
         # Replace ? placeholders with :n argument placeholders in string of SQL
         # as required by OCI8#exec method
         # Compare number of ? placeholders with number of passed arguments
         # and raise exception if different
-        def replace_argument_placeholders(sql_string, args_count)
+        def replace_argument_placeholders(sql_string, args)
           sql = sql_string.dup
+          args_count = args.length
+          bind_variables = []
           
           replacements = 0
           mismatch     = false
           
           sql.gsub!(/\?/) do |x|
+            arg = args[replacements]
             replacements += 1
-            ":#{replacements}"
+            case arg
+            when Array
+              i = 0
+              "(" << arg.map do |a|
+                bind_variables << a
+                i += 1
+                ":a#{replacements}_#{i}"
+              end.join(", ") << ")"
+            when Range
+              bind_variables << arg.first << arg.last
+              ":r#{replacements}_1 AND :r#{replacements}_2"
+            else
+              bind_variables << arg
+              ":#{replacements}"
+            end
           end
           
-          if sql =~ /^\s*INSERT.+RETURNING.+INTO :insert_id$/i
+          if sql =~ /^\s*INSERT.+RETURNING.+INTO :insert_id\s*$/i
             @insert_id_present = true
           end
           
           if args_count != replacements
             raise ArgumentError, "Binding mismatch: #{args_count} for #{replacements}"
           else
-            sql
+            [sql, bind_variables]
           end
           
         end

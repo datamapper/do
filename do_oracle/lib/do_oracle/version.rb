@@ -1,5 +1,5 @@
 module DataObjects
   module Oracle
-    VERSION = "0.0.1"
+    VERSION = "0.9.13"
   end
 end

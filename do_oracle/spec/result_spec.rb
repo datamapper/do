@@ -10,6 +10,14 @@ end
 describe DataObjects::Oracle::Result do
   include DataObjectsSpecHelpers
 
+  def current_sequence_value(seq_name)
+    reader = @connection.create_command("SELECT #{seq_name}.currval FROM dual").execute_reader
+    reader.next!
+    value = reader.values.first
+    reader.close
+    value
+  end
+
   before :all do
     setup_test_environment(false)
   end
@@ -18,6 +26,7 @@ describe DataObjects::Oracle::Result do
 
     before :each do
       @connection = DataObjects::Connection.new(CONFIG.uri)
+      @users_seq_value = current_sequence_value("users_seq")
       @result    = @connection.create_command("INSERT INTO users (name) VALUES (?)").execute_non_query("monkey")
     end
 
@@ -45,9 +54,7 @@ describe DataObjects::Oracle::Result do
 
       it 'should be retrievable through currval' do
         # This is actually the 2nd record inserted
-        reader = @connection.create_command("SELECT users_seq.currval FROM dual").execute_reader
-        reader.next!
-        reader.values.first.should == 2
+        current_sequence_value("users_seq").should == @users_seq_value + 1
       end
 
     end
@@ -58,6 +65,7 @@ describe DataObjects::Oracle::Result do
 
     before :each do
       @connection = DataObjects::Connection.new(CONFIG.uri)
+      @users_seq_value = current_sequence_value("users_seq")
       @result    = @connection.create_command("INSERT INTO users (name) VALUES (?) RETURNING id INTO :insert_id").execute_non_query("monkey")
     end
 
@@ -80,7 +88,7 @@ describe DataObjects::Oracle::Result do
     describe 'insert_id' do
 
       it 'should return the generated key value' do
-        @result.insert_id.should == 1
+        @result.insert_id.should == @users_seq_value + 1
       end
 
     end
