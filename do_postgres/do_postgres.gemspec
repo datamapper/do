@@ -1,7 +1,7 @@
 --- !ruby/object:Gem::Specification 
 name: do_postgres
 version: !ruby/object:Gem::Version 
-  version: 0.9.13
+  version: 0.10.0
 platform: ruby
 authors: 
 - Dirkjan Bussink
@@ -40,7 +40,7 @@ dependencies:
     requirements: 
     - - "="
       - !ruby/object:Gem::Version 
-        version: 0.9.13
+        version: 0.10.0
     version: 
 - !ruby/object:Gem::Dependency 
   name: rspec
