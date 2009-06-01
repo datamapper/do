@@ -42,7 +42,7 @@ if RUBY_PLATFORM !~ /java/
           replacements = 0
           mismatch     = false
           
-          sql.gsub!(/\?/) do |x|
+          sql.gsub!(/(IS |IS NOT )?\?/) do |x|
             arg = args[replacements]
             replacements += 1
             case arg
@@ -56,6 +56,15 @@ if RUBY_PLATFORM !~ /java/
             when Range
               bind_variables << arg.first << arg.last
               ":r#{replacements}_1 AND :r#{replacements}_2"
+            when nil
+              # if "IS ?" or "IS NOT ?" then replace with NULL
+              if $1
+                "#{$1}NULL"
+              # otherwise pass as bind variable
+              else
+                bind_variables << arg
+                ":#{replacements}"
+              end
             else
               bind_variables << arg
               ":#{replacements}"
