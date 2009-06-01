@@ -56,7 +56,12 @@ if RUBY_PLATFORM !~ /java/
             when Range
               bind_variables << arg.first << arg.last
               ":r#{replacements}_1 AND :r#{replacements}_2"
-            when nil
+            when Regexp
+              regexp_options = arg.options & Regexp::IGNORECASE > 0 ? "i" : ""
+              regexp_options << "m" if arg.options & Regexp::MULTILINE > 0
+              bind_variables << arg.source << regexp_options
+              ":re#{replacements}_1, :re#{replacements}_2"
+            when NilClass
               # if "IS ?" or "IS NOT ?" then replace with NULL
               if $1
                 "#{$1}NULL"
