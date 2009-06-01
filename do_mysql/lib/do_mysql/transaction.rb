@@ -5,24 +5,13 @@ module DataObjects
 
     class Transaction < DataObjects::Transaction
 
-      def finalize_transaction
-        cmd = "XA END '#{id}'"
-        connection.create_command(cmd).execute_non_query
-      end
-
-      def begin
+      def begin_prepared
         cmd = "XA START '#{id}'"
         connection.create_command(cmd).execute_non_query
       end
 
-      def commit
+      def commit_prepared
         cmd = "XA COMMIT '#{id}'"
-        connection.create_command(cmd).execute_non_query
-      end
-
-      def rollback
-        finalize_transaction
-        cmd = "XA ROLLBACK '#{id}'"
         connection.create_command(cmd).execute_non_query
       end
 
@@ -34,6 +23,13 @@ module DataObjects
       def prepare
         finalize_transaction
         cmd = "XA PREPARE '#{id}'"
+        connection.create_command(cmd).execute_non_query
+      end
+
+      private
+
+      def finalize_transaction
+        cmd = "XA END '#{id}'"
         connection.create_command(cmd).execute_non_query
       end
 
