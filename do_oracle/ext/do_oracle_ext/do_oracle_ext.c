@@ -90,6 +90,30 @@ static VALUE cReader;
 static VALUE eArgumentError;
 static VALUE eOracleError;
 
+static void data_objects_debug(VALUE string, struct timeval* start) {
+  struct timeval stop;
+  char *message;
+
+  char *query = RSTRING_PTR(string);
+  int length  = RSTRING_LEN(string);
+  char total_time[32];
+  do_int64 duration = 0;
+
+  VALUE logger = rb_funcall(mOracle, ID_LOGGER, 0);
+  int log_level = NUM2INT(rb_funcall(logger, ID_LEVEL, 0));
+
+  if (0 == log_level) {
+    gettimeofday(&stop, NULL);
+
+    duration = (stop.tv_sec - start->tv_sec) * 1000000 + stop.tv_usec - start->tv_usec;
+
+    snprintf(total_time, 32, "%.6f", duration / 1000000.0);
+    message = (char *)calloc(length + strlen(total_time) + 4, sizeof(char));
+    snprintf(message, length + strlen(total_time) + 4, "(%s) %s", total_time, query);
+    rb_funcall(logger, ID_DEBUG, 1, rb_str_new(message, length + strlen(total_time) + 3));
+    free(message);
+  }
+}
 
 static char * get_uri_option(VALUE query_hash, char * key) {
   VALUE query_value;
@@ -480,32 +504,31 @@ typedef struct {
   VALUE cursor;
   VALUE statement_type;
   VALUE args;
+  VALUE sql;
+  struct timeval start;
 } cCommand_execute_try_t;
 
 static VALUE cCommand_execute_try(cCommand_execute_try_t *arg);
 static VALUE cCommand_execute_ensure(cCommand_execute_try_t *arg);
-
-static VALUE execute_sql(VALUE oci8_conn, VALUE sql) {
-  cCommand_execute_try_t arg;
-  arg.self = Qnil;
-  arg.oci8_conn = oci8_conn;
-  arg.cursor = rb_funcall(oci8_conn, rb_intern("parse"), 1, sql);
-  arg.statement_type = rb_funcall(arg.cursor, rb_intern("type"), 0);
-  arg.args = Qnil;
-  
-  return rb_ensure(cCommand_execute_try, (VALUE)&arg, cCommand_execute_ensure, (VALUE)&arg);
-}
 
 // called by Command#execute that is written in Ruby
 static VALUE cCommand_execute_internal(VALUE self, VALUE oci8_conn, VALUE sql, VALUE args) {
   cCommand_execute_try_t arg;
   arg.self = self;
   arg.oci8_conn = oci8_conn;
+  arg.sql = sql;
+  // store start time before SQL parsing
+  gettimeofday(&arg.start, NULL);
   arg.cursor = rb_funcall(oci8_conn, rb_intern("parse"), 1, sql);
   arg.statement_type = rb_funcall(arg.cursor, rb_intern("type"), 0);
   arg.args = args;
     
   return rb_ensure(cCommand_execute_try, (VALUE)&arg, cCommand_execute_ensure, (VALUE)&arg);
+}
+
+// wrapper for simple SQL calls without arguments
+static VALUE execute_sql(VALUE oci8_conn, VALUE sql) {
+  return cCommand_execute_internal(Qnil, oci8_conn, sql, Qnil);
 }
 
 static VALUE cCommand_execute_try(cCommand_execute_try_t *arg) {
@@ -550,6 +573,8 @@ static VALUE cCommand_execute_try(cCommand_execute_try_t *arg) {
 static VALUE cCommand_execute_ensure(cCommand_execute_try_t *arg) {
   if (SYM2ID(arg->statement_type) != rb_intern("select_stmt"))
     rb_funcall(arg->cursor, rb_intern("close"), 0);
+  // Log SQL and execution time
+  data_objects_debug(arg->sql, &(arg->start));
   return Qnil;
 }
 
