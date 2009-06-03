@@ -391,9 +391,9 @@ static VALUE typecast(VALUE r_value, const VALUE type) {
   } else if (type == rb_cClass) {
     return rb_funcall(rb_cObject, rb_intern("full_const_get"), 1, r_value);
 
-  // TODO: why is this mapping necessary?
-  // } else if (type == rb_cObject) {
-  //   return rb_marshal_load(rb_str_new2(value));
+  // TODO: where are tests for this mapping?
+  } else if (type == rb_cObject) {
+    return rb_marshal_load(r_value);
 
   } else if (type == rb_cNilClass) {
     return Qnil;
