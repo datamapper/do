@@ -20,12 +20,14 @@ require File.expand_path(File.join(File.dirname(__FILE__), 'do_sqlserver', 'vers
 if RUBY_PLATFORM !~ /java/
   module DataObjects
     module Sqlserver
-      Mode = begin
-          require "ADO"
-          :ado
-        rescue LoadError => e
-          :odbc
-        end
+      Mode = :odbc
+#      The ADO mode requires a very old DBI to work with the unmaintained DBI::ADO adapter. Don't enable this unless you fix that.
+#      Mode = begin
+#          require "ADO"
+#          :ado
+#        rescue LoadError => e
+#          :odbc
+#        end
 
       class Connection < DataObjects::Connection
         def initialize uri
