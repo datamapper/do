@@ -17,7 +17,7 @@ describe DataObjects::Mysql::Connection do
   end
 
   it_should_behave_like 'a Connection'
-  #it_should_behave_like 'a Connection with authentication support'
+  it_should_behave_like 'a Connection with authentication support'
   it_should_behave_like 'a Connection with SSL support'
 
   if DataObjectsSpecHelpers.test_environment_supports_ssl?
