@@ -1,9 +1,7 @@
-require 'rubygems'
 require 'data_objects'
 if RUBY_PLATFORM =~ /java/
   require 'do_jdbc'
   require 'java'
-  gem 'jdbc-postgres'
   require 'jdbc/postgres' # the JDBC driver, packaged as a gem
 end
 
