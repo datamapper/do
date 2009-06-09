@@ -23,7 +23,8 @@ require 'mkmf'
 # Give it a name
 extension_name = 'do_sqlite3_ext'
 
-dir_config("sqlite3")
+# Use some default search paths
+dir_config("sqlite3", ["/usr/local", "/opt/local", "/usr"])
 
 # NOTE: use GCC flags unless Visual C compiler is used
 $CFLAGS << ' -Wall ' unless RUBY_PLATFORM =~ /mswin/
