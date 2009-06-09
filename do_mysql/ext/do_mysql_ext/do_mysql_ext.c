@@ -382,6 +382,13 @@ static char * get_uri_option(VALUE query_hash, char * key) {
   return value;
 }
 
+static void assert_file_exists(char * file, char * message) {
+  if (file == NULL) { return; }
+  if (rb_funcall(rb_cFile, rb_intern("exist?"), 1, RUBY_STRING(file)) == Qfalse) {
+    rb_raise(eArgumentError, message);
+  }
+}
+
 #ifdef _WIN32
 static MYSQL_RES* cCommand_execute_sync(VALUE self, MYSQL* db, VALUE query) {
   int retval;
@@ -470,6 +477,7 @@ static VALUE cConnection_initialize(VALUE self, VALUE uri) {
   db = (MYSQL *)mysql_init(NULL);
 
   rb_iv_set(self, "@using_socket", Qfalse);
+  rb_iv_set(self, "@ssl_cipher", Qnil);
 
   r_host = rb_funcall(uri, rb_intern("host"), 0);
   if (Qnil != r_host) {
@@ -516,9 +524,30 @@ static VALUE cConnection_initialize(VALUE self, VALUE uri) {
   if (!encoding) { encoding = get_uri_option(r_query, "charset"); }
   if (!encoding) { encoding = "utf8"; }
 
-  // If ssl? {
-  //   mysql_ssl_set(db, key, cert, ca, capath, cipher)
-  // }
+#ifdef HAVE_MYSQL_SSL_SET
+  char *ssl_client_key, *ssl_client_cert, *ssl_ca_cert, *ssl_ca_path, *ssl_cipher;
+  VALUE r_ssl;
+
+  if(rb_obj_is_kind_of(r_query, rb_cHash)) {
+    r_ssl = rb_hash_aref(r_query, RUBY_STRING("ssl"));
+
+    if(rb_obj_is_kind_of(r_ssl, rb_cHash)) {
+      ssl_client_key  = get_uri_option(r_ssl, "client_key");
+      ssl_client_cert = get_uri_option(r_ssl, "client_cert");
+      ssl_ca_cert     = get_uri_option(r_ssl, "ca_cert");
+      ssl_ca_path     = get_uri_option(r_ssl, "ca_path");
+      ssl_cipher      = get_uri_option(r_ssl, "cipher");
+
+      assert_file_exists(ssl_client_key,  "client_key doesn't exist");
+      assert_file_exists(ssl_client_cert, "client_cert doesn't exist");
+      assert_file_exists(ssl_ca_cert,     "ca_cert doesn't exist");
+
+      mysql_ssl_set(db, ssl_client_key, ssl_client_cert, ssl_ca_cert, ssl_ca_path, ssl_cipher);
+    } else if(r_ssl != Qnil) {
+      rb_raise(eArgumentError, "ssl must be passed a hash");
+    }
+  }
+#endif
 
   result = (MYSQL *)mysql_real_connect(
     db,
@@ -534,6 +563,14 @@ static VALUE cConnection_initialize(VALUE self, VALUE uri) {
   if (NULL == result) {
     raise_mysql_error(Qnil, db, -1, NULL);
   }
+
+#ifdef HAVE_MYSQL_SSL_SET
+  const char *ssl_cipher_used = mysql_get_ssl_cipher(db);
+
+  if (NULL != ssl_cipher_used) {
+    rb_iv_set(self, "@ssl_cipher", RUBY_STRING(ssl_cipher_used));
+  }
+#endif
 
 #ifdef MYSQL_OPT_RECONNECT
   my_bool reconnect = 1;
@@ -574,6 +611,20 @@ static VALUE cConnection_character_set(VALUE self) {
 
 static VALUE cConnection_is_using_socket(VALUE self) {
   return rb_iv_get(self, "@using_socket");
+}
+
+static VALUE cConnection_ssl_cipher(VALUE self) {
+  return rb_iv_get(self, "@ssl_cipher");
+}
+
+static VALUE cConnection_secure(VALUE self) {
+  VALUE blank_cipher = rb_funcall(rb_iv_get(self, "@ssl_cipher"), rb_intern("blank?"), 0);
+  
+  if (blank_cipher == Qtrue) {
+    return Qfalse;
+  } else {
+    return Qtrue;
+  }
 }
 
 static VALUE cConnection_dispose(VALUE self) {
@@ -913,6 +964,8 @@ void Init_do_mysql_ext() {
   cConnection = DRIVER_CLASS("Connection", cDO_Connection);
   rb_define_method(cConnection, "initialize", cConnection_initialize, 1);
   rb_define_method(cConnection, "using_socket?", cConnection_is_using_socket, 0);
+  rb_define_method(cConnection, "ssl_cipher", cConnection_ssl_cipher, 0);
+  rb_define_method(cConnection, "secure?", cConnection_secure, 0);
   rb_define_method(cConnection, "character_set", cConnection_character_set , 0);
   rb_define_method(cConnection, "dispose", cConnection_dispose, 0);
   rb_define_method(cConnection, "quote_string", cConnection_quote_string, 1);
