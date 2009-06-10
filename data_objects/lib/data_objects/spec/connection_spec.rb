@@ -104,3 +104,25 @@ share_examples_for 'a Connection with authentication support' do
   end
 
 end
+
+share_examples_for 'a Connection with SSL support' do
+
+  if DataObjectsSpecHelpers.test_environment_supports_ssl?
+    describe 'connecting with SSL' do
+      
+      it 'should connect securely' do
+        DataObjects::Connection.new("#{CONFIG.uri}?#{CONFIG.ssl}").secure?.should be_true
+      end
+    
+    end
+  end
+
+  describe 'connecting without SSL' do
+
+    it 'should not connect securely' do
+      DataObjects::Connection.new(CONFIG.uri).secure?.should be_false
+    end
+
+  end
+
+end

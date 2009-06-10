@@ -1,6 +1,3 @@
-require 'rubygems'
-
-gem 'extlib', '~>0.9.11'
 require 'extlib'
 
 require File.expand_path(File.join(File.dirname(__FILE__), 'data_objects', 'version'))
@@ -13,7 +10,3 @@ require File.expand_path(File.join(File.dirname(__FILE__), 'data_objects', 'resu
 require File.expand_path(File.join(File.dirname(__FILE__), 'data_objects', 'reader'))
 require File.expand_path(File.join(File.dirname(__FILE__), 'data_objects', 'quoting'))
 
-
-module DataObjects
-  class LengthMismatchError < StandardError; end
-end
