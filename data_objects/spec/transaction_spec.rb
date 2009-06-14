@@ -30,7 +30,7 @@ describe DataObjects::Transaction do
       @transaction.close
     end
   end
-  [:begin, :commit, :rollback, :rollback_prepared, :prepare].each do |meth|
+  [:prepare, :commit_prepared, :rollback_prepared].each do |meth|
     it "should raise NotImplementedError on #{meth}" do
       lambda do @transaction.send(meth) end.should raise_error(NotImplementedError)
     end

@@ -4,6 +4,7 @@
 #include <time.h>
 #include <locale.h>
 #include <sqlite3.h>
+#include "error.h"
 
 #define ID_CONST_GET rb_intern("const_get")
 #define ID_PATH rb_intern("path")
@@ -69,7 +70,8 @@ static VALUE cResult;
 static VALUE cReader;
 
 static VALUE eArgumentError;
-static VALUE eSqlite3Error;
+static VALUE eConnectionError;
+static VALUE eDataError;
 
 static VALUE OPEN_FLAG_READONLY;
 static VALUE OPEN_FLAG_READWRITE;
@@ -126,6 +128,32 @@ static void data_objects_debug(VALUE string, struct timeval* start) {
   }
 }
 
+static void raise_error(VALUE self, sqlite3 *result, VALUE query) {
+  VALUE exception;
+  const char *message = sqlite3_errmsg(result);
+  const char *exception_type = "SQLError";
+  int sqlite3_errno = sqlite3_errcode(result);
+
+  struct errcodes *errs;
+
+  for (errs = errors; errs->error_name; errs++) {
+    if(errs->error_no == sqlite3_errno) {
+      exception_type = errs->exception;
+      break;
+    }
+  }
+
+
+  VALUE uri = rb_funcall(rb_iv_get(self, "@connection"), rb_intern("to_s"), 0);
+
+  exception = rb_funcall(CONST_GET(mDO, exception_type), ID_NEW, 5,
+                         rb_str_new2(message),
+                         INT2NUM(sqlite3_errno),
+                         rb_str_new2(""),
+                         query,
+                         uri);
+  rb_exc_raise(exception);
+}
 
 static VALUE parse_date(char *date) {
   int year, month, day;
@@ -200,7 +228,7 @@ static VALUE parse_date_time(char *date) {
       hour_offset = 0;
       minute_offset = 0;
       sec = 0;
-    }  
+    }
     // We read the Date and Time, default to the current locale's offset
 
     // Get localtime
@@ -222,7 +250,7 @@ static VALUE parse_date_time(char *date) {
 
   } else {
     // Something went terribly wrong
-    rb_raise(eSqlite3Error, "Couldn't parse date: %s", date);
+    rb_raise(eDataError, "Couldn't parse date: %s", date);
   }
 
   jd = jd_from_date(year, month, day);
@@ -390,7 +418,7 @@ static VALUE cConnection_initialize(VALUE self, VALUE uri) {
 #endif
 
   if ( ret != SQLITE_OK ) {
-    rb_raise(eSqlite3Error, sqlite3_errmsg(db));
+    raise_error(self, db, Qnil);
   }
 
   rb_iv_set(self, "@uri", uri);
@@ -499,7 +527,7 @@ static VALUE cCommand_execute_non_query(int argc, VALUE *argv, VALUE self) {
   status = sqlite3_exec(db, StringValuePtr(query), 0, 0, &error_message);
 
   if ( status != SQLITE_OK ) {
-    rb_raise(eSqlite3Error, "%s\nQuery: %s", sqlite3_errmsg(db), StringValuePtr(query));
+    raise_error(self, db, query);
   }
   data_objects_debug(query, &start);
 
@@ -531,7 +559,7 @@ static VALUE cCommand_execute_reader(int argc, VALUE *argv, VALUE self) {
   data_objects_debug(query, &start);
 
   if ( status != SQLITE_OK ) {
-    rb_raise(eSqlite3Error, "%s\nQuery: %s", sqlite3_errmsg(db), StringValuePtr(query));
+    raise_error(self, db, query);
   }
 
   field_count = sqlite3_column_count(sqlite3_reader);
@@ -617,7 +645,7 @@ static VALUE cReader_next(VALUE self) {
 static VALUE cReader_values(VALUE self) {
   VALUE state = rb_iv_get(self, "@state");
   if ( state == Qnil || NUM2INT(state) != SQLITE_ROW ) {
-    rb_raise(eSqlite3Error, "Reader is not initialized");
+    rb_raise(eDataError, "Reader is not initialized");
     return Qnil;
   }
   else {
@@ -670,7 +698,8 @@ void Init_do_sqlite3_ext() {
   mSqlite3 = rb_define_module_under(mDO, "Sqlite3");
 
   eArgumentError = CONST_GET(rb_mKernel, "ArgumentError");
-  eSqlite3Error = rb_define_class("Sqlite3Error", rb_eStandardError);
+  eConnectionError = CONST_GET(mDO, "ConnectionError");
+  eDataError = CONST_GET(mDO, "DataError");
 
   cConnection = SQLITE3_CLASS("Connection", cDO_Connection);
   rb_define_method(cConnection, "initialize", cConnection_initialize, 1);

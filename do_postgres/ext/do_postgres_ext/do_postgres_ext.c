@@ -2,6 +2,7 @@
 #include <postgres.h>
 #include <mb/pg_wchar.h>
 #include <catalog/pg_type.h>
+#include <utils/errcodes.h>
 
 /* Undefine constants Postgres also defines */
 #undef PACKAGE_BUGREPORT
@@ -30,6 +31,7 @@
 #include <math.h>
 #include <ctype.h>
 #include <time.h>
+#include "error.h"
 
 #define ID_CONST_GET rb_intern("const_get")
 #define ID_PATH rb_intern("path")
@@ -84,7 +86,8 @@ static VALUE cResult;
 static VALUE cReader;
 
 static VALUE eArgumentError;
-static VALUE ePostgresError;
+static VALUE eConnectionError;
+static VALUE eDataError;
 
 static void data_objects_debug(VALUE string, struct timeval* start) {
   struct timeval stop;
@@ -219,7 +222,7 @@ static VALUE parse_date_time(const char *date) {
       hour_offset = 0;
       minute_offset = 0;
       sec = 0;
-    }  
+    }
     // We read the Date and Time, default to the current locale's offset
 
     // Get localtime
@@ -241,7 +244,7 @@ static VALUE parse_date_time(const char *date) {
 
   } else {
     // Something went terribly wrong
-    rb_raise(ePostgresError, "Couldn't parse date: %s", date);
+    rb_raise(eDataError, "Couldn't parse date: %s", date);
   }
 
   jd = jd_from_date(year, month, day);
@@ -363,6 +366,40 @@ static VALUE typecast(const char *value, long length, const VALUE type) {
 
 }
 
+static void raise_error(VALUE self, PGresult *result, VALUE query) {
+  VALUE exception;
+  char *message;
+  char *sqlstate;
+  int postgres_errno;
+
+  message  = PQresultErrorMessage(result);
+  sqlstate = PQresultErrorField(result, PG_DIAG_SQLSTATE);
+  postgres_errno = MAKE_SQLSTATE(sqlstate[0], sqlstate[1], sqlstate[2], sqlstate[3], sqlstate[4]);
+  PQclear(result);
+
+  const char *exception_type = "SQLError";
+
+  struct errcodes *errs;
+
+  for (errs = errors; errs->error_name; errs++) {
+    if(errs->error_no == postgres_errno) {
+      exception_type = errs->exception;
+      break;
+    }
+  }
+
+  VALUE uri = rb_funcall(rb_iv_get(self, "@connection"), rb_intern("to_s"), 0);
+
+  exception = rb_funcall(CONST_GET(mDO, exception_type), ID_NEW, 5,
+                         rb_str_new2(message),
+                         INT2NUM(postgres_errno),
+                         rb_str_new2(sqlstate),
+                         query,
+                         uri);
+  rb_exc_raise(exception);
+}
+
+
 /* ====== Public API ======= */
 static VALUE cConnection_dispose(VALUE self) {
   VALUE connection_container = rb_iv_get(self, "@connection");
@@ -481,7 +518,7 @@ static VALUE cConnection_quote_byte_array(VALUE self, VALUE string) {
 }
 
 #ifdef _WIN32
-static PGresult* cCommand_execute_sync(PGconn *db, VALUE query) {
+static PGresult* cCommand_execute_sync(VALUE self, PGconn *db, VALUE query) {
   PGresult *response;
   struct timeval start;
   char* str = StringValuePtr(query);
@@ -503,7 +540,7 @@ static PGresult* cCommand_execute_sync(PGconn *db, VALUE query) {
     }
 
     if(response == NULL) {
-      rb_raise(ePostgresError, PQerrorMessage(db));
+      rb_raise(eConnectionError, PQerrorMessage(db));
     }
   }
 
@@ -511,7 +548,7 @@ static PGresult* cCommand_execute_sync(PGconn *db, VALUE query) {
   return response;
 }
 #else
-static PGresult* cCommand_execute_async(PGconn *db, VALUE query) {
+static PGresult* cCommand_execute_async(VALUE self, PGconn *db, VALUE query) {
   int socket_fd;
   int retval;
   fd_set rset;
@@ -534,7 +571,7 @@ static PGresult* cCommand_execute_async(PGconn *db, VALUE query) {
     }
 
     if(!retval) {
-      rb_raise(ePostgresError, PQerrorMessage(db));
+      rb_raise(eConnectionError, PQerrorMessage(db));
     }
   }
 
@@ -554,7 +591,7 @@ static PGresult* cCommand_execute_async(PGconn *db, VALUE query) {
       }
 
       if (PQconsumeInput(db) == 0) {
-          rb_raise(ePostgresError, PQerrorMessage(db));
+          rb_raise(eConnectionError, PQerrorMessage(db));
       }
 
       if (PQisBusy(db) == 0) {
@@ -603,7 +640,7 @@ static VALUE cConnection_initialize(VALUE self, VALUE uri) {
   }
 
   if (NULL == database || 0 == strlen(database)) {
-    rb_raise(ePostgresError, "Database must be specified");
+    rb_raise(eConnectionError, "Database must be specified");
   }
 
   r_port = rb_funcall(uri, rb_intern("port"), 0);
@@ -628,39 +665,39 @@ static VALUE cConnection_initialize(VALUE self, VALUE uri) {
   );
 
   if ( PQstatus(db) == CONNECTION_BAD ) {
-    rb_raise(ePostgresError, PQerrorMessage(db));
+    rb_raise(eConnectionError, PQerrorMessage(db));
   }
 
   if (search_path != NULL) {
     search_path_query = (char *)calloc(256, sizeof(char));
     snprintf(search_path_query, 256, "set search_path to %s;", search_path);
     r_query = rb_str_new2(search_path_query);
-    result = cCommand_execute(db, r_query);
+    result = cCommand_execute(self, db, r_query);
 
     if (PQresultStatus(result) != PGRES_COMMAND_OK) {
       free(search_path_query);
-      rb_raise(ePostgresError, PQresultErrorMessage(result));
+      raise_error(self, result, r_query);
     }
 
     free(search_path_query);
   }
 
   r_options = rb_str_new2(backslash_off);
-  result = cCommand_execute(db, r_options);
+  result = cCommand_execute(self, db, r_options);
 
   if (PQresultStatus(result) != PGRES_COMMAND_OK) {
     rb_warn(PQresultErrorMessage(result));
   }
 
   r_options = rb_str_new2(standard_strings_on);
-  result = cCommand_execute(db, r_options);
+  result = cCommand_execute(self, db, r_options);
 
   if (PQresultStatus(result) != PGRES_COMMAND_OK) {
     rb_warn(PQresultErrorMessage(result));
   }
 
   r_options = rb_str_new2(warning_messages);
-  result = cCommand_execute(db, r_options);
+  result = cCommand_execute(self, db, r_options);
 
   if (PQresultStatus(result) != PGRES_COMMAND_OK) {
     rb_warn(PQresultErrorMessage(result));
@@ -672,7 +709,7 @@ static VALUE cConnection_initialize(VALUE self, VALUE uri) {
 
 #ifdef HAVE_PQSETCLIENTENCODING
   if(PQsetClientEncoding(db, encoding)) {
-    rb_raise(ePostgresError, "Couldn't set encoding: %s", encoding);
+    rb_raise(eConnectionError, "Couldn't set encoding: %s", encoding);
   }
 #endif
 
@@ -702,7 +739,7 @@ static VALUE cCommand_execute_non_query(int argc, VALUE *argv[], VALUE self) {
   VALUE connection = rb_iv_get(self, "@connection");
   VALUE postgres_connection = rb_iv_get(connection, "@connection");
   if (Qnil == postgres_connection) {
-    rb_raise(ePostgresError, "This connection has already been closed.");
+    rb_raise(eConnectionError, "This connection has already been closed.");
   }
 
   PGconn *db = DATA_PTR(postgres_connection);
@@ -714,7 +751,7 @@ static VALUE cCommand_execute_non_query(int argc, VALUE *argv[], VALUE self) {
 
   VALUE query = build_query_from_args(self, argc, argv);
 
-  response = cCommand_execute(db, query);
+  response = cCommand_execute(self, db, query);
 
   status = PQresultStatus(response);
 
@@ -727,10 +764,7 @@ static VALUE cCommand_execute_non_query(int argc, VALUE *argv[], VALUE self) {
     affected_rows = INT2NUM(atoi(PQcmdTuples(response)));
   }
   else {
-    char *message = PQresultErrorMessage(response);
-    char *sqlstate = PQresultErrorField(response, PG_DIAG_SQLSTATE);
-    PQclear(response);
-    rb_raise(ePostgresError, "(sql_state=%s) %sQuery: %s\n", sqlstate, message, StringValuePtr(query));
+    raise_error(self, response, query);
   }
 
   PQclear(response);
@@ -749,7 +783,7 @@ static VALUE cCommand_execute_reader(int argc, VALUE *argv[], VALUE self) {
   VALUE connection = rb_iv_get(self, "@connection");
   VALUE postgres_connection = rb_iv_get(connection, "@connection");
   if (Qnil == postgres_connection) {
-    rb_raise(ePostgresError, "This connection has already been closed.");
+    rb_raise(eConnectionError, "This connection has already been closed.");
   }
 
   PGconn *db = DATA_PTR(postgres_connection);
@@ -757,12 +791,10 @@ static VALUE cCommand_execute_reader(int argc, VALUE *argv[], VALUE self) {
 
   query = build_query_from_args(self, argc, argv);
 
-  response = cCommand_execute(db, query);
+  response = cCommand_execute(self, db, query);
 
   if ( PQresultStatus(response) != PGRES_TUPLES_OK ) {
-    char *message = PQresultErrorMessage(response);
-    PQclear(response);
-    rb_raise(ePostgresError, "%sQuery: %s\n", message, StringValuePtr(query));
+    raise_error(self, response, query);
   }
 
   field_count = PQnfields(response);
@@ -862,7 +894,7 @@ static VALUE cReader_values(VALUE self) {
 
   VALUE values = rb_iv_get(self, "@values");
   if(values == Qnil) {
-    rb_raise(ePostgresError, "Reader not initialized");
+    rb_raise(eDataError, "Reader not initialized");
     return Qnil;
   } else {
     return values;
@@ -913,7 +945,8 @@ void Init_do_postgres_ext() {
 
   eArgumentError = CONST_GET(rb_mKernel, "ArgumentError");
   mPostgres = rb_define_module_under(mDO, "Postgres");
-  ePostgresError = rb_define_class("PostgresError", rb_eStandardError);
+  eConnectionError = CONST_GET(mDO, "ConnectionError");
+  eDataError = CONST_GET(mDO, "DataError");
 
   cConnection = POSTGRES_CLASS("Connection", cDO_Connection);
   rb_define_method(cConnection, "initialize", cConnection_initialize, 1);
@@ -935,5 +968,11 @@ void Init_do_postgres_ext() {
   rb_define_method(cReader, "values", cReader_values, 0);
   rb_define_method(cReader, "fields", cReader_fields, 0);
   rb_define_method(cReader, "field_count", cReader_field_count, 0);
+
+  struct errcodes *errs;
+
+  for (errs = errors; errs->error_name; errs++) {
+    rb_const_set(mPostgres, rb_intern(errs->error_name), INT2NUM(errs->error_no));
+  }
 
 }

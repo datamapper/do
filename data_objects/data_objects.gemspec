@@ -1,7 +1,7 @@
 --- !ruby/object:Gem::Specification 
 name: data_objects
 version: !ruby/object:Gem::Version 
-  version: 0.9.13
+  version: 0.10.0
 platform: ruby
 authors: 
 - Dirkjan Bussink

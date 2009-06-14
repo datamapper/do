@@ -6,13 +6,14 @@
 #include <mysql.h>
 #include <errmsg.h>
 #include <mysqld_error.h>
+#include "error.h"
 
 #define RUBY_CLASS(name) rb_const_get(rb_cObject, rb_intern(name))
 #define RUBY_STRING(char_ptr) rb_str_new2(char_ptr)
 #define TAINTED_STRING(name, length) rb_tainted_str_new(name, length)
 #define DRIVER_CLASS(klass, parent) (rb_define_class_under(mDOMysql, klass, parent))
 #define CONST_GET(scope, constant) (rb_funcall(scope, ID_CONST_GET, 1, rb_str_new2(constant)))
-#define CHECK_AND_RAISE(mysql_result_value, str) if (0 != mysql_result_value) { raise_mysql_error(connection, db, mysql_result_value, str); }
+#define CHECK_AND_RAISE(mysql_result_value, query) if (0 != mysql_result_value) { raise_error(self, db, query); }
 #define PUTS(string) rb_funcall(rb_mKernel, rb_intern("puts"), 1, RUBY_STRING(string))
 
 #ifndef RSTRING_PTR
@@ -74,8 +75,9 @@ static VALUE cConnection;
 static VALUE cCommand;
 static VALUE cResult;
 static VALUE cReader;
-static VALUE eMysqlError;
 static VALUE eArgumentError;
+static VALUE eConnectionError;
+static VALUE eDataError;
 
 // Figures out what we should cast a given mysql field type to
 static VALUE infer_ruby_type(MYSQL_FIELD *field) {
@@ -239,7 +241,7 @@ static VALUE parse_date_time(const char *date) {
       hour_offset = 0;
       minute_offset = 0;
       sec = 0;
-    }  
+    }
     // We read the Date and Time, default to the current locale's offset
 
     // Get localtime
@@ -261,7 +263,7 @@ static VALUE parse_date_time(const char *date) {
 
   } else {
     // Something went terribly wrong
-    rb_raise(eMysqlError, "Couldn't parse date: %s", date);
+    rb_raise(eDataError, "Couldn't parse date: %s", date);
   }
 
   jd = jd_from_date(year, month, day);
@@ -354,17 +356,31 @@ static void data_objects_debug(VALUE string, struct timeval* start) {
     rb_funcall(logger, ID_DEBUG, 1, rb_str_new(message, length + strlen(total_time) + 3));
   }
 }
-static void raise_mysql_error(VALUE connection, MYSQL *db, int mysql_error_code, char* str) {
-  char *mysql_error_message = (char *)mysql_error(db);
 
-  if(mysql_error_code == 1) {
-    mysql_error_code = mysql_errno(db);
+static void raise_error(VALUE self, MYSQL *db, VALUE query) {
+  VALUE exception;
+  const char *exception_type = "SQLError";
+  char *mysql_error_message = (char *)mysql_error(db);
+  int mysql_error_code = mysql_errno(db);
+
+  struct errcodes *errs;
+
+  for (errs = errors; errs->error_name; errs++) {
+    if(errs->error_no == mysql_error_code) {
+      exception_type = errs->exception;
+      break;
+    }
   }
-  if(str) {
-    rb_raise(eMysqlError, "(mysql_errno=%04d, sql_state=%s) %s\nQuery: %s", mysql_error_code, mysql_sqlstate(db), mysql_error_message, str);
-  } else {
-    rb_raise(eMysqlError, "(mysql_errno=%04d, sql_state=%s) %s", mysql_error_code, mysql_sqlstate(db), mysql_error_message);
-  }
+
+  VALUE uri = rb_funcall(rb_iv_get(self, "@connection"), rb_intern("to_s"), 0);
+
+  exception = rb_funcall(CONST_GET(mDO, exception_type), ID_NEW, 5,
+                         rb_str_new2(mysql_error_message),
+                         INT2NUM(mysql_error_code),
+                         rb_str_new2(mysql_sqlstate(db)),
+                         query,
+                         uri);
+  rb_exc_raise(exception);
 }
 
 static char * get_uri_option(VALUE query_hash, char * key) {
@@ -396,16 +412,14 @@ static MYSQL_RES* cCommand_execute_sync(VALUE self, MYSQL* db, VALUE query) {
   char* str = RSTRING_PTR(query);
   int len   = RSTRING_LEN(query);
 
-  VALUE connection = rb_iv_get(self, "@connection");
-
   if(mysql_ping(db) && mysql_errno(db) == CR_SERVER_GONE_ERROR) {
-    CHECK_AND_RAISE(mysql_errno(db), "Mysql server has gone away. \
+    CHECK_AND_RAISE(retval, rb_str_new2("Mysql server has gone away. \
                              Please report this issue to the Datamapper project. \
-                             Specify your at least your MySQL version when filing a ticket");
+                             Specify your at least your MySQL version when filing a ticket"));
   }
   gettimeofday(&start, NULL);
   retval = mysql_real_query(db, str, len);
-  CHECK_AND_RAISE(retval, str);
+  CHECK_AND_RAISE(retval, query);
 
   data_objects_debug(query, &start);
 
@@ -420,16 +434,14 @@ static MYSQL_RES* cCommand_execute_async(VALUE self, MYSQL* db, VALUE query) {
   char* str = RSTRING_PTR(query);
   int len   = RSTRING_LEN(query);
 
-  VALUE connection = rb_iv_get(self, "@connection");
-
-  if(mysql_ping(db) && mysql_errno(db) == CR_SERVER_GONE_ERROR) {
-    CHECK_AND_RAISE(mysql_errno(db), "Mysql server has gone away. \
+  if((retval = mysql_ping(db)) && mysql_errno(db) == CR_SERVER_GONE_ERROR) {
+    CHECK_AND_RAISE(retval, rb_str_new2("Mysql server has gone away. \
                              Please report this issue to the Datamapper project. \
-                             Specify your at least your MySQL version when filing a ticket");
+                             Specify your at least your MySQL version when filing a ticket"));
   }
   retval = mysql_send_query(db, str, len);
 
-  CHECK_AND_RAISE(retval, str);
+  CHECK_AND_RAISE(retval, query);
   gettimeofday(&start, NULL);
 
   socket_fd = db->net.fd;
@@ -454,7 +466,7 @@ static MYSQL_RES* cCommand_execute_async(VALUE self, MYSQL* db, VALUE query) {
   }
 
   retval = mysql_read_query_result(db);
-  CHECK_AND_RAISE(retval, str);
+  CHECK_AND_RAISE(retval, query);
 
   data_objects_debug(query, &start);
 
@@ -501,7 +513,7 @@ static VALUE cConnection_initialize(VALUE self, VALUE uri) {
   }
 
   if (NULL == database || 0 == strlen(database)) {
-    rb_raise(eMysqlError, "Database must be specified");
+    rb_raise(eConnectionError, "Database must be specified");
   }
 
   // Pull the querystring off the URI
@@ -561,7 +573,7 @@ static VALUE cConnection_initialize(VALUE self, VALUE uri) {
   );
 
   if (NULL == result) {
-    raise_mysql_error(Qnil, db, -1, NULL);
+    raise_error(self, db, Qnil);
   }
 
 #ifdef HAVE_MYSQL_SSL_SET
@@ -580,7 +592,7 @@ static VALUE cConnection_initialize(VALUE self, VALUE uri) {
   // Set the connections character set
   encoding_error = mysql_set_character_set(db, encoding);
   if (0 != encoding_error) {
-    raise_mysql_error(Qnil, db, encoding_error, NULL);
+    raise_error(self, db, Qnil);
   }
 
   // Disable sql_auto_is_null
@@ -744,7 +756,7 @@ static VALUE cCommand_execute_non_query(int argc, VALUE *argv, VALUE self) {
   VALUE connection = rb_iv_get(self, "@connection");
   VALUE mysql_connection = rb_iv_get(connection, "@connection");
   if (Qnil == mysql_connection) {
-    rb_raise(eMysqlError, "This connection has already been closed.");
+    rb_raise(eConnectionError, "This connection has already been closed.");
   }
 
   MYSQL *db = DATA_PTR(mysql_connection);
@@ -772,7 +784,7 @@ static VALUE cCommand_execute_reader(int argc, VALUE *argv, VALUE self) {
   VALUE connection = rb_iv_get(self, "@connection");
   VALUE mysql_connection = rb_iv_get(connection, "@connection");
   if (Qnil == mysql_connection) {
-    rb_raise(eMysqlError, "This connection has already been closed.");
+    rb_raise(eConnectionError, "This connection has already been closed.");
   }
 
   MYSQL *db = DATA_PTR(mysql_connection);
@@ -894,7 +906,7 @@ static VALUE cReader_next(VALUE self) {
 static VALUE cReader_values(VALUE self) {
   VALUE state = rb_iv_get(self, "@state");
   if ( state == Qnil || state == Qfalse ) {
-    rb_raise(eMysqlError, "Reader is not initialized");
+    rb_raise(eDataError, "Reader is not initialized");
   }
   else {
     return rb_iv_get(self, "@values");
@@ -907,10 +919,6 @@ static VALUE cReader_fields(VALUE self) {
 
 static VALUE cReader_field_count(VALUE self) {
   return rb_iv_get(self, "@field_count");
-}
-
-static VALUE cReader_row_count(VALUE self) {
-  return rb_iv_get(self, "@row_count");
 }
 
 void Init_do_mysql_ext() {
@@ -959,7 +967,8 @@ void Init_do_mysql_ext() {
   mDOMysql = rb_define_module_under(mDO, "Mysql");
 
   eArgumentError = CONST_GET(rb_mKernel, "ArgumentError");
-  eMysqlError = rb_define_class("MysqlError", rb_eStandardError);
+  eConnectionError = CONST_GET(mDO, "ConnectionError");
+  eDataError = CONST_GET(mDO, "DataError");
 
   cConnection = DRIVER_CLASS("Connection", cDO_Connection);
   rb_define_method(cConnection, "initialize", cConnection_initialize, 1);
@@ -988,5 +997,10 @@ void Init_do_mysql_ext() {
   rb_define_method(cReader, "values", cReader_values, 0);
   rb_define_method(cReader, "fields", cReader_fields, 0);
   rb_define_method(cReader, "field_count", cReader_field_count, 0);
-  rb_define_method(cReader, "row_count", cReader_row_count, 0);
+
+  struct errcodes *errs;
+
+  for (errs = errors; errs->error_name; errs++) {
+    rb_const_set(mDOMysql, rb_intern(errs->error_name), INT2NUM(errs->error_no));
+  }
 }
