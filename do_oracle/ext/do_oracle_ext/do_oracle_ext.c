@@ -1,8 +1,6 @@
 #ifdef _WIN32
-// #define cCommand_execute cCommand_execute_sync
 #define do_int64 signed __int64
 #else
-// #define cCommand_execute cCommand_execute_async
 #define do_int64 signed long long int
 #endif
 
@@ -13,9 +11,6 @@
 #include <time.h>
 
 #define ID_CONST_GET rb_intern("const_get")
-#define ID_PATH rb_intern("path")
-#define ID_NEW rb_intern("new")
-#define ID_ESCAPE rb_intern("escape_sql")
 
 #define RUBY_STRING(char_ptr) rb_str_new2(char_ptr)
 #define TAINTED_STRING(name, length) rb_tainted_str_new(name, length)
@@ -38,6 +33,7 @@
 
 
 // To store rb_intern values
+static ID ID_NEW;
 static ID ID_NEW_DATE;
 static ID ID_LOGGER;
 static ID ID_DEBUG;
@@ -62,6 +58,31 @@ static ID ID_LONG_RAW;
 static ID ID_BFILE;
 static ID ID_BINARY_FLOAT;
 static ID ID_BINARY_DOUBLE;
+
+static ID ID_TO_A;
+static ID ID_TO_I;
+static ID ID_TO_S;
+static ID ID_TO_F;
+
+static ID ID_UTC_OFFSET;
+static ID ID_FULL_CONST_GET;
+
+static ID ID_PARSE;
+static ID ID_FETCH;
+static ID ID_TYPE;
+static ID ID_EXECUTE;
+static ID ID_EXEC;
+
+static ID ID_SELECT_STMT;
+static ID ID_COLUMN_METADATA;
+static ID ID_PRECISION;
+static ID ID_SCALE;
+static ID ID_BIND_PARAM;
+static ID ID_ELEM;
+static ID ID_READ;
+
+static ID ID_CLOSE;
+static ID ID_LOGOFF;
 
 static VALUE mExtlib;
 static VALUE mDO;
@@ -170,26 +191,6 @@ static VALUE timezone_to_offset(int hour_offset, int minute_offset) {
   return seconds_to_offset(seconds);
 }
 
-
-// Implementation using Ruby methods
-
-// static VALUE parse_date(VALUE r_value) {
-//   VALUE time_array, year, month, day;
-// 
-//   if (rb_obj_class(r_value) == rb_cTime) {
-//     time_array = rb_funcall(r_value, rb_intern("to_a"), 0);
-//     year = rb_ary_entry(time_array, 5);
-//     month = rb_ary_entry(time_array, 4);
-//     day = rb_ary_entry(time_array, 3);
-//   } else {
-//     year = rb_funcall(r_value, rb_intern("year"), 0);
-//     month = rb_funcall(r_value, rb_intern("month"), 0);
-//     day = rb_funcall(r_value, rb_intern("day"), 0);
-//   }
-// 
-//   return rb_funcall(rb_cDate, rb_intern("new"), 3, year, month, day);
-// }
-
 // Implementation using C functions
 
 static VALUE parse_date(VALUE r_value) {
@@ -199,7 +200,7 @@ static VALUE parse_date(VALUE r_value) {
   VALUE rational;
 
   if (rb_obj_class(r_value) == rb_cTime) {
-    time_array = rb_funcall(r_value, rb_intern("to_a"), 0);
+    time_array = rb_funcall(r_value, ID_TO_A, 0);
     year = NUM2INT(rb_ary_entry(time_array, 5));
     month = NUM2INT(rb_ary_entry(time_array, 4));
     day = NUM2INT(rb_ary_entry(time_array, 3));
@@ -225,32 +226,6 @@ static VALUE parse_date(VALUE r_value) {
   }
 }
 
-// Implementation using Ruby methods
-
-// static VALUE parse_date_time(VALUE r_value) {
-//   VALUE time_array, year, month, day, hour, min, sec, utc_offset, offset;
-// 
-//   if (rb_obj_class(r_value) == rb_cDateTime) {
-//     return r_value;
-//   } else if (rb_obj_class(r_value) == rb_cTime) {
-//     time_array = rb_funcall(r_value, rb_intern("to_a"), 0);
-//     year = rb_ary_entry(time_array, 5);
-//     month = rb_ary_entry(time_array, 4);
-//     day = rb_ary_entry(time_array, 3);
-//     hour = rb_ary_entry(time_array, 2);
-//     min = rb_ary_entry(time_array, 1);
-//     sec = rb_ary_entry(time_array, 0);
-//     utc_offset = rb_funcall(r_value, rb_intern("utc_offset"),0 );
-//     offset = rb_funcall(rb_mKernel, ID_RATIONAL, 2, utc_offset, INT2NUM(86400));
-//     return rb_funcall(rb_cDateTime, rb_intern("civil"), 7, year, month, day, hour, min, sec, offset);
-//   } else {
-//     // year = rb_funcall(r_value, rb_intern("year"), 0);
-//     // month = rb_funcall(r_value, rb_intern("month"), 0);
-//     // day = rb_funcall(r_value, rb_intern("day"), 0);
-//     return Qnil;
-//   }
-// }
-
 // Implementation using C functions
 
 static VALUE parse_date_time(VALUE r_value) {
@@ -273,7 +248,7 @@ static VALUE parse_date_time(VALUE r_value) {
   if (rb_obj_class(r_value) == rb_cDateTime) {
     return r_value;
   } else if (rb_obj_class(r_value) == rb_cTime) {
-    time_array = rb_funcall(r_value, rb_intern("to_a"), 0);
+    time_array = rb_funcall(r_value, ID_TO_A, 0);
     year = NUM2INT(rb_ary_entry(time_array, 5));
     month = NUM2INT(rb_ary_entry(time_array, 4));
     day = NUM2INT(rb_ary_entry(time_array, 3));
@@ -282,7 +257,7 @@ static VALUE parse_date_time(VALUE r_value) {
     sec = NUM2INT(rb_ary_entry(time_array, 0));
 
     is_dst = rb_ary_entry(time_array, 8) == Qtrue ? 3600 : 0;
-    gmt_offset = NUM2INT(rb_funcall(r_value, rb_intern("utc_offset"),0 ));
+    gmt_offset = NUM2INT(rb_funcall(r_value, ID_UTC_OFFSET, 0 ));
 
     if ( is_dst > 0 )
       gmt_offset -= is_dst;
@@ -376,21 +351,21 @@ static VALUE typecast(VALUE r_value, const VALUE type) {
   VALUE r_data;
   
   if (type == rb_cInteger) {
-    return TYPE(r_value) == T_FIXNUM || TYPE(r_value) == T_BIGNUM ? r_value : rb_funcall(r_value, rb_intern("to_i"), 0);
+    return TYPE(r_value) == T_FIXNUM || TYPE(r_value) == T_BIGNUM ? r_value : rb_funcall(r_value, ID_TO_I, 0);
 
   } else if (type == rb_cString) {
     if (TYPE(r_value) == T_STRING)
       return r_value;
     else if (rb_obj_class(r_value) == cOCI8_CLOB)
-      return rb_funcall(r_value, rb_intern("read"), 0);
+      return rb_funcall(r_value, ID_READ, 0);
     else
-      return rb_funcall(r_value, rb_intern("to_s"), 0);
+      return rb_funcall(r_value, ID_TO_S, 0);
 
   } else if (type == rb_cFloat) {
-    return TYPE(r_value) == T_FLOAT ? r_value : rb_funcall(r_value, rb_intern("to_f"), 0);
+    return TYPE(r_value) == T_FLOAT ? r_value : rb_funcall(r_value, ID_TO_F, 0);
 
   } else if (type == rb_cBigDecimal) {
-    VALUE r_string = TYPE(r_value) == T_STRING ? r_value : rb_funcall(r_value, rb_intern("to_s"), 0);
+    VALUE r_string = TYPE(r_value) == T_STRING ? r_value : rb_funcall(r_value, ID_TO_S, 0);
     return rb_funcall(rb_cBigDecimal, ID_NEW, 1, r_string);
 
   } else if (type == rb_cDate) {
@@ -407,13 +382,13 @@ static VALUE typecast(VALUE r_value, const VALUE type) {
 
   } else if (type == rb_cByteArray) {
     if (rb_obj_class(r_value) == cOCI8_BLOB)
-      r_data = rb_funcall(r_value, rb_intern("read"), 0);
+      r_data = rb_funcall(r_value, ID_READ, 0);
     else
       r_data = r_value;
     return rb_funcall(rb_cByteArray, ID_NEW, 1, r_data);
 
   } else if (type == rb_cClass) {
-    return rb_funcall(rb_cObject, rb_intern("full_const_get"), 1, r_value);
+    return rb_funcall(rb_cObject, ID_FULL_CONST_GET, 1, r_value);
 
   // TODO: where are tests for this mapping?
   } else if (type == rb_cObject) {
@@ -438,7 +413,7 @@ static VALUE typecast_bind_value(VALUE oci8_conn, VALUE r_value) {
     // if string is longer than 4000 characters then convert to CLOB
     return RSTRING_LEN(r_value) <= 4000 ? r_value : rb_funcall(cOCI8_CLOB, ID_NEW, 2, oci8_conn, r_value);
   else if (r_class == rb_cBigDecimal)
-    return rb_funcall(r_value, rb_intern("to_s"), 1, RUBY_STRING("F"));
+    return rb_funcall(r_value, ID_TO_S, 1, RUBY_STRING("F"));
   else if (r_class == rb_cTrueClass)
     return INT2NUM(1);
   else if (r_class == rb_cFalseClass)
@@ -446,7 +421,7 @@ static VALUE typecast_bind_value(VALUE oci8_conn, VALUE r_value) {
   else if (r_class == rb_cByteArray)
     return rb_funcall(cOCI8_BLOB, ID_NEW, 2, oci8_conn, r_value);
   else if (r_class == rb_cClass)
-    return rb_funcall(r_value, rb_intern("to_s"), 0);
+    return rb_funcall(r_value, ID_TO_S, 0);
   else
     return r_value;
 }
@@ -458,7 +433,7 @@ static VALUE cConnection_dispose(VALUE self) {
   if (Qnil == oci8_conn)
     return Qfalse;
 
-  rb_funcall(oci8_conn, rb_intern("logoff"), 0);
+  rb_funcall(oci8_conn, ID_LOGOFF, 0);
 
   rb_iv_set(self, "@connection", Qnil);
 
@@ -519,8 +494,8 @@ static VALUE cCommand_execute_internal(VALUE self, VALUE oci8_conn, VALUE sql, V
   arg.sql = sql;
   // store start time before SQL parsing
   gettimeofday(&arg.start, NULL);
-  arg.cursor = rb_funcall(oci8_conn, rb_intern("parse"), 1, sql);
-  arg.statement_type = rb_funcall(arg.cursor, rb_intern("type"), 0);
+  arg.cursor = rb_funcall(oci8_conn, ID_PARSE, 1, sql);
+  arg.statement_type = rb_funcall(arg.cursor, ID_TYPE, 0);
   arg.args = args;
     
   return rb_ensure(cCommand_execute_try, (VALUE)&arg, cCommand_execute_ensure, (VALUE)&arg);
@@ -537,13 +512,13 @@ static VALUE cCommand_execute_try(cCommand_execute_try_t *arg) {
   
   // no arguments given
   if NIL_P(arg->args) {
-    result = rb_funcall(arg->cursor, rb_intern("exec"), 0);
+    result = rb_funcall(arg->cursor, ID_EXEC, 0);
   // arguments given - need to typecast
   } else {
     insert_id_present = (!NIL_P(arg->self) && rb_iv_get(arg->self, "@insert_id_present") == Qtrue);
 
     if (insert_id_present)
-      rb_funcall(arg->cursor, rb_intern("bind_param"), 2, RUBY_STRING(":insert_id"), INT2NUM(0));
+      rb_funcall(arg->cursor, ID_BIND_PARAM, 2, RUBY_STRING(":insert_id"), INT2NUM(0));
 
     int i;
     VALUE r_orig_value, r_new_value;
@@ -554,15 +529,15 @@ static VALUE cCommand_execute_try(cCommand_execute_try_t *arg) {
         rb_ary_store(arg->args, i, r_new_value);
     }
 
-    result = rb_apply(arg->cursor, rb_intern("exec"), arg->args);
+    result = rb_apply(arg->cursor, ID_EXEC, arg->args);
 
     if (insert_id_present) {
-      VALUE insert_id = rb_funcall(arg->cursor, rb_intern("[]"), 1, RUBY_STRING(":insert_id"));
+      VALUE insert_id = rb_funcall(arg->cursor, ID_ELEM, 1, RUBY_STRING(":insert_id"));
       rb_iv_set(arg->self, "@insert_id", insert_id);
     }
   }
 
-  if (SYM2ID(arg->statement_type) == rb_intern("select_stmt"))
+  if (SYM2ID(arg->statement_type) == ID_SELECT_STMT)
     return arg->cursor;
   else {
     return result;
@@ -571,8 +546,8 @@ static VALUE cCommand_execute_try(cCommand_execute_try_t *arg) {
 }
 
 static VALUE cCommand_execute_ensure(cCommand_execute_try_t *arg) {
-  if (SYM2ID(arg->statement_type) != rb_intern("select_stmt"))
-    rb_funcall(arg->cursor, rb_intern("close"), 0);
+  if (SYM2ID(arg->statement_type) != ID_SELECT_STMT)
+    rb_funcall(arg->cursor, ID_CLOSE, 0);
   // Log SQL and execution time
   data_objects_debug(arg->sql, &(arg->start));
   return Qnil;
@@ -600,7 +575,7 @@ static VALUE cConnection_initialize(VALUE self, VALUE uri) {
   
   r_port = rb_funcall(uri, rb_intern("port"), 0);
   if ( Qnil != r_port ) {
-    r_port = rb_funcall(r_port, rb_intern("to_s"), 0);
+    r_port = rb_funcall(r_port, ID_TO_S, 0);
     port = StringValuePtr(r_port);
   }
   
@@ -658,7 +633,7 @@ static VALUE cConnection_initialize(VALUE self, VALUE uri) {
 }
 
 static VALUE cCommand_execute_non_query(int argc, VALUE *argv[], VALUE self) {
-  VALUE affected_rows = rb_funcall2(self, rb_intern("execute"), argc, (VALUE *)argv);
+  VALUE affected_rows = rb_funcall2(self, ID_EXECUTE, argc, (VALUE *)argv);
   if (affected_rows == Qtrue)
     affected_rows = INT2NUM(0);
 
@@ -676,13 +651,13 @@ static VALUE cCommand_execute_reader(int argc, VALUE *argv[], VALUE self) {
   int field_count;
   int infer_types = 0;
 
-  VALUE cursor = rb_funcall2(self, rb_intern("execute"), argc, (VALUE *)argv);
+  VALUE cursor = rb_funcall2(self, ID_EXECUTE, argc, (VALUE *)argv);
 
   if (rb_obj_class(cursor) != cOCI8_Cursor) {
     rb_raise(eOracleError, "\"%s\" is invalid SELECT query", StringValuePtr(query));
   }
 
-  column_metadata = rb_funcall(cursor, rb_intern("column_metadata"), 0);  
+  column_metadata = rb_funcall(cursor, ID_COLUMN_METADATA, 0);  
   field_count = RARRAY_LEN(column_metadata);
   // reduce field_count by 1 if RAW_RNUM_ is present as last column
   // (generated by DataMapper to simulate LIMIT and OFFSET)
@@ -694,9 +669,6 @@ static VALUE cCommand_execute_reader(int argc, VALUE *argv[], VALUE self) {
   reader = rb_funcall(cReader, ID_NEW, 0);
   rb_iv_set(reader, "@reader", cursor);
   rb_iv_set(reader, "@field_count", INT2NUM(field_count));
-  // TODO: what should be stored in @row_count? After execute we don't know total row_count
-  // rb_iv_set(reader, "@row_count", INT2NUM(rb_funcall(cursor, rb_intern("row_count"), 0));
-  // rb_iv_set(reader, "@row_count", INT2NUM(0));
 
   field_names = rb_ary_new();
   field_types = rb_iv_get(self, "@field_types");
@@ -707,7 +679,7 @@ static VALUE cCommand_execute_reader(int argc, VALUE *argv[], VALUE self) {
   } else if (RARRAY_LEN(field_types) != field_count) {
     // Whoops...  wrong number of types passed to set_types.  Close the reader and raise
     // and error
-    rb_funcall(reader, rb_intern("close"), 0);
+    rb_funcall(reader, ID_CLOSE, 0);
     rb_raise(eArgumentError, "Field-count mismatch. Expected %ld fields, but the query yielded %d", RARRAY_LEN(field_types), field_count);
   }
 
@@ -718,8 +690,8 @@ static VALUE cCommand_execute_reader(int argc, VALUE *argv[], VALUE self) {
     if ( infer_types == 1 ) {
       rb_ary_push(field_types,
         infer_ruby_type(rb_iv_get(column, "@data_type"),
-          rb_funcall(column, rb_intern("precision"), 0),
-          rb_funcall(column, rb_intern("scale"), 0))
+          rb_funcall(column, ID_PRECISION, 0),
+          rb_funcall(column, ID_SCALE, 0))
       );
     }
   }
@@ -739,7 +711,7 @@ static VALUE cReader_close(VALUE self) {
   if (Qnil == cursor)
     return Qfalse;
 
-  rb_funcall(cursor, rb_intern("close"), 0);
+  rb_funcall(cursor, ID_CLOSE, 0);
 
   rb_iv_set(self, "@reader", Qnil);
   return Qtrue;
@@ -758,7 +730,7 @@ static VALUE cReader_next(VALUE self) {
   VALUE field_types, field_type;
   VALUE value;
 
-  VALUE fetch_result = rb_funcall(cursor, rb_intern("fetch"), 0);
+  VALUE fetch_result = rb_funcall(cursor, ID_FETCH, 0);
   
   if (Qnil == fetch_result) {
     rb_iv_set(self, "@values", Qnil);
@@ -816,6 +788,7 @@ void Init_do_oracle_ext() {
 
   rb_funcall(rb_mKernel, rb_intern("require"), 1, rb_str_new2("data_objects"));
 
+  ID_NEW = rb_intern("new");
 #ifdef RUBY_LESS_THAN_186
   ID_NEW_DATE = rb_intern("new0");
 #else
@@ -845,7 +818,31 @@ void Init_do_oracle_ext() {
   ID_BINARY_FLOAT = rb_intern("binary_float");
   ID_BINARY_DOUBLE = rb_intern("binary_double");
 
-
+  ID_TO_A = rb_intern("to_a");
+  ID_TO_I = rb_intern("to_i");
+  ID_TO_S = rb_intern("to_s");
+  ID_TO_F = rb_intern("to_f");
+  
+  ID_UTC_OFFSET = rb_intern("utc_offset");
+  ID_FULL_CONST_GET = rb_intern("full_const_get");
+  
+  ID_PARSE = rb_intern("parse");
+  ID_FETCH = rb_intern("fetch");
+  ID_TYPE = rb_intern("type");
+  ID_EXECUTE = rb_intern("execute");
+  ID_EXEC = rb_intern("exec");
+  
+  ID_SELECT_STMT = rb_intern("select_stmt");
+  ID_COLUMN_METADATA = rb_intern("column_metadata");
+  ID_PRECISION = rb_intern("precision");
+  ID_SCALE = rb_intern("scale");
+  ID_BIND_PARAM = rb_intern("bind_param");
+  ID_ELEM = rb_intern("[]");
+  ID_READ = rb_intern("read");
+  
+  ID_CLOSE = rb_intern("close");
+  ID_LOGOFF = rb_intern("logoff");
+  
   // Get references to the Extlib module
   mExtlib = CONST_GET(rb_mKernel, "Extlib");
   rb_cByteArray = CONST_GET(mExtlib, "ByteArray");
