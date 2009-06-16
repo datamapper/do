@@ -84,6 +84,10 @@ module DataObjectsSpecHelpers
   end
 
   def setup_test_environment(insert_data = true)
+    # setup test environment just once
+    return if $test_environment_setup_done
+    puts "Setting up test environment"
+
     conn = DataObjects::Connection.new(CONFIG.uri)
 
     drop_table_and_seq(conn, "invoices")
@@ -169,6 +173,7 @@ module DataObjectsSpecHelpers
     end
 
     conn.close
+    $test_environment_setup_done = true
   end
 
 end
