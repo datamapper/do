@@ -1,22 +1,3 @@
-# ENV["RC_ARCHS"] = `uname -m`.chomp if `uname -sr` =~ /^Darwin/
-#
-# require 'mkmf'
-#
-# SWIG_WRAP = "sqlite3_api_wrap.c"
-#
-# dir_config( "sqlite3", "/usr/local" )
-#
-# if have_header( "sqlite3.h" ) && have_library( "sqlite3", "sqlite3_open" )
-#   create_makefile( "sqlite3_c" )
-# end
-
-if RUBY_PLATFORM =~ /darwin/
-  ENV["RC_ARCHS"] = `uname -m`.chomp if `uname -sr` =~ /^Darwin/
-
-  # On PowerPC the defaults are fine
-  ENV["RC_ARCHS"] = '' if `uname -m` =~ /^Power Macintosh/
-end
-
 # Loads mkmf which is used to make makefiles for Ruby extensions
 require 'mkmf'
 
