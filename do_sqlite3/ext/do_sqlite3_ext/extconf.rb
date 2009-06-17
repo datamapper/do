@@ -1,3 +1,9 @@
+if RUBY_PLATFORM =~ /darwin/ &&
+   !(`uname -m` =~ /^Power Macintosh/) &&
+   `uname -r`.chomp <= '9.7.0'
+  ENV["RC_ARCHS"] = `uname -m`.chomp
+end
+
 # Loads mkmf which is used to make makefiles for Ruby extensions
 require 'mkmf'
 
