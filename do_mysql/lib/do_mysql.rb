@@ -36,6 +36,9 @@ if RUBY_PLATFORM =~ /java/
           char_set.downcase
         end
 
+        def secure?
+          false
+        end
       end
     end
   end
