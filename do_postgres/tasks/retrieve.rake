@@ -41,9 +41,8 @@ begin
     url = "http://wwwmaster.postgresql.org/redir/107/h/binary/v#{version}/win32/#{File.basename(t.name)}"
     when_writing "downloading #{t.name}" do
       cd File.dirname(t.name) do
-        sh "wget -c #{url} || curl -C - -O #{url}"
+        sh "wget -c #{url} || curl -L -C - -O #{url}"
       end
-      touch t.name
     end
   end
 

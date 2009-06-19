@@ -36,7 +36,7 @@ begin
     url = "http://www.sqlite.org/#{File.basename(t.name)}"
     when_writing "downloading #{t.name}" do
       cd File.dirname(t.name) do
-        system "wget -c #{url} || curl -C - -O #{url}"
+        system "wget -c #{url} || curl -L -C - -O #{url}"
       end
     end
   end
@@ -46,7 +46,7 @@ begin
     url = "http://www.sqlite.org/#{File.basename(t.name)}"
     when_writing "downloading #{t.name}" do
       cd File.dirname(t.name) do
-        system "wget -c #{url} || curl -C - -O #{url}"
+        system "wget -c #{url} || curl -L -C - -O #{url}"
       end
     end
   end

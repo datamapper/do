@@ -12,7 +12,7 @@
 def download_file(directory, file)
   when_writing "downloading #{file}" do
     cd(directory) do
-      system("wget -c #{file} || curl -C - -O #{file}")
+      system("wget -c #{file} || curl -L -C - -O #{file}")
     end
   end
 end
