@@ -405,7 +405,7 @@ static void assert_file_exists(char * file, char * message) {
   }
 }
 
-static void connect(VALUE self, MYSQL *db);
+static void full_connect(VALUE self, MYSQL *db);
 
 #ifdef _WIN32
 static MYSQL_RES* cCommand_execute_sync(VALUE self, MYSQL* db, VALUE query) {
@@ -417,7 +417,7 @@ static MYSQL_RES* cCommand_execute_sync(VALUE self, MYSQL* db, VALUE query) {
   if(mysql_ping(db) && mysql_errno(db) == CR_SERVER_GONE_ERROR) {
     // Ok, we do one more try here by doing a full connect
     VALUE connection = rb_iv_get(self, "@connection");
-    connect(connection, db);
+    full_connect(connection, db);
   }
   gettimeofday(&start, NULL);
   retval = mysql_real_query(db, str, len);
@@ -438,7 +438,7 @@ static MYSQL_RES* cCommand_execute_async(VALUE self, MYSQL* db, VALUE query) {
 
   if((retval = mysql_ping(db)) && mysql_errno(db) == CR_SERVER_GONE_ERROR) {
     VALUE connection = rb_iv_get(self, "@connection");
-    connect(connection, db);
+    full_connect(connection, db);
   }
   retval = mysql_send_query(db, str, len);
 
@@ -476,7 +476,7 @@ static MYSQL_RES* cCommand_execute_async(VALUE self, MYSQL* db, VALUE query) {
 #endif
 
 
-static void connect(VALUE self, MYSQL* db) {
+static void full_connect(VALUE self, MYSQL* db) {
   // Check to see if we're on the db machine.  If so, try to use the socket
   VALUE r_host, r_user, r_password, r_path, r_query, r_port;
 
@@ -590,7 +590,7 @@ static void connect(VALUE self, MYSQL* db) {
   // Disable sql_auto_is_null
   cCommand_execute(self, db, rb_str_new2("SET sql_auto_is_null = 0"));
   cCommand_execute(self, db, rb_str_new2("SET SESSION sql_mode = 'ANSI,NO_AUTO_VALUE_ON_ZERO,NO_DIR_IN_CREATE,NO_ENGINE_SUBSTITUTION,NO_UNSIGNED_SUBTRACTION,TRADITIONAL'"));
-
+  rb_iv_set(self, "@connection", Data_Wrap_Struct(rb_cObject, 0, 0, db));
 }
 
 static VALUE cConnection_initialize(VALUE self, VALUE uri) {
@@ -631,10 +631,9 @@ static VALUE cConnection_initialize(VALUE self, VALUE uri) {
   r_query = rb_funcall(uri, rb_intern("query"), 0);
   rb_iv_set(self, "@query", r_query);
 
-  connect(self, db);
+  full_connect(self, db);
 
   rb_iv_set(self, "@uri", uri);
-  rb_iv_set(self, "@connection", Data_Wrap_Struct(rb_cObject, 0, 0, db));
 
   return Qtrue;
 }
