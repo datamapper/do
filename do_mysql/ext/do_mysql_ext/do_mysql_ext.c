@@ -405,6 +405,8 @@ static void assert_file_exists(char * file, char * message) {
   }
 }
 
+static void connect(VALUE self, MYSQL *db);
+
 #ifdef _WIN32
 static MYSQL_RES* cCommand_execute_sync(VALUE self, MYSQL* db, VALUE query) {
   int retval;
@@ -413,9 +415,9 @@ static MYSQL_RES* cCommand_execute_sync(VALUE self, MYSQL* db, VALUE query) {
   int len   = RSTRING_LEN(query);
 
   if(mysql_ping(db) && mysql_errno(db) == CR_SERVER_GONE_ERROR) {
-    CHECK_AND_RAISE(retval, rb_str_new2("Mysql server has gone away. \
-                             Please report this issue to the Datamapper project. \
-                             Specify your at least your MySQL version when filing a ticket"));
+    // Ok, we do one more try here by doing a full connect
+    VALUE connection = rb_iv_get(self, "@connection");
+    connect(connection, db);
   }
   gettimeofday(&start, NULL);
   retval = mysql_real_query(db, str, len);
@@ -435,9 +437,8 @@ static MYSQL_RES* cCommand_execute_async(VALUE self, MYSQL* db, VALUE query) {
   int len   = RSTRING_LEN(query);
 
   if((retval = mysql_ping(db)) && mysql_errno(db) == CR_SERVER_GONE_ERROR) {
-    CHECK_AND_RAISE(retval, rb_str_new2("Mysql server has gone away. \
-                             Please report this issue to the Datamapper project. \
-                             Specify your at least your MySQL version when filing a ticket"));
+    VALUE connection = rb_iv_get(self, "@connection");
+    connect(connection, db);
   }
   retval = mysql_send_query(db, str, len);
 
@@ -474,41 +475,39 @@ static MYSQL_RES* cCommand_execute_async(VALUE self, MYSQL* db, VALUE query) {
 }
 #endif
 
-static VALUE cConnection_initialize(VALUE self, VALUE uri) {
+
+static void connect(VALUE self, MYSQL* db) {
+  // Check to see if we're on the db machine.  If so, try to use the socket
   VALUE r_host, r_user, r_password, r_path, r_query, r_port;
 
   char *host = "localhost", *user = "root", *password = NULL, *path;
   char *database = "", *socket = NULL;
   char *encoding = NULL;
 
+  MYSQL *result;
+
   int port = 3306;
   unsigned long client_flags = 0;
   int encoding_error;
 
-  MYSQL *db = 0, *result;
-  db = (MYSQL *)mysql_init(NULL);
-
-  rb_iv_set(self, "@using_socket", Qfalse);
-  rb_iv_set(self, "@ssl_cipher", Qnil);
-
-  r_host = rb_funcall(uri, rb_intern("host"), 0);
-  if (Qnil != r_host) {
-    host = StringValuePtr(r_host);
+  if((r_host = rb_iv_get(self, "@host")) != Qnil) {
+    host     = StringValuePtr(r_host);
   }
 
-  r_user = rb_funcall(uri, rb_intern("user"), 0);
-  if (Qnil != r_user) {
-    user = StringValuePtr(r_user);
+  if((r_user = rb_iv_get(self, "@user")) != Qnil) {
+    user     = StringValuePtr(r_user);
   }
 
-  r_password = rb_funcall(uri, rb_intern("password"), 0);
-  if (Qnil != r_password) {
+  if((r_password = rb_iv_get(self, "@password")) != Qnil) {
     password = StringValuePtr(r_password);
   }
 
-  r_path = rb_funcall(uri, rb_intern("path"), 0);
-  path = StringValuePtr(r_path);
-  if (Qnil != r_path) {
+  if((r_port = rb_iv_get(self, "@port")) != Qnil) {
+    port = NUM2INT(r_port);
+  }
+
+  if((r_path = rb_iv_get(self, "@path")) != Qnil) {
+    path = StringValuePtr(r_path);
     database = strtok(path, "/");
   }
 
@@ -516,20 +515,13 @@ static VALUE cConnection_initialize(VALUE self, VALUE uri) {
     rb_raise(eConnectionError, "Database must be specified");
   }
 
-  // Pull the querystring off the URI
-  r_query = rb_funcall(uri, rb_intern("query"), 0);
+  r_query        = rb_iv_get(self, "@query");
 
-  // Check to see if we're on the db machine.  If so, try to use the socket
   if (0 == strcasecmp(host, "localhost")) {
     socket = get_uri_option(r_query, "socket");
     if (NULL != socket) {
       rb_iv_set(self, "@using_socket", Qtrue);
     }
-  }
-
-  r_port = rb_funcall(uri, rb_intern("port"), 0);
-  if (Qnil != r_port) {
-    port = NUM2INT(r_port);
   }
 
   encoding = get_uri_option(r_query, "encoding");
@@ -599,6 +591,48 @@ static VALUE cConnection_initialize(VALUE self, VALUE uri) {
   cCommand_execute(self, db, rb_str_new2("SET sql_auto_is_null = 0"));
   cCommand_execute(self, db, rb_str_new2("SET SESSION sql_mode = 'ANSI,NO_AUTO_VALUE_ON_ZERO,NO_DIR_IN_CREATE,NO_ENGINE_SUBSTITUTION,NO_UNSIGNED_SUBTRACTION,TRADITIONAL'"));
 
+}
+
+static VALUE cConnection_initialize(VALUE self, VALUE uri) {
+  VALUE r_host, r_user, r_password, r_path, r_query, r_port;
+
+  MYSQL *db = 0;
+  db = (MYSQL *)mysql_init(NULL);
+
+  rb_iv_set(self, "@using_socket", Qfalse);
+  rb_iv_set(self, "@ssl_cipher", Qnil);
+
+  r_host = rb_funcall(uri, rb_intern("host"), 0);
+  if (Qnil != r_host) {
+    rb_iv_set(self, "@host", r_host);
+  }
+
+  r_user = rb_funcall(uri, rb_intern("user"), 0);
+  if (Qnil != r_user) {
+    rb_iv_set(self, "@user", r_user);
+  }
+
+  r_password = rb_funcall(uri, rb_intern("password"), 0);
+  if (Qnil != r_password) {
+    rb_iv_set(self, "@password", r_password);
+  }
+
+  r_path = rb_funcall(uri, rb_intern("path"), 0);
+  if (Qnil != r_path) {
+    rb_iv_set(self, "@path", r_path);
+  }
+
+  r_port = rb_funcall(uri, rb_intern("port"), 0);
+  if (Qnil != r_port) {
+    rb_iv_set(self, "@port", r_port);
+  }
+
+  // Pull the querystring off the URI
+  r_query = rb_funcall(uri, rb_intern("query"), 0);
+  rb_iv_set(self, "@query", r_query);
+
+  connect(self, db);
+
   rb_iv_set(self, "@uri", uri);
   rb_iv_set(self, "@connection", Data_Wrap_Struct(rb_cObject, 0, 0, db));
 
@@ -631,7 +665,7 @@ static VALUE cConnection_ssl_cipher(VALUE self) {
 
 static VALUE cConnection_secure(VALUE self) {
   VALUE blank_cipher = rb_funcall(rb_iv_get(self, "@ssl_cipher"), rb_intern("blank?"), 0);
-  
+
   if (blank_cipher == Qtrue) {
     return Qfalse;
   } else {
@@ -804,7 +838,7 @@ static VALUE cCommand_execute_reader(int argc, VALUE *argv, VALUE self) {
 
   reader = rb_funcall(cReader, ID_NEW, 0);
   rb_iv_set(reader, "@reader", Data_Wrap_Struct(rb_cObject, 0, 0, response));
-  rb_iv_set(reader, "@opened", Qtrue);
+  rb_iv_set(reader, "@opened", Qfalse);
   rb_iv_set(reader, "@field_count", INT2NUM(field_count));
 
   field_names = rb_ary_new();
@@ -858,6 +892,7 @@ static VALUE cReader_close(VALUE self) {
 
   mysql_free_result(reader);
   rb_iv_set(self, "@reader", Qnil);
+  rb_iv_set(self, "@opened", Qfalse);
 
   return Qtrue;
 }
@@ -886,7 +921,7 @@ static VALUE cReader_next(VALUE self) {
   result = mysql_fetch_row(reader);
   lengths = mysql_fetch_lengths(reader);
 
-  rb_iv_set(self, "@state", result ? Qtrue : Qfalse);
+  rb_iv_set(self, "@opened", result ? Qtrue : Qfalse);
 
   if (!result) {
     return Qfalse;
@@ -904,7 +939,7 @@ static VALUE cReader_next(VALUE self) {
 }
 
 static VALUE cReader_values(VALUE self) {
-  VALUE state = rb_iv_get(self, "@state");
+  VALUE state = rb_iv_get(self, "@opened");
   if ( state == Qnil || state == Qfalse ) {
     rb_raise(eDataError, "Reader is not initialized");
   }
