@@ -97,76 +97,82 @@ public class Reader extends DORubyObject {
     @JRubyMethod(name = "next!")
     public IRubyObject next() {
         Ruby runtime = getRuntime();
-        IRubyObject reader = api.getInstanceVariable(this, "@reader");
-        ResultSet rs = (ResultSet) reader.dataGetStruct();
-
-        if (rs == null) {
-            return runtime.getFalse();
-        }
-
-        IRubyObject field_types = api.getInstanceVariable(this, "@field_types");
-        IRubyObject field_count = api.getInstanceVariable(this, "@field_count");
-        RubyArray row = runtime.newArray();
-        IRubyObject value;
-        int fieldTypesCount = field_types.convertToArray().getLength();
-
         try {
-            boolean hasNext = rs.next();
-            api
-                    .setInstanceVariable(this, "@state", runtime
-                            .newBoolean(hasNext));
+            IRubyObject reader = api.getInstanceVariable(this, "@reader");
+            ResultSet rs = (ResultSet) reader.dataGetStruct();
 
-            if (!hasNext) {
+            if (rs == null) {
                 return runtime.getFalse();
             }
 
-            for (int i = 0; i < RubyNumeric.fix2int(field_count
-                    .convertToInteger()); i++) {
-                int col = i + 1;
-                RubyType type;
+            IRubyObject field_types = api.getInstanceVariable(this,
+                    "@field_types");
+            IRubyObject field_count = api.getInstanceVariable(this,
+                    "@field_count");
+            RubyArray row = runtime.newArray();
+            IRubyObject value;
+            int fieldTypesCount = field_types.convertToArray().getLength();
 
-                if (fieldTypesCount > 0) {
-                    // use the specified type
-                    String typeName = field_types.convertToArray().get(i)
-                            .toString();
-                    type = RubyType.getRubyType(typeName.toUpperCase());
-                } else {
-                    // infer the type
+            try {
+                boolean hasNext = rs.next();
+                api.setInstanceVariable(this, "@state", runtime
+                        .newBoolean(hasNext));
 
-                    // assume the mapping from jdbc type to ruby type to be
-                    // complete
-                    type = DataObjectsUtils
-                            .jdbcTypeToRubyType(rs.getMetaData().getColumnType(
-                                    col), rs.getMetaData().getScale(col));
-
+                if (!hasNext) {
+                    return runtime.getFalse();
                 }
 
-                // -- debugging what's coming out
-                // System.out.println("Column Name: " +
-                // rs.getMetaData().getColumnName(col));
-                // System.out.println("JDBC TypeName " +
-                // rs.getMetaData().getColumnTypeName(col));
-                // System.out.println("JDBC Metadata scale " +
-                // rs.getMetaData().getScale(col));
-                // System.out.println("Ruby Type " + type);
-                // System.out.println(""); //for prettier output
+                for (int i = 0; i < RubyNumeric.fix2int(field_count
+                        .convertToInteger()); i++) {
+                    int col = i + 1;
+                    RubyType type;
 
-                if (type == null)
-                    throw runtime
-                            .newRuntimeError("Problem automatically mapping JDBC Type to Ruby Type");
+                    if (fieldTypesCount > 0) {
+                        // use the specified type
+                        String typeName = field_types.convertToArray().get(i)
+                                .toString();
+                        type = RubyType.getRubyType(typeName.toUpperCase());
+                    } else {
+                        // infer the type
 
-                value = driver
-                        .getTypecastResultSetValue(runtime, rs, col, type);
-                row.push_m(new IRubyObject[] { value });
+                        // assume the mapping from jdbc type to ruby type to be
+                        // complete
+                        type = RubyType.jdbcTypeToRubyType(rs
+                                .getMetaData().getColumnType(col), rs
+                                .getMetaData().getScale(col));
+
+                    }
+
+                    // -- debugging what's coming out
+                    // System.out.println("Column Name: " +
+                    // rs.getMetaData().getColumnName(col));
+                    // System.out.println("JDBC TypeName " +
+                    // rs.getMetaData().getColumnTypeName(col));
+                    // System.out.println("JDBC Metadata scale " +
+                    // rs.getMetaData().getScale(col));
+                    // System.out.println("Ruby Type " + type);
+                    // System.out.println(""); //for prettier output
+
+                    if (type == null)
+                        throw runtime
+                                .newRuntimeError("Problem automatically mapping JDBC Type to Ruby Type");
+
+                    value = driver.getTypecastResultSetValue(runtime, rs, col,
+                            type);
+                    row.push_m(new IRubyObject[] { value });
+                }
+            } catch (SQLException sqe) {
+                throw driver.newDriverError(runtime, sqe);
+            } catch (IOException ioe) {
+                throw driver.newDriverError(runtime, ioe.getLocalizedMessage());
             }
-        } catch (SQLException sqe) {
-            throw driver.newDriverError(runtime, sqe);
-        } catch (IOException ioe) {
-            throw driver.newDriverError(runtime, ioe.getLocalizedMessage());
-        }
 
-        api.setInstanceVariable(this, "@values", row);
-        return runtime.getTrue();
+            api.setInstanceVariable(this, "@values", row);
+            return runtime.getTrue();
+        } catch (RuntimeException e) {
+            e.printStackTrace();
+            throw driver.newDriverError(runtime, e.getMessage());
+        }
     }
 
     @JRubyMethod

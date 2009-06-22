@@ -6,13 +6,13 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
 
+import org.joda.time.DateTime;
 import org.jruby.Ruby;
 import org.jruby.RubyBigDecimal;
 import org.jruby.RubyFloat;
 import org.jruby.RubyTime;
 import org.jruby.runtime.builtin.IRubyObject;
 
-import data_objects.DataObjectsUtils;
 import data_objects.RubyType;
 import data_objects.drivers.AbstractDriverDefinition;
 
@@ -31,58 +31,50 @@ public class Sqlite3DriverDefinition extends AbstractDriverDefinition {
                     "scheme mismatch, expected: sqlite3 but got: " + scheme);
         }
     }
-    
+
     @Override
-    protected IRubyObject doGetTypecastResultSetValue(Ruby runtime, ResultSet rs, int col, RubyType type) throws SQLException, IOException {
+    protected IRubyObject doGetTypecastResultSetValue(Ruby runtime,
+            ResultSet rs, int col, RubyType type) throws SQLException,
+            IOException {
         switch (type) {
         case DATE:
-            java.sql.Date date = DataObjectsUtils.toDate(rs.getString(col));
+            DateTime date = toDate(rs.getString(col));
             if (date == null) {
                 return runtime.getNil();
             }
-            return DataObjectsUtils.prepareRubyDateFromSqlDate(runtime,
-                    date);
+            return prepareRubyDateFromSqlDate(runtime, date);
         case DATE_TIME:
-            java.sql.Timestamp dt = DataObjectsUtils.toTimestamp(rs
-                    .getString(col));
+            DateTime dt = toTimestamp(rs.getString(col));
             if (dt == null) {
                 return runtime.getNil();
             }
-            return DataObjectsUtils.prepareRubyDateTimeFromSqlTimestamp(
-                    runtime, dt);
+            return prepareRubyDateTimeFromSqlTimestamp(runtime, dt);
         case TIME:
             switch (rs.getMetaData().getColumnType(col)) {
             case Types.TIME:
-                java.sql.Time tm = DataObjectsUtils.toTime(rs
-                        .getString(col));
+                DateTime tm = toTime(rs.getString(col));
                 if (tm == null) {
                     return runtime.getNil();
                 }
-                return DataObjectsUtils.prepareRubyTimeFromSqlTime(runtime,
-                        tm);
+                return prepareRubyTimeFromSqlTime(runtime, tm);
             case Types.TIMESTAMP:
-                java.sql.Time ts = DataObjectsUtils.toTime(rs
-                        .getString(col));
+                DateTime ts = toTime(rs.getString(col));
                 if (ts == null) {
                     return runtime.getNil();
                 }
-                return DataObjectsUtils.prepareRubyTimeFromSqlTime(runtime,
-                        ts);
+                return prepareRubyTimeFromSqlTime(runtime, ts);
             case Types.DATE:
                 java.sql.Date da = rs.getDate(col);
                 if (da == null) {
                     return runtime.getNil();
                 }
-                return DataObjectsUtils.prepareRubyTimeFromSqlDate(runtime,
-                        da);
+                return prepareRubyTimeFromSqlDate(runtime, da);
             default:
-                java.sql.Time time = DataObjectsUtils.toTime(rs
-                        .getString(col));
+                DateTime time = toTime(rs.getString(col));
                 if (time == null) {
                     return runtime.getNil();
                 }
-                return DataObjectsUtils.prepareRubyTimeFromSqlTime(runtime,
-                        time);
+                return prepareRubyTimeFromSqlTime(runtime, time);
             }
         case FLOAT:
             return new RubyFloat(runtime, new java.math.BigDecimal(rs

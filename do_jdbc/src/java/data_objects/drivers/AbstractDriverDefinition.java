@@ -6,24 +6,27 @@ import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.sql.Connection;
+import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.sql.Types;
-import java.text.DateFormat;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.GregorianCalendar;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Properties;
 import java.util.TimeZone;
 
+import org.joda.time.DateTime;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
+import org.joda.time.format.ISODateTimeFormat;
 import org.jruby.Ruby;
 import org.jruby.RubyBigDecimal;
 import org.jruby.RubyBignum;
 import org.jruby.RubyClass;
+import org.jruby.RubyFixnum;
 import org.jruby.RubyFloat;
 import org.jruby.RubyHash;
 import org.jruby.RubyNumeric;
@@ -37,7 +40,6 @@ import org.jruby.runtime.builtin.IRubyObject;
 import org.jruby.runtime.marshal.UnmarshalStream;
 import org.jruby.util.ByteList;
 
-import data_objects.DataObjectsUtils;
 import data_objects.RubyType;
 
 /**
@@ -74,22 +76,17 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
             String query = null;
             StringBuffer userInfo = new StringBuffer();
 
-            verifyScheme(DataObjectsUtils.stringOrNull(api.callMethod(
-                    connection_uri, "scheme")));
+            verifyScheme(stringOrNull(api.callMethod(connection_uri, "scheme")));
 
-            String user = DataObjectsUtils.stringOrNull(api.callMethod(
-                    connection_uri, "user"));
-            String password = DataObjectsUtils.stringOrNull(api.callMethod(
-                    connection_uri, "password"));
-            String host = DataObjectsUtils.stringOrNull(api.callMethod(
-                    connection_uri, "host"));
-            int port = DataObjectsUtils.intOrMinusOne(api.callMethod(
-                    connection_uri, "port"));
-            String path = DataObjectsUtils.stringOrNull(api.callMethod(
-                    connection_uri, "path"));
+            String user = stringOrNull(api.callMethod(connection_uri, "user"));
+            String password = stringOrNull(api.callMethod(connection_uri,
+                    "password"));
+            String host = stringOrNull(api.callMethod(connection_uri, "host"));
+            int port = intOrMinusOne(api.callMethod(connection_uri, "port"));
+            String path = stringOrNull(api.callMethod(connection_uri, "path"));
             IRubyObject query_values = api.callMethod(connection_uri, "query");
-            String fragment = DataObjectsUtils.stringOrNull(api.callMethod(
-                    connection_uri, "fragment"));
+            String fragment = stringOrNull(api.callMethod(connection_uri,
+                    "fragment"));
 
             if (user != null && !"".equals(user)) {
                 userInfo.append(user);
@@ -154,19 +151,18 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
         }
         return querySb.toString();
     }
-    public RaiseException newDriverError(Ruby runtime,
-            String message) {
+
+    public RaiseException newDriverError(Ruby runtime, String message) {
         RubyClass driverError = runtime.getClass(getErrorName());
         return new RaiseException(runtime, driverError, message, true);
     }
 
     public RaiseException newDriverError(Ruby runtime, SQLException exception) {
-       return newDriverError(runtime, exception, null);
+        return newDriverError(runtime, exception, null);
     }
 
-    public RaiseException newDriverError(Ruby runtime,
-            SQLException exception, java.sql.Statement statement)
-    {
+    public RaiseException newDriverError(Ruby runtime, SQLException exception,
+            java.sql.Statement statement) {
         RubyClass driverError = runtime.getClass(getErrorName());
         int code = exception.getErrorCode();
         StringBuffer sb = new StringBuffer("(");
@@ -174,11 +170,13 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
         // Append the Vendor Code, if there is one
         // TODO: parse vendor exception codes
         // TODO: replace 'vendor' with vendor name
-        if (code > 0) sb.append("vendor_errno=").append(code).append(", ");
+        if (code > 0)
+            sb.append("vendor_errno=").append(code).append(", ");
         sb.append("sql_state=").append(exception.getSQLState()).append(") ");
         sb.append(exception.getLocalizedMessage());
         // TODO: delegate to the DriverDefinition for this
-        if (statement != null) sb.append("\nQuery: ").append(statement.toString());
+        if (statement != null)
+            sb.append("\nQuery: ").append(statement.toString());
 
         return new RaiseException(runtime, driverError, sb.toString(), true);
     }
@@ -186,6 +184,7 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
     public RubyObjectAdapter getObjectAdapter() {
         return api;
     }
+
     public final IRubyObject getTypecastResultSetValue(Ruby runtime,
             ResultSet rs, int col, RubyType type) throws SQLException,
             IOException {
@@ -219,7 +218,7 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
             if (date == null) {
                 return runtime.getNil();
             }
-            return DataObjectsUtils.prepareRubyDateFromSqlDate(runtime, date);
+            return prepareRubyDateFromSqlDate(runtime, new DateTime(date));
         case DATE_TIME:
             java.sql.Timestamp dt = null;
             // DateTimes with all-zero components throw a SQLException with
@@ -233,8 +232,8 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
             if (dt == null) {
                 return runtime.getNil();
             }
-            return DataObjectsUtils.prepareRubyDateTimeFromSqlTimestamp(
-                    runtime, dt);
+            return prepareRubyDateTimeFromSqlTimestamp(runtime,
+                    new DateTime(dt));
         case TIME:
             switch (rs.getMetaData().getColumnType(col)) {
             case Types.TIME:
@@ -242,19 +241,19 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
                 if (tm == null) {
                     return runtime.getNil();
                 }
-                return DataObjectsUtils.prepareRubyTimeFromSqlTime(runtime, tm);
+                return prepareRubyTimeFromSqlTime(runtime, new DateTime(tm));
             case Types.TIMESTAMP:
                 java.sql.Time ts = rs.getTime(col);
                 if (ts == null) {
                     return runtime.getNil();
                 }
-                return DataObjectsUtils.prepareRubyTimeFromSqlTime(runtime, ts);
+                return prepareRubyTimeFromSqlTime(runtime, new DateTime(ts));
             case Types.DATE:
                 java.sql.Date da = rs.getDate(col);
                 if (da == null) {
                     return runtime.getNil();
                 }
-                return DataObjectsUtils.prepareRubyTimeFromSqlDate(runtime, da);
+                return prepareRubyTimeFromSqlDate(runtime, da);
             default:
                 String str = rs.getString(col);
                 if (str == null) {
@@ -320,8 +319,8 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
     // TODO SimpleDateFormat is not threadsafe better use joda classes
     // http://java.sun.com/j2se/1.5.0/docs/api/java/text/SimpleDateFormat.html#synchronization
     // http://joda-time.sourceforge.net/api-release/org/joda/time/DateTime.html
-    private static final DateFormat FORMAT = new SimpleDateFormat(
-            "yyyy-MM-dd HH:mm:ss");
+    // private static final DateFormat FORMAT = new SimpleDateFormat(
+    // "yyyy-MM-dd HH:mm:ss");
 
     public void setPreparedStatementParam(PreparedStatement ps,
             IRubyObject arg, int idx) throws SQLException {
@@ -357,6 +356,7 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
             break;
         case TIME:
             RubyTime rubyTime = (RubyTime) arg;
+            // TODO use joda
             java.util.Date date = rubyTime.getJavaDate();
 
             GregorianCalendar cal = new GregorianCalendar();
@@ -369,8 +369,7 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
                 ts = new java.sql.Timestamp(cal.getTime().getTime());
                 ts.setNanos(cal.get(GregorianCalendar.MILLISECOND) * 100000);
             } else {
-                // XXX ugly workaround for MySQL and Hsqldb
-                // TODO better use joda
+                //XXX ugly workaround for MySQL and Hsqldb
                 ts = new Timestamp(cal.get(GregorianCalendar.YEAR) - 1900, cal
                         .get(GregorianCalendar.MONTH), cal
                         .get(GregorianCalendar.DAY_OF_MONTH), cal
@@ -391,14 +390,16 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
                     && arg.toString().indexOf(":") != -1) {
                 // TODO: improve the above string pattern checking
                 // Handle date patterns in strings
-                java.util.Date parsedDate;
+                // java.util.Date parsedDate;
                 try {
-                    parsedDate = FORMAT.parse(arg.asJavaString().replace('T',
-                            ' '));
-                    java.sql.Timestamp timestamp = new java.sql.Timestamp(
-                            parsedDate.getTime());
-                    ps.setTimestamp(idx, timestamp);
-                } catch (ParseException ex) {
+                    // parsedDate = FORMAT.parse(arg.asJavaString().replace('T',
+                    // ' '));
+                    DateTime timestamp = DATE_TIME_FORMAT.parseDateTime(arg
+                            .asJavaString().replace('T', ' '));
+                    // java.sql.Timestamp timestamp = new java.sql.Timestamp(
+                    // parsedDate.getTime());
+                    ps.setTimestamp(idx, new Timestamp(timestamp.getMillis()));
+                } catch (IllegalArgumentException ex) {
                     ps.setString(idx, api.convertToRubyString(arg)
                             .getUnicodeValue());
                 }
@@ -481,4 +482,107 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
         return ps.toString();
     }
 
+    protected static IRubyObject prepareRubyDateTimeFromSqlTimestamp(
+            Ruby runtime, DateTime stamp) {
+
+        if (stamp.getMillis() == 0) {
+            return runtime.getNil();
+        }
+
+        int zoneOffset = stamp.getZone().getOffset(stamp.getMillis()) / 3600000; // regCalendar.get(Calendar.ZONE_OFFSET)
+        // /
+        // 3600000;
+        RubyClass klazz = runtime.fastGetClass("DateTime");
+
+        IRubyObject rbOffset = runtime.fastGetClass("Rational").callMethod(
+                runtime.getCurrentContext(),
+                "new",
+                new IRubyObject[] { runtime.newFixnum(zoneOffset),
+                        runtime.newFixnum(24) });
+
+        return klazz.callMethod(runtime.getCurrentContext(), "civil",
+                new IRubyObject[] { runtime.newFixnum(stamp.getYear()),// gregCalendar.get(Calendar.YEAR)),
+                        runtime.newFixnum(stamp.getMonthOfYear()),// month),
+                        runtime.newFixnum(stamp.getDayOfMonth()), // gregCalendar.get(Calendar.DAY_OF_MONTH)),
+                        runtime.newFixnum(stamp.getHourOfDay()), // gregCalendar.get(Calendar.HOUR_OF_DAY)),
+                        runtime.newFixnum(stamp.getMinuteOfHour()), // gregCalendar.get(Calendar.MINUTE)),
+                        runtime.newFixnum(stamp.getSecondOfMinute()), // gregCalendar.get(Calendar.SECOND)),
+                        rbOffset });
+    }
+
+    protected static IRubyObject prepareRubyTimeFromSqlTime(Ruby runtime,
+            DateTime time) {
+
+        if (time.getMillis() + 3600000 == 0) {
+            return runtime.getNil();
+        }
+
+        RubyTime rbTime = RubyTime.newTime(runtime, time);
+        rbTime.extend(new IRubyObject[] { runtime.getModule("TimeFormatter") });
+        return rbTime;
+    }
+
+    protected static IRubyObject prepareRubyTimeFromSqlDate(Ruby runtime,
+            Date date) {
+
+        if (date.getTime() + 3600000 == 0) {
+            return runtime.getNil();
+        }
+        RubyTime rbTime = RubyTime.newTime(runtime, date.getTime());
+        rbTime.extend(new IRubyObject[] { runtime.getModule("TimeFormatter") });
+        return rbTime;
+    }
+
+    public static IRubyObject prepareRubyDateFromSqlDate(Ruby runtime,
+            DateTime date) {
+
+        if (date.getMillis() == 0) {
+            return runtime.getNil();
+        }
+
+        // TODO
+        // gregCalendar.setTime(date.toDate());
+        // int month = gregCalendar.get(Calendar.MONTH);
+        // month++; // In Calendar January == 0, etc...
+        RubyClass klazz = runtime.fastGetClass("Date");
+        return klazz.callMethod(runtime.getCurrentContext(), "civil",
+                new IRubyObject[] { runtime.newFixnum(date.getYear()),
+                        runtime.newFixnum(date.getMonthOfYear()),
+                        runtime.newFixnum(date.getDayOfMonth()) });
+    }
+
+    private final static DateTimeFormatter DATE_FORMAT = ISODateTimeFormat
+            .date();// yyyy-MM-dd
+    private final static DateTimeFormatter DATE_TIME_FORMAT = DateTimeFormat
+            .forPattern("yyyy-MM-dd HH:mm:ss");
+    private final static DateTimeFormatter TIMESTAMP_FORMAT = ISODateTimeFormat
+            .dateTime();
+
+    public static DateTime toDate(String date) {
+        return DATE_FORMAT.parseDateTime(date.replaceFirst("T.*", ""));
+    }
+
+    public static DateTime toTimestamp(String stamp) {
+        DateTimeFormatter formatter = stamp.contains("T") ? TIMESTAMP_FORMAT
+                : DATE_FORMAT;// "yyyy-MM-dd'T'HH:mm:ssZ" : "yyyy-MM-dd");
+        return formatter.parseDateTime(stamp);
+    }
+
+    public static DateTime toTime(String time) {
+        DateTimeFormatter formatter = time.contains(" ") ? DATE_TIME_FORMAT
+                : DATE_FORMAT;
+        return formatter.parseDateTime(time);
+    }
+
+    private static String stringOrNull(IRubyObject obj) {
+        return (!obj.isNil()) ? obj.asJavaString() : null;
+    }
+
+    private static int intOrMinusOne(IRubyObject obj) {
+        return (!obj.isNil()) ? RubyFixnum.fix2int(obj) : -1;
+    }
+
+    // private static Integer integerOrNull(IRubyObject obj) {
+    // return (!obj.isNil()) ? RubyFixnum.fix2int(obj) : null;
+    // }
 }

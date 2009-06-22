@@ -1,5 +1,6 @@
 package data_objects;
 
+import java.sql.Types;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -54,6 +55,61 @@ public enum RubyType {
     
     public static RubyType getRubyType(String rubyName) {
         return table.get(rubyName.toLowerCase());
+    }
+
+    public static RubyType jdbcTypeToRubyType(int type, int scale) {
+        RubyType primitiveType;
+        switch (type) {
+        case Types.INTEGER:
+        case Types.SMALLINT:
+        case Types.TINYINT:
+            primitiveType = RubyType.FIXNUM;
+            break;
+        case Types.BIGINT:
+            primitiveType = RubyType.BIGNUM;
+            break;
+        case Types.BIT:
+        case Types.BOOLEAN:
+            primitiveType = RubyType.TRUE_CLASS;
+            break;
+        case Types.CHAR:
+        case Types.VARCHAR:
+            primitiveType = RubyType.STRING;
+            break;
+        case Types.DATE:
+            primitiveType = RubyType.DATE;
+            break;
+        case Types.TIMESTAMP:
+            primitiveType = RubyType.DATE_TIME;
+            break;
+        case Types.TIME:
+            primitiveType = RubyType.TIME;
+            break;
+        case Types.DECIMAL:
+        case Types.NUMERIC:
+            primitiveType = RubyType.BIG_DECIMAL;
+            break;
+        case Types.REAL:
+        case Types.FLOAT:
+        case Types.DOUBLE:
+            primitiveType = RubyType.FLOAT;
+            break;
+        case Types.BLOB:
+        case Types.JAVA_OBJECT: // XXX: Not sure this should be here
+        case Types.VARBINARY:
+        case Types.BINARY:
+        case Types.LONGVARBINARY:
+            primitiveType = RubyType.BYTE_ARRAY;
+            break;
+        case Types.NULL:
+            primitiveType = RubyType.NIL;
+            break;
+        default:
+            primitiveType = RubyType.STRING;
+        }
+        // No casting rule for type #{meta_data.column_type(i)}
+        // (#{meta_data.column_name(i)}). Please report this."
+        return primitiveType;
     }
 
 }

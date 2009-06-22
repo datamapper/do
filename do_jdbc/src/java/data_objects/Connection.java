@@ -6,8 +6,10 @@ import java.io.UnsupportedEncodingException;
 import java.net.URISyntaxException;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
+import java.util.StringTokenizer;
 
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
@@ -91,7 +93,7 @@ public class Connection extends DORubyObject {
         if (connectionUri.getQuery() != null) {
             Map<String, String> query;
             try {
-                query = DataObjectsUtils.parseQueryString(connectionUri.getQuery());
+                query = parseQueryString(connectionUri.getQuery());
             } catch (UnsupportedEncodingException ex) {
                 throw runtime.newArgumentError("Unsupported Encoding in Query Parameters" + ex);
                 //Logger.getLogger(Connection.class.getName()).log(Level.SEVERE, null, ex);
@@ -237,6 +239,37 @@ public class Connection extends DORubyObject {
     private static java.sql.Connection getConnection(IRubyObject recv) {
         java.sql.Connection conn = (java.sql.Connection) recv.dataGetStruct();
         return conn;
+    }
+
+    /**
+     * Convert a query string (e.g.
+     * driver=org.postgresql.Driver&protocol=postgresql) to a Map of values.
+     *
+     * @param query
+     * @return
+     */
+    private static Map<String, String> parseQueryString(String query)
+            throws UnsupportedEncodingException {
+        if (query == null) {
+            return null;
+        }
+        Map<String, String> nameValuePairs = new HashMap<String, String>();
+        StringTokenizer stz = new StringTokenizer(query, "&");
+
+        // Tokenize at and for name / value pairs
+        while (stz.hasMoreTokens()) {
+            String nameValueToken = stz.nextToken();
+            // Split at = to split the pairs
+            int i = nameValueToken.indexOf("=");
+            String name = nameValueToken.substring(0, i);
+            String value = nameValueToken.substring(i + 1);
+            // Name and value should be URL decoded
+            name = java.net.URLDecoder.decode(name, "UTF-8");
+            value = java.net.URLDecoder.decode(value, "UTF-8");
+            nameValuePairs.put(name, value);
+        }
+
+        return nameValuePairs;
     }
 
 }
