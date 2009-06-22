@@ -1,10 +1,13 @@
 package do_hsqldb;
 
 import java.lang.reflect.Field;
+import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Types;
-
 import data_objects.drivers.AbstractDriverDefinition;
+
 
 public class HsqldbDriverDefinition extends AbstractDriverDefinition {
 
@@ -20,6 +23,21 @@ public class HsqldbDriverDefinition extends AbstractDriverDefinition {
     {
         return false;
     }
+
+    /**
+     * Needed if 1.9.x driver is not used (still in beta)
+     * @param connection
+     * @return
+     */
+    @Override
+    public ResultSet getGeneratedKeys(Connection connection) {
+        try {
+            return connection.prepareStatement("CALL IDENTITY()").executeQuery();
+        } catch (SQLException ex) {
+            return null;
+        }
+    }
+
 
     @Override
     public boolean supportsConnectionPrepareStatementMethodWithGKFlag()
