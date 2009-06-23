@@ -311,6 +311,40 @@ public class Command extends DORubyObject {
             //sqlStatement = null;
         } catch (SQLException sqle) {
             // TODO: log sqle.printStackTrace();
+            // XXX sqlite3 jdbc driver happily throws an exception if the result set is empty :P
+            // this sets up a minimal empty reader
+            if (sqle.getMessage().equals("query does not return results")) {
+                IRubyObject wrappedResultSet = Java.java_to_ruby(this,
+                        JavaObject.wrap(getRuntime(), resultSet),
+                        Block.NULL_BLOCK);
+                reader.getInstanceVariables().setInstanceVariable("@reader",
+                        wrappedResultSet);
+
+                wrappedResultSet.dataWrapStruct(resultSet);
+                // get the field types
+                RubyArray field_names = runtime.newArray();
+                // for each field
+                try {
+                    metaData = sqlStatement.getMetaData();
+                    for (int i = 0; i < columnCount; i++) {
+                        RubyString field_name = runtime.newString(metaData
+                                .getColumnName(i + 1));
+                        // infer the type if no types passed
+                        field_names.push_m(new IRubyObject[] { field_name });
+
+                        if (inferTypes) {
+                            // TODO: do something
+                        }
+                    }
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
+
+                // set the reader @field_names and @types (guessed or otherwise)
+                api.setInstanceVariable(reader, "@fields", field_names);
+                return reader;
+            }
+
             throw newQueryError(runtime, sqle, sqlStatement);
         } finally {
             //if (sqlStatement != null) {
