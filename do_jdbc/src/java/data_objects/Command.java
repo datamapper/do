@@ -418,7 +418,11 @@ public class Command extends DORubyObject {
      */
     private String prepareSqlTextForPs(String doSqlText, IRubyObject[] args) {
 
-        if (args.length == 0) return doSqlText;
+        if (args.length == 0) {
+            // XXX the quotings coming from the dm-core/adapters needs to be
+            // rectified BUT might also break custom sql
+            return doSqlText.replaceAll("\"", "`");
+        }
         // long timeStamp = System.currentTimeMillis(); // XXX for debug
         // System.out.println(""+timeStamp+" SQL before replacements @: " + doSqlText); // XXX for debug
         String psSqlText = doSqlText;
@@ -481,7 +485,9 @@ public class Command extends DORubyObject {
             }
         }
         // System.out.println(""+timeStamp+" SQL after replacements @: " + psSqlText); // XXX for debug
-        return psSqlText;
+        // XXX the quotings coming from the dm-core/adapters needs to be
+        // rectified BUT might also break custom sql
+        return psSqlText.replaceAll("\"", "`");
     }
 
     /**
