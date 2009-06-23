@@ -16,9 +16,9 @@ import java.util.GregorianCalendar;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Properties;
-import java.util.TimeZone;
 
 import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.joda.time.format.ISODateTimeFormat;
@@ -355,34 +355,22 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
             ps.setDate(idx, java.sql.Date.valueOf(arg.toString()));
             break;
         case TIME:
-            RubyTime rubyTime = (RubyTime) arg;
-            // TODO use joda
-            java.util.Date date = rubyTime.getJavaDate();
-
-            GregorianCalendar cal = new GregorianCalendar();
-            cal.setTime(date);
-            cal.setTimeZone(TimeZone.getTimeZone("UTC")); // XXX works only if
-            // driver suports
-            // Calendars in PS
-            java.sql.Timestamp ts;
+            DateTime dateTime = ((RubyTime) arg).getDateTime();
+            GregorianCalendar cal = dateTime.toGregorianCalendar();
+            Timestamp ts;
             if (supportsCalendarsInJDBCPreparedStatement() == true) {
-                ts = new java.sql.Timestamp(cal.getTime().getTime());
-                ts.setNanos(cal.get(GregorianCalendar.MILLISECOND) * 100000);
+                ts = new Timestamp(dateTime.getMillis());
             } else {
-                //XXX ugly workaround for MySQL and Hsqldb
-                ts = new Timestamp(cal.get(GregorianCalendar.YEAR) - 1900, cal
-                        .get(GregorianCalendar.MONTH), cal
-                        .get(GregorianCalendar.DAY_OF_MONTH), cal
-                        .get(GregorianCalendar.HOUR_OF_DAY), cal
-                        .get(GregorianCalendar.MINUTE), cal
-                        .get(GregorianCalendar.SECOND), cal
-                        .get(GregorianCalendar.MILLISECOND) * 100000);
+                // XXX ugly workaround for MySQL and Hsqldb
+                // use the default timeZone the oposite way these jdbc drivers do it
+                long offset = DateTimeZone.getDefault().getOffset(dateTime.getMillis());
+                ts = new Timestamp(dateTime.getMillis() - offset);
             }
             ps.setTimestamp(idx, ts, cal);
             break;
         case DATE_TIME:
             String datetime = arg.toString().replace('T', ' ');
-            ps.setTimestamp(idx, java.sql.Timestamp.valueOf(datetime
+            ps.setTimestamp(idx, Timestamp.valueOf(datetime
                     .replaceFirst("[-+]..:..$", "")));
             break;
         default:
@@ -390,14 +378,9 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
                     && arg.toString().indexOf(":") != -1) {
                 // TODO: improve the above string pattern checking
                 // Handle date patterns in strings
-                // java.util.Date parsedDate;
                 try {
-                    // parsedDate = FORMAT.parse(arg.asJavaString().replace('T',
-                    // ' '));
                     DateTime timestamp = DATE_TIME_FORMAT.parseDateTime(arg
                             .asJavaString().replace('T', ' '));
-                    // java.sql.Timestamp timestamp = new java.sql.Timestamp(
-                    // parsedDate.getTime());
                     ps.setTimestamp(idx, new Timestamp(timestamp.getMillis()));
                 } catch (IllegalArgumentException ex) {
                     ps.setString(idx, api.convertToRubyString(arg)
