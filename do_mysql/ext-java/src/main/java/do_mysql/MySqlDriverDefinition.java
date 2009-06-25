@@ -1,10 +1,13 @@
 package do_mysql;
 
+import java.io.IOException;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
 import java.util.Properties;
 
+import org.jruby.Ruby;
 import org.jruby.runtime.builtin.IRubyObject;
 
 import data_objects.RubyType;
@@ -18,7 +21,23 @@ public class MySqlDriverDefinition extends AbstractDriverDefinition {
     public MySqlDriverDefinition() {
         super(URI_SCHEME, RUBY_MODULE_NAME);
     }
-
+    
+    @Override
+    protected IRubyObject doGetTypecastResultSetValue(Ruby runtime,
+            ResultSet rs, int col, RubyType type) throws SQLException,
+            IOException {
+        switch (type) {
+        case FIXNUM:
+            switch (rs.getMetaData().getColumnType(col)) {
+            case Types.TINYINT:
+                boolean bool = rs.getBoolean(col);
+                return runtime.newBoolean(bool);
+            }
+        default:
+            return super.doGetTypecastResultSetValue(runtime, rs, col, type);
+        }
+    }
+    
     @Override
     public void setPreparedStatementParam(PreparedStatement ps,
             IRubyObject arg, int idx) throws SQLException {

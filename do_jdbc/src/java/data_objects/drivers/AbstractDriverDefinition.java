@@ -3,6 +3,7 @@ package data_objects.drivers;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
+import java.math.BigDecimal;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.sql.Connection;
@@ -48,7 +49,8 @@ import data_objects.RubyType;
  */
 public abstract class AbstractDriverDefinition implements DriverDefinition {
 
-    protected static final RubyObjectAdapter api = JavaEmbedUtils
+    // assuming that API is threadsafe
+    protected static final RubyObjectAdapter API = JavaEmbedUtils
             .newObjectAdapter();
 
     private final String scheme;
@@ -83,16 +85,16 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
             String query = null;
             StringBuffer userInfo = new StringBuffer();
 
-            verifyScheme(stringOrNull(api.callMethod(connection_uri, "scheme")));
+            verifyScheme(stringOrNull(API.callMethod(connection_uri, "scheme")));
 
-            String user = stringOrNull(api.callMethod(connection_uri, "user"));
-            String password = stringOrNull(api.callMethod(connection_uri,
+            String user = stringOrNull(API.callMethod(connection_uri, "user"));
+            String password = stringOrNull(API.callMethod(connection_uri,
                     "password"));
-            String host = stringOrNull(api.callMethod(connection_uri, "host"));
-            int port = intOrMinusOne(api.callMethod(connection_uri, "port"));
-            String path = stringOrNull(api.callMethod(connection_uri, "path"));
-            IRubyObject query_values = api.callMethod(connection_uri, "query");
-            String fragment = stringOrNull(api.callMethod(connection_uri,
+            String host = stringOrNull(API.callMethod(connection_uri, "host"));
+            int port = intOrMinusOne(API.callMethod(connection_uri, "port"));
+            String path = stringOrNull(API.callMethod(connection_uri, "path"));
+            IRubyObject query_values = API.callMethod(connection_uri, "query");
+            String fragment = stringOrNull(API.callMethod(connection_uri,
                     "fragment"));
 
             if (user != null && !"".equals(user)) {
@@ -107,7 +109,7 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
             } else if (query_values instanceof RubyHash) {
                 query = mapToQueryString(query_values.convertToHash());
             } else {
-                query = api.callMethod(query_values, "to_s").asJavaString();
+                query = API.callMethod(query_values, "to_s").asJavaString();
             }
 
             if (host != null && !"".equals(host)) {
@@ -189,7 +191,7 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
     }
 
     public RubyObjectAdapter getObjectAdapter() {
-        return api;
+        return API;
     }
 
     public final IRubyObject getTypecastResultSetValue(Ruby runtime,
@@ -208,21 +210,26 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
     protected IRubyObject doGetTypecastResultSetValue(Ruby runtime,
             ResultSet rs, int col, RubyType type) throws SQLException,
             IOException {
+        //System.out.println(rs.getMetaData().getColumnTypeName(col) + " = " + type.toString());
         switch (type) {
         case FIXNUM:
         case INTEGER:
         case BIGNUM:
             // TODO: attempt to make this more granular, depending on the
-            // size of the number (?)
+            // size of the number (?) or depending on the column type (?)
             long lng = rs.getLong(col);
             return RubyNumeric.int2fix(runtime, lng);
         case FLOAT:
-            java.math.BigDecimal bdf = rs.getBigDecimal(col);
+            BigDecimal bdf = rs.getBigDecimal(col);
             if (bdf == null) {
                 return runtime.getNil();
             }
             return new RubyFloat(runtime, bdf.doubleValue());
         case BIG_DECIMAL:
+            BigDecimal bd = rs.getBigDecimal(col);
+            if (bd  == null) {
+                return runtime.getNil();
+            }
             return new RubyBigDecimal(runtime, rs.getBigDecimal(col));
         case DATE:
             java.sql.Date date = rs.getDate(col);
@@ -276,8 +283,11 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
                 return return_str;
             }
         case TRUE_CLASS:
-            boolean bool = rs.getBoolean(col);
-            return runtime.newBoolean(bool);
+            // getBoolean delivers False in case the underlying data is null
+            if (rs.getString(col) == null){
+                return runtime.getNil();
+            }
+            return runtime.newBoolean(rs.getBoolean(col));
         case BYTE_ARRAY:
             InputStream binaryStream = rs.getBinaryStream(col);
             ByteList bytes = new ByteList(2048);
@@ -290,7 +300,7 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
             } finally {
                 binaryStream.close();
             }
-            return api.callMethod(runtime.fastGetModule("Extlib").fastGetClass(
+            return API.callMethod(runtime.fastGetModule("Extlib").fastGetClass(
                     "ByteArray"), "new", runtime.newString(bytes));
         case CLASS:
             String classNameStr = rs.getString(col);
@@ -300,7 +310,7 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
             RubyString class_name_str = RubyString.newUnicodeString(runtime, rs
                     .getString(col));
             class_name_str.setTaint(true);
-            return api.callMethod(runtime.getObject(), "full_const_get",
+            return API.callMethod(runtime.getObject(), "full_const_get",
                     class_name_str);
         case OBJECT:
             InputStream asciiStream = rs.getAsciiStream(col);
@@ -326,12 +336,6 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
             return return_str;
         }
     }
-
-    // TODO SimpleDateFormat is not threadsafe better use joda classes
-    // http://java.sun.com/j2se/1.5.0/docs/api/java/text/SimpleDateFormat.html#synchronization
-    // http://joda-time.sourceforge.net/api-release/org/joda/time/DateTime.html
-    // private static final DateFormat FORMAT = new SimpleDateFormat(
-    // "yyyy-MM-dd HH:mm:ss");
 
     public void setPreparedStatementParam(PreparedStatement ps,
             IRubyObject arg, int idx) throws SQLException {
@@ -394,7 +398,7 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
                             .asJavaString().replace('T', ' '));
                     ps.setTimestamp(idx, new Timestamp(timestamp.getMillis()));
                 } catch (IllegalArgumentException ex) {
-                    ps.setString(idx, api.convertToRubyString(arg)
+                    ps.setString(idx, API.convertToRubyString(arg)
                             .getUnicodeValue());
                 }
             } else if (arg.toString().indexOf(":") != -1
@@ -409,26 +413,26 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
                 }
 
                 if (jdbcTypeId == null) {
-                    ps.setString(idx, api.convertToRubyString(arg)
+                    ps.setString(idx, API.convertToRubyString(arg)
                             .getUnicodeValue());
                 } else {
                     // TODO: Here comes conversions like '.execute_reader("2")'
                     // It definitly needs to be refactored...
                     try {
                         if (jdbcTypeId == Types.VARCHAR) {
-                            ps.setString(idx, api.convertToRubyString(arg)
+                            ps.setString(idx, API.convertToRubyString(arg)
                                     .getUnicodeValue());
                         } else if (jdbcTypeId == Types.INTEGER) {
                             ps.setObject(idx, Integer.valueOf(arg.toString()),
                                     jdbcTypeId);
                         } else {
                             // I'm not sure is it correct in 100%
-                            ps.setString(idx, api.convertToRubyString(arg)
+                            ps.setString(idx, API.convertToRubyString(arg)
                                     .getUnicodeValue());
                         }
                     } catch (NumberFormatException ex) { // i.e
                         // Integer.valueOf
-                        ps.setString(idx, api.convertToRubyString(arg)
+                        ps.setString(idx, API.convertToRubyString(arg)
                                 .getUnicodeValue());
                     }
                 }
@@ -483,9 +487,8 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
             return runtime.getNil();
         }
 
-        int zoneOffset = stamp.getZone().getOffset(stamp.getMillis()) / 3600000; // regCalendar.get(Calendar.ZONE_OFFSET)
-        // /
-        // 3600000;
+        int zoneOffset = stamp.getZone().getOffset(stamp.getMillis()) / 3600000;
+
         RubyClass klazz = runtime.fastGetClass("DateTime");
 
         IRubyObject rbOffset = runtime.fastGetClass("Rational").callMethod(
@@ -495,12 +498,12 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
                         runtime.newFixnum(24) });
 
         return klazz.callMethod(runtime.getCurrentContext(), "civil",
-                new IRubyObject[] { runtime.newFixnum(stamp.getYear()),// gregCalendar.get(Calendar.YEAR)),
-                        runtime.newFixnum(stamp.getMonthOfYear()),// month),
-                        runtime.newFixnum(stamp.getDayOfMonth()), // gregCalendar.get(Calendar.DAY_OF_MONTH)),
-                        runtime.newFixnum(stamp.getHourOfDay()), // gregCalendar.get(Calendar.HOUR_OF_DAY)),
-                        runtime.newFixnum(stamp.getMinuteOfHour()), // gregCalendar.get(Calendar.MINUTE)),
-                        runtime.newFixnum(stamp.getSecondOfMinute()), // gregCalendar.get(Calendar.SECOND)),
+                new IRubyObject[] { runtime.newFixnum(stamp.getYear()),
+                        runtime.newFixnum(stamp.getMonthOfYear()),
+                        runtime.newFixnum(stamp.getDayOfMonth()),
+                        runtime.newFixnum(stamp.getHourOfDay()),
+                        runtime.newFixnum(stamp.getMinuteOfHour()),
+                        runtime.newFixnum(stamp.getSecondOfMinute()),
                         rbOffset });
     }
 
@@ -534,10 +537,6 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
             return runtime.getNil();
         }
 
-        // TODO
-        // gregCalendar.setTime(date.toDate());
-        // int month = gregCalendar.get(Calendar.MONTH);
-        // month++; // In Calendar January == 0, etc...
         RubyClass klazz = runtime.fastGetClass("Date");
         return klazz.callMethod(runtime.getCurrentContext(), "civil",
                 new IRubyObject[] { runtime.newFixnum(date.getYear()),
@@ -549,8 +548,8 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
             .date();// yyyy-MM-dd
     private final static DateTimeFormatter DATE_TIME_FORMAT = DateTimeFormat
             .forPattern("yyyy-MM-dd HH:mm:ss");
-    private final static DateTimeFormatter TIMESTAMP_FORMAT = ISODateTimeFormat
-            .dateTime();
+    private final static DateTimeFormatter TIMESTAMP_FORMAT = DateTimeFormat
+            .forPattern("yyyy-MM-dd'T'HH:mm:ssZ");
 
     public static DateTime toDate(String date) {
         return DATE_FORMAT.parseDateTime(date.replaceFirst("T.*", ""));
@@ -564,7 +563,8 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
 
     public static DateTime toTime(String time) {
         DateTimeFormatter formatter = time.contains(" ") ? DATE_TIME_FORMAT
-                : DATE_FORMAT;
+                : (time.contains("T") ? TIMESTAMP_FORMAT
+                        : DATE_FORMAT);
         return formatter.parseDateTime(time);
     }
 

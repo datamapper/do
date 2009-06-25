@@ -46,6 +46,20 @@ end
 
 share_examples_for 'supporting writing an Nil' do
 
+  include DataObjectsSpecHelpers
+
+  before :all do
+    setup_test_environment
+  end
+
+  before :each do
+    @connection = DataObjects::Connection.new(CONFIG.uri)
+  end
+
+  after :each do
+    @connection.close
+  end
+
   describe 'supporting writing an Nil' do
 
     describe 'as a parameter' do

@@ -6,3 +6,6 @@ require 'data_objects/spec/typecast/date_spec'
 describe 'DataObjects::Sqlite3 with Date' do
   it_should_behave_like 'supporting Date'
 end
+describe 'DataObjects::Sqlite3 with Date' do
+#  it_should_behave_like 'supporting Date autocasting'
+end

@@ -5,4 +5,5 @@ require 'data_objects/spec/typecast/float_spec'
 
 describe 'DataObjects::H2 with Float' do
   it_should_behave_like 'supporting Float'
+  it_should_behave_like 'supporting Float autocasting'
 end

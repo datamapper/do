@@ -12,7 +12,7 @@ describe 'DataObjects::Sqlite3 with Nil' do
 end
 
 describe 'DataObjects::Sqlite3 with Nil' do
-# it_should_behave_like 'supporting writing an Nil'
+  it_should_behave_like 'supporting writing an Nil'
 end
 
 describe 'DataObjects::Sqlite3 with Nil' do
