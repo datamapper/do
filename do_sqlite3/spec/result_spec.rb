@@ -7,7 +7,7 @@ require 'data_objects/spec/result_spec'
 # concurrent execution of the "it_should_behave_like ....." calls
 # which would lock the database
 
-# TODO 
+# TODO
 # the locked database created a deadlock which is worth exploring since
 # such situation could appear in the wild too
 describe DataObjects::Sqlite3::Result do

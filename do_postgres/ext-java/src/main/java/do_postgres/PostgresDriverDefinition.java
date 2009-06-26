@@ -11,7 +11,7 @@ public class PostgresDriverDefinition extends AbstractDriverDefinition {
     public PostgresDriverDefinition() {
         super(URI_SCHEME, RUBY_MODULE_NAME);
     }
-    
+
     @Override
     public boolean supportsJdbcGeneratedKeys()
     {

@@ -43,7 +43,7 @@ import org.jruby.util.ByteList;
 import data_objects.RubyType;
 
 /**
- * 
+ *
  * @author alexbcoles
  */
 public abstract class AbstractDriverDefinition implements DriverDefinition {
@@ -130,7 +130,7 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
 
     /**
      * Convert a map of key/values to a URI query string
-     * 
+     *
      * @param map
      * @return
      * @throws java.io.UnsupportedEncodingException

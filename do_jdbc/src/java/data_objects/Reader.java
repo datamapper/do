@@ -23,7 +23,7 @@ import data_objects.drivers.DriverDefinition;
 
 /**
  * Reader Class
- * 
+ *
  * @author alexbcoles
  */
 @SuppressWarnings("serial")
@@ -90,7 +90,7 @@ public class Reader extends DORubyObject {
 
     /**
      * Moves the cursor forward.
-     * 
+     *
      * @param recv
      * @return
      */

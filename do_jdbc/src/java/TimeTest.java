@@ -10,10 +10,10 @@ public class TimeTest {
     @SuppressWarnings("deprecation")
     static public void main(String[] args) throws Exception {
         java.util.Date date = new java.util.Date();
-        DateTime dateTime = new DateTime(date);//, DateTimeZone.getDefault()); 
+        DateTime dateTime = new DateTime(date);//, DateTimeZone.getDefault());
         GregorianCalendar cal = new GregorianCalendar();
         cal.setTime(date);
-        cal.setTimeZone(TimeZone.getTimeZone("UTC")); 
+        cal.setTimeZone(TimeZone.getTimeZone("UTC"));
         // XXX works only if driver suports Calendars in PS
         java.sql.Timestamp ts;
 
@@ -26,9 +26,9 @@ public class TimeTest {
         System.out.println(dateTime.toString("yyyy-MM-dd HH:mm:ss.SSS") + ": " + dateTime.getMillis());
         System.out.println(dateTime.toGregorianCalendar());
         GregorianCalendar gcal = dateTime.toGregorianCalendar();
-        gcal.setTimeZone(TimeZone.getTimeZone("UTC")); 
+        gcal.setTimeZone(TimeZone.getTimeZone("UTC"));
         System.out.println(gcal.equals(cal));
-        
+
         // ELSE clause
         dateTime = new DateTime(date);
                 ts = new Timestamp(cal.get(GregorianCalendar.YEAR) - 1900, cal
@@ -38,8 +38,8 @@ public class TimeTest {
                 .get(GregorianCalendar.MINUTE), cal
                 .get(GregorianCalendar.SECOND), cal
                 .get(GregorianCalendar.MILLISECOND) * 1000000);
-        System.out.println(ts + ": " + ts.getTime());   
-        System.out.println(cal);    
+        System.out.println(ts + ": " + ts.getTime());
+        System.out.println(cal);
         dateTime = dateTime.withZone(DateTimeZone.UTC);
         System.out.println(dateTime.toString("yyyy-MM-dd HH:mm:ss.SSS") + ": " + dateTime.getMillis());
         System.out.println(dateTime.toGregorianCalendar());

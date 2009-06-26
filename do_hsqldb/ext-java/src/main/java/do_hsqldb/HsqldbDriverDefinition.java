@@ -7,10 +7,10 @@ import java.sql.Types;
 import data_objects.drivers.AbstractDriverDefinition;
 
 public class HsqldbDriverDefinition extends AbstractDriverDefinition {
-    
+
     public final static String URI_SCHEME = "hsqldb";
     public final static String RUBY_MODULE_NAME = "Hsqldb";
-    
+
     public HsqldbDriverDefinition() {
         super(URI_SCHEME, RUBY_MODULE_NAME);
     }

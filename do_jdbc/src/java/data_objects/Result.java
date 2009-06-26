@@ -37,7 +37,7 @@ public class Result extends RubyObject {
         RubyModule driverModule = (RubyModule) doModule.getConstant(driver.getModuleName());
         RubyClass resultClass = driverModule.defineClassUnder(RUBY_CLASS_NAME,
                 superClass, RESULT_ALLOCATOR);
-        
+
         resultClass.defineAnnotatedMethods(Result.class);
         return resultClass;
     }

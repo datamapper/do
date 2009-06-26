@@ -9,7 +9,7 @@ public class H2DriverDefinition extends AbstractDriverDefinition {
     public H2DriverDefinition(){
         super(URI_SCHEME, RUBY_MODULE_NAME);
     }
-    
+
     @Override
     public boolean supportsJdbcGeneratedKeys()
     {

@@ -11,7 +11,7 @@ import data_objects.RubyType;
 import data_objects.drivers.AbstractDriverDefinition;
 
 public class MySqlDriverDefinition extends AbstractDriverDefinition {
-    
+
     public final static String URI_SCHEME = "mysql";
     public final static String RUBY_MODULE_NAME = "Mysql";
 

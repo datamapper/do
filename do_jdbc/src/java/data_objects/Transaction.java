@@ -14,7 +14,7 @@ import data_objects.drivers.DriverDefinition;
 
 /**
  * Transaction Class
- * 
+ *
  * @author alexbcoles
  * @author mkristian
  */
@@ -56,7 +56,7 @@ public class Transaction extends DORubyObject {
 
     /**
      * Commits the transaction
-     * 
+     *
      * @return
      */
     @JRubyMethod
@@ -66,7 +66,7 @@ public class Transaction extends DORubyObject {
 
     /**
      * Rollsback the transaction
-     * 
+     *
      * @return
      */
     @JRubyMethod(required = 1)
@@ -76,7 +76,7 @@ public class Transaction extends DORubyObject {
 
     /**
      * Creates a savepoint for rolling back later
-     * 
+     *
      * @return
      */
     @JRubyMethod(required = 1)

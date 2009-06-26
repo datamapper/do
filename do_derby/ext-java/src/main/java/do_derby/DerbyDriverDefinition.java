@@ -15,11 +15,11 @@ import data_objects.drivers.AbstractDriverDefinition;
 public class DerbyDriverDefinition extends AbstractDriverDefinition {
     public final static String URI_SCHEME = "derby";
     public final static String RUBY_MODULE_NAME = "Derby";
-    
+
     public DerbyDriverDefinition() {
         super(URI_SCHEME, RUBY_MODULE_NAME);
     }
-    
+
     @Override
     protected IRubyObject doGetTypecastResultSetValue(Ruby runtime,
             ResultSet rs, int col, RubyType type) throws SQLException,
@@ -49,7 +49,7 @@ public class DerbyDriverDefinition extends AbstractDriverDefinition {
             return super.doGetTypecastResultSetValue(runtime, rs, col, type);
         }
     }
-    
+
     @Override
     public boolean supportsJdbcGeneratedKeys()
     {

@@ -52,7 +52,7 @@ public enum RubyType {
             table.put(t.rubyName.toLowerCase(), t);
         }
     }
-    
+
     public static RubyType getRubyType(String rubyName) {
         return table.get(rubyName.toLowerCase());
     }
