@@ -52,10 +52,17 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
             .newObjectAdapter();
 
     private final String scheme;
+    private final String jdbcScheme;
     private final String moduleName;
 
     protected AbstractDriverDefinition(String scheme, String moduleName) {
+        this(scheme, scheme, moduleName);
+    }
+
+    protected AbstractDriverDefinition(String scheme, String jdbcScheme,
+            String moduleName) {
         this.scheme = scheme;
+        this.jdbcScheme = jdbcScheme;
         this.moduleName = moduleName;
     }
 
@@ -106,12 +113,12 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
             if (host != null && !"".equals(host)) {
                 // a client/server database (e.g. MySQL, PostgreSQL, MS
                 // SQLServer)
-                uri = new URI(this.scheme, userInfo.toString(), host, port,
+                uri = new URI(this.jdbcScheme, userInfo.toString(), host, port,
                         path, query, fragment);
             } else {
                 // an embedded / file-based database (e.g. SQLite3, Derby
                 // (embedded mode), HSQLDB - use opaque uri
-                uri = new java.net.URI(scheme, path, fragment);
+                uri = new java.net.URI(this.jdbcScheme, path, fragment);
             }
         } else {
             // If connection_uri comes in as a string, we just pass it

@@ -17,19 +17,13 @@ import data_objects.RubyType;
 import data_objects.drivers.AbstractDriverDefinition;
 
 public class Sqlite3DriverDefinition extends AbstractDriverDefinition {
-    public final static String URI_SCHEME = "sqlite";
+
+    public final static String URI_SCHEME = "sqlite3";
+    public final static String JDBC_URI_SCHEME = "sqlite";
     public final static String RUBY_MODULE_NAME = "Sqlite3";
 
     public Sqlite3DriverDefinition() {
-        super(URI_SCHEME, RUBY_MODULE_NAME);
-    }
-
-    @Override
-    protected void verifyScheme(String scheme) {
-        if (!"sqlite3".equals(scheme)) {
-            throw new RuntimeException(
-                    "scheme mismatch, expected: sqlite3 but got: " + scheme);
-        }
+        super(URI_SCHEME, JDBC_URI_SCHEME, RUBY_MODULE_NAME);
     }
 
     @Override

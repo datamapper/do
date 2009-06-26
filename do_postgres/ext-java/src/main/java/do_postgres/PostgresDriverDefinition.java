@@ -5,11 +5,20 @@ import java.util.Properties;
 
 public class PostgresDriverDefinition extends AbstractDriverDefinition {
 
-    public final static String URI_SCHEME = "postgres";
+    public final static String URI_SCHEME = "postgresql";
+    public final static String JDBC_URI_SCHEME = "postgresql";
     public final static String RUBY_MODULE_NAME = "Postgres";
 
     public PostgresDriverDefinition() {
         super(URI_SCHEME, RUBY_MODULE_NAME);
+    }
+
+    @Override
+    protected void verifyScheme(String scheme) {
+        if (!"postgres".equals(scheme)) {
+            throw new RuntimeException(
+                    "scheme mismatch, expected: postgres but got: " + scheme);
+        }
     }
 
     @Override
