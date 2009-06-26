@@ -1,15 +1,50 @@
 package data_objects.drivers;
 
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.Properties;
+
+import org.jruby.Ruby;
+import org.jruby.RubyObjectAdapter;
+import org.jruby.exceptions.RaiseException;
+import org.jruby.runtime.builtin.IRubyObject;
+
+import data_objects.RubyType;
 
 /**
  *
  * @author alexbcoles
  */
 public interface DriverDefinition {
+
+    public String getModuleName();
+
+    public String getErrorName();
+
+    public URI parseConnectionURI(IRubyObject uri) throws URISyntaxException,
+            UnsupportedEncodingException;
+
+    public RaiseException newDriverError(Ruby runtime, String message);
+
+    public RaiseException newDriverError(Ruby runtime, SQLException sqe);
+
+    public RaiseException newDriverError(Ruby runtime, SQLException sqle,
+            Statement statement);
+
+    public RubyObjectAdapter getObjectAdapter();
+
+    public IRubyObject getTypecastResultSetValue(Ruby runtime, ResultSet rs,
+            int col, RubyType type) throws SQLException, IOException;
+
+    public void setPreparedStatementParam(PreparedStatement ps,
+            IRubyObject arg, int idx) throws SQLException;
 
     /**
      * Whether the Driver supports properly supports JDBC 3.0's

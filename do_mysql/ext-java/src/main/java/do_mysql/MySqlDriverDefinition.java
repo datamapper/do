@@ -6,6 +6,13 @@ import data_objects.drivers.AbstractDriverDefinition;
 import java.util.Properties;
 
 public class MySqlDriverDefinition extends AbstractDriverDefinition {
+    
+    public final static String URI_SCHEME = "mysql";
+    public final static String RUBY_MODULE_NAME = "Mysql";
+
+    public MySqlDriverDefinition() {
+        super(URI_SCHEME, RUBY_MODULE_NAME);
+    }
 
     @Override
     public boolean supportsJdbcGeneratedKeys()

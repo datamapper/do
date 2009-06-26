@@ -1,5 +1,8 @@
 package data_objects;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * Enum representing the Ruby classes that DataObjects must handle (marshal,
  * unmarshal, convert to equivalent JDBC/Java types, etc.)
@@ -27,7 +30,7 @@ public enum RubyType {
 
     private String rubyName;
 
-    RubyType(String rubyName)
+    private RubyType(String rubyName)
     {
         this.rubyName = rubyName;
     }
@@ -41,14 +44,16 @@ public enum RubyType {
         return rubyName;
     }
 
-    public static RubyType getRubyType(String rubyName) {
-        RubyType type = null;
+    private static final Map<String, RubyType> table;
+    static {
+        table = new HashMap<String, RubyType>();
         for (RubyType t : RubyType.values()) {
-            if (t.rubyName.equalsIgnoreCase(rubyName)) {
-                type = t;
-            }
+            table.put(t.rubyName.toLowerCase(), t);
         }
-        return type;
+    }
+    
+    public static RubyType getRubyType(String rubyName) {
+        return table.get(rubyName.toLowerCase());
     }
 
 }

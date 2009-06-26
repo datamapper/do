@@ -6,6 +6,7 @@ if RUBY_PLATFORM =~ /java/
 end
 
 require 'do_sqlite3_ext'
+
 require File.expand_path(File.join(File.dirname(__FILE__), 'do_sqlite3', 'version'))
 require File.expand_path(File.join(File.dirname(__FILE__), 'do_sqlite3', 'transaction'))
 
@@ -19,7 +20,9 @@ if RUBY_PLATFORM =~ /java/
     module Sqlite3
       class Connection
         def self.pool_size
-          20
+          # sqlite3 can have only one write access at a time, with this
+          # concurrent write access will result in "Database locked" errors
+          1
         end
       end
     end
