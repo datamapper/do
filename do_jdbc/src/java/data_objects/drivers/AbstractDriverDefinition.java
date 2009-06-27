@@ -135,6 +135,10 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
         }
     }
 
+    public String sanitizePreparedStatementText(String psText) {
+        return psText;
+    }
+
     /**
      * Convert a map of key/values to a URI query string
      *
