@@ -61,6 +61,7 @@ public class MySqlDriverDefinition extends AbstractDriverDefinition {
     public Properties getDefaultConnectionProperties() {
         Properties props = new Properties();
         props.put("useUnicode", "yes");
+        props.put("sessionVariables", "sql_auto_is_null=0,sql_mode='ANSI,NO_AUTO_VALUE_ON_ZERO,NO_DIR_IN_CREATE,NO_ENGINE_SUBSTITUTION,NO_UNSIGNED_SUBTRACTION,TRADITIONAL'");
         return props;
     }
 
