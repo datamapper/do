@@ -76,13 +76,6 @@ public class MySqlDriverDefinition extends AbstractDriverDefinition {
     }
 
     @Override
-    public String sanitizePreparedStatementText(String psText) {
-        // XXX the quotings coming from the dm-core/adapters needs to be
-        // rectified BUT might also break custom sql
-        return psText.replace("\"", "`");
-    }
-
-    @Override
     public String quoteString(String str) {
         StringBuffer quotedValue = new StringBuffer(str.length() + 2);
         quotedValue.append("\'");

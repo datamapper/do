@@ -452,7 +452,7 @@ public class Command extends DORubyObject {
      */
     private String prepareSqlTextForPs(String doSqlText, IRubyObject[] args) {
 
-        if (args.length == 0) return driver.sanitizePreparedStatementText(doSqlText);
+        if (args.length == 0) return doSqlText;
         // long timeStamp = System.currentTimeMillis(); // XXX for debug
         // System.out.println(""+timeStamp+" SQL before replacements @: " + doSqlText); // XXX for debug
         String psSqlText = doSqlText;
@@ -515,7 +515,7 @@ public class Command extends DORubyObject {
             }
         }
         // System.out.println(""+timeStamp+" SQL after replacements @: " + psSqlText); // XXX for debug
-        return driver.sanitizePreparedStatementText(psSqlText);
+        return psSqlText;
     }
 
     /**
