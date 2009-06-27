@@ -16,4 +16,3 @@ require File.expand_path(File.join(File.dirname(__FILE__), 'data_objects', 'erro
 require File.expand_path(File.join(File.dirname(__FILE__), 'data_objects', 'error', 'integrity_error'))
 require File.expand_path(File.join(File.dirname(__FILE__), 'data_objects', 'error', 'syntax_error'))
 require File.expand_path(File.join(File.dirname(__FILE__), 'data_objects', 'error', 'transaction_error'))
-

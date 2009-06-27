@@ -71,7 +71,6 @@ files:
 - tasks/native.rake
 - tasks/release.rake
 - MIT-LICENSE
-- GPL-LICENSE
 - Rakefile
 - History.txt
 - Manifest.txt

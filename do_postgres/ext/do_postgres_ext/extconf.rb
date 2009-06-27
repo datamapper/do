@@ -1,3 +1,5 @@
+ENV["RC_ARCHS"] = "" if RUBY_PLATFORM =~ /darwin/
+
 require 'mkmf'
 
 def config_value(type)

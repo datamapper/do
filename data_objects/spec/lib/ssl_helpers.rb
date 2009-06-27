@@ -1,7 +1,7 @@
 require 'cgi'
 
 module SSLHelpers
-  
+
   CERTS_DIR = Pathname(__FILE__).dirname.join('ssl_certs').to_s
 
   CONFIG = OpenStruct.new

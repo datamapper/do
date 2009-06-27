@@ -1,45 +1,44 @@
 package data_objects;
 
-import data_objects.drivers.DriverDefinition;
+import static data_objects.DataObjects.DATA_OBJECTS_MODULE_NAME;
+
 import java.io.UnsupportedEncodingException;
 import java.net.URISyntaxException;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
+import java.util.StringTokenizer;
+
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
 import javax.sql.DataSource;
+
 import org.jruby.Ruby;
 import org.jruby.RubyClass;
-import org.jruby.RubyHash;
 import org.jruby.RubyModule;
-import org.jruby.RubyObject;
-import org.jruby.RubyObjectAdapter;
 import org.jruby.anno.JRubyClass;
 import org.jruby.anno.JRubyMethod;
 import org.jruby.javasupport.Java;
-import org.jruby.javasupport.JavaEmbedUtils;
 import org.jruby.javasupport.JavaObject;
 import org.jruby.runtime.Block;
 import org.jruby.runtime.ObjectAllocator;
 import org.jruby.runtime.builtin.IRubyObject;
 
-import static data_objects.DataObjects.DATA_OBJECTS_MODULE_NAME;
+import data_objects.drivers.DriverDefinition;
 
 /**
  * Connection Class
  *
  * @author alexbcoles
  */
+@SuppressWarnings("serial")
 @JRubyClass(name = "Connection")
-public class Connection extends RubyObject {
+public class Connection extends DORubyObject {
 
     public final static String RUBY_CLASS_NAME = "Connection";
-    private static RubyObjectAdapter api;
-    private static DriverDefinition driver;
-    private static String moduleName;
-    private static String errorName;
+
     private final static ObjectAllocator CONNECTION_ALLOCATOR = new ObjectAllocator() {
 
         public IRubyObject allocate(Ruby runtime, RubyClass klass) {
@@ -49,19 +48,15 @@ public class Connection extends RubyObject {
     };
 
     public static RubyClass createConnectionClass(final Ruby runtime,
-            final String moduleName, final String errorName,
-            final DriverDefinition driverDefinition) {
+            DriverDefinition driver) {
         RubyModule doModule = runtime.getModule(DATA_OBJECTS_MODULE_NAME);
         RubyClass superClass = doModule.getClass(RUBY_CLASS_NAME);
-        RubyModule driverModule = (RubyModule) doModule.getConstant(moduleName);
-        RubyClass connectionClass =
-                driverModule.defineClassUnder(RUBY_CLASS_NAME,
-                superClass, CONNECTION_ALLOCATOR);
-        Connection.api = JavaEmbedUtils.newObjectAdapter();
-        Connection.driver = driverDefinition;
-        Connection.moduleName = moduleName;
-        Connection.errorName = errorName;
+        RubyModule driverModule = (RubyModule) doModule.getConstant(driver
+                .getModuleName());
+        RubyClass connectionClass = driverModule.defineClassUnder(
+                RUBY_CLASS_NAME, superClass, CONNECTION_ALLOCATOR);
         connectionClass.defineAnnotatedMethods(Connection.class);
+        setDriverDefinition(connectionClass, runtime, driver);
         return connectionClass;
     }
 
@@ -71,15 +66,15 @@ public class Connection extends RubyObject {
 
     // -------------------------------------------------- DATAOBJECTS PUBLIC API
     @JRubyMethod(required = 1)
-    public static IRubyObject initialize(IRubyObject recv, IRubyObject uri) {
+    public IRubyObject initialize(IRubyObject uri) {
         // System.out.println("============== initialize called " + uri);
-        Ruby runtime = recv.getRuntime();
+        Ruby runtime = getRuntime();
         String jdbcDriver = null;
         String encoding = null;
         java.net.URI connectionUri;
 
         try {
-            connectionUri = parseConnectionUri(uri);
+            connectionUri = driver.parseConnectionURI(uri);
         } catch (URISyntaxException ex) {
             throw runtime.newArgumentError("Malformed URI: " + ex);
             //Logger.getLogger(Connection.class.getName()).log(Level.SEVERE, null, ex);
@@ -98,7 +93,7 @@ public class Connection extends RubyObject {
         if (connectionUri.getQuery() != null) {
             Map<String, String> query;
             try {
-                query = DataObjectsUtils.parseQueryString(connectionUri.getQuery());
+                query = parseQueryString(connectionUri.getQuery());
             } catch (UnsupportedEncodingException ex) {
                 throw runtime.newArgumentError("Unsupported Encoding in Query Parameters" + ex);
                 //Logger.getLogger(Connection.class.getName()).log(Level.SEVERE, null, ex);
@@ -189,24 +184,24 @@ public class Connection extends RubyObject {
 
         } catch (SQLException ex) {
             //Logger.getLogger(Connection.class.getName()).log(Level.SEVERE, null, ex);
-            throw DataObjectsUtils.newDriverError(runtime, errorName, "Can't connect: " + connectionUri.toString() + "\n\t" + ex.getLocalizedMessage());
+            throw driver.newDriverError(runtime, "Can't connect: " + connectionUri.toString() + "\n\t" + ex.getLocalizedMessage());
         }
 
-        IRubyObject rubyconn1 = wrappedConnection(recv, conn);
-        //IRubyObject rubyconn1 = JavaEmbedUtils.javaToRuby(runtime, conn);
+        IRubyObject rubyconn1 = wrappedConnection(conn);
+        // IRubyObject rubyconn1 = JavaEmbedUtils.javaToRuby(runtime, conn);
 
-        api.setInstanceVariable(recv, "@uri", uri);
-        api.setInstanceVariable(recv, "@connection", rubyconn1);
+        api.setInstanceVariable(this, "@uri", uri);
+        api.setInstanceVariable(this, "@connection", rubyconn1);
         rubyconn1.dataWrapStruct(conn);
 
         return runtime.getTrue();
     }
 
     @JRubyMethod
-    public static IRubyObject dispose(IRubyObject recv) {
+    public IRubyObject dispose() {
         // System.out.println("============== dispose called");
-        Ruby runtime = recv.getRuntime();
-        IRubyObject connection = api.getInstanceVariable(recv, "@connection");
+        Ruby runtime = getRuntime();
+        IRubyObject connection = api.getInstanceVariable(this, "@connection");
         if (connection.isNil()) {
             return runtime.getFalse();
         }
@@ -222,21 +217,23 @@ public class Connection extends RubyObject {
         } catch (SQLException sqe) {
         }
 
-        api.setInstanceVariable(recv, "@connection", runtime.getNil());
+        api.setInstanceVariable(this, "@connection", runtime.getNil());
         return runtime.getTrue();
     }
 
     // ------------------------------------------------ ADDITIONAL JRUBY METHODS
 
     @JRubyMethod(required = 1)
-    public static IRubyObject quote_string(IRubyObject recv, IRubyObject value) {
+    public IRubyObject quote_string(IRubyObject value) {
         String quoted = driver.quoteString(value.asJavaString());
-        return recv.getRuntime().newString(quoted);
+        return getRuntime().newString(quoted);
     }
 
-    // -------------------------------------------------- PRIVATE HELPER METHODS
-    private static IRubyObject wrappedConnection(IRubyObject recv, java.sql.Connection c) {
-        return Java.java_to_ruby(recv, JavaObject.wrap(recv.getRuntime(), c), Block.NULL_BLOCK);
+    // -------------------------------------------------- PRIVATE HELPER
+    // METHODS
+    private IRubyObject wrappedConnection(java.sql.Connection c) {
+        return Java.java_to_ruby(this, JavaObject.wrap(this.getRuntime(), c),
+                Block.NULL_BLOCK);
     }
 
     private static java.sql.Connection getConnection(IRubyObject recv) {
@@ -245,64 +242,34 @@ public class Connection extends RubyObject {
     }
 
     /**
-     * Convert a DataObjects URI to a java.net.URI
+     * Convert a query string (e.g.
+     * driver=org.postgresql.Driver&protocol=postgresql) to a Map of values.
      *
-     * @param uri
+     * @param query
      * @return
      */
-    private static java.net.URI parseConnectionUri(IRubyObject connection_uri)
-            throws URISyntaxException, UnsupportedEncodingException {
-        java.net.URI uri;
-
-        if ("DataObjects::URI".equals(connection_uri.getType().getName())) {
-            String query = null;
-            StringBuffer userInfo = new StringBuffer();
-
-            String scheme = DataObjectsUtils.stringOrNull(api.callMethod(connection_uri, "scheme"));
-            String user = DataObjectsUtils.stringOrNull(api.callMethod(connection_uri, "user"));
-            String password = DataObjectsUtils.stringOrNull(api.callMethod(connection_uri, "password"));
-            String host = DataObjectsUtils.stringOrNull(api.callMethod(connection_uri, "host"));
-            int port = DataObjectsUtils.intOrMinusOne(api.callMethod(connection_uri, "port"));
-            String path = DataObjectsUtils.stringOrNull(api.callMethod(connection_uri, "path"));
-            IRubyObject query_values = api.callMethod(connection_uri, "query");
-            String fragment = DataObjectsUtils.stringOrNull(api.callMethod(connection_uri, "fragment"));
-
-            if (user != null && !"".equals(user)) {
-                userInfo.append(user);
-                if (password != null && !"".equals(password)) {
-                    userInfo.append(":").append(password);
-                }
-            }
-
-            if (query_values.isNil()) {
-                query = null;
-            } else if (query_values instanceof RubyHash) {
-                query = DataObjectsUtils.mapToQueryString(query_values.convertToHash());
-            } else {
-                query = api.callMethod(query_values, "to_s").asJavaString();
-            }
-
-            if (scheme != null) {
-                // Exceptions: PostgreSQL and SQLite3 uris require their own handling,
-                // and need to be of the form 'jdbc:postgresql' (NOT 'jdbc:postgres')
-                // and 'jdbc:sqlite' NOT 'jdbc:sqlite3' respectively.
-                if ("postgres".equals(scheme)) scheme = "postgresql";
-                if ("sqlite3".equals(scheme)) scheme = "sqlite";
-            }
-
-            if (host != null && !"".equals(host)) {
-                // a client/server database (e.g. MySQL, PostgreSQL, MS SQLServer)
-                uri = new java.net.URI(scheme, userInfo.toString(), host, port, path, query, fragment);
-            } else {
-                // an embedded / file-based database (e.g. SQLite3, Derby (embedded mode), HSQLDB
-                uri = new java.net.URI(scheme, "", path, query, fragment);
-            }
-        } else {
-            // If connection_uri comes in as a string, we just pass it through
-            uri = new java.net.URI(connection_uri.asJavaString());
+    private static Map<String, String> parseQueryString(String query)
+            throws UnsupportedEncodingException {
+        if (query == null) {
+            return null;
         }
-        return uri;
-    }
+        Map<String, String> nameValuePairs = new HashMap<String, String>();
+        StringTokenizer stz = new StringTokenizer(query, "&");
 
+        // Tokenize at and for name / value pairs
+        while (stz.hasMoreTokens()) {
+            String nameValueToken = stz.nextToken();
+            // Split at = to split the pairs
+            int i = nameValueToken.indexOf("=");
+            String name = nameValueToken.substring(0, i);
+            String value = nameValueToken.substring(i + 1);
+            // Name and value should be URL decoded
+            name = java.net.URLDecoder.decode(name, "UTF-8");
+            value = java.net.URLDecoder.decode(value, "UTF-8");
+            nameValuePairs.put(name, value);
+        }
+
+        return nameValuePairs;
+    }
 
 }

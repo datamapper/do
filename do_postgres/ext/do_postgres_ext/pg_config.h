@@ -182,7 +182,7 @@
 #define HAVE_INT_OPTRESET 1
 
 /* Define to 1 if you have the global variable 'int timezone'. */
-#define HAVE_INT_TIMEZONE 
+#define HAVE_INT_TIMEZONE
 
 /* Define to 1 if you have support for IPv6. */
 #define HAVE_IPV6 1
@@ -252,7 +252,7 @@
 
 /* Define to 1 if `long long int' works and is 64 bits. */
 #if (_MSC_VER > 1200)
-#define HAVE_LONG_LONG_INT_64 
+#define HAVE_LONG_LONG_INT_64
 #endif
 
 /* Define to 1 if you have the `memmove' function. */

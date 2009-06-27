@@ -1,3 +1,5 @@
+ENV["RC_ARCHS"] = "" if RUBY_PLATFORM =~ /darwin/
+
 # Loads mkmf which is used to make makefiles for Ruby extensions
 require 'mkmf'
 

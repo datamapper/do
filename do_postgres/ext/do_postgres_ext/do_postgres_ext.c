@@ -38,8 +38,6 @@
 #define ID_NEW rb_intern("new")
 #define ID_ESCAPE rb_intern("escape_sql")
 
-#define RUBY_STRING(char_ptr) rb_str_new2(char_ptr)
-#define TAINTED_STRING(name, length) rb_tainted_str_new(name, length)
 #define CONST_GET(scope, constant) (rb_funcall(scope, ID_CONST_GET, 1, rb_str_new2(constant)))
 #define POSTGRES_CLASS(klass, parent) (rb_define_class_under(mPostgres, klass, parent))
 #define DEBUG(value) data_objects_debug(value)
@@ -57,6 +55,44 @@
 #define RARRAY_LEN(a) RARRAY(a)->len
 #endif
 
+#ifdef HAVE_RUBY_ENCODING_H
+#include <ruby/encoding.h>
+
+#define DO_STR_NEW2(str, encoding) \
+  ({ \
+    VALUE _string = rb_str_new2((const char *)str); \
+    if(NULL != encoding) { \
+      int _enc = rb_enc_find_index(encoding); \
+      if(_enc == -1) \
+        rb_enc_associate_index(_string, rb_enc_find_index("UTF-8")); \
+      else \
+        rb_enc_associate_index(_string, _enc); \
+    } \
+    _string; \
+  })
+
+#define DO_STR_NEW(str, len, encoding) \
+  ({ \
+    VALUE _string = rb_str_new((const char *)str, (long)len); \
+    if(NULL != encoding) { \
+      int _enc = rb_enc_find_index(encoding); \
+      if(_enc == -1) \
+        rb_enc_associate_index(_string, rb_enc_find_index("UTF-8")); \
+      else \
+        rb_enc_associate_index(_string, _enc); \
+    } \
+    _string; \
+  })
+
+#else
+
+#define DO_STR_NEW2(str, doc) \
+  rb_str_new2((const char *)str)
+
+#define DO_STR_NEW(str, len, doc) \
+  rb_str_new((const char *)str, (long)len)
+#endif
+
 
 // To store rb_intern values
 static ID ID_NEW_DATE;
@@ -68,6 +104,7 @@ static ID ID_RATIONAL;
 
 static VALUE mExtlib;
 static VALUE mDO;
+static VALUE mEncoding;
 static VALUE cDO_Quoting;
 static VALUE cDO_Connection;
 static VALUE cDO_Command;
@@ -119,7 +156,7 @@ static char * get_uri_option(VALUE query_hash, char * key) {
 
   if(!rb_obj_is_kind_of(query_hash, rb_cHash)) { return NULL; }
 
-  query_value = rb_hash_aref(query_hash, RUBY_STRING(key));
+  query_value = rb_hash_aref(query_hash, rb_str_new2(key));
 
   if (Qnil != query_value) {
     value = StringValuePtr(query_value);
@@ -330,16 +367,16 @@ static VALUE infer_ruby_type(Oid type) {
   }
 }
 
-static VALUE typecast(const char *value, long length, const VALUE type) {
+static VALUE typecast(const char *value, long length, const VALUE type, const char *encoding) {
 
   if (type == rb_cInteger) {
     return rb_cstr2inum(value, 10);
   } else if (type == rb_cString) {
-    return TAINTED_STRING(value, length);
+    return DO_STR_NEW(value, length, encoding);
   } else if (type == rb_cFloat) {
     return rb_float_new(rb_cstr_to_dbl(value, Qfalse));
   } else if (type == rb_cBigDecimal) {
-    return rb_funcall(rb_cBigDecimal, ID_NEW, 1, TAINTED_STRING(value, length));
+    return rb_funcall(rb_cBigDecimal, ID_NEW, 1, rb_str_new(value, length));
   } else if (type == rb_cDate) {
     return parse_date(value);
   } else if (type == rb_cDateTime) {
@@ -351,17 +388,17 @@ static VALUE typecast(const char *value, long length, const VALUE type) {
   } else if (type == rb_cByteArray) {
     size_t new_length = 0;
     char* unescaped = (char *)PQunescapeBytea((unsigned char*)value, &new_length);
-    VALUE byte_array = rb_funcall(rb_cByteArray, ID_NEW, 1, TAINTED_STRING(unescaped, new_length));
+    VALUE byte_array = rb_funcall(rb_cByteArray, ID_NEW, 1, DO_STR_NEW(unescaped, new_length, "ASCII-8BIT"));
     PQfreemem(unescaped);
     return byte_array;
   } else if (type == rb_cClass) {
-    return rb_funcall(rb_cObject, rb_intern("full_const_get"), 1, TAINTED_STRING(value, length));
+    return rb_funcall(rb_cObject, rb_intern("full_const_get"), 1, rb_str_new(value, length));
   } else if (type == rb_cObject) {
-    return rb_marshal_load(rb_str_new2(value));
+    return rb_marshal_load(DO_STR_NEW2(value, encoding));
   } else if (type == rb_cNilClass) {
     return Qnil;
   } else {
-    return TAINTED_STRING(value, length);
+    return DO_STR_NEW(value, length, encoding);
   }
 
 }
@@ -487,6 +524,10 @@ static VALUE cConnection_quote_string(VALUE self, VALUE string) {
   escaped[quoted_length + 1] = escaped[0] = '\'';
 
   result = rb_str_new(escaped, quoted_length + 2);
+#ifdef HAVE_RUBY_ENCODING_H
+  rb_enc_associate_index(result, rb_enc_find_index(RSTRING_PTR(rb_iv_get(self, "@encoding"))));
+#endif
+
   free(escaped);
   return result;
 }
@@ -511,11 +552,13 @@ static VALUE cConnection_quote_byte_array(VALUE self, VALUE string) {
   // Wrap the escaped string in single-quotes, this is DO's convention (replace trailing \0)
   escaped_quotes[quoted_length] = escaped_quotes[0] = '\'';
 
-  result = TAINTED_STRING((char*)escaped_quotes, quoted_length + 1);
+  result = DO_STR_NEW(escaped_quotes, quoted_length + 1, "ASCII-8BIT");
   PQfreemem(escaped);
   free(escaped_quotes);
   return result;
 }
+
+static void full_connect(VALUE self, PGconn *db);
 
 #ifdef _WIN32
 static PGresult* cCommand_execute_sync(VALUE self, PGconn *db, VALUE query) {
@@ -535,6 +578,10 @@ static PGresult* cCommand_execute_sync(VALUE self, PGconn *db, VALUE query) {
     if(PQstatus(db) != CONNECTION_OK) {
       PQreset(db);
       if (PQstatus(db) == CONNECTION_OK) {
+        response = PQexec(db, str);
+      } else {
+        VALUE connection = rb_iv_get(self, "@connection");
+        full_connect(connection, db);
         response = PQexec(db, str);
       }
     }
@@ -566,6 +613,10 @@ static PGresult* cCommand_execute_async(VALUE self, PGconn *db, VALUE query) {
     if(PQstatus(db) != CONNECTION_OK) {
       PQreset(db);
       if (PQstatus(db) == CONNECTION_OK) {
+        retval = PQsendQuery(db, str);
+      } else {
+        VALUE connection = rb_iv_get(self, "@connection");
+        full_connect(connection, db);
         retval = PQsendQuery(db, str);
       }
     }
@@ -605,37 +656,86 @@ static PGresult* cCommand_execute_async(VALUE self, PGconn *db, VALUE query) {
 #endif
 
 static VALUE cConnection_initialize(VALUE self, VALUE uri) {
+  VALUE r_host, r_user, r_password, r_path, r_query, r_port;
+
+  PGconn *db = NULL;
+
+  rb_iv_set(self, "@using_socket", Qfalse);
+
+  r_host = rb_funcall(uri, rb_intern("host"), 0);
+  if (Qnil != r_host) {
+    rb_iv_set(self, "@host", r_host);
+  }
+
+  r_user = rb_funcall(uri, rb_intern("user"), 0);
+  if (Qnil != r_user) {
+    rb_iv_set(self, "@user", r_user);
+  }
+
+  r_password = rb_funcall(uri, rb_intern("password"), 0);
+  if (Qnil != r_password) {
+    rb_iv_set(self, "@password", r_password);
+  }
+
+  r_path = rb_funcall(uri, rb_intern("path"), 0);
+  if (Qnil != r_path) {
+    rb_iv_set(self, "@path", r_path);
+  }
+
+  r_port = rb_funcall(uri, rb_intern("port"), 0);
+  if (Qnil != r_port) {
+    r_port = rb_funcall(r_port, rb_intern("to_s"), 0);
+    rb_iv_set(self, "@port", r_port);
+  }
+
+  // Pull the querystring off the URI
+  r_query = rb_funcall(uri, rb_intern("query"), 0);
+  rb_iv_set(self, "@query", r_query);
+
+  const char* encoding = get_uri_option(r_query, "encoding");
+  if (!encoding) { encoding = get_uri_option(r_query, "charset"); }
+  if (!encoding) { encoding = "UTF-8"; }
+
+  rb_iv_set(self, "@encoding", DO_STR_NEW2(encoding, NULL));
+
+  full_connect(self, db);
+
+  rb_iv_set(self, "@uri", uri);
+
+  return Qtrue;
+}
+
+static void full_connect(VALUE self, PGconn *db) {
+
   PGresult *result = NULL;
   VALUE r_host, r_user, r_password, r_path, r_port, r_query, r_options;
   char *host = NULL, *user = NULL, *password = NULL, *path;
   char *database = "", *port = "5432";
-  char *encoding = NULL;
+  VALUE encoding = Qnil;
   char *search_path = NULL;
   char *search_path_query = NULL;
   char *backslash_off = "SET backslash_quote = off";
   char *standard_strings_on = "SET standard_conforming_strings = on";
   char *warning_messages = "SET client_min_messages = warning";
 
-  PGconn *db;
-
-  r_host = rb_funcall(uri, rb_intern("host"), 0);
-  if ( Qnil != r_host ) {
-    host = StringValuePtr(r_host);
+  if((r_host = rb_iv_get(self, "@host")) != Qnil) {
+    host     = StringValuePtr(r_host);
   }
 
-  r_user = rb_funcall(uri, rb_intern("user"), 0);
-  if (Qnil != r_user) {
-    user = StringValuePtr(r_user);
+  if((r_user = rb_iv_get(self, "@user")) != Qnil) {
+    user     = StringValuePtr(r_user);
   }
 
-  r_password = rb_funcall(uri, rb_intern("password"), 0);
-  if (Qnil != r_password) {
+  if((r_password = rb_iv_get(self, "@password")) != Qnil) {
     password = StringValuePtr(r_password);
   }
 
-  r_path = rb_funcall(uri, rb_intern("path"), 0);
-  path = StringValuePtr(r_path);
-  if (Qnil != r_path) {
+  if((r_port = rb_iv_get(self, "@port")) != Qnil) {
+    port = StringValuePtr(r_port);
+  }
+
+  if((r_path = rb_iv_get(self, "@path")) != Qnil) {
+    path = StringValuePtr(r_path);
     database = strtok(path, "/");
   }
 
@@ -643,14 +743,7 @@ static VALUE cConnection_initialize(VALUE self, VALUE uri) {
     rb_raise(eConnectionError, "Database must be specified");
   }
 
-  r_port = rb_funcall(uri, rb_intern("port"), 0);
-  if (Qnil != r_port) {
-    r_port = rb_funcall(r_port, rb_intern("to_s"), 0);
-    port = StringValuePtr(r_port);
-  }
-
-  // Pull the querystring off the URI
-  r_query = rb_funcall(uri, rb_intern("query"), 0);
+  r_query        = rb_iv_get(self, "@query");
 
   search_path = get_uri_option(r_query, "search_path");
 
@@ -703,36 +796,27 @@ static VALUE cConnection_initialize(VALUE self, VALUE uri) {
     rb_warn(PQresultErrorMessage(result));
   }
 
-  encoding = get_uri_option(r_query, "encoding");
-  if (!encoding) { encoding = get_uri_option(r_query, "charset"); }
-  if (!encoding) { encoding = "utf8"; }
+  encoding = rb_iv_get(self, "@encoding");
 
 #ifdef HAVE_PQSETCLIENTENCODING
-  if(PQsetClientEncoding(db, encoding)) {
-    rb_raise(eConnectionError, "Couldn't set encoding: %s", encoding);
+  VALUE pg_encoding = rb_hash_aref(CONST_GET(mEncoding, "MAP"), encoding);
+  if(pg_encoding != Qnil) {
+    if(PQsetClientEncoding(db, RSTRING_PTR(pg_encoding))) {
+      rb_raise(eConnectionError, "Couldn't set encoding: %s", RSTRING_PTR(encoding));
+    } else {
+      rb_iv_set(self, "@pg_encoding", pg_encoding);
+    }
+  } else {
+    rb_warn("Encoding %s is not a known Ruby encoding for PostgreSQL\n", RSTRING_PTR(encoding));
+    rb_iv_set(self, "@encoding", rb_str_new2("UTF-8"));
+    rb_iv_set(self, "@pg_encoding", rb_str_new2("UTF8"));
   }
 #endif
-
-  rb_iv_set(self, "@uri", uri);
   rb_iv_set(self, "@connection", Data_Wrap_Struct(rb_cObject, 0, 0, db));
-
-  return Qtrue;
 }
 
 static VALUE cConnection_character_set(VALUE self) {
-  VALUE connection_container = rb_iv_get(self, "@connection");
-  PGconn *db;
-
-  const char *encoding;
-
-  if (Qnil == connection_container)
-    return Qfalse;
-
-  db = DATA_PTR(connection_container);
-
-  encoding = pg_encoding_to_char(PQclientEncoding(db));
-
-  return rb_funcall(RUBY_STRING(encoding), rb_intern("downcase"), 0);
+  return rb_iv_get(self, "@encoding");
 }
 
 static VALUE cCommand_execute_non_query(int argc, VALUE *argv[], VALUE self) {
@@ -800,6 +884,7 @@ static VALUE cCommand_execute_reader(int argc, VALUE *argv[], VALUE self) {
   field_count = PQnfields(response);
 
   reader = rb_funcall(cReader, ID_NEW, 0);
+  rb_iv_set(reader, "@connection", connection);
   rb_iv_set(reader, "@reader", Data_Wrap_Struct(rb_cObject, 0, 0, response));
   rb_iv_set(reader, "@field_count", INT2NUM(field_count));
   rb_iv_set(reader, "@row_count", INT2NUM(PQntuples(response)));
@@ -860,10 +945,12 @@ static VALUE cReader_next(VALUE self) {
   VALUE array = rb_ary_new();
   VALUE field_types, field_type;
   VALUE value;
+  VALUE pg_encoding;
 
   row_count = NUM2INT(rb_iv_get(self, "@row_count"));
   field_count = NUM2INT(rb_iv_get(self, "@field_count"));
   field_types = rb_iv_get(self, "@field_types");
+  pg_encoding = rb_iv_get(rb_iv_get(self, "@connection"), "@pg_encoding");
   position = NUM2INT(rb_iv_get(self, "@position"));
 
   if ( position > (row_count-1) ) {
@@ -871,12 +958,19 @@ static VALUE cReader_next(VALUE self) {
     return Qfalse;
   }
 
+  char* enc = NULL;
+#ifdef HAVE_RUBY_ENCODING_H
+  if (pg_encoding != Qnil) {
+    enc = RSTRING_PTR(pg_encoding);
+  }
+#endif
+
   for ( i = 0; i < field_count; i++ ) {
     field_type = rb_ary_entry(field_types, i);
 
     // Always return nil if the value returned from Postgres is null
     if (!PQgetisnull(reader, position, i)) {
-      value = typecast(PQgetvalue(reader, position, i), PQgetlength(reader, position, i), field_type);
+      value = typecast(PQgetvalue(reader, position, i), PQgetlength(reader, position, i), field_type, enc);
     } else {
       value = Qnil;
     }
@@ -947,6 +1041,7 @@ void Init_do_postgres_ext() {
   mPostgres = rb_define_module_under(mDO, "Postgres");
   eConnectionError = CONST_GET(mDO, "ConnectionError");
   eDataError = CONST_GET(mDO, "DataError");
+  mEncoding = rb_define_module_under(mPostgres, "Encoding");
 
   cConnection = POSTGRES_CLASS("Connection", cDO_Connection);
   rb_define_method(cConnection, "initialize", cConnection_initialize, 1);

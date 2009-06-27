@@ -8,6 +8,7 @@ end
 require 'do_postgres_ext'
 require File.expand_path(File.join(File.dirname(__FILE__), 'do_postgres', 'version'))
 require File.expand_path(File.join(File.dirname(__FILE__), 'do_postgres', 'transaction'))
+require File.expand_path(File.join(File.dirname(__FILE__), 'do_postgres', 'encoding'))
 
 if RUBY_PLATFORM =~ /java/
   # Another way of loading the JDBC Class. This seems to be more reliable

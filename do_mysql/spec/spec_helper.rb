@@ -138,7 +138,7 @@ module DataObjectsSpecHelpers
     message << "ssl_cert=#{ssl_config.server_cert}\n"
     message << "ssl_key=#{ssl_config.server_key}\n"
     message << "ssl_cipher=#{ssl_config.cipher}\n"
-    
+
     message << "\nOr you can use the following command line options:\n"
     message << "--ssl-ca #{ssl_config.ca_cert} "
     message << "--ssl-cert #{ssl_config.server_cert} "
@@ -146,7 +146,7 @@ module DataObjectsSpecHelpers
     message << "--ssl-cipher #{ssl_config.cipher} "
     message
   end
-  
+
   def self.test_environment_ssl_config_errors
     conn = DataObjects::Connection.new(CONFIG.uri)
 
@@ -192,7 +192,7 @@ module DataObjectsSpecHelpers
   ensure
     conn.close if conn
   end
-  
+
   def self.test_environment_supports_ssl?
     test_environment_ssl_config_errors.empty?
   end

@@ -48,14 +48,14 @@ describe DataObjects::Mysql::Connection do
         DataObjects::Connection.new("#{CONFIG.uri}?#{CONFIG.ssl}&ssl[cipher]=#{SSLHelpers::CONFIG.cipher}").
           ssl_cipher.should == SSLHelpers::CONFIG.cipher
       end
-      
+
       it 'should raise an error with an invalid SSL cipher' do
         lambda { DataObjects::Connection.new("#{CONFIG.uri}?#{CONFIG.ssl}&ssl[cipher]=invalid") }.
           should raise_error
       end
-      
+
     end
-    
+
   end
 
 end

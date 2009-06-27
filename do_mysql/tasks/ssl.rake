@@ -1,13 +1,13 @@
 namespace :ssl do
-  
+
   task :env do
     require ROOT.join('spec', 'spec_helper')
   end
-  
+
   desc "Check test environment for SSL support."
   task :check => :env do
     ssl_supported, messages = DataObjectsSpecHelpers.test_environment_supports_ssl?
-    
+
     if DataObjectsSpecHelpers.test_environment_supports_ssl?
       puts
       puts "** SSL successfully configured for the test environment **"
@@ -25,6 +25,5 @@ namespace :ssl do
   task :config => :env do
     puts DataObjectsSpecHelpers.test_environment_ssl_config
   end
-  
-end
 
+end

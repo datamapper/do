@@ -1,11 +1,38 @@
 package do_mysql;
 
 import java.sql.PreparedStatement;
-
-import data_objects.drivers.AbstractDriverDefinition;
+import java.sql.SQLException;
+import java.sql.Types;
 import java.util.Properties;
 
+import org.jruby.runtime.builtin.IRubyObject;
+
+import data_objects.RubyType;
+import data_objects.drivers.AbstractDriverDefinition;
+
 public class MySqlDriverDefinition extends AbstractDriverDefinition {
+
+    public final static String URI_SCHEME = "mysql";
+    public final static String RUBY_MODULE_NAME = "Mysql";
+
+    public MySqlDriverDefinition() {
+        super(URI_SCHEME, RUBY_MODULE_NAME);
+    }
+
+    @Override
+    public void setPreparedStatementParam(PreparedStatement ps,
+            IRubyObject arg, int idx) throws SQLException {
+        switch (RubyType.getRubyType(arg.getType().getName())) {
+        case NIL:
+            // XXX ps.getParameterMetaData().getParameterType(idx) produces
+            // com.mysql.jdbc.ResultSetMetaData:397:in `getField': java.lang.NullPointerException
+            // from com.mysql.jdbc.ResultSetMetaData:275:in `getColumnType'
+            ps.setNull(idx, Types.NULL);
+            break;
+        default:
+            super.setPreparedStatementParam(ps, arg, idx);
+        }
+    }
 
     @Override
     public boolean supportsJdbcGeneratedKeys()

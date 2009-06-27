@@ -1,3 +1,5 @@
+ENV["RC_ARCHS"] = "" if RUBY_PLATFORM =~ /darwin/
+
 require 'mkmf'
 
 # All instances of mysql_config on PATH ...
