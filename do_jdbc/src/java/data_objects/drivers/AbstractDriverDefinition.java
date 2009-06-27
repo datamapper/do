@@ -221,7 +221,11 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
             long lng = rs.getLong(col);
             return RubyNumeric.int2fix(runtime, lng);
         case FLOAT:
-            return new RubyFloat(runtime, rs.getBigDecimal(col).doubleValue());
+            java.math.BigDecimal bdf = rs.getBigDecimal(col);
+            if (bdf == null) {
+                return runtime.getNil();
+            }
+            return new RubyFloat(runtime, bdf.doubleValue());
         case BIG_DECIMAL:
             return new RubyBigDecimal(runtime, rs.getBigDecimal(col));
         case DATE:
