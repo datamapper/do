@@ -88,6 +88,14 @@ if RUBY_PLATFORM !~ /java/
           
         end
       end
+      
+      class Connection
+        # Quote true, false as 1 and 0
+        def quote_boolean(value)
+          value ? 1 : 0
+        end
+      end
+      
     end
   end
 end
