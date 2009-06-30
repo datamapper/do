@@ -13,7 +13,6 @@
     <description>JDBC support for DataObjects.rb drivers</description>
     <build>
         <outputDirectory>pkg/classes</outputDirectory>
-        <sourceDirectory>src/java</sourceDirectory>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
