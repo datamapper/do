@@ -111,7 +111,7 @@ public class Command extends DORubyObject {
         try {
             if (driver.supportsConnectionPrepareStatementMethodWithGKFlag()) {
                 sqlStatement = conn.prepareStatement(sqlText,
-                                                    driver.supportsJdbcGeneratedKeys() ? Statement.RETURN_GENERATED_KEYS : Statement.NO_GENERATED_KEYS);
+                                                     driver.supportsJdbcGeneratedKeys() ? Statement.RETURN_GENERATED_KEYS : Statement.NO_GENERATED_KEYS);
             } else {
                 // If java.sql.PreparedStatement#getGeneratedKeys() is not supported,
                 // then it is important to call java.sql.Connection#prepareStatement(String)

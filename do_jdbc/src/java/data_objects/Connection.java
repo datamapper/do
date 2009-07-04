@@ -230,8 +230,7 @@ public class Connection extends DORubyObject {
         return getRuntime().newString(quoted);
     }
 
-    // -------------------------------------------------- PRIVATE HELPER
-    // METHODS
+    // -------------------------------------------------- PRIVATE HELPER METHODS
     private IRubyObject wrappedConnection(java.sql.Connection c) {
         return Java.java_to_ruby(this, JavaObject.wrap(this.getRuntime(), c),
                 Block.NULL_BLOCK);

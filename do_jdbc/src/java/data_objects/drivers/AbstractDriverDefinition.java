@@ -14,7 +14,6 @@ import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.sql.Types;
 import java.util.GregorianCalendar;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Properties;
 
@@ -22,7 +21,6 @@ import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
-import org.joda.time.format.ISODateTimeFormat;
 import org.jruby.Ruby;
 import org.jruby.RubyBigDecimal;
 import org.jruby.RubyBignum;
@@ -46,12 +44,15 @@ import data_objects.RubyType;
 /**
  *
  * @author alexbcoles
+ * @author mkristian
  */
 public abstract class AbstractDriverDefinition implements DriverDefinition {
 
     // assuming that API is threadsafe
     protected static final RubyObjectAdapter API = JavaEmbedUtils
             .newObjectAdapter();
+
+    protected final static DateTimeFormatter DATE_TIME_FORMAT = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
 
     private final String scheme;
     private final String jdbcScheme;
@@ -120,7 +121,7 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
             } else {
                 // an embedded / file-based database (e.g. SQLite3, Derby
                 // (embedded mode), HSQLDB - use opaque uri
-                uri = new java.net.URI(this.jdbcScheme, path, fragment);
+                uri = new URI(this.jdbcScheme, path, fragment);
             }
         } else {
             // If connection_uri comes in as a string, we just pass it
@@ -146,10 +147,8 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
      */
     private String mapToQueryString(Map<Object, Object> map)
             throws UnsupportedEncodingException {
-        Iterator it = map.entrySet().iterator();
         StringBuffer querySb = new StringBuffer();
-        while (it.hasNext()) {
-            Map.Entry pairs = (Map.Entry) it.next();
+        for (Map.Entry<Object, Object> pairs: map.entrySet()){
             String key = (pairs.getKey() != null) ? pairs.getKey().toString()
                     : "";
             String value = (pairs.getValue() != null) ? pairs.getValue()
@@ -542,30 +541,6 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
                 new IRubyObject[] { runtime.newFixnum(date.getYear()),
                         runtime.newFixnum(date.getMonthOfYear()),
                         runtime.newFixnum(date.getDayOfMonth()) });
-    }
-
-    private final static DateTimeFormatter DATE_FORMAT = ISODateTimeFormat
-            .date();// yyyy-MM-dd
-    private final static DateTimeFormatter DATE_TIME_FORMAT = DateTimeFormat
-            .forPattern("yyyy-MM-dd HH:mm:ss");
-    private final static DateTimeFormatter TIMESTAMP_FORMAT = DateTimeFormat
-            .forPattern("yyyy-MM-dd'T'HH:mm:ssZ");
-
-    public static DateTime toDate(String date) {
-        return DATE_FORMAT.parseDateTime(date.replaceFirst("T.*", ""));
-    }
-
-    public static DateTime toTimestamp(String stamp) {
-        DateTimeFormatter formatter = stamp.contains("T") ? TIMESTAMP_FORMAT
-                : DATE_FORMAT;// "yyyy-MM-dd'T'HH:mm:ssZ" : "yyyy-MM-dd");
-        return formatter.parseDateTime(stamp);
-    }
-
-    public static DateTime toTime(String time) {
-        DateTimeFormatter formatter = time.contains(" ") ? DATE_TIME_FORMAT
-                : (time.contains("T") ? TIMESTAMP_FORMAT
-                        : DATE_FORMAT);
-        return formatter.parseDateTime(time);
     }
 
     private static String stringOrNull(IRubyObject obj) {
