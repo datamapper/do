@@ -8,6 +8,7 @@ import org.jruby.javasupport.JavaEmbedUtils;
 
 import data_objects.drivers.DriverDefinition;
 
+@SuppressWarnings("serial")
 abstract public class DORubyObject extends RubyObject {
 
     final DriverDefinition driver;

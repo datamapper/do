@@ -5,6 +5,6 @@ require 'data_objects/spec/typecast/nil_spec'
 
 describe 'DataObjects::H2 with Nil' do
   it_should_behave_like 'supporting Nil'
-# it_should_behave_like 'supporting writing an Nil'
+  it_should_behave_like 'supporting writing an Nil'
   it_should_behave_like 'supporting Nil autocasting'
 end

@@ -41,6 +41,30 @@ share_examples_for 'supporting BigDecimal' do
 
     end
 
+    describe 'with manual typecasting a nil value' do
+
+      before  do
+        @command = @connection.create_command("SELECT cost2 FROM widgets WHERE id = ?")
+        @command.set_types(BigDecimal)
+        @reader = @command.execute_reader(6)
+        @reader.next!
+        @values = @reader.values
+      end
+
+      after do
+        @reader.close
+      end
+
+      it 'should return the correctly typed result' do
+        @values.first.should be_kind_of(NilClass)
+      end
+
+      it 'should return the correct result' do
+       @values.first.should be_nil
+      end
+
+    end
+
   end
 
   describe 'writing an Integer' do

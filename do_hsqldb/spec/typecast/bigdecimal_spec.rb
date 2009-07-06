@@ -5,4 +5,5 @@ require 'data_objects/spec/typecast/bigdecimal_spec'
 
 describe 'DataObjects::Hsqldb with BigDecimal' do
   it_should_behave_like 'supporting BigDecimal'
+  it_should_behave_like 'supporting BigDecimal autocasting'
 end

@@ -45,16 +45,16 @@ public enum RubyType {
         return rubyName;
     }
 
-    private static final Map<String, RubyType> table;
+    private static final Map<String, RubyType> TABLE;
     static {
-        table = new HashMap<String, RubyType>();
+        TABLE = new HashMap<String, RubyType>();
         for (RubyType t : RubyType.values()) {
-            table.put(t.rubyName.toLowerCase(), t);
+            TABLE.put(t.rubyName.toLowerCase(), t);
         }
     }
 
     public static RubyType getRubyType(String rubyName) {
-        return table.get(rubyName.toLowerCase());
+        return TABLE.get(rubyName.toLowerCase());
     }
 
     public static RubyType jdbcTypeToRubyType(int type, int scale) {

@@ -43,7 +43,7 @@ public class DerbyDriverDefinition extends AbstractDriverDefinition {
             } finally {
                 binaryStream.close();
             }
-            return api.callMethod(runtime.fastGetModule("Extlib").fastGetClass(
+            return API.callMethod(runtime.fastGetModule("Extlib").fastGetClass(
             "ByteArray"), "new", runtime.newString(bytes));
         default:
             return super.doGetTypecastResultSetValue(runtime, rs, col, type);

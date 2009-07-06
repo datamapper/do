@@ -40,6 +40,30 @@ share_examples_for 'supporting Time' do
 
     end
 
+    describe 'with manual typecasting a nil value' do
+
+      before  do
+        @command = @connection.create_command("SELECT release_timestamp FROM widgets WHERE id = ?")
+        @command.set_types(Time)
+        @reader = @command.execute_reader(9)
+        @reader.next!
+        @values = @reader.values
+      end
+
+      after do
+        @reader.close
+      end
+
+      it 'should return a nil class' do
+        @values.first.should be_kind_of(NilClass)
+      end
+
+      it 'should return nil' do
+        @values.first.should be_nil
+      end
+
+    end
+
   end
 
   describe 'writing an Time' do

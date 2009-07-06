@@ -41,6 +41,29 @@ share_examples_for 'supporting Float' do
 
     end
 
+    describe 'with manual typecasting a nil' do
+
+      before  do
+        @command = @connection.create_command("SELECT cost1 FROM widgets WHERE id = ?")
+        @command.set_types(Float)
+        @reader = @command.execute_reader(5)
+        @reader.next!
+        @values = @reader.values
+      end
+
+      after do
+        @reader.close
+      end
+
+      it 'should return the correctly typed result' do
+        @values.first.should be_kind_of(NilClass)
+      end
+
+      it 'should return the correct result' do
+       @values.first.should be_nil
+      end
+
+    end
   end
 
   describe 'writing an Float' do
@@ -101,7 +124,7 @@ share_examples_for 'supporting Float autocasting' do
 
       it 'should return the correct result' do
         @values.first.should == 13.4
-        @values.last.should == 10.23
+        BigDecimal.new(@values.last.to_s).round(2).should == 10.23
       end
 
     end

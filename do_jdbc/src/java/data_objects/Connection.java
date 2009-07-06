@@ -39,6 +39,8 @@ public class Connection extends DORubyObject {
 
     public final static String RUBY_CLASS_NAME = "Connection";
 
+    private static final String JNDI_PROTO = "jndi://";
+
     private final static ObjectAllocator CONNECTION_ALLOCATOR = new ObjectAllocator() {
 
         public IRubyObject allocate(Ruby runtime, RubyClass klass) {
@@ -133,7 +135,6 @@ public class Connection extends DORubyObject {
         java.sql.Connection conn;
 
         try {
-            final String JNDI_PROTO = "jndi://";
             if (connectionUri.getPath() != null && connectionUri.getPath().startsWith(JNDI_PROTO)) {
                 String jndiName = connectionUri.getPath().substring(JNDI_PROTO.length());
                 try {
@@ -229,8 +230,7 @@ public class Connection extends DORubyObject {
         return getRuntime().newString(quoted);
     }
 
-    // -------------------------------------------------- PRIVATE HELPER
-    // METHODS
+    // -------------------------------------------------- PRIVATE HELPER METHODS
     private IRubyObject wrappedConnection(java.sql.Connection c) {
         return Java.java_to_ruby(this, JavaObject.wrap(this.getRuntime(), c),
                 Block.NULL_BLOCK);

@@ -1,12 +1,15 @@
 package do_sqlite3;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Types;
 
 import org.joda.time.DateTime;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
+import org.joda.time.format.ISODateTimeFormat;
 import org.jruby.Ruby;
 import org.jruby.RubyBigDecimal;
 import org.jruby.RubyFloat;
@@ -18,6 +21,9 @@ import data_objects.drivers.AbstractDriverDefinition;
 
 public class Sqlite3DriverDefinition extends AbstractDriverDefinition {
 
+    private final static DateTimeFormatter TIMESTAMP_FORMAT = DateTimeFormat.forPattern("yyyy-MM-dd'T'HH:mm:ssZ");
+    private final static DateTimeFormatter DATE_FORMAT = ISODateTimeFormat.date();// yyyy-MM-dd
+
     public final static String URI_SCHEME = "sqlite3";
     public final static String JDBC_URI_SCHEME = "sqlite";
     public final static String RUBY_MODULE_NAME = "Sqlite3";
@@ -26,56 +32,58 @@ public class Sqlite3DriverDefinition extends AbstractDriverDefinition {
         super(URI_SCHEME, JDBC_URI_SCHEME, RUBY_MODULE_NAME);
     }
 
+    public static DateTime toDate(String date) {
+        return DATE_FORMAT.parseDateTime(date.replaceFirst("T.*", ""));
+    }
+
+    public static DateTime toTimestamp(String stamp) {
+        DateTimeFormatter formatter = stamp.contains("T") ? TIMESTAMP_FORMAT : DATE_FORMAT;// "yyyy-MM-dd'T'HH:mm:ssZ"
+                                                                                           // :
+                                                                                           // "yyyy-MM-dd");
+        return formatter.parseDateTime(stamp);
+    }
+
+    public static DateTime toTime(String time) {
+        DateTimeFormatter formatter = time.contains(" ") ? DATE_TIME_FORMAT : (time.contains("T") ? TIMESTAMP_FORMAT : DATE_FORMAT);
+        return formatter.parseDateTime(time);
+    }
+
     @Override
     protected IRubyObject doGetTypecastResultSetValue(Ruby runtime,
             ResultSet rs, int col, RubyType type) throws SQLException,
             IOException {
+        // System.out.println(rs.getMetaData().getColumnTypeName(col) + " = " + type.toString());
         switch (type) {
         case DATE:
-            DateTime date = toDate(rs.getString(col));
+            String date = rs.getString(col);
             if (date == null) {
                 return runtime.getNil();
             }
-            return prepareRubyDateFromSqlDate(runtime, date);
+            return prepareRubyDateFromSqlDate(runtime, toDate(date));
         case DATE_TIME:
-            DateTime dt = toTimestamp(rs.getString(col));
+            String dt = rs.getString(col);
             if (dt == null) {
                 return runtime.getNil();
             }
-            return prepareRubyDateTimeFromSqlTimestamp(runtime, dt);
+            return prepareRubyDateTimeFromSqlTimestamp(runtime, toTimestamp(dt));
         case TIME:
-            switch (rs.getMetaData().getColumnType(col)) {
-            case Types.TIME:
-                DateTime tm = toTime(rs.getString(col));
-                if (tm == null) {
-                    return runtime.getNil();
-                }
-                return prepareRubyTimeFromSqlTime(runtime, tm);
-            case Types.TIMESTAMP:
-                DateTime ts = toTime(rs.getString(col));
-                if (ts == null) {
-                    return runtime.getNil();
-                }
-                return prepareRubyTimeFromSqlTime(runtime, ts);
-            case Types.DATE:
-                java.sql.Date da = rs.getDate(col);
-                if (da == null) {
-                    return runtime.getNil();
-                }
-                return prepareRubyTimeFromSqlDate(runtime, da);
-            default:
-                DateTime time = toTime(rs.getString(col));
-                if (time == null) {
-                    return runtime.getNil();
-                }
-                return prepareRubyTimeFromSqlTime(runtime, time);
+            String time = rs.getString(col);
+            if (time == null) {
+                return runtime.getNil();
             }
+            return prepareRubyTimeFromSqlTime(runtime, toTimestamp(time));
         case FLOAT:
-            return new RubyFloat(runtime, new java.math.BigDecimal(rs
-                    .getString(col)).doubleValue());
+            String fvalue = rs.getString(col);
+            if (fvalue == null) {
+                return runtime.getNil();
+            }
+            return new RubyFloat(runtime, new BigDecimal(fvalue).doubleValue());
         case BIG_DECIMAL:
-            return new RubyBigDecimal(runtime, new java.math.BigDecimal(rs
-                    .getString(col)));
+            String dvalue = rs.getString(col);
+            if (dvalue == null) {
+                return runtime.getNil();
+            }
+            return new RubyBigDecimal(runtime, new BigDecimal(dvalue));
         default:
             return super.doGetTypecastResultSetValue(runtime, rs, col, type);
         }
@@ -99,8 +107,7 @@ public class Sqlite3DriverDefinition extends AbstractDriverDefinition {
             ps.setString(idx, datetime);
             break;
         case TIME:
-            String time = ((RubyTime) arg).getDateTime().toString(
-                    "yyyy-MM-dd'T'HH:mm:ssZZ");
+            String time = ((RubyTime) arg).getDateTime().toString("yyyy-MM-dd'T'HH:mm:ssZZ");
             ps.setString(idx, time);
             break;
         case DATE:

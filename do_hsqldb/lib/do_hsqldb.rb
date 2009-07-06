@@ -1,11 +1,9 @@
 require 'rubygems'
-gem 'data_objects'
 require 'data_objects'
 
 if RUBY_PLATFORM =~ /java/
   require 'do_jdbc'
   require 'java'
-  gem 'jdbc-hsqldb'
   require 'jdbc/hsqldb'     # the JDBC driver, packaged as a gem
   require 'do_hsqldb_ext'   # the Java extension for this DO driver
 

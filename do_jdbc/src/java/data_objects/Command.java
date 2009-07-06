@@ -7,6 +7,8 @@ import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -14,6 +16,7 @@ import org.jruby.Ruby;
 import org.jruby.RubyArray;
 import org.jruby.RubyClass;
 import org.jruby.RubyModule;
+import org.jruby.RubyNil;
 import org.jruby.RubyNumeric;
 import org.jruby.RubyRange;
 import org.jruby.RubyString;
@@ -98,11 +101,17 @@ public class Command extends DORubyObject {
         String doSqlText = api.convertToRubyString(
                 api.getInstanceVariable(this, "@text")).getUnicodeValue();
         String sqlText = prepareSqlTextForPs(doSqlText, args);
-
+        List<IRubyObject> list = new ArrayList<IRubyObject>();
+        for( IRubyObject o: args){
+            if (o != null){
+                list.add(o);
+            }
+        }
+        args = list.toArray(new IRubyObject[list.size()]);
         try {
             if (driver.supportsConnectionPrepareStatementMethodWithGKFlag()) {
                 sqlStatement = conn.prepareStatement(sqlText,
-                                                    driver.supportsJdbcGeneratedKeys() ? Statement.RETURN_GENERATED_KEYS : Statement.NO_GENERATED_KEYS);
+                                                     driver.supportsJdbcGeneratedKeys() ? Statement.RETURN_GENERATED_KEYS : Statement.NO_GENERATED_KEYS);
             } else {
                 // If java.sql.PreparedStatement#getGeneratedKeys() is not supported,
                 // then it is important to call java.sql.Connection#prepareStatement(String)
@@ -226,6 +235,14 @@ public class Command extends DORubyObject {
         try {
             String sqlText = prepareSqlTextForPs(api.getInstanceVariable(this,
                     "@text").asJavaString(), args);
+
+            List<IRubyObject> list = new ArrayList<IRubyObject>();
+            for( IRubyObject o: args){
+                if (o != null){
+                    list.add(o);
+                }
+            }
+            args = list.toArray(new IRubyObject[list.size()]);
 
             sqlStatement = conn.prepareStatement(
                            sqlText,
@@ -503,6 +520,24 @@ public class Command extends DORubyObject {
                     if (count ==(i+addedSymbols)){
                         pm.appendReplacement(sb, "? AND ?"); // XXX was (? AND ?)
                         addedSymbols += 1;
+                        break lbWhile;
+                    }
+                    count++;
+                }
+                pm.appendTail(sb);
+                psSqlText = sb.toString();
+            } else if(args[i] instanceof RubyNil){
+                // TODO needs something like this for 'IS NOT ?'
+                Pattern pp = Pattern.compile("IS \\?");
+                Matcher pm = pp.matcher(psSqlText);
+                StringBuffer sb = new StringBuffer();
+
+                int count = 0;
+                lbWhile: while (pm.find()) {
+                    if (count == (i + addedSymbols)) {
+                        pm.appendReplacement(sb, "IS NULL");
+                        args[i] = null;
+                        addedSymbols -= 1;
                         break lbWhile;
                     }
                     count++;

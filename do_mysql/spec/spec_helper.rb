@@ -97,7 +97,7 @@ module DataObjectsSpecHelpers
         `ad_image` mediumblob NULL,
         `whitepaper_text` longtext NULL,
         `cad_drawing` longblob NULL,
-        `flags` tinyint(1) default 0,
+        `flags` boolean default false,
         `number_in_stock` smallint default 500,
         `number_sold` mediumint default 0,
         `super_number` bigint default 9223372036854775807,
@@ -106,7 +106,7 @@ module DataObjectsSpecHelpers
         `cost2` decimal(8,2) default 50.23,
         `release_date` date default '2008-02-14',
         `release_datetime` datetime default '2008-02-14 00:31:12',
-        `release_timestamp` timestamp default '2008-02-14 00:31:31',
+        `release_timestamp` timestamp NULL default '2008-02-14 00:31:31',
         `status` enum('active','out of stock') NOT NULL default 'active',
         PRIMARY KEY  (`id`)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
@@ -119,11 +119,35 @@ module DataObjectsSpecHelpers
     end
 
     conn.create_command(<<-EOF).execute_non_query
-      update widgets set flags = 1 where id = 2
+      update widgets set flags = true where id = 2
     EOF
 
     conn.create_command(<<-EOF).execute_non_query
       update widgets set ad_description = NULL where id = 3
+    EOF
+
+    conn.create_command(<<-EOF).execute_non_query
+      update widgets set flags = NULL where id = 4
+    EOF
+
+    conn.create_command(<<-EOF).execute_non_query
+      update widgets set cost1 = NULL where id = 5
+    EOF
+
+    conn.create_command(<<-EOF).execute_non_query
+      update widgets set cost2 = NULL where id = 6
+    EOF
+
+    conn.create_command(<<-EOF).execute_non_query
+      update widgets set release_date = NULL where id = 7
+    EOF
+
+    conn.create_command(<<-EOF).execute_non_query
+      update widgets set release_datetime = NULL where id = 8
+    EOF
+
+    conn.create_command(<<-EOF).execute_non_query
+      update widgets set release_timestamp = NULL where id = 9
     EOF
 
     conn.close
