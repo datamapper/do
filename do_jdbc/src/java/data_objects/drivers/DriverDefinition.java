@@ -104,6 +104,13 @@ public interface DriverDefinition {
     public Properties getDefaultConnectionProperties();
 
     /**
+     * Callback for setting connection properties after connection is established.
+     *
+     * @return
+     */
+    public void afterConnectionCallback(Connection connection) throws SQLException;
+
+    /**
      * If the driver supports setting connection encodings, specify the appropriate
      * property to set the connection encoding.
      *

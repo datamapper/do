@@ -188,6 +188,13 @@ public class Connection extends DORubyObject {
             throw driver.newDriverError(runtime, "Can't connect: " + connectionUri.toString() + "\n\t" + ex.getLocalizedMessage());
         }
 
+        // Callback for setting connection properties after connection is established
+        try {
+            driver.afterConnectionCallback(conn);
+        } catch (SQLException ex) {
+            throw driver.newDriverError(runtime, "Connection initialization error:" + "\n\t" + ex.getLocalizedMessage());
+        }
+
         IRubyObject rubyconn1 = wrappedConnection(conn);
         // IRubyObject rubyconn1 = JavaEmbedUtils.javaToRuby(runtime, conn);
 

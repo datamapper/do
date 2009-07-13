@@ -94,6 +94,8 @@ public class Command extends DORubyObject {
         // other values represents numer of updated rows
         int affectedCount = 0;
         PreparedStatement sqlStatement = null;
+        // if usePreparedStatement returns false
+        Statement sqlSimpleStatement = null;
         java.sql.ResultSet keys = null;
 
         // String sqlText = prepareSqlTextForPs(api.getInstanceVariable(recv,
@@ -101,6 +103,9 @@ public class Command extends DORubyObject {
         String doSqlText = api.convertToRubyString(
                 api.getInstanceVariable(this, "@text")).getUnicodeValue();
         String sqlText = prepareSqlTextForPs(doSqlText, args);
+        
+        boolean usePS = usePreparedStatement(doSqlText, args);
+        
         List<IRubyObject> list = new ArrayList<IRubyObject>();
         for( IRubyObject o: args){
             if (o != null){
@@ -109,46 +114,58 @@ public class Command extends DORubyObject {
         }
         args = list.toArray(new IRubyObject[list.size()]);
         try {
-            if (driver.supportsConnectionPrepareStatementMethodWithGKFlag()) {
-                sqlStatement = conn.prepareStatement(sqlText,
-                                                     driver.supportsJdbcGeneratedKeys() ? Statement.RETURN_GENERATED_KEYS : Statement.NO_GENERATED_KEYS);
-            } else {
-                // If java.sql.PreparedStatement#getGeneratedKeys() is not supported,
-                // then it is important to call java.sql.Connection#prepareStatement(String)
-                // -- with just a single parameter -- rather java.sql.Connection#
-                // prepareStatement(String, int) (and passing in Statement.NO_GENERATED_KEYS).
-                // Some less-than-complete JDBC drivers do not implement all of
-                // the overloaded prepareStatement methods: the main culprit
-                // being SQLiteJDBC which currently throws an ugly (and cryptic)
-                // "NYI" SQLException if Connection#prepareStatement(String, int)
-                // is called.
-                sqlStatement = conn.prepareStatement(sqlText);
-            }
+            if (usePS) {
+                if (driver.supportsConnectionPrepareStatementMethodWithGKFlag()) {
+                    sqlStatement = conn.prepareStatement(sqlText,
+                                                         driver.supportsJdbcGeneratedKeys() ? Statement.RETURN_GENERATED_KEYS : Statement.NO_GENERATED_KEYS);
+                } else {
+                    // If java.sql.PreparedStatement#getGeneratedKeys() is not supported,
+                    // then it is important to call java.sql.Connection#prepareStatement(String)
+                    // -- with just a single parameter -- rather java.sql.Connection#
+                    // prepareStatement(String, int) (and passing in Statement.NO_GENERATED_KEYS).
+                    // Some less-than-complete JDBC drivers do not implement all of
+                    // the overloaded prepareStatement methods: the main culprit
+                    // being SQLiteJDBC which currently throws an ugly (and cryptic)
+                    // "NYI" SQLException if Connection#prepareStatement(String, int)
+                    // is called.
+                    sqlStatement = conn.prepareStatement(sqlText);
+                }
 
-            prepareStatementFromArgs(sqlStatement, args);
+                prepareStatementFromArgs(sqlStatement, args);
+            } else {
+                sqlSimpleStatement = conn.createStatement();
+            }
 
             //javaConn.setAutoCommit(true); // hangs with autocommit set to false
             // sqlStatement.setMaxRows();
             long startTime = System.currentTimeMillis();
-            try {
-                if (sqlText.contains("RETURNING")) {
-                    keys = sqlStatement.executeQuery();
-                } else {
-                    affectedCount = sqlStatement.executeUpdate();
+            if (usePS) {
+                try {
+                    if (sqlText.contains("RETURNING")) {
+                        keys = sqlStatement.executeQuery();
+                    } else {
+                        affectedCount = sqlStatement.executeUpdate();
+                    }
+                } catch (SQLException sqle) {
+                    // This is to handle the edge case of SELECT sleep(1):
+                    // an executeUpdate() will throw a SQLException if a SELECT
+                    // is passed, so we try the same query again with execute()
+                    affectedCount = 0;
+                    sqlStatement.execute();
                 }
-            } catch (SQLException sqle) {
-                // This is to handle the edge case of SELECT sleep(1):
-                // an executeUpdate() will throw a SQLException if a SELECT
-                // is passed, so we try the same query again with execute()
-                affectedCount = 0;
-                sqlStatement.execute();
+            } else {
+                sqlSimpleStatement.execute(sqlText);
             }
             long endTime = System.currentTimeMillis();
 
-            debug(driver.toString(sqlStatement), Long.valueOf(endTime
-                    - startTime));
+            if (usePS)
+                debug(driver.toString(sqlStatement), Long.valueOf(endTime
+                        - startTime));
+            else
+                debug(sqlText, Long.valueOf(endTime
+                        - startTime));
 
-            if (keys == null) {
+            if (usePS && keys == null) {
                 if (driver.supportsJdbcGeneratedKeys()) {
                     // Derby, H2, and MySQL all support getGeneratedKeys(), but only
                     // to varying extents.
@@ -174,7 +191,7 @@ public class Command extends DORubyObject {
                     keys = driver.getGeneratedKeys(conn);
                 }
             }
-            if (keys != null) {
+            if (usePS && keys != null) {
                 insert_key = unmarshal_id_result(keys);
                 affectedCount = (affectedCount > 0) ? affectedCount : 1;
             }
@@ -185,11 +202,14 @@ public class Command extends DORubyObject {
         } catch (SQLException sqle) {
             // TODO: log
             // sqle.printStackTrace();
-            throw newQueryError(runtime, sqle, sqlStatement);
+            throw newQueryError(runtime, sqle, usePS ? sqlStatement : sqlSimpleStatement);
         } finally {
             if (sqlStatement != null) {
                 try {
-                    sqlStatement.close();
+                    if (usePS)
+                        sqlStatement.close();
+                    else
+                        sqlSimpleStatement.close();
                 } catch (SQLException sqle2) {
                 }
             }
@@ -553,6 +573,24 @@ public class Command extends DORubyObject {
         return psSqlText;
     }
 
+    /**
+     * Check SQL string and tell if PreparedStatement or Statement should be used.
+     * Necessary for Oracle driver as Statement should be used for CREATE TRIGGER statements.
+     *
+     * @param doSqlText
+     * @param args
+     * @return true if PreparedStatement should be used or false if Statement should be used
+     */
+    private boolean usePreparedStatement(String doSqlText, IRubyObject[] args) {
+        // if parameters are present then use PreparedStatement
+        if (args.length > 0) return true;
+        
+        // check if SQL starts with CREATE
+        Pattern p = Pattern.compile("\\A\\s*(CREATE|DROP)", Pattern.CASE_INSENSITIVE);
+        Matcher m = p.matcher(doSqlText);
+        return !m.find();
+    }
+    
     /**
      * Assist with setting the parameter values on a PreparedStatement
      *

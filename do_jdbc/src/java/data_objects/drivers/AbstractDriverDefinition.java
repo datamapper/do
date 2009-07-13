@@ -463,6 +463,10 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
         return new Properties();
     }
 
+    public void afterConnectionCallback(Connection connection) throws SQLException {
+        // do nothing
+    }
+
     public void setEncodingProperty(Properties props, String encodingName) {
         // do nothing
     }
