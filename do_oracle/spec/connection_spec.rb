@@ -15,5 +15,5 @@ describe DataObjects::Oracle::Connection do
   end
 
   it_should_behave_like 'a Connection'
-  # it_should_behave_like 'a Connection with authentication support'
+  it_should_behave_like 'a Connection with authentication support'
 end

@@ -1,10 +1,18 @@
-require 'rubygems'
 require 'data_objects'
 if RUBY_PLATFORM =~ /java/
   require 'do_jdbc'
   require 'java'
-  # gem 'jdbc-mysql'
-  # require 'jdbc/mysql' # the JDBC driver, packaged as a gem
+
+  # ojdbc14.jar file should be in ENV['PATH'] or should be in load path
+  # Adds JRuby classloader to current thread classloader - as a result ojdbc14.jar should not be in $JRUBY_HOME/lib
+  java.lang.Thread.currentThread.setContextClassLoader(JRuby.runtime.jruby_class_loader)
+
+  ojdbc_jar = "ojdbc14.jar"
+  if ojdbc_jar_path = ENV["PATH"].split(/[:;]/).find{|d| File.exists?(File.join(d,ojdbc_jar))}
+    require File.join(ojdbc_jar_path,ojdbc_jar)
+  else
+    require ojdbc_jar
+  end
 
 else # MRI and Ruby 1.9
   gem 'ruby-oci8', '>=2.0.2'
@@ -100,34 +108,19 @@ if RUBY_PLATFORM !~ /java/
   end
 end
 
-# if RUBY_PLATFORM =~ /java/
-#   # Another way of loading the JDBC Class. This seems to be more reliable
-#   # than Class.forName() within the data_objects.Connection Java class,
-#   # which is currently not working as expected.
-#   import 'com.mysql.jdbc.Driver'
-# 
-#   module DataObjects
-#     module Mysql
-#       class Connection
-#         def self.pool_size
-#           20
-#         end
-# 
-#         def using_socket?
-#           @using_socket
-#         end
-# 
-#         def character_set
-#           # JDBC API does not provide an easy way to get the current character set
-#           reader = self.create_command("SHOW VARIABLES LIKE 'character_set_client'").execute_reader
-#           reader.next!
-#           char_set = reader.values[1]
-#           reader.close
-#           char_set.downcase
-#         end
-# 
-#       end
-#     end
-#   end
-# 
-# end
+if RUBY_PLATFORM =~ /java/
+  # Register Oracle JDBC driver
+  java.sql.DriverManager.registerDriver Java::oracle.jdbc.driver.OracleDriver.new
+
+  module DataObjects
+    module Oracle
+      class Connection
+        def self.pool_size
+          20
+        end
+        
+      end
+    end
+  end
+
+end

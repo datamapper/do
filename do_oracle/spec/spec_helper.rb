@@ -58,13 +58,13 @@ module DataObjectsSpecHelpers
   def drop_table_and_seq(conn, table_name)
     begin
       conn.create_command("DROP TABLE #{table_name}").execute_non_query
-    rescue OCIError => error
-      raise unless error.to_s =~ /^ORA-00942/
+    rescue StandardError => error
+      raise unless error.to_s =~ /ORA-00942/
     end
     begin
       conn.create_command("DROP SEQUENCE #{table_name}_seq").execute_non_query
-    rescue OCIError => error
-      raise unless error.to_s =~ /^ORA-02289/
+    rescue StandardError => error
+      raise unless error.to_s =~ /ORA-02289/
     end
   end
   
@@ -169,6 +169,30 @@ module DataObjectsSpecHelpers
 
       conn.create_command(<<-EOF).execute_non_query
         update widgets set ad_description = NULL where id = 3
+      EOF
+
+      conn.create_command(<<-EOF).execute_non_query
+        update widgets set flags = NULL where id = 4
+      EOF
+
+      conn.create_command(<<-EOF).execute_non_query
+        update widgets set cost1 = NULL where id = 5
+      EOF
+
+      conn.create_command(<<-EOF).execute_non_query
+        update widgets set cost2 = NULL where id = 6
+      EOF
+
+      conn.create_command(<<-EOF).execute_non_query
+        update widgets set release_date = NULL where id = 7
+      EOF
+
+      conn.create_command(<<-EOF).execute_non_query
+        update widgets set release_datetime = NULL where id = 8
+      EOF
+
+      conn.create_command(<<-EOF).execute_non_query
+        update widgets set release_timestamp = NULL where id = 9
       EOF
     end
 
