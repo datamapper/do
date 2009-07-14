@@ -10,7 +10,8 @@ import java.sql.SQLException;
 public class OracleDriverDefinition extends AbstractDriverDefinition {
 
     public final static String URI_SCHEME = "oracle";
-    public final static String JDBC_URI_SCHEME = "oracle:thin";
+    // . will be replaced with : in Connection.java before connection
+    public final static String JDBC_URI_SCHEME = "oracle.thin";
     public final static String RUBY_MODULE_NAME = "Oracle";
 
     public OracleDriverDefinition() {

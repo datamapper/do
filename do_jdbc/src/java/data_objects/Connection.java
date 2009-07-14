@@ -154,6 +154,11 @@ public class Connection extends DORubyObject {
                 if (!userInfo.contains(":")) {
                     userInfo += ":";
                 }
+                
+                // Replace . with : in scheme name - necessary for Oracle scheme oracle:thin
+                // : cannot be used in JDBC_URI_SCHEME as then it is identified as opaque URI
+                jdbcUri = jdbcUri.replaceFirst("^([a-z]+)(\\.)","$1:");
+                
                 if (!jdbcUri.startsWith("jdbc:")) {
                     jdbcUri = "jdbc:" + jdbcUri;
                 }
