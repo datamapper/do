@@ -65,7 +65,7 @@ share_examples_for 'supporting writing an Nil' do
     describe 'as a parameter' do
 
         before  do
-          @reader = @connection.create_command("SELECT id FROM widgets WHERE ad_description IS ?").execute_reader(nil)
+          @reader = @connection.create_command("SELECT id FROM widgets WHERE ad_description IS ? ORDER BY id").execute_reader(nil)
           @reader.next!
           @values = @reader.values
         end
