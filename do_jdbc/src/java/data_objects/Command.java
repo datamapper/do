@@ -103,8 +103,11 @@ public class Command extends DORubyObject {
         String doSqlText = api.convertToRubyString(
                 api.getInstanceVariable(this, "@text")).getUnicodeValue();
         String sqlText = prepareSqlTextForPs(doSqlText, args);
+        // additional callback for driver specific SQL statement changes
+        sqlText = driver.prepareSqlTextForPs(sqlText, args);
         
-        boolean usePS = usePreparedStatement(doSqlText, args);
+        boolean usePS = usePreparedStatement(sqlText, args);
+        boolean hasReturnParam = false;
         
         List<IRubyObject> list = new ArrayList<IRubyObject>();
         for( IRubyObject o: args){
@@ -131,7 +134,7 @@ public class Command extends DORubyObject {
                     sqlStatement = conn.prepareStatement(sqlText);
                 }
 
-                prepareStatementFromArgs(sqlStatement, args);
+                hasReturnParam = prepareStatementFromArgs(sqlText, sqlStatement, args);
             } else {
                 sqlSimpleStatement = conn.createStatement();
             }
@@ -141,7 +144,7 @@ public class Command extends DORubyObject {
             long startTime = System.currentTimeMillis();
             if (usePS) {
                 try {
-                    if (sqlText.contains("RETURNING")) {
+                    if (sqlText.contains("RETURNING") && !hasReturnParam) {
                         keys = sqlStatement.executeQuery();
                     } else {
                         affectedCount = sqlStatement.executeUpdate();
@@ -184,7 +187,10 @@ public class Command extends DORubyObject {
                     // apparently the prepared statements always provide the
                     // generated keys
                     keys = sqlStatement.getGeneratedKeys();
-
+                    
+                } else if (hasReturnParam) {
+                    // Used in Oracle for INSERT ... RETURNING ... INTO ... statements
+                    insert_key = runtime.newFixnum(driver.getPreparedStatementReturnParam(sqlStatement));
                 } else {
                     // If there is no support, then a custom method can be defined
                     // to return a ResultSet with keys
@@ -270,7 +276,7 @@ public class Command extends DORubyObject {
                            ResultSet.CONCUR_READ_ONLY);
 
             // sqlStatement.setMaxRows();
-            prepareStatementFromArgs(sqlStatement, args);
+            prepareStatementFromArgs(sqlText, sqlStatement, args);
 
             long startTime = System.currentTimeMillis();
             resultSet = sqlStatement.executeQuery();
@@ -440,7 +446,7 @@ public class Command extends DORubyObject {
      */
     public IRubyObject unmarshal_id_result(ResultSet rs) throws SQLException {
         try {
-               if (rs.next()) {
+            if (rs.next()) {
                 if (rs.getMetaData().getColumnCount() > 0) {
                     // TODO: Need to do check for other types here, as keys could be
                     // of type Integer, Long or String
@@ -597,10 +603,13 @@ public class Command extends DORubyObject {
      * @param ps the PreparedStatement for which parameters should be set
      * @param recv
      * @param args an array of parameter values
+     *
+     * @return true if there is return parameter, false if there is not
      */
-    private void prepareStatementFromArgs(PreparedStatement ps,
+    private boolean prepareStatementFromArgs(String sqlText, PreparedStatement ps,
             IRubyObject[] args) {
         int index = 1;
+        boolean hasReturnParam = false;
         try {
             int psCount = ps.getParameterMetaData().getParameterCount();
             // fail fast
@@ -646,10 +655,18 @@ public class Command extends DORubyObject {
                     driver.setPreparedStatementParam(ps, arg, index++);
                 }
             }
+            
+            // callback for binding RETURN ... INTO ... output parameter
+            if (driver.registerPreparedStatementReturnParam(sqlText, ps, index)) {
+                index++;
+                hasReturnParam = true;
+            }
+            
             if ((index - 1) < psCount) {
                 throw getRuntime().newArgumentError(
                         "Binding mismatch: " + (index - 1) + " for " + psCount);
             }
+            return hasReturnParam;
         } catch (SQLException sqle) {
             // TODO: log sqle.printStackTrace();
             // TODO: possibly move this exception string parsing somewhere else

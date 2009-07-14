@@ -439,6 +439,18 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
         }
     }
 
+    public boolean registerPreparedStatementReturnParam(String sqlText, PreparedStatement ps, int idx) throws SQLException {
+        return false;
+    }
+
+    public long getPreparedStatementReturnParam(PreparedStatement ps) throws SQLException {
+        return 0;
+    }
+
+    public String prepareSqlTextForPs(String sqlText, IRubyObject[] args) {
+        return sqlText;
+    }
+
     public abstract boolean supportsJdbcGeneratedKeys();
 
     public abstract boolean supportsJdbcScrollableResultSets();
