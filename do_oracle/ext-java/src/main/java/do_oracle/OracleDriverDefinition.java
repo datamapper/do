@@ -1,11 +1,23 @@
 package do_oracle;
 
-import data_objects.drivers.AbstractDriverDefinition;
-import java.util.Properties;
-
 import java.sql.Connection;
 import java.sql.Statement;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Types;
+import java.util.Properties;
+import oracle.jdbc.OraclePreparedStatement;
+import oracle.jdbc.OracleTypes;
+ 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import org.jruby.Ruby;
+import org.jruby.runtime.builtin.IRubyObject;
+
+import data_objects.RubyType;
+import data_objects.drivers.AbstractDriverDefinition;
 
 public class OracleDriverDefinition extends AbstractDriverDefinition {
 
@@ -16,6 +28,56 @@ public class OracleDriverDefinition extends AbstractDriverDefinition {
 
     public OracleDriverDefinition() {
         super(URI_SCHEME, JDBC_URI_SCHEME, RUBY_MODULE_NAME);
+    }
+
+    @Override
+    public void setPreparedStatementParam(PreparedStatement ps,
+            IRubyObject arg, int idx) throws SQLException {
+        switch (RubyType.getRubyType(arg.getType().getName())) {
+        case NIL:
+            // XXX ps.getParameterMetaData().getParameterType(idx) produces
+            // com.mysql.jdbc.ResultSetMetaData:397:in `getField': java.lang.NullPointerException
+            // from com.mysql.jdbc.ResultSetMetaData:275:in `getColumnType'
+            ps.setNull(idx, Types.NULL);
+            break;
+        default:
+            super.setPreparedStatementParam(ps, arg, idx);
+        }
+    }
+
+    @Override
+    public boolean registerPreparedStatementReturnParam(String sqlText, PreparedStatement ps, int idx) throws SQLException {
+        OraclePreparedStatement ops = (OraclePreparedStatement) ps;
+        Pattern p = Pattern.compile("^\\s*INSERT.+RETURNING.+INTO\\s+", Pattern.CASE_INSENSITIVE);
+        Matcher m = p.matcher(sqlText);
+        if (m.find()) {
+            ops.registerReturnParameter(idx, Types.BIGINT);
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public long getPreparedStatementReturnParam(PreparedStatement ps) throws SQLException {
+        OraclePreparedStatement ops = (OraclePreparedStatement) ps;
+        ResultSet rs = ops.getReturnResultSet();
+        try {
+            if (rs.next()) {
+                // Assuming that primary key will not be larger as long max value
+                return rs.getLong(1);
+            }
+            return 0;
+        } finally {
+            try {
+                rs.close();
+            } catch (Exception e) {}
+        }
+    }
+
+    @Override
+    public String prepareSqlTextForPs(String sqlText, IRubyObject[] args) {
+        String newSqlText = sqlText.replaceFirst(":insert_id", "?");
+        return newSqlText;
     }
 
     @Override

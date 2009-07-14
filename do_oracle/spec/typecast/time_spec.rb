@@ -59,7 +59,7 @@ describe 'DataObjects::Oracle with Time' do
   describe 'writing an Time' do
 
     before  do
-      @reader = @connection.create_command("SELECT id FROM widgets WHERE release_datetime = ?").execute_reader(Time.local(2008, 2, 14, 00, 31, 12))
+      @reader = @connection.create_command("SELECT id FROM widgets WHERE release_datetime = ? ORDER BY id").execute_reader(Time.local(2008, 2, 14, 00, 31, 12))
       @reader.next!
       @values = @reader.values
     end
