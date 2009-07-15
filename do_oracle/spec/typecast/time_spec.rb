@@ -8,16 +8,20 @@ describe 'DataObjects::Oracle with Time' do
   include DataObjectsSpecHelpers
 
   before :all do
-    @orig_config_uri = CONFIG.uri
-    @orig_time_zone = ENV['TZ']
-    ENV['TZ'] = 'EET'
-    CONFIG.uri += "?time_zone=#{ENV['TZ']}"
+    unless JRUBY # if MRI then need to set TZ explicitly as otherwise DST might not work
+      @orig_config_uri = CONFIG.uri
+      @orig_time_zone = ENV['TZ']
+      ENV['TZ'] = 'EET'
+      CONFIG.uri += "?time_zone=#{ENV['TZ']}"
+    end
     setup_test_environment
   end
   
   after :all do
-    CONFIG.uri = @orig_config_uri
-    ENV['TZ'] = @orig_time_zone
+    unless JRUBY
+      CONFIG.uri = @orig_config_uri
+      ENV['TZ'] = @orig_time_zone
+    end
   end
 
   before :each do
@@ -130,7 +134,7 @@ describe 'DataObjects::Oracle session time zone' do
   describe 'set from environment' do
 
     before :each do
-      pending "set TZ environment shell variable before running this test" unless ENV['TZ']
+      # pending "set TZ environment shell variable before running this test" unless ENV['TZ']
       @connection = DataObjects::Connection.new(CONFIG.uri)
     end
 

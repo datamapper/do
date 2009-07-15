@@ -83,9 +83,9 @@ module DataObjectsSpecHelpers
     EOF
   end
 
-  def setup_test_environment(insert_data = true)
+  def setup_test_environment(force_setup = false)
     # setup test environment just once
-    return if $test_environment_setup_done
+    return if $test_environment_setup_done && !force_setup
     puts "Setting up test environment"
 
     conn = DataObjects::Connection.new(CONFIG.uri)
@@ -138,63 +138,61 @@ module DataObjectsSpecHelpers
     EOF
     create_seq_and_trigger(conn, "widgets")
 
-    if insert_data
-      command = conn.create_command(<<-EOF)
-        insert into widgets(code, name, shelf_location, description, image_data,
-          ad_description, ad_image, whitepaper_text,
-          class_name, cad_drawing, super_number, weight
-          ,release_datetime, release_timestamp)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
-          ,?, ?)
-      EOF
-    
-      1.upto(16) do |n|
-        # conn.create_command(<<-EOF).execute_non_query
-        #   insert into widgets(code, name, shelf_location, description, image_data, ad_description, ad_image, whitepaper_text, cad_drawing, super_number, weight) VALUES ('W#{n.to_s.rjust(7,"0")}', 'Widget #{n}', 'A14', 'This is a description', 'IMAGE DATA', 'Buy this product now!', 'AD IMAGE DATA', 'String', 'CAD \\001 \\000 DRAWING', 1234, 13.4);
-        # EOF
-        # conn.create_command(<<-EOF).execute_non_query
-        #   insert into widgets(code, name, shelf_location, description, ad_description, whitepaper_text, super_number, weight) VALUES ('W#{n.to_s.rjust(7,"0")}', 'Widget #{n}', 'A14', 'This is a description', 'Buy this product now!', 'String', 1234, 13.4)
-        # EOF
-        command.execute_non_query(
-          "W#{n.to_s.rjust(7,"0")}", "Widget #{n}", 'A14', 'This is a description', ::Extlib::ByteArray.new('IMAGE DATA'),
-          'Buy this product now!', ::Extlib::ByteArray.new('AD IMAGE DATA'), '1234567890'*500,
-          'String', ::Extlib::ByteArray.new("CAD \001 \000 DRAWING"), 1234, 13.4,
-          Time.local(2008,2,14,0,31,12), Time.local(2008,2,14,0,31,12)
-        )
-      end
-
-      conn.create_command(<<-EOF).execute_non_query
-        update widgets set flags = 1 where id = 2
-      EOF
-
-      conn.create_command(<<-EOF).execute_non_query
-        update widgets set ad_description = NULL where id = 3
-      EOF
-
-      conn.create_command(<<-EOF).execute_non_query
-        update widgets set flags = NULL where id = 4
-      EOF
-
-      conn.create_command(<<-EOF).execute_non_query
-        update widgets set cost1 = NULL where id = 5
-      EOF
-
-      conn.create_command(<<-EOF).execute_non_query
-        update widgets set cost2 = NULL where id = 6
-      EOF
-
-      conn.create_command(<<-EOF).execute_non_query
-        update widgets set release_date = NULL where id = 7
-      EOF
-
-      conn.create_command(<<-EOF).execute_non_query
-        update widgets set release_datetime = NULL where id = 8
-      EOF
-
-      conn.create_command(<<-EOF).execute_non_query
-        update widgets set release_timestamp = NULL where id = 9
-      EOF
+    command = conn.create_command(<<-EOF)
+      insert into widgets(code, name, shelf_location, description, image_data,
+        ad_description, ad_image, whitepaper_text,
+        class_name, cad_drawing, super_number, weight
+        ,release_datetime, release_timestamp)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+        ,?, ?)
+    EOF
+  
+    1.upto(16) do |n|
+      # conn.create_command(<<-EOF).execute_non_query
+      #   insert into widgets(code, name, shelf_location, description, image_data, ad_description, ad_image, whitepaper_text, cad_drawing, super_number, weight) VALUES ('W#{n.to_s.rjust(7,"0")}', 'Widget #{n}', 'A14', 'This is a description', 'IMAGE DATA', 'Buy this product now!', 'AD IMAGE DATA', 'String', 'CAD \\001 \\000 DRAWING', 1234, 13.4);
+      # EOF
+      # conn.create_command(<<-EOF).execute_non_query
+      #   insert into widgets(code, name, shelf_location, description, ad_description, whitepaper_text, super_number, weight) VALUES ('W#{n.to_s.rjust(7,"0")}', 'Widget #{n}', 'A14', 'This is a description', 'Buy this product now!', 'String', 1234, 13.4)
+      # EOF
+      command.execute_non_query(
+        "W#{n.to_s.rjust(7,"0")}", "Widget #{n}", 'A14', 'This is a description', ::Extlib::ByteArray.new('IMAGE DATA'),
+        'Buy this product now!', ::Extlib::ByteArray.new('AD IMAGE DATA'), '1234567890'*500,
+        'String', ::Extlib::ByteArray.new("CAD \001 \000 DRAWING"), 1234, 13.4,
+        Time.local(2008,2,14,0,31,12), Time.local(2008,2,14,0,31,12)
+      )
     end
+
+    conn.create_command(<<-EOF).execute_non_query
+      update widgets set flags = 1 where id = 2
+    EOF
+
+    conn.create_command(<<-EOF).execute_non_query
+      update widgets set ad_description = NULL where id = 3
+    EOF
+
+    conn.create_command(<<-EOF).execute_non_query
+      update widgets set flags = NULL where id = 4
+    EOF
+
+    conn.create_command(<<-EOF).execute_non_query
+      update widgets set cost1 = NULL where id = 5
+    EOF
+
+    conn.create_command(<<-EOF).execute_non_query
+      update widgets set cost2 = NULL where id = 6
+    EOF
+
+    conn.create_command(<<-EOF).execute_non_query
+      update widgets set release_date = NULL where id = 7
+    EOF
+
+    conn.create_command(<<-EOF).execute_non_query
+      update widgets set release_datetime = NULL where id = 8
+    EOF
+
+    conn.create_command(<<-EOF).execute_non_query
+      update widgets set release_timestamp = NULL where id = 9
+    EOF
 
     conn.close
     $test_environment_setup_done = true
