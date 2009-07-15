@@ -10,6 +10,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Properties;
+import java.util.Map;
 
 import org.jruby.Ruby;
 import org.jruby.RubyObjectAdapter;
@@ -39,6 +40,12 @@ public interface DriverDefinition {
             Statement statement);
 
     public RubyObjectAdapter getObjectAdapter();
+
+    /**
+     * If needed this could be overrided to implement database driver specific
+     * JDBC type to Ruby type mapping
+     */
+    public RubyType jdbcTypeToRubyType(int type, int precision, int scale);
 
     public IRubyObject getTypecastResultSetValue(Ruby runtime, ResultSet rs,
             int col, RubyType type) throws SQLException, IOException;
@@ -134,7 +141,7 @@ public interface DriverDefinition {
      *
      * @return
      */
-    public void afterConnectionCallback(Connection connection) throws SQLException;
+    public void afterConnectionCallback(Connection connection, Map<String, String> query) throws SQLException;
 
     /**
      * If the driver supports setting connection encodings, specify the appropriate

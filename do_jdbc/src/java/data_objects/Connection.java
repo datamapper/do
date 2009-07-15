@@ -74,6 +74,7 @@ public class Connection extends DORubyObject {
         String jdbcDriver = null;
         String encoding = null;
         java.net.URI connectionUri;
+        Map<String, String> query = null;
 
         try {
             connectionUri = driver.parseConnectionURI(uri);
@@ -93,7 +94,6 @@ public class Connection extends DORubyObject {
         }
 
         if (connectionUri.getQuery() != null) {
-            Map<String, String> query;
             try {
                 query = parseQueryString(connectionUri.getQuery());
             } catch (UnsupportedEncodingException ex) {
@@ -195,7 +195,7 @@ public class Connection extends DORubyObject {
 
         // Callback for setting connection properties after connection is established
         try {
-            driver.afterConnectionCallback(conn);
+            driver.afterConnectionCallback(conn, query);
         } catch (SQLException ex) {
             throw driver.newDriverError(runtime, "Connection initialization error:" + "\n\t" + ex.getLocalizedMessage());
         }

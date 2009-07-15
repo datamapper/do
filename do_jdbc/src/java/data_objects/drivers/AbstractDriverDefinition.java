@@ -193,6 +193,10 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
         return API;
     }
 
+    public RubyType jdbcTypeToRubyType(int type, int precision, int scale) {
+        return RubyType.jdbcTypeToRubyType(type, scale);
+    }
+
     public final IRubyObject getTypecastResultSetValue(Ruby runtime,
             ResultSet rs, int col, RubyType type) throws SQLException,
             IOException {
@@ -476,7 +480,7 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
         return new Properties();
     }
 
-    public void afterConnectionCallback(Connection connection) throws SQLException {
+    public void afterConnectionCallback(Connection connection, Map<String, String> query) throws SQLException {
         // do nothing
     }
 

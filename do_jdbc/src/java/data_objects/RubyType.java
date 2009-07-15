@@ -80,8 +80,6 @@ public enum RubyType {
             primitiveType = RubyType.DATE;
             break;
         case Types.TIMESTAMP:
-        case -101: // OracleTypes::TIMESTAMPTZ
-        case -102: // OracleTypes::TIMESTAMPLTZ
             primitiveType = RubyType.DATE_TIME;
             break;
         case Types.TIME:
@@ -94,8 +92,6 @@ public enum RubyType {
         case Types.REAL:
         case Types.FLOAT:
         case Types.DOUBLE:
-        case 100: // OracleTypes::BINARY_FLOAT
-        case 101: // OracleTypes::BINARY_DOUBLE
             primitiveType = RubyType.FLOAT;
             break;
         case Types.BLOB:
