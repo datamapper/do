@@ -9,7 +9,8 @@ import java.sql.Types;
 import java.util.Properties;
 import oracle.jdbc.OraclePreparedStatement;
 import oracle.jdbc.OracleTypes;
- 
+import java.sql.ParameterMetaData;
+
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -88,7 +89,8 @@ public class OracleDriverDefinition extends AbstractDriverDefinition {
 
     @Override
     public boolean supportsJdbcScrollableResultSets() {
-        return true;
+        // when set to true then getDouble and getBigDecimal is failing on BINARY_DOUBLE and BINARY_FLOAT columns
+        return false;
     }
 
     @Override
@@ -102,6 +104,8 @@ public class OracleDriverDefinition extends AbstractDriverDefinition {
         Properties props = new Properties();
         // Set prefetch rows to 100 to increase fetching performance SELECTs with many rows
         props.put("defaultRowPrefetch", "100");
+        // TODO: should clarify if this is needed for faster performance
+        // props.put("SetFloatAndDoubleUseBinary", "true");
         return props;
     }
 
@@ -111,6 +115,17 @@ public class OracleDriverDefinition extends AbstractDriverDefinition {
         exec(conn, "alter session set nls_date_format = 'YYYY-MM-DD HH24:MI:SS'");
         exec(conn, "alter session set nls_timestamp_format = 'YYYY-MM-DD HH24:MI:SS.FF'");
         exec(conn, "alter session set nls_timestamp_tz_format = 'YYYY-MM-DD HH24:MI:SS.FF TZH:TZM'");
+    }
+
+    @Override
+    public String toString(PreparedStatement ps) {
+        try {
+            String sqlText = ((oracle.jdbc.driver.OracleStatement) ps).getOriginalSql();
+            // ParameterMetaData md = ps.getParameterMetaData();
+            return sqlText;
+        } catch (SQLException sqle) {
+            return "(exception in getOriginalSql)";
+        }
     }
 
     // for execution of session initialization SQL statements
