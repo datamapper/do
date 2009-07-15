@@ -219,6 +219,7 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
             long lng = rs.getLong(col);
             return RubyNumeric.int2fix(runtime, lng);
         case FLOAT:
+            // TODO: why getDouble is not used here?
             BigDecimal bdf = rs.getBigDecimal(col);
             if (bdf == null) {
                 return runtime.getNil();
@@ -229,7 +230,7 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
             if (bd  == null) {
                 return runtime.getNil();
             }
-            return new RubyBigDecimal(runtime, rs.getBigDecimal(col));
+            return new RubyBigDecimal(runtime, bd);
         case DATE:
             java.sql.Date date = rs.getDate(col);
             if (date == null) {
