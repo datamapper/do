@@ -22,7 +22,10 @@ end
 
 require 'do_oracle_ext'
 require File.expand_path(File.join(File.dirname(__FILE__), 'do_oracle', 'version'))
-require File.expand_path(File.join(File.dirname(__FILE__), 'do_oracle', 'transaction'))
+if RUBY_PLATFORM !~ /java/
+  # JDBC driver has transactions implementation in Java
+  require File.expand_path(File.join(File.dirname(__FILE__), 'do_oracle', 'transaction'))
+end
 
 if RUBY_PLATFORM !~ /java/
   module DataObjects
