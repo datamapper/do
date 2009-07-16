@@ -3,6 +3,7 @@ import data_objects.Command;
 import data_objects.Connection;
 import data_objects.Reader;
 import data_objects.Result;
+import data_objects.Transaction;
 import data_objects.drivers.DriverDefinition;
 import java.io.IOException;
 
@@ -38,6 +39,7 @@ public abstract class AbstractDataObjectsExtService implements BasicLibraryServi
         Connection.createConnectionClass(runtime, driver);
         Result.createResultClass(runtime, driver);
         Reader.createReaderClass(runtime, driver);
+        Transaction.createTransactionClass(runtime, driver);
 
         return true;
     }
