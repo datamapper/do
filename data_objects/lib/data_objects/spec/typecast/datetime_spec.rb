@@ -70,7 +70,7 @@ share_examples_for 'supporting DateTime' do
   describe 'writing an DateTime' do
 
     before  do
-      local_offset = Rational(Time.now.utc_offset, 86400)
+      local_offset = Rational(Time.local(2008, 2, 14).utc_offset, 86400)
       @reader = @connection.create_command("SELECT id FROM widgets WHERE release_datetime = ? ORDER BY id").execute_reader(DateTime.civil(2008, 2, 14, 00, 31, 12, local_offset))
       @reader.next!
       @values = @reader.values
