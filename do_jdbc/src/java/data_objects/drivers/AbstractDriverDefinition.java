@@ -8,6 +8,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.sql.Connection;
 import java.sql.Date;
+import java.sql.Statement;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -184,7 +185,7 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
         sb.append(exception.getLocalizedMessage());
         // TODO: delegate to the DriverDefinition for this
         if (statement != null)
-            sb.append("\nQuery: ").append(statement.toString());
+            sb.append("\nQuery: ").append(statementToString(statement));
 
         return new RaiseException(runtime, driverError, sb.toString(), true);
     }
@@ -496,8 +497,8 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
         return quotedValue.toString();
     }
 
-    public String toString(PreparedStatement ps) {
-        return ps.toString();
+    public String statementToString(Statement s) {
+        return s.toString();
     }
 
     protected static IRubyObject prepareRubyDateTimeFromSqlTimestamp(

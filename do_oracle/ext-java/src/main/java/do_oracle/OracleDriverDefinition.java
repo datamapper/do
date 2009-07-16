@@ -196,9 +196,9 @@ public class OracleDriverDefinition extends AbstractDriverDefinition {
     }
 
     @Override
-    public String toString(PreparedStatement ps) {
+    public String statementToString(Statement s) {
         try {
-            String sqlText = ((oracle.jdbc.driver.OracleStatement) ps).getOriginalSql();
+            String sqlText = ((oracle.jdbc.driver.OracleStatement) s).getOriginalSql();
             // ParameterMetaData md = ps.getParameterMetaData();
             return sqlText;
         } catch (SQLException sqle) {

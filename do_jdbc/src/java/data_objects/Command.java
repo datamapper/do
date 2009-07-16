@@ -162,7 +162,7 @@ public class Command extends DORubyObject {
             long endTime = System.currentTimeMillis();
 
             if (usePS)
-                debug(driver.toString(sqlStatement), Long.valueOf(endTime
+                debug(driver.statementToString(sqlStatement), Long.valueOf(endTime
                         - startTime));
             else
                 debug(sqlText, Long.valueOf(endTime
@@ -282,7 +282,7 @@ public class Command extends DORubyObject {
             resultSet = sqlStatement.executeQuery();
             long endTime = System.currentTimeMillis();
 
-            debug(driver.toString(sqlStatement), Long
+            debug(driver.statementToString(sqlStatement), Long
                     .valueOf(endTime - startTime));
 
             metaData = resultSet.getMetaData();

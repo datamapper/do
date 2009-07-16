@@ -155,6 +155,6 @@ public interface DriverDefinition {
 
     public String quoteString(String str);
 
-    public String toString(PreparedStatement ps);
+    public String statementToString(Statement s);
 
 }
