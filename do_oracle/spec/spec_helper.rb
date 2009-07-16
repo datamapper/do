@@ -39,8 +39,9 @@ Spec::Runner.configure do |config|
   config.include(DataObjects::Spec::PendingHelpers)
 end
 
-# Test with Eastern European Time
-# ENV['TZ'] = 'EET'
+# Set default time zone in MRI if not set in environment
+# as otherwise wrong time zone is set for database connection
+ENV['TZ'] ||= 'EET' unless JRUBY
 
 CONFIG = OpenStruct.new
 CONFIG.scheme   = 'oracle'

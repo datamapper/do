@@ -102,6 +102,11 @@ if RUBY_PLATFORM !~ /java/
         def quote_boolean(value)
           value ? 1 : 0
         end
+        
+        # for getting Ruby current time zone in C extension
+        def self.ruby_time_zone
+          ENV['TZ']
+        end
       end
       
     end

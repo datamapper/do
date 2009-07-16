@@ -555,7 +555,7 @@ static VALUE cCommand_execute_ensure(cCommand_execute_try_t *arg) {
 
 static VALUE cConnection_initialize(VALUE self, VALUE uri) {
   VALUE r_host, r_port, r_path, r_user, r_password;
-  VALUE r_query;
+  VALUE r_query, r_time_zone;
   char *non_blocking = NULL;
   char *time_zone = NULL;
   char set_time_zone_command[80];
@@ -613,9 +613,11 @@ static VALUE cConnection_initialize(VALUE self, VALUE uri) {
   // Set session time zone
   // at first look for option in connection string
   time_zone = get_uri_option(r_query, "time_zone");
-  // if no option specified then look in TZ environment variable
+  // if no option specified then look in ENV['TZ']
   if (time_zone == NULL) {
-    time_zone = getenv("TZ");
+    r_time_zone = rb_funcall(cConnection, rb_intern("ruby_time_zone"), 0);
+    if (!NIL_P(r_time_zone))
+      time_zone = StringValuePtr(r_time_zone);
   }
   if (time_zone) {
     snprintf(set_time_zone_command, 80, "alter session set time_zone = '%s'", time_zone);
