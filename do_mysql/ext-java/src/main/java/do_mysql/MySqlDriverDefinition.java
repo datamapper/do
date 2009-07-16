@@ -1,6 +1,7 @@
 package do_mysql;
 
 import java.io.IOException;
+import java.sql.Statement;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -105,8 +106,8 @@ public class MySqlDriverDefinition extends AbstractDriverDefinition {
     }
 
     @Override
-    public String toString(PreparedStatement ps) {
-        return ps.toString().replaceFirst(".*].-\\s*", "");
+    public String statementToString(Statement s) {
+        return s.toString().replaceFirst(".*].-\\s*", "");
     }
 
 }

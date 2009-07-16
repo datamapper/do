@@ -69,7 +69,7 @@ share_examples_for 'supporting Date' do
   describe 'writing an Date' do
 
     before  do
-      @reader = @connection.create_command("SELECT id FROM widgets WHERE release_date = ?").execute_reader(Date.civil(2008, 2, 14))
+      @reader = @connection.create_command("SELECT id FROM widgets WHERE release_date = ? ORDER BY id").execute_reader(Date.civil(2008, 2, 14))
       @reader.next!
       @values = @reader.values
     end

@@ -10,6 +10,9 @@ import org.jruby.anno.JRubyMethod;
 import org.jruby.runtime.ObjectAllocator;
 import org.jruby.runtime.builtin.IRubyObject;
 
+import java.sql.Connection;
+import java.sql.SQLException;
+
 import data_objects.drivers.DriverDefinition;
 
 /**
@@ -49,9 +52,29 @@ public class Transaction extends DORubyObject {
         super(runtime, klass);
     }
 
-    @JRubyMethod(required = 1)
-    public static IRubyObject initialize(IRubyObject recv) {
-        return recv;
+    // -------------------------------------------------- DATAOBJECTS PUBLIC API
+
+    // inherit initialize
+    
+    // @JRubyMethod(required = 1)
+    // public IRubyObject initialize(IRubyObject recv) {
+    //     return recv;
+    // }
+
+    /**
+     * Begins the transaction
+     *
+     * @return
+     */
+    @JRubyMethod
+    public IRubyObject begin() {
+        java.sql.Connection conn = getConnection();
+        try {
+            conn.setAutoCommit(false);
+        } catch (SQLException sqle) {
+            throw driver.newDriverError(getRuntime(), sqle);
+        }
+        return getRuntime().getTrue();
     }
 
     /**
@@ -61,7 +84,19 @@ public class Transaction extends DORubyObject {
      */
     @JRubyMethod
     public IRubyObject commit() {
-        return getRuntime().getFalse();
+        java.sql.Connection conn = getConnection();
+        try {
+            conn.commit();
+        } catch (SQLException sqle) {
+            throw driver.newDriverError(getRuntime(), sqle);
+        } finally {
+            try {
+                conn.setAutoCommit(true);
+            } catch (SQLException sqle) {
+                throw driver.newDriverError(getRuntime(), sqle);
+            }
+        }
+        return getRuntime().getTrue();
     }
 
     /**
@@ -69,23 +104,51 @@ public class Transaction extends DORubyObject {
      *
      * @return
      */
-    @JRubyMethod(required = 1)
-    public IRubyObject rollback() {
-        return getRuntime().getFalse();
-    }
-
-    /**
-     * Creates a savepoint for rolling back later
-     *
-     * @return
-     */
-    @JRubyMethod(required = 1)
-    public IRubyObject save() {
-        return getRuntime().getFalse();
-    }
-
     @JRubyMethod
-    public IRubyObject create_command() {
-        return getRuntime().getFalse();
+    public IRubyObject rollback() {
+        java.sql.Connection conn = getConnection();
+        try {
+            conn.rollback();
+        } catch (SQLException sqle) {
+            throw driver.newDriverError(getRuntime(), sqle);
+        } finally {
+            try {
+                conn.setAutoCommit(true);
+            } catch (SQLException sqle) {
+                throw driver.newDriverError(getRuntime(), sqle);
+            }
+        }
+        return getRuntime().getTrue();
     }
+
+    // /**
+    //  * Creates a savepoint for rolling back later
+    //  *
+    //  * @return
+    //  */
+    // @JRubyMethod(required = 1)
+    // public IRubyObject save() {
+    //     return getRuntime().getFalse();
+    // }
+    // 
+    // @JRubyMethod
+    // public IRubyObject create_command() {
+    //     return getRuntime().getFalse();
+    // }
+
+    // ---------------------------------------------------------- HELPER METHODS
+
+    private java.sql.Connection getConnection() {
+        Ruby runtime = getRuntime();
+        IRubyObject connection_instance = api.getInstanceVariable(this,
+                "@connection");
+        IRubyObject wrapped_jdbc_connection = api.getInstanceVariable(
+                connection_instance, "@connection");
+        if (wrapped_jdbc_connection.isNil()) {
+            throw driver.newDriverError(runtime,
+                    "This connection has already been closed.");
+        }
+        return (java.sql.Connection) wrapped_jdbc_connection.dataGetStruct();
+    }
+
 }

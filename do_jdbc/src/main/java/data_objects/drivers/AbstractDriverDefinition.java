@@ -8,6 +8,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.sql.Connection;
 import java.sql.Date;
+import java.sql.Statement;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -184,13 +185,17 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
         sb.append(exception.getLocalizedMessage());
         // TODO: delegate to the DriverDefinition for this
         if (statement != null)
-            sb.append("\nQuery: ").append(statement.toString());
+            sb.append("\nQuery: ").append(statementToString(statement));
 
         return new RaiseException(runtime, driverError, sb.toString(), true);
     }
 
     public RubyObjectAdapter getObjectAdapter() {
         return API;
+    }
+
+    public RubyType jdbcTypeToRubyType(int type, int precision, int scale) {
+        return RubyType.jdbcTypeToRubyType(type, scale);
     }
 
     public final IRubyObject getTypecastResultSetValue(Ruby runtime,
@@ -219,6 +224,7 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
             long lng = rs.getLong(col);
             return RubyNumeric.int2fix(runtime, lng);
         case FLOAT:
+            // TODO: why getDouble is not used here?
             BigDecimal bdf = rs.getBigDecimal(col);
             if (bdf == null) {
                 return runtime.getNil();
@@ -229,7 +235,7 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
             if (bd  == null) {
                 return runtime.getNil();
             }
-            return new RubyBigDecimal(runtime, rs.getBigDecimal(col));
+            return new RubyBigDecimal(runtime, bd);
         case DATE:
             java.sql.Date date = rs.getDate(col);
             if (date == null) {
@@ -439,6 +445,18 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
         }
     }
 
+    public boolean registerPreparedStatementReturnParam(String sqlText, PreparedStatement ps, int idx) throws SQLException {
+        return false;
+    }
+
+    public long getPreparedStatementReturnParam(PreparedStatement ps) throws SQLException {
+        return 0;
+    }
+
+    public String prepareSqlTextForPs(String sqlText, IRubyObject[] args) {
+        return sqlText;
+    }
+
     public abstract boolean supportsJdbcGeneratedKeys();
 
     public abstract boolean supportsJdbcScrollableResultSets();
@@ -463,6 +481,10 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
         return new Properties();
     }
 
+    public void afterConnectionCallback(Connection connection, Map<String, String> query) throws SQLException {
+        // do nothing
+    }
+
     public void setEncodingProperty(Properties props, String encodingName) {
         // do nothing
     }
@@ -475,8 +497,8 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
         return quotedValue.toString();
     }
 
-    public String toString(PreparedStatement ps) {
-        return ps.toString();
+    public String statementToString(Statement s) {
+        return s.toString();
     }
 
     protected static IRubyObject prepareRubyDateTimeFromSqlTimestamp(

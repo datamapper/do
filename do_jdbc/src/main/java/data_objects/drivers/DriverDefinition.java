@@ -10,6 +10,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Properties;
+import java.util.Map;
 
 import org.jruby.Ruby;
 import org.jruby.RubyObjectAdapter;
@@ -40,11 +41,43 @@ public interface DriverDefinition {
 
     public RubyObjectAdapter getObjectAdapter();
 
+    /**
+     * If needed this could be overrided to implement database driver specific
+     * JDBC type to Ruby type mapping
+     */
+    public RubyType jdbcTypeToRubyType(int type, int precision, int scale);
+
     public IRubyObject getTypecastResultSetValue(Ruby runtime, ResultSet rs,
             int col, RubyType type) throws SQLException, IOException;
 
     public void setPreparedStatementParam(PreparedStatement ps,
             IRubyObject arg, int idx) throws SQLException;
+
+    /**
+     * Callback for registering output parameter
+     * Necessary for Oracle INSERT ... RETURNING ... INTO ... statements
+     *
+     * @return true if output parameter was registered
+     */
+    public boolean registerPreparedStatementReturnParam(String sqlText, PreparedStatement ps, int idx) throws SQLException;
+
+    /**
+     * Get registered return parameter
+     * Necessary for Oracle INSERT ... RETURNING ... INTO ... statements
+     *
+     * @return return parameter (long value)
+     */
+    public long getPreparedStatementReturnParam(PreparedStatement ps) throws SQLException;
+
+    /**
+     * Callback for doing driver specific SQL statement modification
+     * Necessary for Oracle driver to replace :insert_id with ?
+     *
+     * @param SqlText
+     * @param args
+     * @return a SQL Text formatted for preparing a PreparedStatement
+     */
+    public String prepareSqlTextForPs(String sqlText, IRubyObject[] args);
 
     /**
      * Whether the Driver supports properly supports JDBC 3.0's
@@ -104,6 +137,13 @@ public interface DriverDefinition {
     public Properties getDefaultConnectionProperties();
 
     /**
+     * Callback for setting connection properties after connection is established.
+     *
+     * @return
+     */
+    public void afterConnectionCallback(Connection connection, Map<String, String> query) throws SQLException;
+
+    /**
      * If the driver supports setting connection encodings, specify the appropriate
      * property to set the connection encoding.
      *
@@ -115,6 +155,6 @@ public interface DriverDefinition {
 
     public String quoteString(String str);
 
-    public String toString(PreparedStatement ps);
+    public String statementToString(Statement s);
 
 }

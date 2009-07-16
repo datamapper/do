@@ -137,9 +137,8 @@ public class Reader extends DORubyObject {
 
                         // assume the mapping from jdbc type to ruby type to be
                         // complete
-                        type = RubyType.jdbcTypeToRubyType(rs
-                                .getMetaData().getColumnType(col), rs
-                                .getMetaData().getScale(col));
+                        type = driver.jdbcTypeToRubyType(rs.getMetaData().getColumnType(col),
+                            rs.getMetaData().getPrecision(col), rs.getMetaData().getScale(col));
 
                     }
 

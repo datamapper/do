@@ -94,6 +94,8 @@ public class Command extends DORubyObject {
         // other values represents numer of updated rows
         int affectedCount = 0;
         PreparedStatement sqlStatement = null;
+        // if usePreparedStatement returns false
+        Statement sqlSimpleStatement = null;
         java.sql.ResultSet keys = null;
 
         // String sqlText = prepareSqlTextForPs(api.getInstanceVariable(recv,
@@ -101,6 +103,8 @@ public class Command extends DORubyObject {
         String doSqlText = api.convertToRubyString(
                 api.getInstanceVariable(this, "@text")).getUnicodeValue();
         String sqlText = prepareSqlTextForPs(doSqlText, args);
+
+        // remove deleted arguments
         List<IRubyObject> list = new ArrayList<IRubyObject>();
         for( IRubyObject o: args){
             if (o != null){
@@ -108,47 +112,66 @@ public class Command extends DORubyObject {
             }
         }
         args = list.toArray(new IRubyObject[list.size()]);
-        try {
-            if (driver.supportsConnectionPrepareStatementMethodWithGKFlag()) {
-                sqlStatement = conn.prepareStatement(sqlText,
-                                                     driver.supportsJdbcGeneratedKeys() ? Statement.RETURN_GENERATED_KEYS : Statement.NO_GENERATED_KEYS);
-            } else {
-                // If java.sql.PreparedStatement#getGeneratedKeys() is not supported,
-                // then it is important to call java.sql.Connection#prepareStatement(String)
-                // -- with just a single parameter -- rather java.sql.Connection#
-                // prepareStatement(String, int) (and passing in Statement.NO_GENERATED_KEYS).
-                // Some less-than-complete JDBC drivers do not implement all of
-                // the overloaded prepareStatement methods: the main culprit
-                // being SQLiteJDBC which currently throws an ugly (and cryptic)
-                // "NYI" SQLException if Connection#prepareStatement(String, int)
-                // is called.
-                sqlStatement = conn.prepareStatement(sqlText);
-            }
 
-            prepareStatementFromArgs(sqlStatement, args);
+        // additional callback for driver specific SQL statement changes
+        sqlText = driver.prepareSqlTextForPs(sqlText, args);
+        
+        boolean usePS = usePreparedStatement(sqlText, args);
+        boolean hasReturnParam = false;
+
+        try {
+            if (usePS) {
+                if (driver.supportsConnectionPrepareStatementMethodWithGKFlag()) {
+                    sqlStatement = conn.prepareStatement(sqlText,
+                                                         driver.supportsJdbcGeneratedKeys() ? Statement.RETURN_GENERATED_KEYS : Statement.NO_GENERATED_KEYS);
+                } else {
+                    // If java.sql.PreparedStatement#getGeneratedKeys() is not supported,
+                    // then it is important to call java.sql.Connection#prepareStatement(String)
+                    // -- with just a single parameter -- rather java.sql.Connection#
+                    // prepareStatement(String, int) (and passing in Statement.NO_GENERATED_KEYS).
+                    // Some less-than-complete JDBC drivers do not implement all of
+                    // the overloaded prepareStatement methods: the main culprit
+                    // being SQLiteJDBC which currently throws an ugly (and cryptic)
+                    // "NYI" SQLException if Connection#prepareStatement(String, int)
+                    // is called.
+                    sqlStatement = conn.prepareStatement(sqlText);
+                }
+
+                hasReturnParam = prepareStatementFromArgs(sqlText, sqlStatement, args);
+            } else {
+                sqlSimpleStatement = conn.createStatement();
+            }
 
             //javaConn.setAutoCommit(true); // hangs with autocommit set to false
             // sqlStatement.setMaxRows();
             long startTime = System.currentTimeMillis();
-            try {
-                if (sqlText.contains("RETURNING")) {
-                    keys = sqlStatement.executeQuery();
-                } else {
-                    affectedCount = sqlStatement.executeUpdate();
+            if (usePS) {
+                try {
+                    if (sqlText.contains("RETURNING") && !hasReturnParam) {
+                        keys = sqlStatement.executeQuery();
+                    } else {
+                        affectedCount = sqlStatement.executeUpdate();
+                    }
+                } catch (SQLException sqle) {
+                    // This is to handle the edge case of SELECT sleep(1):
+                    // an executeUpdate() will throw a SQLException if a SELECT
+                    // is passed, so we try the same query again with execute()
+                    affectedCount = 0;
+                    sqlStatement.execute();
                 }
-            } catch (SQLException sqle) {
-                // This is to handle the edge case of SELECT sleep(1):
-                // an executeUpdate() will throw a SQLException if a SELECT
-                // is passed, so we try the same query again with execute()
-                affectedCount = 0;
-                sqlStatement.execute();
+            } else {
+                sqlSimpleStatement.execute(sqlText);
             }
             long endTime = System.currentTimeMillis();
 
-            debug(driver.toString(sqlStatement), Long.valueOf(endTime
-                    - startTime));
+            if (usePS)
+                debug(driver.statementToString(sqlStatement), Long.valueOf(endTime
+                        - startTime));
+            else
+                debug(sqlText, Long.valueOf(endTime
+                        - startTime));
 
-            if (keys == null) {
+            if (usePS && keys == null) {
                 if (driver.supportsJdbcGeneratedKeys()) {
                     // Derby, H2, and MySQL all support getGeneratedKeys(), but only
                     // to varying extents.
@@ -167,14 +190,17 @@ public class Command extends DORubyObject {
                     // apparently the prepared statements always provide the
                     // generated keys
                     keys = sqlStatement.getGeneratedKeys();
-
+                    
+                } else if (hasReturnParam) {
+                    // Used in Oracle for INSERT ... RETURNING ... INTO ... statements
+                    insert_key = runtime.newFixnum(driver.getPreparedStatementReturnParam(sqlStatement));
                 } else {
                     // If there is no support, then a custom method can be defined
                     // to return a ResultSet with keys
                     keys = driver.getGeneratedKeys(conn);
                 }
             }
-            if (keys != null) {
+            if (usePS && keys != null) {
                 insert_key = unmarshal_id_result(keys);
                 affectedCount = (affectedCount > 0) ? affectedCount : 1;
             }
@@ -185,11 +211,14 @@ public class Command extends DORubyObject {
         } catch (SQLException sqle) {
             // TODO: log
             // sqle.printStackTrace();
-            throw newQueryError(runtime, sqle, sqlStatement);
+            throw newQueryError(runtime, sqle, usePS ? sqlStatement : sqlSimpleStatement);
         } finally {
             if (sqlStatement != null) {
                 try {
-                    sqlStatement.close();
+                    if (usePS)
+                        sqlStatement.close();
+                    else
+                        sqlSimpleStatement.close();
                 } catch (SQLException sqle2) {
                 }
             }
@@ -250,17 +279,22 @@ public class Command extends DORubyObject {
                            ResultSet.CONCUR_READ_ONLY);
 
             // sqlStatement.setMaxRows();
-            prepareStatementFromArgs(sqlStatement, args);
+            prepareStatementFromArgs(sqlText, sqlStatement, args);
 
             long startTime = System.currentTimeMillis();
             resultSet = sqlStatement.executeQuery();
             long endTime = System.currentTimeMillis();
 
-            debug(driver.toString(sqlStatement), Long
+            debug(driver.statementToString(sqlStatement), Long
                     .valueOf(endTime - startTime));
 
             metaData = resultSet.getMetaData();
             columnCount = metaData.getColumnCount();
+
+            // reduce columnCount by 1 if RAW_RNUM_ is present as last column
+            // (generated by DataMapper Oracle adapter to simulate LIMIT and OFFSET)
+            if (metaData.getColumnName(columnCount).equals("RAW_RNUM_"))
+                columnCount--;
 
             // pass the response to the reader
             IRubyObject wrappedResultSet = Java.java_to_ruby(this, JavaObject
@@ -420,7 +454,7 @@ public class Command extends DORubyObject {
      */
     public IRubyObject unmarshal_id_result(ResultSet rs) throws SQLException {
         try {
-               if (rs.next()) {
+            if (rs.next()) {
                 if (rs.getMetaData().getColumnCount() > 0) {
                     // TODO: Need to do check for other types here, as keys could be
                     // of type Integer, Long or String
@@ -527,15 +561,14 @@ public class Command extends DORubyObject {
                 pm.appendTail(sb);
                 psSqlText = sb.toString();
             } else if(args[i] instanceof RubyNil){
-                // TODO needs something like this for 'IS NOT ?'
-                Pattern pp = Pattern.compile("IS \\?");
+                Pattern pp = Pattern.compile("(IS |IS NOT )?\\?");
                 Matcher pm = pp.matcher(psSqlText);
                 StringBuffer sb = new StringBuffer();
 
                 int count = 0;
                 lbWhile: while (pm.find()) {
                     if (count == (i + addedSymbols)) {
-                        pm.appendReplacement(sb, "IS NULL");
+                        pm.appendReplacement(sb, "$1NULL");
                         args[i] = null;
                         addedSymbols -= 1;
                         break lbWhile;
@@ -554,15 +587,36 @@ public class Command extends DORubyObject {
     }
 
     /**
+     * Check SQL string and tell if PreparedStatement or Statement should be used.
+     * Necessary for Oracle driver as Statement should be used for CREATE TRIGGER statements.
+     *
+     * @param doSqlText
+     * @param args
+     * @return true if PreparedStatement should be used or false if Statement should be used
+     */
+    private boolean usePreparedStatement(String doSqlText, IRubyObject[] args) {
+        // if parameters are present then use PreparedStatement
+        if (args.length > 0) return true;
+        
+        // check if SQL starts with CREATE
+        Pattern p = Pattern.compile("\\A\\s*(CREATE|DROP)", Pattern.CASE_INSENSITIVE);
+        Matcher m = p.matcher(doSqlText);
+        return !m.find();
+    }
+    
+    /**
      * Assist with setting the parameter values on a PreparedStatement
      *
      * @param ps the PreparedStatement for which parameters should be set
      * @param recv
      * @param args an array of parameter values
+     *
+     * @return true if there is return parameter, false if there is not
      */
-    private void prepareStatementFromArgs(PreparedStatement ps,
+    private boolean prepareStatementFromArgs(String sqlText, PreparedStatement ps,
             IRubyObject[] args) {
         int index = 1;
+        boolean hasReturnParam = false;
         try {
             int psCount = ps.getParameterMetaData().getParameterCount();
             // fail fast
@@ -608,10 +662,18 @@ public class Command extends DORubyObject {
                     driver.setPreparedStatementParam(ps, arg, index++);
                 }
             }
+            
+            // callback for binding RETURN ... INTO ... output parameter
+            if (driver.registerPreparedStatementReturnParam(sqlText, ps, index)) {
+                index++;
+                hasReturnParam = true;
+            }
+            
             if ((index - 1) < psCount) {
                 throw getRuntime().newArgumentError(
                         "Binding mismatch: " + (index - 1) + " for " + psCount);
             }
+            return hasReturnParam;
         } catch (SQLException sqle) {
             // TODO: log sqle.printStackTrace();
             // TODO: possibly move this exception string parsing somewhere else
