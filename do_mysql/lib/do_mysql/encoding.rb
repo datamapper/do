@@ -6,7 +6,7 @@ module DataObjects
         "CP850"        => "cp850",
         "KOI8-R"       => "koi8r",
         "ISO-8859-1"   => "latin1",
-        "ISO-8859-1"   => "latin2",
+        "ISO-8859-2"   => "latin2",
         "US-ASCII"     => "ascii",
         "EUC-JP"       => "ujis",
         "SJIS"         => "sjis",
