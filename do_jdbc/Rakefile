@@ -13,3 +13,7 @@ SUDO    = (WINDOWS || JRUBY) ? '' : ('sudo' unless ENV['SUDOLESS'])
 Dir['tasks/*.rake'].sort.each { |f| import f }
 
 CLEAN.include(%w[ {tmp,pkg}/ **/*.{o,so,bundle,jar,log,a,gem,dSYM,obj,pdb,exp,DS_Store,rbc,db} ext-java/target ])
+
+task :default do
+  # do nothing
+end
