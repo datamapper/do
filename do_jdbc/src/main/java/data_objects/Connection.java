@@ -22,6 +22,7 @@ import org.jruby.anno.JRubyClass;
 import org.jruby.anno.JRubyMethod;
 import org.jruby.javasupport.Java;
 import org.jruby.javasupport.JavaObject;
+import org.jruby.runtime.Arity;
 import org.jruby.runtime.Block;
 import org.jruby.runtime.ObjectAllocator;
 import org.jruby.runtime.builtin.IRubyObject;
@@ -29,6 +30,7 @@ import org.jruby.runtime.builtin.IRubyObject;
 import data_objects.drivers.DriverDefinition;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.jruby.runtime.callback.Callback;
 
 /**
  * Connection Class
@@ -42,6 +44,7 @@ public class Connection extends DORubyObject {
     public final static String RUBY_CLASS_NAME = "Connection";
 
     private static final String JNDI_PROTO = "jndi://";
+    private static final String UTF8_ENCODING = "UTF-8";
 
     private final static ObjectAllocator CONNECTION_ALLOCATOR = new ObjectAllocator() {
 
@@ -61,6 +64,17 @@ public class Connection extends DORubyObject {
                 RUBY_CLASS_NAME, superClass, CONNECTION_ALLOCATOR);
         connectionClass.defineAnnotatedMethods(Connection.class);
         setDriverDefinition(connectionClass, runtime, driver);
+
+        if (driver.supportsConnectionEncodings()) {
+            connectionClass.defineFastMethod("character_set", new Callback() {
+                public Arity getArity() {
+                    return Arity.NO_ARGUMENTS;
+                }
+                public IRubyObject execute(IRubyObject recv, IRubyObject[] args, Block block) {
+                    return recv.getInstanceVariables().fastGetInstanceVariable("@encoding");
+                }
+            });
+        }
         return connectionClass;
     }
 
@@ -112,6 +126,14 @@ public class Connection extends DORubyObject {
             }
         }
 
+        if (driver.supportsConnectionEncodings()) {
+            // default encoding to UTF-8, if not specified
+            if (encoding == null) {
+                encoding = UTF8_ENCODING;
+            }
+            api.setInstanceVariable(this, "@encoding", runtime.newString(encoding));
+        }
+
         // Load JDBC Driver Class
         if (jdbcDriver != null) {
             try {
@@ -126,11 +148,6 @@ public class Connection extends DORubyObject {
             }
             // should be handled implicitly
             // DriverManager.registerDriver(driver);
-        }
-
-        // default encoding to UTF-8, if not specified
-        if (driver.supportsConnectionEncodings() && encoding == null) {
-            encoding = "UTF-8";
         }
 
         java.sql.Connection conn;
@@ -194,9 +211,10 @@ public class Connection extends DORubyObject {
                             // re-attempt connection, but this time with UTF-8
                             // set as the encoding
                             runtime.getWarnings().warn(String.format(
-                                    "Encoding %s is not a known Ruby encoding for %s",
+                                    "Encoding %s is not a known Ruby encoding for %s\n",
                                     m.group(1), driver.getModuleName()));
-                            driver.setEncodingProperty(props, "UTF-8");
+                            driver.setEncodingProperty(props, UTF8_ENCODING);
+                            api.setInstanceVariable(this, "@encoding", runtime.newString(UTF8_ENCODING));
                             conn = DriverManager.getConnection(jdbcUri, props);
                         } else {
                             throw eex;
