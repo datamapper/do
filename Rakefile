@@ -7,7 +7,7 @@ require 'rake/rdoctask'
 ROOT    = Pathname(__FILE__).dirname.expand_path
 JRUBY   = RUBY_PLATFORM =~ /java/
 WINDOWS = Gem.win_platform?
-SUDO    = (WINDOWS || JRUBY) ? '' : ('sudo' unless ENV['SUDOLESS'])
+SUDO    = WINDOWS ? '' : ('sudo' unless ENV['SUDOLESS'])
 
 # RCov is run by default, except on the JRuby platform, or if NO_RCOV env is true
 RUN_RCOV = JRUBY ? false : (ENV.has_key?('NO_RCOV') ? ENV['NO_RCOV'] != 'true' : true)

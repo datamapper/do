@@ -8,7 +8,7 @@ require 'lib/do_oracle/version'
 ROOT    = Pathname(__FILE__).dirname.expand_path
 JRUBY   = RUBY_PLATFORM =~ /java/
 WINDOWS = Gem.win_platform?
-SUDO    = (WINDOWS || JRUBY) ? '' : ('sudo' unless ENV['SUDOLESS'])
+SUDO    = WINDOWS ? '' : ('sudo' unless ENV['SUDOLESS'])
 BINARY_VERSION = '10.2.0.4.0'
 
 Dir['tasks/*.rake'].each { |f| import f }
