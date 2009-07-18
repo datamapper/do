@@ -79,6 +79,8 @@ module DataObjectsSpecHelpers
       );
     EOF
 
+    local_offset = Rational(Time.local(2008, 2, 14).utc_offset, 86400)
+    t = DateTime.civil(2008, 2, 14, 00, 31, 12, local_offset)
     conn.create_command(<<-EOF).execute_non_query
       CREATE TABLE "widgets" (
         "id" INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -99,7 +101,7 @@ module DataObjectsSpecHelpers
         "cost1" double precision default 10.23,
         "cost2" decimal(8,2) default 50.23,
         "release_date" date default '2008-02-14',
-        "release_datetime" timestamp default '2008-02-14T00:31:12+00:00',
+        "release_datetime" timestamp default '#{t.to_s}',
         "release_timestamp" timestamp with time zone default '2008-02-14 00:31:31'
       );
     EOF
