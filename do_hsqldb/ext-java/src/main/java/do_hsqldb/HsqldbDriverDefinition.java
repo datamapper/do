@@ -11,6 +11,7 @@ import org.jruby.runtime.builtin.IRubyObject;
 
 import data_objects.RubyType;
 import data_objects.drivers.AbstractDriverDefinition;
+import java.sql.Statement;
 
 
 public class HsqldbDriverDefinition extends AbstractDriverDefinition {
@@ -86,19 +87,19 @@ public class HsqldbDriverDefinition extends AbstractDriverDefinition {
     }
 
     @Override
-    public String toString(PreparedStatement ps)
+    public String statementToString(Statement s)
     {
         try {
-            Field sqlField = ps.getClass().getDeclaredField("sql");
+            Field sqlField = s.getClass().getDeclaredField("sql");
             sqlField.setAccessible(true);
-            String sql = sqlField.get(ps).toString();
-            Field paramsField = ps.getClass().getDeclaredField("parameterValues");
+            String sql = sqlField.get(s).toString();
+            Field paramsField = s.getClass().getDeclaredField("parameterValues");
             paramsField.setAccessible(true);
-            Field paramTypesField = ps.getClass().getDeclaredField("parameterTypes");
+            Field paramTypesField = s.getClass().getDeclaredField("parameterTypes");
             paramTypesField.setAccessible(true);
-            int[] paramTypes = (int[])paramTypesField.get(ps);
+            int[] paramTypes = (int[])paramTypesField.get(s);
             int index = 0;
-            for (Object param : (Object[]) paramsField.get(ps)) {
+            for (Object param : (Object[]) paramsField.get(s)) {
                 switch (paramTypes[index++]) {
                     case Types.CHAR:
                     case Types.LONGVARCHAR:
@@ -112,7 +113,7 @@ public class HsqldbDriverDefinition extends AbstractDriverDefinition {
         }
         catch(Exception e) {
             // just fall to the toString of the PreparedStatement
-            return ps.toString();
+            return s.toString();
         }
     }
 }
