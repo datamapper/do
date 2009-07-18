@@ -87,11 +87,6 @@ public class MySqlDriverDefinition extends AbstractDriverDefinition {
 
     @Override
     public void setEncodingProperty(Properties props, String encodingName) {
-        if ("latin1".equals(encodingName)) {
-            // example of mapping encoding name to Java-Style character
-            // encoding name (see http://dev.mysql.com/doc/refman/5.1/en/connector-j-reference-charsets.html)
-            encodingName = "ISO8859_1";
-        }
         props.put("characterEncoding", encodingName);
     }
 

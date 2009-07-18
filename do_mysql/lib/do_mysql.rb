@@ -33,7 +33,7 @@ if RUBY_PLATFORM =~ /java/
           reader.next!
           char_set = reader.values[1]
           reader.close
-          char_set.downcase
+          DataObjects::Mysql::Encoding::MAP.index(char_set.downcase)
         end
 
         def secure?

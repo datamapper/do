@@ -27,6 +27,8 @@ import org.jruby.runtime.ObjectAllocator;
 import org.jruby.runtime.builtin.IRubyObject;
 
 import data_objects.drivers.DriverDefinition;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Connection Class
@@ -127,9 +129,8 @@ public class Connection extends DORubyObject {
         }
 
         // default encoding to UTF-8, if not specified
-        // TODO: encoding should be mapped from Ruby encoding type to Java encoding
         if (driver.supportsConnectionEncodings() && encoding == null) {
-            encoding = "utf8";
+            encoding = "UTF-8";
         }
 
         java.sql.Connection conn;
@@ -145,47 +146,66 @@ public class Connection extends DORubyObject {
                 } catch (NamingException ex) {
                     throw runtime.newRuntimeError("Can't lookup datasource: " + connectionUri.toString() + "\n\t" + ex.getLocalizedMessage());
                 }
-            } else if (connectionUri.toString().contains("@")) {
-                // uri.getUserInfo() gave always null, so do it manually
-                // TODO: See if we can replace with connectionUri.getUserInfo()
-                String userInfo =
-                        connectionUri.toString().replaceFirst(".*://", "").replaceFirst("@.*", "");
-                String jdbcUri = connectionUri.toString().replaceFirst(userInfo + "@", "");
-                if (!userInfo.contains(":")) {
-                    userInfo += ":";
-                }
-
-                // Replace . with : in scheme name - necessary for Oracle scheme oracle:thin
-                // : cannot be used in JDBC_URI_SCHEME as then it is identified as opaque URI
-                jdbcUri = jdbcUri.replaceFirst("^([a-z]+)(\\.)","$1:");
-
-                if (!jdbcUri.startsWith("jdbc:")) {
-                    jdbcUri = "jdbc:" + jdbcUri;
-                }
-                String username = userInfo.substring(0, userInfo.indexOf(":"));
-                String password = userInfo.substring(userInfo.indexOf(":") + 1);
-
-                Properties props = driver.getDefaultConnectionProperties();
-                props.put("user", username);
-                props.put("password", password);
-
-                if (driver.supportsConnectionEncodings()) {
-                    driver.setEncodingProperty(props, encoding);
-                }
-
-                conn = DriverManager.getConnection(jdbcUri, props);
             } else {
-                String jdbcUri = connectionUri.toString();
-                if (!jdbcUri.startsWith("jdbc:")) {
-                    jdbcUri = "jdbc:" + jdbcUri;
-                }
-
+                String jdbcUri = null;
                 Properties props = driver.getDefaultConnectionProperties();
-                if (driver.supportsConnectionEncodings()) {
-                    driver.setEncodingProperty(props, encoding);
+
+                if (connectionUri.toString().contains("@")) {
+                    // uri.getUserInfo() gave always null, so do it manually
+                    // TODO: See if we can replace with connectionUri.getUserInfo()
+                    String userInfo =
+                            connectionUri.toString().replaceFirst(".*://", "").replaceFirst("@.*", "");
+                    jdbcUri = connectionUri.toString().replaceFirst(userInfo + "@", "");
+                    if (!userInfo.contains(":")) {
+                        userInfo += ":";
+                    }
+
+                    // Replace . with : in scheme name - necessary for Oracle scheme oracle:thin
+                    // : cannot be used in JDBC_URI_SCHEME as then it is identified as opaque URI
+                    jdbcUri = jdbcUri.replaceFirst("^([a-z]+)(\\.)","$1:");
+
+                    if (!jdbcUri.startsWith("jdbc:")) {
+                        jdbcUri = "jdbc:" + jdbcUri;
+                    }
+                    String username = userInfo.substring(0, userInfo.indexOf(":"));
+                    String password = userInfo.substring(userInfo.indexOf(":") + 1);
+
+                    props.put("user", username);
+                    props.put("password", password);
+
+                } else {
+                    jdbcUri = connectionUri.toString();
+                    if (!jdbcUri.startsWith("jdbc:")) {
+                        jdbcUri = "jdbc:" + jdbcUri;
+                    }
                 }
 
-                conn = DriverManager.getConnection(jdbcUri, props);
+                if (driver.supportsConnectionEncodings()) {
+                    // we set encoding properties, and retry on failure
+                    driver.setEncodingProperty(props, encoding);
+                    try {
+                        conn = DriverManager.getConnection(jdbcUri, props);
+                    } catch (SQLException eex) {
+                        // TODO: Make this non-MySQL specific
+                        Pattern p = Pattern.compile("Unsupported character encoding '(.+)'.");
+                        Matcher m = p.matcher(eex.getMessage());
+
+                        if (m.matches()) {
+                            // re-attempt connection, but this time with UTF-8
+                            // set as the encoding
+                            runtime.getWarnings().warn(String.format(
+                                    "Encoding %s is not a known Ruby encoding for %s",
+                                    m.group(1), driver.getModuleName()));
+                            driver.setEncodingProperty(props, "UTF-8");
+                            conn = DriverManager.getConnection(jdbcUri, props);
+                        } else {
+                            throw eex;
+                        }
+                    }
+                } else {
+                    // if the driver does not use encoding, connect normally
+                    conn = DriverManager.getConnection(jdbcUri, props);
+                }
             }
 
         } catch (SQLException ex) {
