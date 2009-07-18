@@ -115,7 +115,7 @@ public class Command extends DORubyObject {
 
         // additional callback for driver specific SQL statement changes
         sqlText = driver.prepareSqlTextForPs(sqlText, args);
-        
+
         boolean usePS = usePreparedStatement(sqlText, args);
         boolean hasReturnParam = false;
 
@@ -190,7 +190,7 @@ public class Command extends DORubyObject {
                     // apparently the prepared statements always provide the
                     // generated keys
                     keys = sqlStatement.getGeneratedKeys();
-                    
+
                 } else if (hasReturnParam) {
                     // Used in Oracle for INSERT ... RETURNING ... INTO ... statements
                     insert_key = runtime.newFixnum(driver.getPreparedStatementReturnParam(sqlStatement));
@@ -597,13 +597,13 @@ public class Command extends DORubyObject {
     private boolean usePreparedStatement(String doSqlText, IRubyObject[] args) {
         // if parameters are present then use PreparedStatement
         if (args.length > 0) return true;
-        
+
         // check if SQL starts with CREATE
         Pattern p = Pattern.compile("\\A\\s*(CREATE|DROP)", Pattern.CASE_INSENSITIVE);
         Matcher m = p.matcher(doSqlText);
         return !m.find();
     }
-    
+
     /**
      * Assist with setting the parameter values on a PreparedStatement
      *
@@ -662,13 +662,13 @@ public class Command extends DORubyObject {
                     driver.setPreparedStatementParam(ps, arg, index++);
                 }
             }
-            
+
             // callback for binding RETURN ... INTO ... output parameter
             if (driver.registerPreparedStatementReturnParam(sqlText, ps, index)) {
                 index++;
                 hasReturnParam = true;
             }
-            
+
             if ((index - 1) < psCount) {
                 throw getRuntime().newArgumentError(
                         "Binding mismatch: " + (index - 1) + " for " + psCount);

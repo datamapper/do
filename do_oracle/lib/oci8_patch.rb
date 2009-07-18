@@ -14,7 +14,7 @@ class OCI8
       # (as DATE values are converted to TIMESTAMP using current UTC offset)
       def ocitimestamp_to_time(ary)
         year, month, day, hour, minute, sec, fsec, tz_hour, tz_min = ary
-        
+
         if year >= 139
           timezone = tz_hour == 0 && tz_min == 0 ? :utc : :local
           begin

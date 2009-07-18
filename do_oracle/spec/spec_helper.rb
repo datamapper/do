@@ -68,7 +68,7 @@ module DataObjectsSpecHelpers
       raise unless error.to_s =~ /ORA-02289/
     end
   end
-  
+
   def create_seq_and_trigger(conn, table_name)
     conn.create_command("CREATE SEQUENCE #{table_name}_seq").execute_non_query
     conn.create_command(<<-EOF).execute_non_query
@@ -103,7 +103,7 @@ module DataObjectsSpecHelpers
       )
     EOF
     create_seq_and_trigger(conn, "users")
-    
+
     conn.create_command(<<-EOF).execute_non_query
       CREATE TABLE invoices (
         id NUMBER(38,0) PRIMARY KEY NOT NULL,
@@ -147,7 +147,7 @@ module DataObjectsSpecHelpers
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
         ,?, ?)
     EOF
-  
+
     1.upto(16) do |n|
       # conn.create_command(<<-EOF).execute_non_query
       #   insert into widgets(code, name, shelf_location, description, image_data, ad_description, ad_image, whitepaper_text, cad_drawing, super_number, weight) VALUES ('W#{n.to_s.rjust(7,"0")}', 'Widget #{n}', 'A14', 'This is a description', 'IMAGE DATA', 'Buy this product now!', 'AD IMAGE DATA', 'String', 'CAD \\001 \\000 DRAWING', 1234, 13.4);

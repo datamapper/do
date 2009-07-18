@@ -19,7 +19,7 @@ def config_value(type)
 end
 
 def have_build_env
-  # have_library('occi') && 
+  # have_library('occi') &&
   # have_library('clntsh') &&
   # have_header('oci.h')
   true

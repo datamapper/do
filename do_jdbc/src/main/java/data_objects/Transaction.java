@@ -55,7 +55,7 @@ public class Transaction extends DORubyObject {
     // -------------------------------------------------- DATAOBJECTS PUBLIC API
 
     // inherit initialize
-    
+
     // @JRubyMethod(required = 1)
     // public IRubyObject initialize(IRubyObject recv) {
     //     return recv;
@@ -130,7 +130,7 @@ public class Transaction extends DORubyObject {
     // public IRubyObject save() {
     //     return getRuntime().getFalse();
     // }
-    // 
+    //
     // @JRubyMethod
     // public IRubyObject create_command() {
     //     return getRuntime().getFalse();

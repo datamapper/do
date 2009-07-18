@@ -22,7 +22,7 @@ public class MySqlDriverDefinition extends AbstractDriverDefinition {
     public MySqlDriverDefinition() {
         super(URI_SCHEME, RUBY_MODULE_NAME);
     }
-    
+
     @Override
     protected IRubyObject doGetTypecastResultSetValue(Ruby runtime,
             ResultSet rs, int col, RubyType type) throws SQLException,
@@ -38,7 +38,7 @@ public class MySqlDriverDefinition extends AbstractDriverDefinition {
             return super.doGetTypecastResultSetValue(runtime, rs, col, type);
         }
     }
-    
+
     @Override
     public void setPreparedStatementParam(PreparedStatement ps,
             IRubyObject arg, int idx) throws SQLException {

@@ -166,7 +166,7 @@ module DataObjectsSpecHelpers
       conn.create_command(<<-EOF).execute_non_query
         update widgets set flags = NULL where id = 4
       EOF
-      
+
       conn.create_command(<<-EOF).execute_non_query
         update widgets set cost1 = NULL where id = 5
       EOF

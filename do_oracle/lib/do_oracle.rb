@@ -32,15 +32,15 @@ if RUBY_PLATFORM !~ /java/
     module Oracle
       class Command
         private
-        
+
         def execute(*args)
           oci8_conn = @connection.instance_variable_get("@connection")
           raise OracleError, "This connection has already been closed." unless oci8_conn
-          
+
           sql, bind_variables = replace_argument_placeholders(@text, args)
           execute_internal(oci8_conn, sql, bind_variables)
         end
-        
+
         # Replace ? placeholders with :n argument placeholders in string of SQL
         # as required by OCI8#exec method
         # Compare number of ? placeholders with number of passed arguments
@@ -49,10 +49,10 @@ if RUBY_PLATFORM !~ /java/
           sql = sql_string.dup
           args_count = args.length
           bind_variables = []
-          
+
           replacements = 0
           mismatch     = false
-          
+
           sql.gsub!(/(IS |IS NOT )?\?/) do |x|
             arg = args[replacements]
             replacements += 1
@@ -86,32 +86,32 @@ if RUBY_PLATFORM !~ /java/
               ":#{replacements}"
             end
           end
-          
+
           if sql =~ /^\s*INSERT.+RETURNING.+INTO :insert_id\s*$/i
             @insert_id_present = true
           end
-          
+
           if args_count != replacements
             raise ArgumentError, "Binding mismatch: #{args_count} for #{replacements}"
           else
             [sql, bind_variables]
           end
-          
+
         end
       end
-      
+
       class Connection
         # Quote true, false as 1 and 0
         def quote_boolean(value)
           value ? 1 : 0
         end
-        
+
         # for getting Ruby current time zone in C extension
         def self.ruby_time_zone
           ENV['TZ']
         end
       end
-      
+
     end
   end
 end
@@ -126,7 +126,7 @@ if RUBY_PLATFORM =~ /java/
         def self.pool_size
           20
         end
-        
+
       end
     end
   end

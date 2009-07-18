@@ -37,7 +37,7 @@ begin
   #     end
   #   end
   # end
-  # 
+  #
   # file "vendor/mysql-#{BINARY_VERSION}-win32/include/mysql.h" => ["vendor/mysql-noinstall-#{BINARY_VERSION}-win32.zip"] do |t|
   #   full_file = File.expand_path(t.prerequisites.last)
   #   when_writing "creating #{t.name}" do
@@ -54,7 +54,7 @@ begin
 
   # # vendor:mysql
   # task 'vendor:mysql' => ["vendor/mysql-#{BINARY_VERSION}-win32/include/mysql.h"]
-  # 
+  #
   # # hook into cross compilation vendored mysql dependency
   # if RUBY_PLATFORM =~ /mingw|mswin/ then
   #   Rake::Task['compile'].prerequisites.unshift 'vendor:mysql'

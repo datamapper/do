@@ -38,7 +38,7 @@ public class PostgresDriverDefinition extends AbstractDriverDefinition {
         return true;
     }
 
-    @Override	
+    @Override
     public void setPreparedStatementParam(PreparedStatement ps,
             IRubyObject arg, int idx) throws SQLException {
         switch (RubyType.getRubyType(arg.getType().getName())) {
