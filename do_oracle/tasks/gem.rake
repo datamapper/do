@@ -38,7 +38,7 @@ GEM_SPEC = Gem::Specification.new do |s|
   s.has_rdoc = false
 
   # project information
-  s.homepage          = 'http://github.com/rsim/do'
+  s.homepage          = 'http://github.com/datamapper/do'
   s.rubyforge_project = 'dorb'
 
   # author and contributors
