@@ -13,11 +13,15 @@ import org.jruby.runtime.builtin.IRubyObject;
 
 import data_objects.RubyType;
 import data_objects.drivers.AbstractDriverDefinition;
+import java.sql.DriverManager;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class MySqlDriverDefinition extends AbstractDriverDefinition {
 
     public final static String URI_SCHEME = "mysql";
     public final static String RUBY_MODULE_NAME = "Mysql";
+    private final static String UTF8_ENCODING = "UTF-8";
 
     public MySqlDriverDefinition() {
         super(URI_SCHEME, RUBY_MODULE_NAME);
@@ -83,6 +87,33 @@ public class MySqlDriverDefinition extends AbstractDriverDefinition {
     @Override
     public void setEncodingProperty(Properties props, String encodingName) {
         props.put("characterEncoding", encodingName);
+    }
+
+    @Override
+    public java.sql.Connection getConnectionWithEncoding(Ruby runtime,
+            IRubyObject connection, String url, Properties props) throws SQLException {
+        java.sql.Connection conn;
+        try {
+            conn = DriverManager.getConnection(url, props);
+        } catch (SQLException eex) {
+            Pattern p = Pattern.compile("Unsupported character encoding '(.+)'.");
+            Matcher m = p.matcher(eex.getMessage());
+
+            if (m.matches()) {
+                // re-attempt connection, but this time with UTF-8
+                // set as the encoding
+                runtime.getWarnings().warn(String.format(
+                        "Encoding %s is not a known Ruby encoding for %s\n",
+                        m.group(1), RUBY_MODULE_NAME));
+                setEncodingProperty(props, UTF8_ENCODING);
+                API.setInstanceVariable(connection,
+                        "@encoding", runtime.newString(UTF8_ENCODING));
+                conn = DriverManager.getConnection(url, props);
+            } else {
+                throw eex;
+            }
+        }
+        return conn;
     }
 
     @Override

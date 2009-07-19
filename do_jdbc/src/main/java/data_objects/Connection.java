@@ -28,8 +28,6 @@ import org.jruby.runtime.ObjectAllocator;
 import org.jruby.runtime.builtin.IRubyObject;
 
 import data_objects.drivers.DriverDefinition;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import org.jruby.runtime.callback.Callback;
 
 /**
@@ -198,26 +196,7 @@ public final class Connection extends DORubyObject {
                 if (driver.supportsConnectionEncodings()) {
                     // we set encoding properties, and retry on failure
                     driver.setEncodingProperty(props, encoding);
-                    try {
-                        conn = DriverManager.getConnection(jdbcUri, props);
-                    } catch (SQLException eex) {
-                        // TODO: Make this non-MySQL specific
-                        Pattern p = Pattern.compile("Unsupported character encoding '(.+)'.");
-                        Matcher m = p.matcher(eex.getMessage());
-
-                        if (m.matches()) {
-                            // re-attempt connection, but this time with UTF-8
-                            // set as the encoding
-                            runtime.getWarnings().warn(String.format(
-                                    "Encoding %s is not a known Ruby encoding for %s\n",
-                                    m.group(1), driver.getModuleName()));
-                            driver.setEncodingProperty(props, UTF8_ENCODING);
-                            api.setInstanceVariable(this, "@encoding", runtime.newString(UTF8_ENCODING));
-                            conn = DriverManager.getConnection(jdbcUri, props);
-                        } else {
-                            throw eex;
-                        }
-                    }
+                    conn = driver.getConnectionWithEncoding(runtime, this, jdbcUri, props);
                 } else {
                     // if the driver does not use encoding, connect normally
                     conn = DriverManager.getConnection(jdbcUri, props);

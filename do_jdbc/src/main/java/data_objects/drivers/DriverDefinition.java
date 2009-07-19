@@ -144,7 +144,18 @@ public interface DriverDefinition {
      * @param encodingName
      * @see #supportsConnectionEncodings()
      */
-    public void setEncodingProperty(Properties props, String encodingName);
+    void setEncodingProperty(Properties props, String encodingName);
+
+    /**
+     *
+     * @param url
+     * @param props
+     * @return
+     * @throws SQLException
+     * @see java.sql.DriverManager#getConnection
+     */
+    Connection getConnectionWithEncoding(Ruby runtime, IRubyObject connection,
+            String url, Properties props) throws SQLException;
 
     public String quoteString(String str);
 

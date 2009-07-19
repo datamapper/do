@@ -40,6 +40,7 @@ import org.jruby.runtime.marshal.UnmarshalStream;
 import org.jruby.util.ByteList;
 
 import data_objects.RubyType;
+import java.lang.UnsupportedOperationException;
 
 /**
  *
@@ -476,6 +477,12 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
 
     public void setEncodingProperty(Properties props, String encodingName) {
         // do nothing
+    }
+
+    public Connection getConnectionWithEncoding(Ruby runtime, IRubyObject connection,
+            String url, Properties props) throws SQLException {
+        throw new UnsupportedOperationException("This method only returns a method"
+                + " for drivers that support specifiying an encoding.");
     }
 
     public String quoteString(String str) {
