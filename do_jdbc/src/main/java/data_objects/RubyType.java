@@ -27,6 +27,7 @@ public enum RubyType {
     FLOAT      ("Float"),
     BIG_DECIMAL("BigDecimal"),
     BYTE_ARRAY ("Extlib::ByteArray"),      // Extlib::ByteArray < String
+    REGEXP     ("Regexp"),
     NIL        ("NilClass");
 
     private String rubyName;

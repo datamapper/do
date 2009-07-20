@@ -34,6 +34,7 @@ import org.jruby.RubyObjectAdapter;
 import org.jruby.RubyProc;
 import org.jruby.RubyString;
 import org.jruby.RubyTime;
+import org.jruby.RubyRegexp;
 import org.jruby.exceptions.RaiseException;
 import org.jruby.javasupport.JavaEmbedUtils;
 import org.jruby.runtime.builtin.IRubyObject;
@@ -392,6 +393,9 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
             String datetime = arg.toString().replace('T', ' ');
             ps.setTimestamp(idx, Timestamp.valueOf(datetime
                     .replaceFirst("[-+]..:..$", "")));
+            break;
+        case REGEXP:
+            ps.setString(idx, ((RubyRegexp) arg).source().toString());
             break;
         default:
             if (arg.toString().indexOf("-") != -1
