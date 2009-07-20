@@ -1,7 +1,9 @@
 package do_sqlite3;
 
+import java.lang.reflect.Field;
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.sql.Statement;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -141,6 +143,42 @@ public class Sqlite3DriverDefinition extends AbstractDriverDefinition {
         quotedValue.append(str.replaceAll("'", "''"));
         quotedValue.append("\'");
         return quotedValue.toString();
+    }
+
+    private String replace(String sql, Object param)
+    {
+        return sql.replaceFirst("[?]", param.toString());
+    }
+
+    private String replace(String sql, String param)
+    {
+        return sql.replaceFirst("[?]", "'" + param.toString() + "'");
+    }
+
+    @Override
+    public String statementToString(Statement s)
+    {
+        try {
+            Class c = Class.forName("org.sqlite.Stmt");
+            Field sqlField = c.getDeclaredField("sql");
+            sqlField.setAccessible(true);
+            String sql = sqlField.get(s).toString();
+            Field batchField = c.getDeclaredField("batch");
+            batchField.setAccessible(true);
+            Object[] batch = (Object[]) batchField.get(s);
+            int index = 0;
+            for (Object param : batch) {
+                if (param instanceof String)
+                    sql = replace(sql, param.toString());
+                else
+                    sql = replace(sql, param);
+            }
+            return sql;
+        }
+        catch(Exception e) {
+            // just fall to the toString of the PreparedStatement
+            return s.toString();
+        }
     }
 
 }
