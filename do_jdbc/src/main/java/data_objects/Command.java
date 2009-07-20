@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.Formatter;
 
 import org.jruby.Ruby;
 import org.jruby.RubyArray;
@@ -721,9 +722,10 @@ public class Command extends DORubyObject {
 
         if (level == 0) {
             StringBuffer msgSb = new StringBuffer();
+            Formatter formatter = new Formatter(msgSb);
 
             if (executionTime != null) {
-                msgSb.append("(").append(executionTime).append(") ");
+                formatter.format("(%.3f) ", executionTime / 1000.0);
             }
 
             msgSb.append(logMessage);
