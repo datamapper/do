@@ -1,4 +1,0 @@
-
-
-    JRUBY_HOME = /usr/local/jruby
-    rake java_compile

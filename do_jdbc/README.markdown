@@ -4,7 +4,7 @@ do_jdbc 'Doppio'
 *Native JDBC Support for DataObjects*
 
 do_jdbc is a gem wrapper for the common library that uses JDBC to support DO
-drivers running on the JRuby implentation.
+drivers running on the JRuby implementation.
 
 Testing and Installation
 ------------------------
