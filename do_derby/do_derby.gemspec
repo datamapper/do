@@ -5,9 +5,9 @@ homepage: http://github.com/datamapper/do
 executables: []
 
 version: !ruby/object:Gem::Version 
-  version: 0.9.12
+  version: 0.10.0
 post_install_message: 
-date: 2009-07-17 22:00:00 +00:00
+date: 2009-07-19 22:00:00 +00:00
 files: 
 - lib/do_derby.rb
 - lib/do_derby/version.rb
@@ -41,6 +41,7 @@ files:
 - History.txt
 - Manifest.txt
 - README.txt
+- lib/do_derby_ext.jar
 rubygems_version: 1.3.4
 rdoc_options: []
 
@@ -102,7 +103,7 @@ dependencies:
     requirements: 
     - - "="
       - !ruby/object:Gem::Version 
-        version: 0.9.12
+        version: 0.10.0
 - !ruby/object:Gem::Dependency 
   type: :runtime
   name: jdbc-derby
@@ -122,7 +123,7 @@ dependencies:
     requirements: 
     - - "="
       - !ruby/object:Gem::Version 
-        version: 0.9.12
+        version: 0.10.0
 - !ruby/object:Gem::Dependency 
   type: :development
   name: rspec
