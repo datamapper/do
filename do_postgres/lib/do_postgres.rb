@@ -22,16 +22,6 @@ if RUBY_PLATFORM =~ /java/
         def self.pool_size
           20
         end
-
-        def character_set
-          # JDBC API does not provide an easy way to get the current character set
-          reader = self.create_command("SELECT pg_client_encoding()").execute_reader
-          reader.next!
-          char_set = reader.values.to_s
-          reader.close
-          char_set.downcase
-        end
-
       end
     end
   end

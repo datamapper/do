@@ -33,12 +33,6 @@ public class PostgresDriverDefinition extends AbstractDriverDefinition {
     }
 
     @Override
-    public boolean supportsConnectionEncodings()
-    {
-        return true;
-    }
-
-    @Override
     public void setPreparedStatementParam(PreparedStatement ps,
             IRubyObject arg, int idx) throws SQLException {
         switch (RubyType.getRubyType(arg.getType().getName())) {
@@ -57,13 +51,6 @@ public class PostgresDriverDefinition extends AbstractDriverDefinition {
         default:
             super.setPreparedStatementParam(ps, arg, idx);
         }
-    }
-
-    @Override
-    public void setEncodingProperty(Properties props, String encodingName) {
-        // this is redundant as of Postgres 8.0, according to the JDBC documentation:
-        // http://jdbc.postgresql.org/documentation/80/connect.html
-        props.put("charSet", encodingName);
     }
 
 }
