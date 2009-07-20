@@ -143,8 +143,6 @@ public class Command extends DORubyObject {
                 sqlSimpleStatement = conn.createStatement();
             }
 
-            //javaConn.setAutoCommit(true); // hangs with autocommit set to false
-            // sqlStatement.setMaxRows();
             long startTime = System.currentTimeMillis();
             if (usePS) {
                 try {
@@ -206,12 +204,7 @@ public class Command extends DORubyObject {
                 affectedCount = (affectedCount > 0) ? affectedCount : 1;
             }
 
-            // not needed as it will be closed in the finally clause
-            // sqlStatement.close();
-            // sqlStatement = null;
         } catch (SQLException sqle) {
-            // TODO: log
-            // sqle.printStackTrace();
             throw newQueryError(runtime, sqle, usePS ? sqlStatement : sqlSimpleStatement);
         } finally {
             if (usePS)
@@ -284,7 +277,6 @@ public class Command extends DORubyObject {
                            driver.supportsJdbcScrollableResultSets() ? ResultSet.TYPE_SCROLL_INSENSITIVE : ResultSet.TYPE_FORWARD_ONLY,
                            ResultSet.CONCUR_READ_ONLY);
 
-            // sqlStatement.setMaxRows();
             prepareStatementFromArgs(sqlText, sqlStatement, args);
 
             long startTime = System.currentTimeMillis();
@@ -362,12 +354,7 @@ public class Command extends DORubyObject {
 
             // keep the statement open
 
-            // TODO why keep it open ???
-
-            //sqlStatement.close();
-            //sqlStatement = null;
         } catch (SQLException sqle) {
-            // TODO: log sqle.printStackTrace();
             // XXX sqlite3 jdbc driver happily throws an exception if the result set is empty :P
             // this sets up a minimal empty reader
             if (sqle.getMessage().equals("query does not return results")) {
@@ -681,7 +668,6 @@ public class Command extends DORubyObject {
             }
             return hasReturnParam;
         } catch (SQLException sqle) {
-            // TODO: log sqle.printStackTrace();
             // TODO: possibly move this exception string parsing somewhere else
             Pattern pattern = Pattern
                     .compile("Parameter index out of bounds. (\\d+) is not between valid values of (\\d+) and (\\d+)");
@@ -696,16 +682,6 @@ public class Command extends DORubyObject {
             }
         }
     }
-
-    // /**
-    // * Output a log message
-    // *
-    // * @param runtime
-    // * @param logMessage
-    // */
-    // private void debug(String logMessage) {
-    // debug(logMessage, null);
-    // }
 
     /**
      * Output a log message

@@ -56,11 +56,6 @@ public class Transaction extends DORubyObject {
 
     // inherit initialize
 
-    // @JRubyMethod(required = 1)
-    // public IRubyObject initialize(IRubyObject recv) {
-    //     return recv;
-    // }
-
     /**
      * Begins the transaction
      *
@@ -120,21 +115,6 @@ public class Transaction extends DORubyObject {
         }
         return getRuntime().getTrue();
     }
-
-    // /**
-    //  * Creates a savepoint for rolling back later
-    //  *
-    //  * @return
-    //  */
-    // @JRubyMethod(required = 1)
-    // public IRubyObject save() {
-    //     return getRuntime().getFalse();
-    // }
-    //
-    // @JRubyMethod
-    // public IRubyObject create_command() {
-    //     return getRuntime().getFalse();
-    // }
 
     // ---------------------------------------------------------- HELPER METHODS
 

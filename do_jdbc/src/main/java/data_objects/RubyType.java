@@ -108,8 +108,6 @@ public enum RubyType {
         default:
             primitiveType = RubyType.STRING;
         }
-        // No casting rule for type #{meta_data.column_type(i)}
-        // (#{meta_data.column_name(i)}). Please report this."
         return primitiveType;
     }
 

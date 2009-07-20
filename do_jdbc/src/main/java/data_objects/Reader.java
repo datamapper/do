@@ -142,16 +142,6 @@ public class Reader extends DORubyObject {
 
                     }
 
-                    // -- debugging what's coming out
-                    // System.out.println("Column Name: " +
-                    // rs.getMetaData().getColumnName(col));
-                    // System.out.println("JDBC TypeName " +
-                    // rs.getMetaData().getColumnTypeName(col));
-                    // System.out.println("JDBC Metadata scale " +
-                    // rs.getMetaData().getScale(col));
-                    // System.out.println("Ruby Type " + type);
-                    // System.out.println(""); //for prettier output
-
                     if (type == null)
                         throw runtime
                                 .newRuntimeError("Problem automatically mapping JDBC Type to Ruby Type");

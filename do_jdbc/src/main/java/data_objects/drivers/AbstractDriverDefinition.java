@@ -184,7 +184,7 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
             sb.append("vendor_errno=").append(code).append(", ");
         sb.append("sql_state=").append(exception.getSQLState()).append(") ");
         sb.append(exception.getLocalizedMessage());
-        // TODO: delegate to the DriverDefinition for this
+
         if (statement != null)
             sb.append("\nQuery: ").append(statementToString(statement));
 

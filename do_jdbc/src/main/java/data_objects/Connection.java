@@ -114,7 +114,6 @@ public class Connection extends DORubyObject {
                 query = parseQueryString(connectionUri.getQuery());
             } catch (UnsupportedEncodingException ex) {
                 throw runtime.newArgumentError("Unsupported Encoding in Query Parameters" + ex);
-                //Logger.getLogger(Connection.class.getName()).log(Level.SEVERE, null, ex);
             }
 
             jdbcDriver = query.get("driver");
@@ -140,7 +139,6 @@ public class Connection extends DORubyObject {
                 Class.forName(jdbcDriver).newInstance();
             } catch (ClassNotFoundException cfe) {
                 throw runtime.newArgumentError("Driver class library (" + jdbcDriver + ") not found.");
-                //Logger.getLogger(Connection.class.getName()).log(Level.SEVERE, null, cfe);
             } catch (InstantiationException ine) {
                 throw runtime.newArgumentError("Driver class library you specified could not be instantiated");
             } catch (IllegalAccessException iae) {
@@ -227,7 +225,6 @@ public class Connection extends DORubyObject {
             }
 
         } catch (SQLException ex) {
-            //Logger.getLogger(Connection.class.getName()).log(Level.SEVERE, null, ex);
             throw driver.newDriverError(runtime, "Can't connect: " + connectionUri.toString() + "\n\t" + ex.getLocalizedMessage());
         }
 
