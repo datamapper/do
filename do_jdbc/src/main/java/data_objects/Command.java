@@ -213,15 +213,20 @@ public class Command extends DORubyObject {
             // sqle.printStackTrace();
             throw newQueryError(runtime, sqle, usePS ? sqlStatement : sqlSimpleStatement);
         } finally {
-            if (sqlStatement != null) {
-                try {
-                    if (usePS)
+            if (usePS)
+                if (sqlStatement != null) {
+                    try {
                         sqlStatement.close();
-                    else
-                        sqlSimpleStatement.close();
-                } catch (SQLException sqle2) {
+                    } catch (SQLException sqle2) {
+                    }
                 }
-            }
+            else
+                if (sqlSimpleStatement != null) {
+                    try {
+                        sqlSimpleStatement.close();
+                    } catch (SQLException sqle2) {
+                    }
+                }
         }
 
         // return nil if no updates are made
