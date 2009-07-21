@@ -44,7 +44,7 @@ CONFIG = OpenStruct.new
 # CONFIG.port     = ENV['DO_HSQLDB_PORT'] || ''
 # CONFIG.database = ENV['DO_HSQLDB_DATABASE'] || "#{File.expand_path(File.dirname(__FILE__))}/testdb"
 
-CONFIG.uri = ENV["DO_HSQLDB_SPEC_URI"] || "jdbc:hsqldb:mem"
+CONFIG.uri = ENV["DO_HSQLDB_SPEC_URI"] || "jdbc:hsqldb:mem:test"
 
 module DataObjectsSpecHelpers
 

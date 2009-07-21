@@ -1,6 +1,9 @@
 package do_hsqldb;
 
+import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Field;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -115,5 +118,15 @@ public class HsqldbDriverDefinition extends AbstractDriverDefinition {
             // just fall to the toString of the PreparedStatement
             return s.toString();
         }
+    }
+
+    public URI parseConnectionURI(IRubyObject connection_uri)
+        throws URISyntaxException, UnsupportedEncodingException {
+        if (!"DataObjects::URI".equals(connection_uri.getType().getName())) {
+            if(connection_uri.asJavaString().endsWith(":mem")){
+                return new URI(connection_uri.asJavaString() + ":");
+            }
+        }
+        return super.parseConnectionURI(connection_uri);
     }
 }

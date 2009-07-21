@@ -80,7 +80,7 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
     }
 
     @SuppressWarnings("unchecked")
-    public final URI parseConnectionURI(IRubyObject connection_uri)
+    public URI parseConnectionURI(IRubyObject connection_uri)
             throws URISyntaxException, UnsupportedEncodingException {
         URI uri;
 
