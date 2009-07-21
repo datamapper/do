@@ -3,15 +3,20 @@ if RUBY_PLATFORM =~ /java/
   require 'do_jdbc'
   require 'java'
 
-  # ojdbc14.jar file should be in ENV['PATH'] or should be in load path
-  # Adds JRuby classloader to current thread classloader - as a result ojdbc14.jar should not be in $JRUBY_HOME/lib
-  java.lang.Thread.currentThread.setContextClassLoader(JRuby.runtime.jruby_class_loader)
+  # ojdbc14.jar file should be in JRUBY_HOME/lib or should be in ENV['PATH'] or load path
 
   ojdbc_jar = "ojdbc14.jar"
-  if ojdbc_jar_path = ENV["PATH"].split(/[:;]/).find{|d| File.exists?(File.join(d,ojdbc_jar))}
-    require File.join(ojdbc_jar_path,ojdbc_jar)
-  else
-    require ojdbc_jar
+  
+  unless ENV_JAVA['java.class.path'] =~ Regexp.new(ojdbc_jar)
+    # Adds JRuby classloader to current thread classloader - as a result ojdbc14.jar should not be in $JRUBY_HOME/lib
+    # not necessary anymore for JRuby 1.3
+    # java.lang.Thread.currentThread.setContextClassLoader(JRuby.runtime.jruby_class_loader)
+
+    if ojdbc_jar_path = ENV["PATH"].split(/[:;]/).concat($LOAD_PATH).find{|d| File.exists?(File.join(d,ojdbc_jar))}
+      require File.join(ojdbc_jar_path,ojdbc_jar)
+    else
+      raise LoadError, "Cannot find #{ojdbc_jar} file - place it in JRUBY_HOME/lib or in ENV['PATH'] or in Ruby load path"
+    end
   end
 
 else # MRI and Ruby 1.9
