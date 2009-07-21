@@ -73,11 +73,6 @@ public class MySqlDriverDefinition extends AbstractDriverDefinition {
     }
 
     @Override
-    public boolean supportsCalendarsInJDBCPreparedStatement() {
-        return false;
-    }
-
-    @Override
     public Properties getDefaultConnectionProperties() {
         Properties props = new Properties();
         props.put("useUnicode", "yes");

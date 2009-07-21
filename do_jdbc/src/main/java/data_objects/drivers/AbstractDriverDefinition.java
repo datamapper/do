@@ -382,7 +382,7 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
             if (supportsCalendarsInJDBCPreparedStatement() == true) {
                 ts = new Timestamp(dateTime.getMillis());
             } else {
-                // XXX ugly workaround for MySQL and Hsqldb
+                // XXX ugly workaround for Hsqldb
                 // use the default timeZone the oposite way these jdbc drivers do it
                 long offset = DateTimeZone.getDefault().getOffset(dateTime.getMillis());
                 ts = new Timestamp(dateTime.getMillis() - offset);
