@@ -6,7 +6,7 @@ if RUBY_PLATFORM =~ /java/
   # ojdbc14.jar file should be in JRUBY_HOME/lib or should be in ENV['PATH'] or load path
 
   ojdbc_jar = "ojdbc14.jar"
-  
+
   unless ENV_JAVA['java.class.path'] =~ Regexp.new(ojdbc_jar)
     # Adds JRuby classloader to current thread classloader - as a result ojdbc14.jar should not be in $JRUBY_HOME/lib
     # not necessary anymore for JRuby 1.3
