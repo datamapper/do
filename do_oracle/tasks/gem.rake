@@ -10,7 +10,7 @@ GEM_SPEC = Gem::Specification.new do |s|
   s.description = "Implements the DataObjects API for Oracle"
 
   # dependencies
-  s.add_dependency "addressable", "~>2.0.0"
+  s.add_dependency "addressable", "~>2.0"
   s.add_dependency "extlib", "~>0.9.12"
   s.add_dependency "data_objects", DataObjects::Oracle::VERSION
 
