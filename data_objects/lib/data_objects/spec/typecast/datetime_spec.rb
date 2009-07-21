@@ -1,3 +1,5 @@
+JRUBY = RUBY_PLATFORM =~ /java/ unless defined?(JRUBY)
+
 share_examples_for 'supporting DateTime' do
 
   include DataObjectsSpecHelpers
