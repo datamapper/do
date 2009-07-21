@@ -124,7 +124,7 @@ share_examples_for 'supporting DateTime autocasting' do
       end
 
       it 'should return the correct result' do
-        pending "when this is fixed for DST issues" unless JRUBY
+        pending "when this is fixed for DST issues"
         @values.first.should == Time.local(2008, 2, 14, 00, 31, 12).to_datetime
       end
 

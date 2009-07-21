@@ -1,4 +1,5 @@
 $TESTING=true
+JRUBY = true
 
 require 'rubygems'
 
