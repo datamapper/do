@@ -115,6 +115,7 @@ public class HsqldbDriverDefinition extends AbstractDriverDefinition {
         }
     }
 
+    @Override
     public URI parseConnectionURI(IRubyObject connection_uri)
         throws URISyntaxException, UnsupportedEncodingException {
         if (!"DataObjects::URI".equals(connection_uri.getType().getName())) {

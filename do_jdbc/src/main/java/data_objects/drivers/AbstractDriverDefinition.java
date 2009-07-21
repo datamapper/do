@@ -83,7 +83,7 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
         URI uri;
 
         if ("DataObjects::URI".equals(connection_uri.getType().getName())) {
-            String query = null;
+            String query;
             StringBuffer userInfo = new StringBuffer();
 
             verifyScheme(stringOrNull(API.callMethod(connection_uri, "scheme")));

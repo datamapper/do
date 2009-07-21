@@ -231,7 +231,7 @@ public class Command extends DORubyObject {
         int columnCount = 0;
         PreparedStatement sqlStatement = null;
         ResultSet resultSet = null;
-        ResultSetMetaData metaData = null;
+        ResultSetMetaData metaData;
 
         // instantiate a new reader
         IRubyObject reader = readerClass.newInstance(runtime.getCurrentContext(),
@@ -360,13 +360,6 @@ public class Command extends DORubyObject {
             }
 
             throw newQueryError(runtime, sqle, sqlStatement);
-        } finally {
-            //if (sqlStatement != null) {
-            //    try {
-            //        sqlStatement.close();
-            //    } catch (SQLException stsqlex) {
-            //    }
-            //}
         }
 
         // return the reader

@@ -30,7 +30,7 @@ public enum RubyType {
     REGEXP     ("Regexp"),
     NIL        ("NilClass");
 
-    private String rubyName;
+    private final String rubyName;
 
     private RubyType(String rubyName)
     {

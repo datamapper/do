@@ -162,7 +162,7 @@ public final class Connection extends DORubyObject {
                                                   + connectionUri.toString() + "\n\t" + ex.getLocalizedMessage());
                 }
             } else {
-                String jdbcUri = null;
+                String jdbcUri;
                 Properties props = driver.getDefaultConnectionProperties();
 
                 if (connectionUri.toString().contains("@")) {
