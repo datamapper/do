@@ -133,18 +133,10 @@ public class Command extends DORubyObject {
 
             long startTime = System.currentTimeMillis();
             if (usePS) {
-                try {
-                    if (sqlText.contains("RETURNING") && !hasReturnParam) {
-                        keys = sqlStatement.executeQuery();
-                    } else {
-                        affectedCount = sqlStatement.executeUpdate();
-                    }
-                } catch (SQLException sqle) {
-                    // This is to handle the edge case of SELECT sleep(1):
-                    // an executeUpdate() will throw a SQLException if a SELECT
-                    // is passed, so we try the same query again with execute()
-                    affectedCount = 0;
-                    sqlStatement.execute();
+                if (sqlText.contains("RETURNING") && !hasReturnParam) {
+                    keys = sqlStatement.executeQuery();
+                } else {
+                    affectedCount = sqlStatement.executeUpdate();
                 }
             } else {
                 sqlSimpleStatement.execute(sqlText);
