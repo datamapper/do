@@ -85,6 +85,7 @@
     <module>do_h2</module>
     <module>do_hsqldb</module>
     <module>do_mysql</module>
+    <module>do_oracle</module>
     <module>do_postgres</module>
     <module>do_sqlite3</module>
   </modules>
