@@ -8,6 +8,7 @@ module DataObjects
 
       case value
         when Numeric then quote_numeric(value)
+        when ::Extlib::ByteArray then quote_byte_array(value)
         when String then quote_string(value)
         when Time then quote_time(value)
         when DateTime then quote_datetime(value)
@@ -17,7 +18,6 @@ module DataObjects
         when Range then quote_range(value)
         when Symbol then quote_symbol(value)
         when Regexp then quote_regexp(value)
-        when ::Extlib::ByteArray then quote_byte_array(value)
         when Class then quote_class(value)
         else
           if value.respond_to?(:to_sql)
