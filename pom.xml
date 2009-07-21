@@ -46,24 +46,24 @@
     </plugins>
     <pluginManagement>
       <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-checkstyle-plugin</artifactId> 
-        <configuration>
-          <failOnViolation>false</failOnViolation>
-          <logViolationsToConsole>true</logViolationsToConsole>
-          <configLocation>data_objects/checkstyle.xml</configLocation>
-          <headerLocation>data_objects/LICENSE.txt</headerLocation>
-        </configuration>
-        <dependencies>
-          <dependency>
-            <groupId>org.dataobjects</groupId>
-            <artifactId>do_jdbc-tools</artifactId>
-            <version>${pom.version}</version>
-          </dependency>
-        </dependencies>
-      </plugin>
-    </plugins>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-checkstyle-plugin</artifactId>
+          <configuration>
+            <failOnViolation>false</failOnViolation>
+            <logViolationsToConsole>true</logViolationsToConsole>
+            <configLocation>data_objects/checkstyle.xml</configLocation>
+            <headerLocation>data_objects/LICENSE.txt</headerLocation>
+          </configuration>
+          <dependencies>
+            <dependency>
+              <groupId>org.dataobjects</groupId>
+              <artifactId>do_jdbc-tools</artifactId>
+              <version>${pom.version}</version>
+            </dependency>
+          </dependencies>
+        </plugin>
+      </plugins>
     </pluginManagement>
   </build>
     

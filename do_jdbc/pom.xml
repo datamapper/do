@@ -12,12 +12,19 @@
     <name>do_jdbc</name>
     <description>JDBC support for DataObjects.rb drivers</description>
     <build>
-       <outputDirectory>target/classes</outputDirectory>
        <sourceDirectory>src/main/java</sourceDirectory>
+       <finalName>do_jdbc_internal</finalName>
        <plugins>
          <plugin>
            <groupId>org.apache.maven.plugins</groupId>
            <artifactId>maven-checkstyle-plugin</artifactId>
+         </plugin>
+         <plugin>
+           <groupId>org.apache.maven.plugins</groupId>
+           <artifactId>maven-jar-plugin</artifactId>
+           <configuration>
+             <outputDirectory>pkg</outputDirectory>
+           </configuration>
          </plugin>
        </plugins>
     </build>  
