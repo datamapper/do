@@ -33,29 +33,28 @@ import java.util.regex.Pattern;
 import org.jruby.runtime.callback.Callback;
 
 /**
- * Connection Class
+ * Connection Class.
  *
  * @author alexbcoles
  */
 @SuppressWarnings("serial")
 @JRubyClass(name = "Connection")
-public class Connection extends DORubyObject {
+public final class Connection extends DORubyObject {
 
-    public final static String RUBY_CLASS_NAME = "Connection";
+    public static final String RUBY_CLASS_NAME = "Connection";
 
     private static final String JNDI_PROTO = "jndi://";
     private static final String UTF8_ENCODING = "UTF-8";
 
-    private final static ObjectAllocator CONNECTION_ALLOCATOR = new ObjectAllocator() {
+    private static final ObjectAllocator CONNECTION_ALLOCATOR = new ObjectAllocator() {
 
-        public IRubyObject allocate(Ruby runtime, RubyClass klass) {
-            Connection instance = new Connection(runtime, klass);
-            return instance;
+        public IRubyObject allocate(final Ruby runtime, final RubyClass klass) {
+            return new Connection(runtime, klass);
         }
     };
 
     public static RubyClass createConnectionClass(final Ruby runtime,
-            DriverDefinition driver) {
+            final DriverDefinition driver) {
         RubyModule doModule = runtime.getModule(DATA_OBJECTS_MODULE_NAME);
         RubyClass superClass = doModule.getClass(RUBY_CLASS_NAME);
         RubyModule driverModule = (RubyModule) doModule.getConstant(driver
@@ -70,7 +69,7 @@ public class Connection extends DORubyObject {
                 public Arity getArity() {
                     return Arity.NO_ARGUMENTS;
                 }
-                public IRubyObject execute(IRubyObject recv, IRubyObject[] args, Block block) {
+                public IRubyObject execute(final IRubyObject recv, final IRubyObject[] args, Block block) {
                     return recv.getInstanceVariables().fastGetInstanceVariable("@encoding");
                 }
             });
@@ -78,13 +77,13 @@ public class Connection extends DORubyObject {
         return connectionClass;
     }
 
-    private Connection(Ruby runtime, RubyClass klass) {
+    private Connection(final Ruby runtime, final RubyClass klass) {
         super(runtime, klass);
     }
 
     // -------------------------------------------------- DATAOBJECTS PUBLIC API
     @JRubyMethod(required = 1)
-    public IRubyObject initialize(IRubyObject uri) {
+    public IRubyObject initialize(final IRubyObject uri) {
         // System.out.println("============== initialize called " + uri);
         Ruby runtime = getRuntime();
         String jdbcDriver = null;
@@ -105,7 +104,7 @@ public class Connection extends DORubyObject {
         // throw this error for opaque URIs - so URIs like jdbc:h2:mem should work.
         if (!connectionUri.isOpaque() && (connectionUri.getPath() == null
                 || "".equals(connectionUri.getPath())
-                ||"/".equals(connectionUri.getPath()))) {
+                || "/".equals(connectionUri.getPath()))) {
             throw runtime.newArgumentError("No database specified");
         }
 
@@ -159,7 +158,8 @@ public class Connection extends DORubyObject {
                     // TODO maybe allow username and password here as well !??!
                     conn = dataSource.getConnection();
                 } catch (NamingException ex) {
-                    throw runtime.newRuntimeError("Can't lookup datasource: " + connectionUri.toString() + "\n\t" + ex.getLocalizedMessage());
+                    throw runtime.newRuntimeError("Can't lookup datasource: "
+                                                  + connectionUri.toString() + "\n\t" + ex.getLocalizedMessage());
                 }
             } else {
                 String jdbcUri = null;
@@ -177,7 +177,7 @@ public class Connection extends DORubyObject {
 
                     // Replace . with : in scheme name - necessary for Oracle scheme oracle:thin
                     // : cannot be used in JDBC_URI_SCHEME as then it is identified as opaque URI
-                    jdbcUri = jdbcUri.replaceFirst("^([a-z]+)(\\.)","$1:");
+                    jdbcUri = jdbcUri.replaceFirst("^([a-z]+)(\\.)", "$1:");
 
                     if (!jdbcUri.startsWith("jdbc:")) {
                         jdbcUri = "jdbc:" + jdbcUri;
@@ -225,22 +225,23 @@ public class Connection extends DORubyObject {
             }
 
         } catch (SQLException ex) {
-            throw driver.newDriverError(runtime, "Can't connect: " + connectionUri.toString() + "\n\t" + ex.getLocalizedMessage());
+            throw driver.newDriverError(runtime, "Can't connect: "
+                                        + connectionUri.toString() + "\n\t" + ex.getLocalizedMessage());
         }
 
         // Callback for setting connection properties after connection is established
         try {
             driver.afterConnectionCallback(conn, query);
         } catch (SQLException ex) {
-            throw driver.newDriverError(runtime, "Connection initialization error:" + "\n\t" + ex.getLocalizedMessage());
+            throw driver.newDriverError(runtime, "Connection initialization error:"
+                                        + "\n\t" + ex.getLocalizedMessage());
         }
 
-        IRubyObject rubyconn1 = wrappedConnection(conn);
-        // IRubyObject rubyconn1 = JavaEmbedUtils.javaToRuby(runtime, conn);
+        IRubyObject rubyconn = wrappedConnection(conn);
 
         api.setInstanceVariable(this, "@uri", uri);
-        api.setInstanceVariable(this, "@connection", rubyconn1);
-        rubyconn1.dataWrapStruct(conn);
+        api.setInstanceVariable(this, "@connection", rubyconn);
+        rubyconn.dataWrapStruct(conn);
 
         return runtime.getTrue();
     }
@@ -272,18 +273,18 @@ public class Connection extends DORubyObject {
     // ------------------------------------------------ ADDITIONAL JRUBY METHODS
 
     @JRubyMethod(required = 1)
-    public IRubyObject quote_string(IRubyObject value) {
+    public IRubyObject quote_string(final IRubyObject value) {
         String quoted = driver.quoteString(value.asJavaString());
         return getRuntime().newString(quoted);
     }
 
     // -------------------------------------------------- PRIVATE HELPER METHODS
-    private IRubyObject wrappedConnection(java.sql.Connection c) {
+    private IRubyObject wrappedConnection(final java.sql.Connection c) {
         return Java.java_to_ruby(this, JavaObject.wrap(this.getRuntime(), c),
                 Block.NULL_BLOCK);
     }
 
-    private static java.sql.Connection getConnection(IRubyObject recv) {
+    private static java.sql.Connection getConnection(final IRubyObject recv) {
         java.sql.Connection conn = (java.sql.Connection) recv.dataGetStruct();
         return conn;
     }
@@ -295,7 +296,7 @@ public class Connection extends DORubyObject {
      * @param query
      * @return
      */
-    private static Map<String, String> parseQueryString(String query)
+    private static Map<String, String> parseQueryString(final String query)
             throws UnsupportedEncodingException {
         if (query == null) {
             return null;
