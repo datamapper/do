@@ -7,8 +7,6 @@ import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.Formatter;
@@ -17,7 +15,6 @@ import org.jruby.Ruby;
 import org.jruby.RubyArray;
 import org.jruby.RubyClass;
 import org.jruby.RubyModule;
-import org.jruby.RubyNil;
 import org.jruby.RubyNumeric;
 import org.jruby.RubyRange;
 import org.jruby.RubyString;
@@ -92,7 +89,7 @@ public class Command extends DORubyObject {
         RubyClass resultClass = Result.createResultClass(runtime, driver);
         // affectedCount == 1 means 1 updated row
         // or 1 row in result set that represents returned key (insert...returning),
-        // other values represents numer of updated rows
+        // other values represents number of updated rows
         int affectedCount = 0;
         PreparedStatement sqlStatement = null;
         // if usePreparedStatement returns false
@@ -104,15 +101,6 @@ public class Command extends DORubyObject {
         String doSqlText = api.convertToRubyString(
                 api.getInstanceVariable(this, "@text")).getUnicodeValue();
         String sqlText = prepareSqlTextForPs(doSqlText, args);
-
-        // remove deleted arguments
-        List<IRubyObject> list = new ArrayList<IRubyObject>();
-        for( IRubyObject o: args){
-            if (o != null){
-                list.add(o);
-            }
-        }
-        args = list.toArray(new IRubyObject[list.size()]);
 
         // additional callback for driver specific SQL statement changes
         sqlText = driver.prepareSqlTextForPs(sqlText, args);
@@ -263,14 +251,6 @@ public class Command extends DORubyObject {
         try {
             String sqlText = prepareSqlTextForPs(api.getInstanceVariable(this,
                     "@text").asJavaString(), args);
-
-            List<IRubyObject> list = new ArrayList<IRubyObject>();
-            for( IRubyObject o: args){
-                if (o != null){
-                    list.add(o);
-                }
-            }
-            args = list.toArray(new IRubyObject[list.size()]);
 
             sqlStatement = conn.prepareStatement(
                            sqlText,
@@ -547,23 +527,6 @@ public class Command extends DORubyObject {
                     if (count ==(i+addedSymbols)){
                         pm.appendReplacement(sb, "? AND ?"); // XXX was (? AND ?)
                         addedSymbols += 1;
-                        break lbWhile;
-                    }
-                    count++;
-                }
-                pm.appendTail(sb);
-                psSqlText = sb.toString();
-            } else if(args[i] instanceof RubyNil){
-                Pattern pp = Pattern.compile("(IS |IS NOT )?\\?");
-                Matcher pm = pp.matcher(psSqlText);
-                StringBuffer sb = new StringBuffer();
-
-                int count = 0;
-                lbWhile: while (pm.find()) {
-                    if (count == (i + addedSymbols)) {
-                        pm.appendReplacement(sb, "$1NULL");
-                        args[i] = null;
-                        addedSymbols -= 1;
                         break lbWhile;
                     }
                     count++;
