@@ -91,7 +91,7 @@ module DataObjects
     end
 
     def quote_byte_array(value)
-      quote_string(value.source)
+      quote_string(value)
     end
 
   end
