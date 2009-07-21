@@ -2,6 +2,8 @@ package data_objects;
 
 import static data_objects.DataObjects.DATA_OBJECTS_MODULE_NAME;
 
+import java.sql.SQLException;
+
 import org.jruby.Ruby;
 import org.jruby.RubyClass;
 import org.jruby.RubyModule;
@@ -9,9 +11,6 @@ import org.jruby.anno.JRubyClass;
 import org.jruby.anno.JRubyMethod;
 import org.jruby.runtime.ObjectAllocator;
 import org.jruby.runtime.builtin.IRubyObject;
-
-import java.sql.Connection;
-import java.sql.SQLException;
 
 import data_objects.drivers.DriverDefinition;
 

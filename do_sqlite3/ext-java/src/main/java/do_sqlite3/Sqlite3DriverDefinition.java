@@ -159,14 +159,13 @@ public class Sqlite3DriverDefinition extends AbstractDriverDefinition {
     public String statementToString(Statement s)
     {
         try {
-            Class c = Class.forName("org.sqlite.Stmt");
+            Class<?> c = Class.forName("org.sqlite.Stmt");
             Field sqlField = c.getDeclaredField("sql");
             sqlField.setAccessible(true);
             String sql = sqlField.get(s).toString();
             Field batchField = c.getDeclaredField("batch");
             batchField.setAccessible(true);
             Object[] batch = (Object[]) batchField.get(s);
-            int index = 0;
             for (Object param : batch) {
                 if (param instanceof String)
                     sql = replace(sql, param.toString());
