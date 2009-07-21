@@ -8,13 +8,13 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.sql.Types;
 
 import org.jruby.runtime.builtin.IRubyObject;
 
 import data_objects.RubyType;
 import data_objects.drivers.AbstractDriverDefinition;
-import java.sql.Statement;
 
 
 public class HsqldbDriverDefinition extends AbstractDriverDefinition {
@@ -65,11 +65,6 @@ public class HsqldbDriverDefinition extends AbstractDriverDefinition {
     @Override
     public boolean supportsConnectionPrepareStatementMethodWithGKFlag()
     {
-        return false;
-    }
-
-    @Override
-    public boolean supportsCalendarsInJDBCPreparedStatement() {
         return false;
     }
 

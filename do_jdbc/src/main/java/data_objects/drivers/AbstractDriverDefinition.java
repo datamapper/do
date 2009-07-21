@@ -8,18 +8,16 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.sql.Connection;
 import java.sql.Date;
-import java.sql.Statement;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.sql.Timestamp;
 import java.sql.Types;
-import java.util.GregorianCalendar;
 import java.util.Map;
 import java.util.Properties;
 
 import org.joda.time.DateTime;
-import org.joda.time.DateTimeZone;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.jruby.Ruby;
@@ -32,9 +30,9 @@ import org.jruby.RubyHash;
 import org.jruby.RubyNumeric;
 import org.jruby.RubyObjectAdapter;
 import org.jruby.RubyProc;
+import org.jruby.RubyRegexp;
 import org.jruby.RubyString;
 import org.jruby.RubyTime;
-import org.jruby.RubyRegexp;
 import org.jruby.exceptions.RaiseException;
 import org.jruby.javasupport.JavaEmbedUtils;
 import org.jruby.runtime.builtin.IRubyObject;
@@ -50,7 +48,7 @@ import data_objects.RubyType;
  */
 public abstract class AbstractDriverDefinition implements DriverDefinition {
 
-    // assuming that API is threadsafe
+    // assuming that API is thread safe
     protected static final RubyObjectAdapter API = JavaEmbedUtils
             .newObjectAdapter();
 
@@ -377,17 +375,8 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
             break;
         case TIME:
             DateTime dateTime = ((RubyTime) arg).getDateTime();
-            GregorianCalendar cal = dateTime.toGregorianCalendar();
-            Timestamp ts;
-            if (supportsCalendarsInJDBCPreparedStatement() == true) {
-                ts = new Timestamp(dateTime.getMillis());
-            } else {
-                // XXX ugly workaround for Hsqldb
-                // use the default timeZone the oposite way these jdbc drivers do it
-                long offset = DateTimeZone.getDefault().getOffset(dateTime.getMillis());
-                ts = new Timestamp(dateTime.getMillis() - offset);
-            }
-            ps.setTimestamp(idx, ts, cal);
+            Timestamp ts = new Timestamp(dateTime.getMillis());
+            ps.setTimestamp(idx, ts, dateTime.toGregorianCalendar());
             break;
         case DATE_TIME:
             String datetime = arg.toString().replace('T', ' ');
@@ -470,10 +459,6 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
     }
 
     public boolean supportsConnectionPrepareStatementMethodWithGKFlag() {
-        return true;
-    }
-
-    public boolean supportsCalendarsInJDBCPreparedStatement(){
         return true;
     }
 

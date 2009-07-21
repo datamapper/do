@@ -106,13 +106,6 @@ public interface DriverDefinition {
     public boolean supportsConnectionPrepareStatementMethodWithGKFlag();
 
     /**
-     * Method tells if Calendar instances passed to PreparedStatement
-     * are accepted (returned true) or ignored
-     * @return
-     */
-    public boolean supportsCalendarsInJDBCPreparedStatement();
-
-    /**
      * Whether the Driver supports specifying a connection encoding
      *
      * @return
