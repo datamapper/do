@@ -66,7 +66,7 @@
       </plugins>
     </pluginManagement>
   </build>
-    
+
   <dependencies>
     <dependency>
       <groupId>org.jruby</groupId>
@@ -89,5 +89,19 @@
     <module>do_postgres</module>
     <module>do_sqlite3</module>
   </modules>
+
+  <reporting>
+    <plugins>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>findbugs-maven-plugin</artifactId>
+        <version>2.0.1</version>
+        <configuration>
+          <xmlOutput>true</xmlOutput>
+          <xmlOutputDirectory>target/site</xmlOutputDirectory>
+        </configuration>
+      </plugin>
+    </plugins>
+  </reporting>
 
 </project>
