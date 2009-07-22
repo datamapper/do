@@ -269,7 +269,7 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
             // http://dev.mysql.com/doc/refman/5.0/en/connector-j-installing-upgrading.html
             try {
                 dt = rs.getTimestamp(col);
-            } catch (SQLException sqle) {
+            } catch (SQLException ignored) {
             }
             if (dt == null) {
                 return runtime.getNil();
