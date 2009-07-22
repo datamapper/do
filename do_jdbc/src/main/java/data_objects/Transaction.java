@@ -29,8 +29,7 @@ public class Transaction extends DORubyObject {
     private final static ObjectAllocator TRANSACTION_ALLOCATOR = new ObjectAllocator() {
 
         public IRubyObject allocate(Ruby runtime, RubyClass klass) {
-            Transaction instance = new Transaction(runtime, klass);
-            return instance;
+            return new Transaction(runtime, klass);
         }
     };
 

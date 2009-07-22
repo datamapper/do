@@ -35,8 +35,7 @@ public class Reader extends DORubyObject {
     private final static ObjectAllocator READER_ALLOCATOR = new ObjectAllocator() {
 
         public IRubyObject allocate(Ruby runtime, RubyClass klass) {
-            Reader instance = new Reader(runtime, klass);
-            return instance;
+            return new Reader(runtime, klass);
         }
     };
 

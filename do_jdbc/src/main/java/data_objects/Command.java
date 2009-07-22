@@ -44,8 +44,7 @@ public class Command extends DORubyObject {
 
     private final static ObjectAllocator COMMAND_ALLOCATOR = new ObjectAllocator() {
         public IRubyObject allocate(Ruby runtime, RubyClass klass) {
-            Command instance = new Command(runtime, klass);
-            return instance;
+            return new Command(runtime, klass);
         }
     };
 
@@ -210,9 +209,8 @@ public class Command extends DORubyObject {
 
         IRubyObject affected_rows = runtime.newFixnum(affectedCount);
 
-        IRubyObject result = api.callMethod(resultClass, "new",
-                new IRubyObject[] { this, affected_rows, insert_key });
-        return result;
+        return api.callMethod(resultClass, "new",
+                new IRubyObject[] {this, affected_rows, insert_key });
     }
 
     @JRubyMethod(optional = 1, rest = true)
@@ -404,8 +402,7 @@ public class Command extends DORubyObject {
     // ---------------------------------------------------------- HELPER METHODS
 
     private static java.sql.Connection getConnection(IRubyObject recv) {
-        java.sql.Connection conn = (java.sql.Connection) recv.dataGetStruct();
-        return conn;
+        return (java.sql.Connection) recv.dataGetStruct();
     }
 
     /**

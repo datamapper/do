@@ -26,8 +26,7 @@ public class Result extends RubyObject {
     private final static ObjectAllocator RESULT_ALLOCATOR = new ObjectAllocator() {
 
         public IRubyObject allocate(Ruby runtime, RubyClass klass) {
-            Result instance = new Result(runtime, klass);
-            return instance;
+            return new Result(runtime, klass);
         }
     };
 

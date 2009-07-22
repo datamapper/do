@@ -285,8 +285,7 @@ public final class Connection extends DORubyObject {
     }
 
     private static java.sql.Connection getConnection(final IRubyObject recv) {
-        java.sql.Connection conn = (java.sql.Connection) recv.dataGetStruct();
-        return conn;
+        return (java.sql.Connection) recv.dataGetStruct();
     }
 
     /**
