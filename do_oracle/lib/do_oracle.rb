@@ -14,8 +14,6 @@ if RUBY_PLATFORM =~ /java/
 
     if ojdbc_jar_path = ENV["PATH"].split(/[:;]/).concat($LOAD_PATH).find{|d| File.exists?(File.join(d,ojdbc_jar))}
       require File.join(ojdbc_jar_path,ojdbc_jar)
-    else
-      raise LoadError, "Cannot find #{ojdbc_jar} file - place it in JRUBY_HOME/lib or in ENV['PATH'] or in Ruby load path"
     end
   end
 
