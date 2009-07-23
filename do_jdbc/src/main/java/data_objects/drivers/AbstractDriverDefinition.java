@@ -364,6 +364,9 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
         case FALSE_CLASS:
             ps.setBoolean(idx, arg.toString().equals("true"));
             break;
+        case STRING:
+            ps.setString(idx, arg.toString());
+            break;
         case CLASS:
             ps.setString(idx, arg.toString());
             break;
@@ -387,55 +390,11 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
         case REGEXP:
             ps.setString(idx, ((RubyRegexp) arg).source().toString());
             break;
+        // default case handling is simplified
+        // TODO: if something is not working because of that then should be added to specs
         default:
-            if (arg.toString().indexOf("-") != -1
-                    && arg.toString().indexOf(":") != -1) {
-                // TODO: improve the above string pattern checking
-                // Handle date patterns in strings
-                try {
-                    DateTime timestamp = DATE_TIME_FORMAT.parseDateTime(arg
-                            .asJavaString().replace('T', ' '));
-                    ps.setTimestamp(idx, new Timestamp(timestamp.getMillis()));
-                } catch (IllegalArgumentException ex) {
-                    ps.setString(idx, API.convertToRubyString(arg)
-                            .getUnicodeValue());
-                }
-            } else if (arg.toString().indexOf(":") != -1
-                    && arg.toString().length() == 8) {
-                // Handle time patterns in strings
-                ps.setTime(idx, java.sql.Time.valueOf(arg.asJavaString()));
-            } else {
-                Integer jdbcTypeId = null;
-                try {
-                    jdbcTypeId = ps.getMetaData().getColumnType(idx);
-                } catch (Exception ex) {
-                }
-
-                if (jdbcTypeId == null) {
-                    ps.setString(idx, API.convertToRubyString(arg)
-                            .getUnicodeValue());
-                } else {
-                    // TODO: Here comes conversions like '.execute_reader("2")'
-                    // It definitly needs to be refactored...
-                    try {
-                        if (jdbcTypeId == Types.VARCHAR) {
-                            ps.setString(idx, API.convertToRubyString(arg)
-                                    .getUnicodeValue());
-                        } else if (jdbcTypeId == Types.INTEGER) {
-                            ps.setObject(idx, Integer.valueOf(arg.toString()),
-                                    jdbcTypeId);
-                        } else {
-                            // I'm not sure is it correct in 100%
-                            ps.setString(idx, API.convertToRubyString(arg)
-                                    .getUnicodeValue());
-                        }
-                    } catch (NumberFormatException ex) { // i.e
-                        // Integer.valueOf
-                        ps.setString(idx, API.convertToRubyString(arg)
-                                .getUnicodeValue());
-                    }
-                }
-            }
+            int jdbcType = ps.getParameterMetaData().getParameterType(idx);
+            ps.setObject(idx, arg.toString(), jdbcType);
         }
     }
 

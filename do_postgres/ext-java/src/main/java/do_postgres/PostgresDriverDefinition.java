@@ -35,10 +35,22 @@ public class PostgresDriverDefinition extends AbstractDriverDefinition {
     @Override
     public void setPreparedStatementParam(PreparedStatement ps,
             IRubyObject arg, int idx) throws SQLException {
+        int jdbcType;
         switch (RubyType.getRubyType(arg.getType().getName())) {
+        case STRING:
+            jdbcType = ps.getParameterMetaData().getParameterType(idx);
+            switch (jdbcType) {
+            case Types.INTEGER:
+                // conversion for '.execute_reader("2")'
+                ps.setInt(idx, Integer.valueOf(arg.toString()));
+                break;
+            default:
+                ps.setString(idx, arg.toString());
+            }
+            break;
         case BYTE_ARRAY:
-            final int jdbcType = ps.getParameterMetaData().getParameterType(idx);
-            switch(jdbcType){
+            jdbcType = ps.getParameterMetaData().getParameterType(idx);
+            switch (jdbcType) {
             case Types.BINARY:
                 ps.setBytes(idx, ((RubyString) arg).getBytes());
                 break;
