@@ -13,6 +13,7 @@ module DataObjects
     # Note that the physical connection may be delayed until the first command is issued, so success here doesn't necessarily mean you can connect.
     def self.new(uri_s)
       uri = DataObjects::URI::parse(uri_s)
+      puts uri.to_s
 
       case uri.scheme.to_sym
       when :java
@@ -40,7 +41,14 @@ module DataObjects
         conn_uri = uri
       end
 
-      DataObjects.const_get(driver_name.capitalize)::Connection.new(conn_uri)
+      # Exceptions to how a driver class is determined for a given URI
+      driver_class = if driver_name == 'sqlserver'
+        'SqlServer'
+      else
+        driver_name.capitalize
+      end
+
+      DataObjects.const_get(driver_class)::Connection.new(conn_uri)
     end
 
     # Ensure that all Connection subclasses handle pooling and logging uniformly.
