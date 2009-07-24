@@ -46,6 +46,7 @@ CONFIG.pass     = ENV['DO_MYSQL_PASS'] || ''
 CONFIG.host     = ENV['DO_MYSQL_HOST'] || 'localhost'
 CONFIG.port     = ENV['DO_MYSQL_PORT'] || '3306'
 CONFIG.database = ENV['DO_MYSQL_DATABASE'] || '/do_test'
+CONFIG.ssl      = SSLHelpers.query(:ca_cert, :client_cert, :client_key)
 
 CONFIG.uri = ENV["DO_MYSQL_SPEC_URI"] ||"#{CONFIG.scheme}://#{CONFIG.user}:#{CONFIG.pass}@#{CONFIG.host}:#{CONFIG.port}#{CONFIG.database}"
 CONFIG.sleep = "SELECT sleep(1)"
@@ -96,7 +97,7 @@ module DataObjectsSpecHelpers
         `ad_image` mediumblob NULL,
         `whitepaper_text` longtext NULL,
         `cad_drawing` longblob NULL,
-        `flags` tinyint(1) default 0,
+        `flags` boolean default false,
         `number_in_stock` smallint default 500,
         `number_sold` mediumint default 0,
         `super_number` bigint default 9223372036854775807,
@@ -105,7 +106,7 @@ module DataObjectsSpecHelpers
         `cost2` decimal(8,2) default 50.23,
         `release_date` date default '2008-02-14',
         `release_datetime` datetime default '2008-02-14 00:31:12',
-        `release_timestamp` timestamp default '2008-02-14 00:31:31',
+        `release_timestamp` timestamp NULL default '2008-02-14 00:31:31',
         `status` enum('active','out of stock') NOT NULL default 'active',
         PRIMARY KEY  (`id`)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
@@ -118,15 +119,106 @@ module DataObjectsSpecHelpers
     end
 
     conn.create_command(<<-EOF).execute_non_query
-      update widgets set flags = 1 where id = 2
+      update widgets set flags = true where id = 2
     EOF
 
     conn.create_command(<<-EOF).execute_non_query
       update widgets set ad_description = NULL where id = 3
     EOF
 
+    conn.create_command(<<-EOF).execute_non_query
+      update widgets set flags = NULL where id = 4
+    EOF
+
+    conn.create_command(<<-EOF).execute_non_query
+      update widgets set cost1 = NULL where id = 5
+    EOF
+
+    conn.create_command(<<-EOF).execute_non_query
+      update widgets set cost2 = NULL where id = 6
+    EOF
+
+    conn.create_command(<<-EOF).execute_non_query
+      update widgets set release_date = NULL where id = 7
+    EOF
+
+    conn.create_command(<<-EOF).execute_non_query
+      update widgets set release_datetime = NULL where id = 8
+    EOF
+
+    conn.create_command(<<-EOF).execute_non_query
+      update widgets set release_timestamp = NULL where id = 9
+    EOF
+
     conn.close
 
+  end
+
+  def self.test_environment_ssl_config
+    ssl_config = SSLHelpers::CONFIG
+
+    message =  "\nYou can configure MySQL via my.cnf with the following options in [mysqld]:\n"
+    message << "ssl_ca=#{ssl_config.ca_cert}\n"
+    message << "ssl_cert=#{ssl_config.server_cert}\n"
+    message << "ssl_key=#{ssl_config.server_key}\n"
+    message << "ssl_cipher=#{ssl_config.cipher}\n"
+
+    message << "\nOr you can use the following command line options:\n"
+    message << "--ssl-ca #{ssl_config.ca_cert} "
+    message << "--ssl-cert #{ssl_config.server_cert} "
+    message << "--ssl-key #{ssl_config.server_key} "
+    message << "--ssl-cipher #{ssl_config.cipher} "
+    message
+  end
+
+  def self.test_environment_ssl_config_errors
+    conn = DataObjects::Connection.new(CONFIG.uri)
+
+    ssl_variables = conn.create_command(<<-EOF).execute_reader
+      SHOW VARIABLES LIKE '%ssl%'
+    EOF
+
+    ssl_config = SSLHelpers::CONFIG
+    current_config = { }
+
+    while ssl_variables.next!
+      variable, value = ssl_variables.values
+      current_config[variable.intern] = value
+    end
+
+    errors = []
+
+    if current_config[:have_ssl] == 'NO'
+      errors << "SSL was not compiled"
+    end
+
+    if current_config[:have_ssl] == 'DISABLED'
+      errors << "SSL was not enabled"
+    end
+
+    if current_config[:ssl_ca] != ssl_config.ca_cert
+      errors << "The CA certificate is not configured (it was set to '#{current_config[:ssl_ca]}')"
+    end
+
+    if current_config[:ssl_cert] != ssl_config.server_cert
+      errors << "The server certificate is not configured (it was set to '#{current_config[:ssl_cert]}')"
+    end
+
+    if current_config[:ssl_key] != ssl_config.server_key
+      errors << "The server key is not configured, (it was set to '#{current_config[:ssl_key]}')"
+    end
+
+    if current_config[:ssl_cipher] != ssl_config.cipher
+      errors << "The cipher is not configured, (it was set to '#{current_config[:ssl_cipher]}')"
+    end
+
+    errors
+  ensure
+    conn.close if conn
+  end
+
+  def self.test_environment_supports_ssl?
+    test_environment_ssl_config_errors.empty?
   end
 
 end

@@ -10,7 +10,17 @@ module DataObjects
         connection.create_command(cmd).execute_non_query
       end
 
+      def begin_prepared
+        cmd = "BEGIN"
+        connection.create_command(cmd).execute_non_query
+      end
+
       def commit
+        cmd = "COMMIT"
+        connection.create_command(cmd).execute_non_query
+      end
+
+      def commit_prepared
         cmd = "COMMIT PREPARED '#{id}'"
         connection.create_command(cmd).execute_non_query
       end

@@ -1,12 +1,45 @@
 package do_hsqldb;
 
+import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Field;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.sql.Types;
 
+import org.jruby.runtime.builtin.IRubyObject;
+
+import data_objects.RubyType;
 import data_objects.drivers.AbstractDriverDefinition;
 
+
 public class HsqldbDriverDefinition extends AbstractDriverDefinition {
+
+    public final static String URI_SCHEME = "hsqldb";
+    public final static String RUBY_MODULE_NAME = "Hsqldb";
+
+    public HsqldbDriverDefinition() {
+        super(URI_SCHEME, RUBY_MODULE_NAME);
+    }
+
+    @Override
+    public void setPreparedStatementParam(PreparedStatement ps,
+            IRubyObject arg, int idx) throws SQLException {
+        switch (RubyType.getRubyType(arg.getType().getName())) {
+        case NIL:
+            // XXX ps.getParameterMetaData().getParameterType(idx) produces
+            // com.mysql.jdbc.ResultSetMetaData:397:in `getField': java.lang.NullPointerException
+            // from com.mysql.jdbc.ResultSetMetaData:275:in `getColumnType'
+            ps.setNull(idx, Types.NULL);
+            break;
+        default:
+            super.setPreparedStatementParam(ps, arg, idx);
+        }
+    }
 
     @Override
     public boolean supportsJdbcGeneratedKeys()
@@ -14,14 +47,24 @@ public class HsqldbDriverDefinition extends AbstractDriverDefinition {
         return false;
     }
 
+    /**
+     * Needed if 1.9.x driver is not used (still in beta)
+     * @param connection
+     * @return
+     */
+    @Override
+    public ResultSet getGeneratedKeys(Connection connection) {
+        try {
+            return connection.prepareStatement("CALL IDENTITY()").executeQuery();
+        } catch (SQLException ex) {
+            return null;
+        }
+    }
+
+
     @Override
     public boolean supportsConnectionPrepareStatementMethodWithGKFlag()
     {
-        return false;
-    }
-
-    @Override
-    public boolean supportsCalendarsInJDBCPreparedStatement() {
         return false;
     }
 
@@ -42,19 +85,19 @@ public class HsqldbDriverDefinition extends AbstractDriverDefinition {
     }
 
     @Override
-    public String toString(PreparedStatement ps)
+    public String statementToString(Statement s)
     {
         try {
-            Field sqlField = ps.getClass().getDeclaredField("sql");
+            Field sqlField = s.getClass().getDeclaredField("sql");
             sqlField.setAccessible(true);
-            String sql = sqlField.get(ps).toString();
-            Field paramsField = ps.getClass().getDeclaredField("parameterValues");
+            String sql = sqlField.get(s).toString();
+            Field paramsField = s.getClass().getDeclaredField("parameterValues");
             paramsField.setAccessible(true);
-            Field paramTypesField = ps.getClass().getDeclaredField("parameterTypes");
+            Field paramTypesField = s.getClass().getDeclaredField("parameterTypes");
             paramTypesField.setAccessible(true);
-            int[] paramTypes = (int[])paramTypesField.get(ps);
+            int[] paramTypes = (int[])paramTypesField.get(s);
             int index = 0;
-            for (Object param : (Object[]) paramsField.get(ps)) {
+            for (Object param : (Object[]) paramsField.get(s)) {
                 switch (paramTypes[index++]) {
                     case Types.CHAR:
                     case Types.LONGVARCHAR:
@@ -68,7 +111,18 @@ public class HsqldbDriverDefinition extends AbstractDriverDefinition {
         }
         catch(Exception e) {
             // just fall to the toString of the PreparedStatement
-            return ps.toString();
+            return s.toString();
         }
+    }
+
+    @Override
+    public URI parseConnectionURI(IRubyObject connection_uri)
+        throws URISyntaxException, UnsupportedEncodingException {
+        if (!"DataObjects::URI".equals(connection_uri.getType().getName())) {
+            if(connection_uri.asJavaString().endsWith(":mem")){
+                return new URI(connection_uri.asJavaString() + ":");
+            }
+        }
+        return super.parseConnectionURI(connection_uri);
     }
 }

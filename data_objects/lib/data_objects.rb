@@ -1,6 +1,3 @@
-require 'rubygems'
-
-gem 'extlib', '~>0.9.11'
 require 'extlib'
 
 require File.expand_path(File.join(File.dirname(__FILE__), 'data_objects', 'version'))
@@ -12,8 +9,10 @@ require File.expand_path(File.join(File.dirname(__FILE__), 'data_objects', 'comm
 require File.expand_path(File.join(File.dirname(__FILE__), 'data_objects', 'result'))
 require File.expand_path(File.join(File.dirname(__FILE__), 'data_objects', 'reader'))
 require File.expand_path(File.join(File.dirname(__FILE__), 'data_objects', 'quoting'))
-
-
-module DataObjects
-  class LengthMismatchError < StandardError; end
-end
+require File.expand_path(File.join(File.dirname(__FILE__), 'data_objects', 'error'))
+require File.expand_path(File.join(File.dirname(__FILE__), 'data_objects', 'error', 'sql_error'))
+require File.expand_path(File.join(File.dirname(__FILE__), 'data_objects', 'error', 'connection_error'))
+require File.expand_path(File.join(File.dirname(__FILE__), 'data_objects', 'error', 'data_error'))
+require File.expand_path(File.join(File.dirname(__FILE__), 'data_objects', 'error', 'integrity_error'))
+require File.expand_path(File.join(File.dirname(__FILE__), 'data_objects', 'error', 'syntax_error'))
+require File.expand_path(File.join(File.dirname(__FILE__), 'data_objects', 'error', 'transaction_error'))

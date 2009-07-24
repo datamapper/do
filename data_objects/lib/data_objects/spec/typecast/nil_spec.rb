@@ -46,23 +46,38 @@ end
 
 share_examples_for 'supporting writing an Nil' do
 
-  describe 'supporting writing an Nil' do
+  include DataObjectsSpecHelpers
+
+  before :all do
+    setup_test_environment
+  end
+
+  before :each do
+    @connection = DataObjects::Connection.new(CONFIG.uri)
+  end
+
+  after :each do
+    @connection.close
+  end
+
+
+   describe 'supporting writing an Nil' do
+    # see as an example oracle
+    # http://download.oracle.com/docs/cd/B19306_01/server.102/b14200/sql_elements005.htm#sthref487
+    # http://download.oracle.com/docs/cd/B19306_01/server.102/b14200/conditions013.htm#i1050801
 
     describe 'as a parameter' do
 
         before  do
-          @reader = @connection.create_command("SELECT id FROM widgets WHERE ad_description IS ?").execute_reader(nil)
-          @reader.next!
-          @values = @reader.values
-        end
+          @reader = @connection.create_command("SELECT id FROM widgets WHERE ad_description IN (?) ORDER BY id").execute_reader(nil)
+      end
 
         after do
           @reader.close
         end
 
         it 'should return the correct entry' do
-          #Some of the drivers starts autoincrementation from 0 not 1
-          @values.first.should satisfy { |val| val == 3 or val == 2 }
+          @reader.next!.should be_false
         end
 
     end

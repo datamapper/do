@@ -11,7 +11,7 @@ GEM_SPEC = Gem::Specification.new do |s|
   s.description = "Provide a standard and simplified API for communicating with RDBMS from Ruby"
 
   # dependencies
-  s.add_dependency "addressable", "~>2.0.0"
+  s.add_dependency "addressable", "~>2.0"
   s.add_dependency "extlib", "~>0.9.12"
 
   # development dependencies

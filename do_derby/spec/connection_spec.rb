@@ -11,8 +11,9 @@ describe DataObjects::Derby::Connection do
     @password = ''
     @host   = ''
     @port   = ''
-    @database = "#{File.expand_path(File.dirname(__FILE__))}/test.db"
+    @database = "#{File.expand_path(File.dirname(__FILE__))}/test.db;create=true"
   end
 
   it_should_behave_like 'a Connection'
+  #it_should_behave_like 'a Connection with authentication support'
 end

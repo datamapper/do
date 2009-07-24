@@ -1,59 +1,15 @@
-require 'pathname'
 require 'rubygems'
 require 'rake'
-require 'spec/rake/spectask'
+require 'rake/clean'
+
+require 'pathname'
 require 'lib/do_h2/version'
 
 ROOT    = Pathname(__FILE__).dirname.expand_path
 JRUBY   = RUBY_PLATFORM =~ /java/
 WINDOWS = Gem.win_platform?
-SUDO    = (WINDOWS || JRUBY) ? '' : ('sudo' unless ENV['SUDOLESS'])
+SUDO    = WINDOWS ? '' : ('sudo' unless ENV['SUDOLESS'])
 
-AUTHOR = "Alex Coles"
-EMAIL  = "alex@alexcolesportfolio.com"
-GEM_NAME = "do_h2"
-GEM_VERSION = DataObjects::H2::VERSION
-GEM_DEPENDENCIES = ["data_objects", GEM_VERSION], ["do_jdbc", GEM_VERSION], ["jdbc-h2", "~>1.1.107"]
-GEM_CLEAN = ['test.db.*','mem.*','log/*','test/reports', 'lib/**/*.jar','ext-java/target']
-GEM_EXTRAS = { :platform => 'java', :has_rdoc => false }
+Dir['tasks/*.rake'].sort.each { |f| import f }
 
-PROJECT_NAME = "dorb"
-PROJECT_URL  = "http://rubyforge.org/projects/dorb"
-PROJECT_DESCRIPTION = PROJECT_SUMMARY = "A DataObjects.rb driver for the H2 Database Engine"
-
-if (tasks_dir = ROOT.parent + 'tasks').directory?
-  require tasks_dir + 'hoe'
-  require tasks_dir + 'ext_helper_java'
-
-  setup_java_extension  "#{GEM_NAME}_ext", HOE.spec
-end
-
-def sudo_gem(cmd)
-  sh "#{SUDO} #{RUBY} -S gem #{cmd}", :verbose => false
-end
-
-# compile the extension
-if JRUBY
-  Rake::Task['compile:jruby'].invoke
-else
-end
-
-# Installation
-
-task :default => [ :compile, :spec ]
-
-desc "Install #{GEM_NAME} #{GEM_VERSION}"
-task :install => [ :package ] do
-  sudo_gem "install pkg/#{GEM_NAME}-#{GEM_VERSION} --no-update-sources"
-end
-
-desc "Uninstall #{GEM_NAME} #{GEM_VERSION}"
-task :uninstall => [ :clean ] do
-  sudo_gem "uninstall #{GEM_NAME} -v#{GEM_VERSION} -I -x"
-end
-
-desc "Run specifications"
-Spec::Rake::SpecTask.new('spec') do |t|
-  t.spec_opts << '--options' << 'spec/spec.opts' if File.exists?('spec/spec.opts')
-  t.spec_files = Pathname.glob((ROOT + 'spec/**/*_spec.rb').to_s)
-end
+CLEAN.include(%w[ {tmp,pkg}/ **/*.{o,so,bundle,jar,log,a,gem,dSYM,obj,pdb,exp,DS_Store,rbc,db} ext-java/target ])

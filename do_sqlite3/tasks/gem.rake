@@ -10,7 +10,7 @@ GEM_SPEC = Gem::Specification.new do |s|
   s.description = "Implements the DataObjects API for Sqlite3"
 
   # dependencies
-  s.add_dependency "addressable", "~>2.0.0"
+  s.add_dependency "addressable", "~>2.0"
   s.add_dependency "extlib", "~>0.9.12"
   s.add_dependency "data_objects", DataObjects::Sqlite3::VERSION
 
@@ -25,7 +25,7 @@ GEM_SPEC = Gem::Specification.new do |s|
     s.platform    = Gem::Platform::RUBY
     s.extensions << 'ext/do_sqlite3_ext/extconf.rb'
     # components, files and paths
-    s.files = FileList["lib/**/*.rb", "spec/**/*.rb", "tasks/**/*.rake", "ext/**/*.{rb,c}",
+    s.files = FileList["lib/**/*.rb", "spec/**/*.rb", "tasks/**/*.rake", "ext/**/*.{rb,c,h}",
                         "LICENSE", "Rakefile", "*.{rdoc,txt,yml}"]
   end
 

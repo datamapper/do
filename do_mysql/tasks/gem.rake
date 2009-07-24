@@ -10,7 +10,7 @@ GEM_SPEC = Gem::Specification.new do |s|
   s.description = "Implements the DataObjects API for MySQL"
 
   # dependencies
-  s.add_dependency "addressable", "~>2.0.0"
+  s.add_dependency "addressable", "~>2.0"
   s.add_dependency "extlib", "~>0.9.12"
   s.add_dependency "data_objects", DataObjects::Mysql::VERSION
 
@@ -24,7 +24,7 @@ GEM_SPEC = Gem::Specification.new do |s|
   else
     s.platform    = Gem::Platform::RUBY
     s.extensions << 'ext/do_mysql_ext/extconf.rb'
-    s.files = FileList["lib/**/*.rb", "spec/**/*.rb", "tasks/**/*.rake", "ext/**/*.{rb,c}",
+    s.files = FileList["lib/**/*.rb", "spec/**/*.rb", "tasks/**/*.rake", "ext/**/*.{rb,c,h}",
                         "LICENSE", "Rakefile", "*.{rdoc,txt,yml}"]
   end
 

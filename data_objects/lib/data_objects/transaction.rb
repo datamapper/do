@@ -33,16 +33,26 @@ module DataObjects
       @connection.close
     end
 
-    # Begin the Transaction
-    def begin; not_implemented; end
-    # Commit changes made in this Transaction
-    def commit; not_implemented; end
-    # Rollback changes made in this Transaction
-    def rollback; not_implemented; end;
-    # Prepare this Transaction for the second phase of a two-phase commit
+    def begin
+      cmd = "BEGIN"
+      connection.create_command(cmd).execute_non_query
+    end
+
+    def commit
+      cmd = "COMMIT"
+      connection.create_command(cmd).execute_non_query
+    end
+
+    def rollback
+      cmd = "ROLLBACK"
+      connection.create_command(cmd).execute_non_query
+    end
+
     def prepare; not_implemented; end;
-    # Abandon the second phase of a two-phase commit and roll back the changes
+    def begin_prepared; not_implemented; end;
+    def commit_prepared; not_implemented; end;
     def rollback_prepared; not_implemented; end;
+    def prepare; not_implemented; end;
 
   private
     def not_implemented

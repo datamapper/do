@@ -1,5 +1,5 @@
 module DataObjects
   module Mysql
-    VERSION = "0.9.13"
+    VERSION = "0.10.0"
   end
 end

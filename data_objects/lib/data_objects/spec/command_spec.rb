@@ -168,7 +168,13 @@ share_examples_for 'a Command with async' do
         threads << Thread.new do
           connection = DataObjects::Connection.new(CONFIG.uri)
           command = connection.create_command(CONFIG.sleep)
-          result = command.execute_non_query
+          if CONFIG.sleep =~ /^SELECT/i
+            reader = command.execute_reader
+            reader.next!
+            reader.close
+          else
+            result = command.execute_non_query
+          end
           connection.close
         end
       end

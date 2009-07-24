@@ -111,8 +111,8 @@ module DataObjectsSpecHelpers
     EOF
 
     1.upto(16) do |n|
-      conn.create_command(<<-EOF).execute_non_query
-        insert into widgets(code, name, shelf_location, description, image_data, ad_description, ad_image, whitepaper_text, cad_drawing, super_number, weight) VALUES ('W#{n.to_s.rjust(7,"0")}', 'Widget #{n}', 'A14', 'This is a description', 'IMAGE DATA', 'Buy this product now!', 'AD IMAGE DATA', 'String', 'CAD \\001 \\000 DRAWING'::bytea, 1234, 13.4);
+      conn.create_command(<<-EOF).execute_non_query(::Extlib::ByteArray.new("CAD \001 \000 DRAWING"))
+        insert into widgets(code, name, shelf_location, description, image_data, ad_description, ad_image, whitepaper_text, cad_drawing, super_number, weight) VALUES ('W#{n.to_s.rjust(7,"0")}', 'Widget #{n}', 'A14', 'This is a description', 'IMAGE DATA', 'Buy this product now!', 'AD IMAGE DATA', 'String', ?, 1234, 13.4)
       EOF
     end
 
@@ -122,6 +122,30 @@ module DataObjectsSpecHelpers
 
     conn.create_command(<<-EOF).execute_non_query
       update widgets set ad_description = NULL where id = 3
+    EOF
+
+    conn.create_command(<<-EOF).execute_non_query
+      update widgets set flags = NULL where id = 4
+    EOF
+
+    conn.create_command(<<-EOF).execute_non_query
+      update widgets set cost1 = NULL where id = 5
+    EOF
+
+    conn.create_command(<<-EOF).execute_non_query
+      update widgets set cost2 = NULL where id = 6
+    EOF
+
+    conn.create_command(<<-EOF).execute_non_query
+      update widgets set release_date = NULL where id = 7
+    EOF
+
+    conn.create_command(<<-EOF).execute_non_query
+      update widgets set release_datetime = NULL where id = 8
+    EOF
+
+    conn.create_command(<<-EOF).execute_non_query
+      update widgets set release_timestamp = NULL where id = 9
     EOF
 
     conn.close

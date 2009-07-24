@@ -6,14 +6,12 @@
 #include <mysql.h>
 #include <errmsg.h>
 #include <mysqld_error.h>
+#include "error.h"
 
 #define RUBY_CLASS(name) rb_const_get(rb_cObject, rb_intern(name))
-#define RUBY_STRING(char_ptr) rb_str_new2(char_ptr)
-#define TAINTED_STRING(name, length) rb_tainted_str_new(name, length)
 #define DRIVER_CLASS(klass, parent) (rb_define_class_under(mDOMysql, klass, parent))
 #define CONST_GET(scope, constant) (rb_funcall(scope, ID_CONST_GET, 1, rb_str_new2(constant)))
-#define CHECK_AND_RAISE(mysql_result_value, str) if (0 != mysql_result_value) { raise_mysql_error(connection, db, mysql_result_value, str); }
-#define PUTS(string) rb_funcall(rb_mKernel, rb_intern("puts"), 1, RUBY_STRING(string))
+#define CHECK_AND_RAISE(mysql_result_value, query) if (0 != mysql_result_value) { raise_error(self, db, query); }
 
 #ifndef RSTRING_PTR
 #define RSTRING_PTR(s) (RSTRING(s)->ptr)
@@ -34,6 +32,45 @@
 #define cCommand_execute cCommand_execute_async
 #define do_int64 signed long long int
 #endif
+
+#ifdef HAVE_RUBY_ENCODING_H
+#include <ruby/encoding.h>
+
+#define DO_STR_NEW2(str, encoding) \
+  ({ \
+    VALUE _string = rb_str_new2((const char *)str); \
+    if(NULL != encoding) { \
+      int _enc = rb_enc_find_index(encoding); \
+      if(_enc == -1) \
+        rb_enc_associate_index(_string, rb_enc_find_index("UTF-8")); \
+      else \
+        rb_enc_associate_index(_string, _enc); \
+    } \
+    _string; \
+  })
+
+#define DO_STR_NEW(str, len, encoding) \
+  ({ \
+    VALUE _string = rb_str_new((const char *)str, (long)len); \
+    if(NULL != encoding) { \
+      int _enc = rb_enc_find_index(encoding); \
+      if(_enc == -1) \
+        rb_enc_associate_index(_string, rb_enc_find_index("UTF-8")); \
+      else \
+        rb_enc_associate_index(_string, _enc); \
+    } \
+    _string; \
+  })
+
+#else
+
+#define DO_STR_NEW2(str, doc) \
+  rb_str_new2((const char *)str)
+
+#define DO_STR_NEW(str, len, doc) \
+  rb_str_new((const char *)str, (long)len)
+#endif
+
 
 // To store rb_intern values
 static ID ID_TO_I;
@@ -56,6 +93,7 @@ static VALUE mExtlib;
 
 // References to DataObjects base classes
 static VALUE mDO;
+static VALUE mEncoding;
 static VALUE cDO_Quoting;
 static VALUE cDO_Connection;
 static VALUE cDO_Command;
@@ -74,8 +112,9 @@ static VALUE cConnection;
 static VALUE cCommand;
 static VALUE cResult;
 static VALUE cReader;
-static VALUE eMysqlError;
 static VALUE eArgumentError;
+static VALUE eConnectionError;
+static VALUE eDataError;
 
 // Figures out what we should cast a given mysql field type to
 static VALUE infer_ruby_type(MYSQL_FIELD *field) {
@@ -239,7 +278,7 @@ static VALUE parse_date_time(const char *date) {
       hour_offset = 0;
       minute_offset = 0;
       sec = 0;
-    }  
+    }
     // We read the Date and Time, default to the current locale's offset
 
     // Get localtime
@@ -261,7 +300,7 @@ static VALUE parse_date_time(const char *date) {
 
   } else {
     // Something went terribly wrong
-    rb_raise(eMysqlError, "Couldn't parse date: %s", date);
+    rb_raise(eDataError, "Couldn't parse date: %s", date);
   }
 
   jd = jd_from_date(year, month, day);
@@ -295,7 +334,7 @@ static VALUE parse_date_time(const char *date) {
 }
 
 // Convert C-string to a Ruby instance of Ruby type "type"
-static VALUE typecast(const char *value, long length, const VALUE type) {
+static VALUE typecast(const char *value, long length, const VALUE type, const char *encoding) {
 
   if(NULL == value) {
     return Qnil;
@@ -304,11 +343,11 @@ static VALUE typecast(const char *value, long length, const VALUE type) {
   if (type == rb_cInteger) {
     return rb_cstr2inum(value, 10);
   } else if (type == rb_cString) {
-    return TAINTED_STRING(value, length);
+    return DO_STR_NEW(value, length, encoding);
   } else if (type == rb_cFloat) {
     return rb_float_new(rb_cstr_to_dbl(value, Qfalse));
   } else if (type == rb_cBigDecimal) {
-    return rb_funcall(rb_cBigDecimal, ID_NEW, 1, TAINTED_STRING(value, length));
+    return rb_funcall(rb_cBigDecimal, ID_NEW, 1, DO_STR_NEW(value, length, encoding));
   } else if (type == rb_cDate) {
     return parse_date(value);
   } else if (type == rb_cDateTime) {
@@ -318,15 +357,15 @@ static VALUE typecast(const char *value, long length, const VALUE type) {
   } else if (type == rb_cTrueClass) {
     return (0 == value || 0 == strcmp("0", value)) ? Qfalse : Qtrue;
   } else if (type == rb_cByteArray) {
-    return rb_funcall(rb_cByteArray, ID_NEW, 1, TAINTED_STRING(value, length));
+    return rb_funcall(rb_cByteArray, ID_NEW, 1, DO_STR_NEW(value, length, encoding));
   } else if (type == rb_cClass) {
-    return rb_funcall(rb_cObject, rb_intern("full_const_get"), 1, TAINTED_STRING(value, length));
+    return rb_funcall(rb_cObject, rb_intern("full_const_get"), 1, DO_STR_NEW(value, length, encoding));
   } else if (type == rb_cObject) {
     return rb_marshal_load(rb_str_new(value, length));
   } else if (type == rb_cNilClass) {
     return Qnil;
   } else {
-    return TAINTED_STRING(value, length);
+    return DO_STR_NEW(value, length, encoding);
   }
 
 }
@@ -354,17 +393,31 @@ static void data_objects_debug(VALUE string, struct timeval* start) {
     rb_funcall(logger, ID_DEBUG, 1, rb_str_new(message, length + strlen(total_time) + 3));
   }
 }
-static void raise_mysql_error(VALUE connection, MYSQL *db, int mysql_error_code, char* str) {
-  char *mysql_error_message = (char *)mysql_error(db);
 
-  if(mysql_error_code == 1) {
-    mysql_error_code = mysql_errno(db);
+static void raise_error(VALUE self, MYSQL *db, VALUE query) {
+  VALUE exception;
+  const char *exception_type = "SQLError";
+  char *mysql_error_message = (char *)mysql_error(db);
+  int mysql_error_code = mysql_errno(db);
+
+  struct errcodes *errs;
+
+  for (errs = errors; errs->error_name; errs++) {
+    if(errs->error_no == mysql_error_code) {
+      exception_type = errs->exception;
+      break;
+    }
   }
-  if(str) {
-    rb_raise(eMysqlError, "(mysql_errno=%04d, sql_state=%s) %s\nQuery: %s", mysql_error_code, mysql_sqlstate(db), mysql_error_message, str);
-  } else {
-    rb_raise(eMysqlError, "(mysql_errno=%04d, sql_state=%s) %s", mysql_error_code, mysql_sqlstate(db), mysql_error_message);
-  }
+
+  VALUE uri = rb_funcall(rb_iv_get(self, "@connection"), rb_intern("to_s"), 0);
+
+  exception = rb_funcall(CONST_GET(mDO, exception_type), ID_NEW, 5,
+                         rb_str_new2(mysql_error_message),
+                         INT2NUM(mysql_error_code),
+                         rb_str_new2(mysql_sqlstate(db)),
+                         query,
+                         uri);
+  rb_exc_raise(exception);
 }
 
 static char * get_uri_option(VALUE query_hash, char * key) {
@@ -373,7 +426,7 @@ static char * get_uri_option(VALUE query_hash, char * key) {
 
   if(!rb_obj_is_kind_of(query_hash, rb_cHash)) { return NULL; }
 
-  query_value = rb_hash_aref(query_hash, RUBY_STRING(key));
+  query_value = rb_hash_aref(query_hash, rb_str_new2(key));
 
   if (Qnil != query_value) {
     value = StringValuePtr(query_value);
@@ -382,6 +435,15 @@ static char * get_uri_option(VALUE query_hash, char * key) {
   return value;
 }
 
+static void assert_file_exists(char * file, char * message) {
+  if (file == NULL) { return; }
+  if (rb_funcall(rb_cFile, rb_intern("exist?"), 1, rb_str_new2(file)) == Qfalse) {
+    rb_raise(eArgumentError, message);
+  }
+}
+
+static void full_connect(VALUE self, MYSQL *db);
+
 #ifdef _WIN32
 static MYSQL_RES* cCommand_execute_sync(VALUE self, MYSQL* db, VALUE query) {
   int retval;
@@ -389,16 +451,14 @@ static MYSQL_RES* cCommand_execute_sync(VALUE self, MYSQL* db, VALUE query) {
   char* str = RSTRING_PTR(query);
   int len   = RSTRING_LEN(query);
 
-  VALUE connection = rb_iv_get(self, "@connection");
-
   if(mysql_ping(db) && mysql_errno(db) == CR_SERVER_GONE_ERROR) {
-    CHECK_AND_RAISE(mysql_errno(db), "Mysql server has gone away. \
-                             Please report this issue to the Datamapper project. \
-                             Specify your at least your MySQL version when filing a ticket");
+    // Ok, we do one more try here by doing a full connect
+    VALUE connection = rb_iv_get(self, "@connection");
+    full_connect(connection, db);
   }
   gettimeofday(&start, NULL);
   retval = mysql_real_query(db, str, len);
-  CHECK_AND_RAISE(retval, str);
+  CHECK_AND_RAISE(retval, query);
 
   data_objects_debug(query, &start);
 
@@ -413,16 +473,13 @@ static MYSQL_RES* cCommand_execute_async(VALUE self, MYSQL* db, VALUE query) {
   char* str = RSTRING_PTR(query);
   int len   = RSTRING_LEN(query);
 
-  VALUE connection = rb_iv_get(self, "@connection");
-
-  if(mysql_ping(db) && mysql_errno(db) == CR_SERVER_GONE_ERROR) {
-    CHECK_AND_RAISE(mysql_errno(db), "Mysql server has gone away. \
-                             Please report this issue to the Datamapper project. \
-                             Specify your at least your MySQL version when filing a ticket");
+  if((retval = mysql_ping(db)) && mysql_errno(db) == CR_SERVER_GONE_ERROR) {
+    VALUE connection = rb_iv_get(self, "@connection");
+    full_connect(connection, db);
   }
   retval = mysql_send_query(db, str, len);
 
-  CHECK_AND_RAISE(retval, str);
+  CHECK_AND_RAISE(retval, query);
   gettimeofday(&start, NULL);
 
   socket_fd = db->net.fd;
@@ -447,7 +504,7 @@ static MYSQL_RES* cCommand_execute_async(VALUE self, MYSQL* db, VALUE query) {
   }
 
   retval = mysql_read_query_result(db);
-  CHECK_AND_RAISE(retval, str);
+  CHECK_AND_RAISE(retval, query);
 
   data_objects_debug(query, &start);
 
@@ -455,51 +512,48 @@ static MYSQL_RES* cCommand_execute_async(VALUE self, MYSQL* db, VALUE query) {
 }
 #endif
 
-static VALUE cConnection_initialize(VALUE self, VALUE uri) {
+
+static void full_connect(VALUE self, MYSQL* db) {
+  // Check to see if we're on the db machine.  If so, try to use the socket
   VALUE r_host, r_user, r_password, r_path, r_query, r_port;
 
   char *host = "localhost", *user = "root", *password = NULL, *path;
   char *database = "", *socket = NULL;
-  char *encoding = NULL;
+  VALUE encoding = Qnil;
+
+  MYSQL *result;
 
   int port = 3306;
   unsigned long client_flags = 0;
   int encoding_error;
 
-  MYSQL *db = 0, *result;
-  db = (MYSQL *)mysql_init(NULL);
-
-  rb_iv_set(self, "@using_socket", Qfalse);
-
-  r_host = rb_funcall(uri, rb_intern("host"), 0);
-  if (Qnil != r_host) {
-    host = StringValuePtr(r_host);
+  if((r_host = rb_iv_get(self, "@host")) != Qnil) {
+    host     = StringValuePtr(r_host);
   }
 
-  r_user = rb_funcall(uri, rb_intern("user"), 0);
-  if (Qnil != r_user) {
-    user = StringValuePtr(r_user);
+  if((r_user = rb_iv_get(self, "@user")) != Qnil) {
+    user     = StringValuePtr(r_user);
   }
 
-  r_password = rb_funcall(uri, rb_intern("password"), 0);
-  if (Qnil != r_password) {
+  if((r_password = rb_iv_get(self, "@password")) != Qnil) {
     password = StringValuePtr(r_password);
   }
 
-  r_path = rb_funcall(uri, rb_intern("path"), 0);
-  path = StringValuePtr(r_path);
-  if (Qnil != r_path) {
+  if((r_port = rb_iv_get(self, "@port")) != Qnil) {
+    port = NUM2INT(r_port);
+  }
+
+  if((r_path = rb_iv_get(self, "@path")) != Qnil) {
+    path = StringValuePtr(r_path);
     database = strtok(path, "/");
   }
 
   if (NULL == database || 0 == strlen(database)) {
-    rb_raise(eMysqlError, "Database must be specified");
+    rb_raise(eConnectionError, "Database must be specified");
   }
 
-  // Pull the querystring off the URI
-  r_query = rb_funcall(uri, rb_intern("query"), 0);
+  r_query        = rb_iv_get(self, "@query");
 
-  // Check to see if we're on the db machine.  If so, try to use the socket
   if (0 == strcasecmp(host, "localhost")) {
     socket = get_uri_option(r_query, "socket");
     if (NULL != socket) {
@@ -507,18 +561,30 @@ static VALUE cConnection_initialize(VALUE self, VALUE uri) {
     }
   }
 
-  r_port = rb_funcall(uri, rb_intern("port"), 0);
-  if (Qnil != r_port) {
-    port = NUM2INT(r_port);
+#ifdef HAVE_MYSQL_SSL_SET
+  char *ssl_client_key, *ssl_client_cert, *ssl_ca_cert, *ssl_ca_path, *ssl_cipher;
+  VALUE r_ssl;
+
+  if(rb_obj_is_kind_of(r_query, rb_cHash)) {
+    r_ssl = rb_hash_aref(r_query, rb_str_new2("ssl"));
+
+    if(rb_obj_is_kind_of(r_ssl, rb_cHash)) {
+      ssl_client_key  = get_uri_option(r_ssl, "client_key");
+      ssl_client_cert = get_uri_option(r_ssl, "client_cert");
+      ssl_ca_cert     = get_uri_option(r_ssl, "ca_cert");
+      ssl_ca_path     = get_uri_option(r_ssl, "ca_path");
+      ssl_cipher      = get_uri_option(r_ssl, "cipher");
+
+      assert_file_exists(ssl_client_key,  "client_key doesn't exist");
+      assert_file_exists(ssl_client_cert, "client_cert doesn't exist");
+      assert_file_exists(ssl_ca_cert,     "ca_cert doesn't exist");
+
+      mysql_ssl_set(db, ssl_client_key, ssl_client_cert, ssl_ca_cert, ssl_ca_path, ssl_cipher);
+    } else if(r_ssl != Qnil) {
+      rb_raise(eArgumentError, "ssl must be passed a hash");
+    }
   }
-
-  encoding = get_uri_option(r_query, "encoding");
-  if (!encoding) { encoding = get_uri_option(r_query, "charset"); }
-  if (!encoding) { encoding = "utf8"; }
-
-  // If ssl? {
-  //   mysql_ssl_set(db, key, cert, ca, capath, cipher)
-  // }
+#endif
 
   result = (MYSQL *)mysql_real_connect(
     db,
@@ -532,8 +598,16 @@ static VALUE cConnection_initialize(VALUE self, VALUE uri) {
   );
 
   if (NULL == result) {
-    raise_mysql_error(Qnil, db, -1, NULL);
+    raise_error(self, db, Qnil);
   }
+
+#ifdef HAVE_MYSQL_SSL_SET
+  const char *ssl_cipher_used = mysql_get_ssl_cipher(db);
+
+  if (NULL != ssl_cipher_used) {
+    rb_iv_set(self, "@ssl_cipher", rb_str_new2(ssl_cipher_used));
+  }
+#endif
 
 #ifdef MYSQL_OPT_RECONNECT
   my_bool reconnect = 1;
@@ -541,39 +615,100 @@ static VALUE cConnection_initialize(VALUE self, VALUE uri) {
 #endif
 
   // Set the connections character set
-  encoding_error = mysql_set_character_set(db, encoding);
-  if (0 != encoding_error) {
-    raise_mysql_error(Qnil, db, encoding_error, NULL);
+  encoding = rb_iv_get(self, "@encoding");
+
+  VALUE my_encoding = rb_hash_aref(CONST_GET(mEncoding, "MAP"), encoding);
+  if(my_encoding != Qnil) {
+    encoding_error = mysql_set_character_set(db, RSTRING_PTR(my_encoding));
+    if (0 != encoding_error) {
+      raise_error(self, db, Qnil);
+    } else {
+      rb_iv_set(self, "@my_encoding", my_encoding);
+    }
+  } else {
+    rb_warn("Encoding %s is not a known Ruby encoding for MySQL\n", RSTRING_PTR(encoding));
+    rb_iv_set(self, "@encoding", rb_str_new2("UTF-8"));
+    rb_iv_set(self, "@my_encoding", rb_str_new2("utf8"));
   }
 
   // Disable sql_auto_is_null
   cCommand_execute(self, db, rb_str_new2("SET sql_auto_is_null = 0"));
   cCommand_execute(self, db, rb_str_new2("SET SESSION sql_mode = 'ANSI,NO_AUTO_VALUE_ON_ZERO,NO_DIR_IN_CREATE,NO_ENGINE_SUBSTITUTION,NO_UNSIGNED_SUBTRACTION,TRADITIONAL'"));
 
-  rb_iv_set(self, "@uri", uri);
   rb_iv_set(self, "@connection", Data_Wrap_Struct(rb_cObject, 0, 0, db));
+}
+
+static VALUE cConnection_initialize(VALUE self, VALUE uri) {
+  VALUE r_host, r_user, r_password, r_path, r_query, r_port;
+
+  MYSQL *db = 0;
+  db = (MYSQL *)mysql_init(NULL);
+
+  rb_iv_set(self, "@using_socket", Qfalse);
+  rb_iv_set(self, "@ssl_cipher", Qnil);
+
+  r_host = rb_funcall(uri, rb_intern("host"), 0);
+  if (Qnil != r_host) {
+    rb_iv_set(self, "@host", r_host);
+  }
+
+  r_user = rb_funcall(uri, rb_intern("user"), 0);
+  if (Qnil != r_user) {
+    rb_iv_set(self, "@user", r_user);
+  }
+
+  r_password = rb_funcall(uri, rb_intern("password"), 0);
+  if (Qnil != r_password) {
+    rb_iv_set(self, "@password", r_password);
+  }
+
+  r_path = rb_funcall(uri, rb_intern("path"), 0);
+  if (Qnil != r_path) {
+    rb_iv_set(self, "@path", r_path);
+  }
+
+  r_port = rb_funcall(uri, rb_intern("port"), 0);
+  if (Qnil != r_port) {
+    rb_iv_set(self, "@port", r_port);
+  }
+
+  // Pull the querystring off the URI
+  r_query = rb_funcall(uri, rb_intern("query"), 0);
+  rb_iv_set(self, "@query", r_query);
+
+  const char* encoding = get_uri_option(r_query, "encoding");
+  if (!encoding) { encoding = get_uri_option(r_query, "charset"); }
+  if (!encoding) { encoding = "UTF-8"; }
+
+  rb_iv_set(self, "@encoding", DO_STR_NEW2(encoding, NULL));
+
+  full_connect(self, db);
+
+  rb_iv_set(self, "@uri", uri);
 
   return Qtrue;
 }
 
 static VALUE cConnection_character_set(VALUE self) {
-  VALUE connection_container = rb_iv_get(self, "@connection");
-  MYSQL *db;
-
-  const char *encoding;
-
-  if (Qnil == connection_container)
-    return Qfalse;
-
-  db = DATA_PTR(connection_container);
-
-  encoding = mysql_character_set_name(db);
-
-  return RUBY_STRING(encoding);
+  return rb_iv_get(self, "@encoding");
 }
 
 static VALUE cConnection_is_using_socket(VALUE self) {
   return rb_iv_get(self, "@using_socket");
+}
+
+static VALUE cConnection_ssl_cipher(VALUE self) {
+  return rb_iv_get(self, "@ssl_cipher");
+}
+
+static VALUE cConnection_secure(VALUE self) {
+  VALUE blank_cipher = rb_funcall(rb_iv_get(self, "@ssl_cipher"), rb_intern("blank?"), 0);
+
+  if (blank_cipher == Qtrue) {
+    return Qfalse;
+  } else {
+    return Qtrue;
+  }
 }
 
 static VALUE cConnection_dispose(VALUE self) {
@@ -633,18 +768,18 @@ static VALUE cCommand_set_types(int argc, VALUE *argv, VALUE self) {
 }
 
 VALUE cConnection_quote_time(VALUE self, VALUE value) {
-  return rb_funcall(value, ID_STRFTIME, 1, RUBY_STRING("'%Y-%m-%d %H:%M:%S'"));
+  return rb_funcall(value, ID_STRFTIME, 1, rb_str_new2("'%Y-%m-%d %H:%M:%S'"));
 }
 
 
 VALUE cConnection_quote_date_time(VALUE self, VALUE value) {
   // TODO: Support non-local dates. we need to call #new_offset on the date to be
   // quoted and pass in the current locale's date offset (self.new_offset((hours * 3600).to_r / 86400)
-  return rb_funcall(value, ID_STRFTIME, 1, RUBY_STRING("'%Y-%m-%d %H:%M:%S'"));
+  return rb_funcall(value, ID_STRFTIME, 1, rb_str_new2("'%Y-%m-%d %H:%M:%S'"));
 }
 
 VALUE cConnection_quote_date(VALUE self, VALUE value) {
-  return rb_funcall(value, ID_STRFTIME, 1, RUBY_STRING("'%Y-%m-%d'"));
+  return rb_funcall(value, ID_STRFTIME, 1, rb_str_new2("'%Y-%m-%d'"));
 }
 
 static VALUE cConnection_quote_string(VALUE self, VALUE string) {
@@ -667,6 +802,10 @@ static VALUE cConnection_quote_string(VALUE self, VALUE string) {
   // Wrap the escaped string in single-quotes, this is DO's convention
   escaped[0] = escaped[quoted_length + 1] = '\'';
   result = rb_str_new(escaped, quoted_length + 2);
+#ifdef HAVE_RUBY_ENCODING_H
+  rb_enc_associate_index(result, rb_enc_find_index(RSTRING_PTR(rb_iv_get(self, "@encoding"))));
+#endif
+
   free(escaped);
   return result;
 }
@@ -693,7 +832,7 @@ static VALUE cCommand_execute_non_query(int argc, VALUE *argv, VALUE self) {
   VALUE connection = rb_iv_get(self, "@connection");
   VALUE mysql_connection = rb_iv_get(connection, "@connection");
   if (Qnil == mysql_connection) {
-    rb_raise(eMysqlError, "This connection has already been closed.");
+    rb_raise(eConnectionError, "This connection has already been closed.");
   }
 
   MYSQL *db = DATA_PTR(mysql_connection);
@@ -721,7 +860,7 @@ static VALUE cCommand_execute_reader(int argc, VALUE *argv, VALUE self) {
   VALUE connection = rb_iv_get(self, "@connection");
   VALUE mysql_connection = rb_iv_get(connection, "@connection");
   if (Qnil == mysql_connection) {
-    rb_raise(eMysqlError, "This connection has already been closed.");
+    rb_raise(eConnectionError, "This connection has already been closed.");
   }
 
   MYSQL *db = DATA_PTR(mysql_connection);
@@ -740,8 +879,9 @@ static VALUE cCommand_execute_reader(int argc, VALUE *argv, VALUE self) {
   field_count = mysql_field_count(db);
 
   reader = rb_funcall(cReader, ID_NEW, 0);
+  rb_iv_set(reader, "@connection", connection);
   rb_iv_set(reader, "@reader", Data_Wrap_Struct(rb_cObject, 0, 0, response));
-  rb_iv_set(reader, "@opened", Qtrue);
+  rb_iv_set(reader, "@opened", Qfalse);
   rb_iv_set(reader, "@field_count", INT2NUM(field_count));
 
   field_names = rb_ary_new();
@@ -759,7 +899,7 @@ static VALUE cCommand_execute_reader(int argc, VALUE *argv, VALUE self) {
 
   for(i = 0; i < field_count; i++) {
     field = mysql_fetch_field_direct(response, i);
-    rb_ary_push(field_names, RUBY_STRING(field->name));
+    rb_ary_push(field_names, rb_str_new2(field->name));
 
     if (1 == guess_default_field_types) {
       rb_ary_push(field_types, infer_ruby_type(field));
@@ -795,6 +935,7 @@ static VALUE cReader_close(VALUE self) {
 
   mysql_free_result(reader);
   rb_iv_set(self, "@reader", Qnil);
+  rb_iv_set(self, "@opened", Qfalse);
 
   return Qtrue;
 }
@@ -803,7 +944,7 @@ static VALUE cReader_close(VALUE self) {
 static VALUE cReader_next(VALUE self) {
   // Get the reader from the instance variable, maybe refactor this?
   VALUE reader_container = rb_iv_get(self, "@reader");
-  VALUE field_types, field_type, row;
+  VALUE field_types, field_type, row, my_encoding;
 
   MYSQL_RES *reader;
   MYSQL_ROW result;
@@ -819,20 +960,28 @@ static VALUE cReader_next(VALUE self) {
 
   // The Meat
   field_types = rb_iv_get(self, "@field_types");
+  my_encoding = rb_iv_get(rb_iv_get(self, "@connection"), "@my_encoding");
   row = rb_ary_new();
   result = mysql_fetch_row(reader);
   lengths = mysql_fetch_lengths(reader);
 
-  rb_iv_set(self, "@state", result ? Qtrue : Qfalse);
+  rb_iv_set(self, "@opened", result ? Qtrue : Qfalse);
 
   if (!result) {
     return Qfalse;
   }
 
+  char* enc = NULL;
+#ifdef HAVE_RUBY_ENCODING_H
+  if (my_encoding != Qnil) {
+    enc = RSTRING_PTR(my_encoding);
+  }
+#endif
+
   for (i = 0; i < reader->field_count; i++) {
     // The field_type data could be cached in a c-array
     field_type = rb_ary_entry(field_types, i);
-    rb_ary_push(row, typecast(result[i], lengths[i], field_type));
+    rb_ary_push(row, typecast(result[i], lengths[i], field_type, enc));
   }
 
   rb_iv_set(self, "@values", row);
@@ -841,9 +990,9 @@ static VALUE cReader_next(VALUE self) {
 }
 
 static VALUE cReader_values(VALUE self) {
-  VALUE state = rb_iv_get(self, "@state");
+  VALUE state = rb_iv_get(self, "@opened");
   if ( state == Qnil || state == Qfalse ) {
-    rb_raise(eMysqlError, "Reader is not initialized");
+    rb_raise(eDataError, "Reader is not initialized");
   }
   else {
     return rb_iv_get(self, "@values");
@@ -858,15 +1007,11 @@ static VALUE cReader_field_count(VALUE self) {
   return rb_iv_get(self, "@field_count");
 }
 
-static VALUE cReader_row_count(VALUE self) {
-  return rb_iv_get(self, "@row_count");
-}
-
 void Init_do_mysql_ext() {
   rb_require("bigdecimal");
   rb_require("date");
 
-  rb_funcall(rb_mKernel, rb_intern("require"), 1, RUBY_STRING("data_objects"));
+  rb_funcall(rb_mKernel, rb_intern("require"), 1, rb_str_new2("data_objects"));
 
   ID_TO_I = rb_intern("to_i");
   ID_TO_F = rb_intern("to_f");
@@ -908,11 +1053,15 @@ void Init_do_mysql_ext() {
   mDOMysql = rb_define_module_under(mDO, "Mysql");
 
   eArgumentError = CONST_GET(rb_mKernel, "ArgumentError");
-  eMysqlError = rb_define_class("MysqlError", rb_eStandardError);
+  eConnectionError = CONST_GET(mDO, "ConnectionError");
+  eDataError = CONST_GET(mDO, "DataError");
+  mEncoding = rb_define_module_under(mDOMysql, "Encoding");
 
   cConnection = DRIVER_CLASS("Connection", cDO_Connection);
   rb_define_method(cConnection, "initialize", cConnection_initialize, 1);
   rb_define_method(cConnection, "using_socket?", cConnection_is_using_socket, 0);
+  rb_define_method(cConnection, "ssl_cipher", cConnection_ssl_cipher, 0);
+  rb_define_method(cConnection, "secure?", cConnection_secure, 0);
   rb_define_method(cConnection, "character_set", cConnection_character_set , 0);
   rb_define_method(cConnection, "dispose", cConnection_dispose, 0);
   rb_define_method(cConnection, "quote_string", cConnection_quote_string, 1);
@@ -935,5 +1084,10 @@ void Init_do_mysql_ext() {
   rb_define_method(cReader, "values", cReader_values, 0);
   rb_define_method(cReader, "fields", cReader_fields, 0);
   rb_define_method(cReader, "field_count", cReader_field_count, 0);
-  rb_define_method(cReader, "row_count", cReader_row_count, 0);
+
+  struct errcodes *errs;
+
+  for (errs = errors; errs->error_name; errs++) {
+    rb_const_set(mDOMysql, rb_intern(errs->error_name), INT2NUM(errs->error_no));
+  }
 }

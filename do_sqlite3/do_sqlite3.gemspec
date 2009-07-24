@@ -1,7 +1,7 @@
 --- !ruby/object:Gem::Specification 
 name: do_sqlite3
 version: !ruby/object:Gem::Version 
-  version: 0.9.13
+  version: 0.10.0
 platform: ruby
 authors: 
 - Dirkjan Bussink
@@ -9,7 +9,7 @@ autorequire:
 bindir: bin
 cert_chain: []
 
-date: 2009-05-17 00:00:00 +02:00
+date: 2009-05-27 00:00:00 -07:00
 default_executable: 
 dependencies: 
 - !ruby/object:Gem::Dependency 
@@ -20,7 +20,7 @@ dependencies:
     requirements: 
     - - ~>
       - !ruby/object:Gem::Version 
-        version: 2.0.0
+        version: "2.0"
     version: 
 - !ruby/object:Gem::Dependency 
   name: extlib
@@ -40,7 +40,7 @@ dependencies:
     requirements: 
     - - "="
       - !ruby/object:Gem::Version 
-        version: 0.9.13
+        version: 0.10.0
     version: 
 - !ruby/object:Gem::Dependency 
   name: rspec

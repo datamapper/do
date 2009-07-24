@@ -1,2 +1,2 @@
-mem.properties
-mem.script
+mem.*
+spec/test.db.*

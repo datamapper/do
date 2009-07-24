@@ -5,4 +5,5 @@ require 'data_objects/spec/typecast/datetime_spec'
 
 describe 'DataObjects::Derby with DateTime' do
   it_should_behave_like 'supporting DateTime'
+  it_should_behave_like 'supporting DateTime autocasting'
 end

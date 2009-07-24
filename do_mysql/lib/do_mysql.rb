@@ -1,15 +1,14 @@
-require 'rubygems'
 require 'data_objects'
 if RUBY_PLATFORM =~ /java/
   require 'do_jdbc'
   require 'java'
-  gem 'jdbc-mysql'
   require 'jdbc/mysql' # the JDBC driver, packaged as a gem
 end
 
 require 'do_mysql_ext'
 require File.expand_path(File.join(File.dirname(__FILE__), 'do_mysql', 'version'))
 require File.expand_path(File.join(File.dirname(__FILE__), 'do_mysql', 'transaction'))
+require File.expand_path(File.join(File.dirname(__FILE__), 'do_mysql', 'encoding'))
 
 if RUBY_PLATFORM =~ /java/
   # Another way of loading the JDBC Class. This seems to be more reliable
@@ -28,15 +27,9 @@ if RUBY_PLATFORM =~ /java/
           @using_socket
         end
 
-        def character_set
-          # JDBC API does not provide an easy way to get the current character set
-          reader = self.create_command("SHOW VARIABLES LIKE 'character_set_client'").execute_reader
-          reader.next!
-          char_set = reader.values[1]
-          reader.close
-          char_set.downcase
+        def secure?
+          false
         end
-
       end
     end
   end

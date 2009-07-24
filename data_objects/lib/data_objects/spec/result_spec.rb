@@ -37,7 +37,10 @@ share_examples_for 'a Result which returns inserted keys' do
 
   before :each do
     @connection = DataObjects::Connection.new(CONFIG.uri)
-    @result    = @connection.create_command("INSERT INTO users (name) VALUES (?)").execute_non_query("monkey")
+    command = @connection.create_command("INSERT INTO users (name) VALUES (?)")
+    # execute the command twice and expose the second result
+    command.execute_non_query("monkey")
+    @result = command.execute_non_query("monkey")
   end
 
   after :each do

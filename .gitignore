@@ -8,6 +8,8 @@ pkg/*
 *.bundle
 Makefile
 **/*.db
+mem.*
+testdb
 nbproject
 *.*~
 *.*#
@@ -16,11 +18,16 @@ nbproject
 stash
 cross
 coverage
+**/test.*.*
 do_*/lib/do_*_ext.jar
 do_*/**/target
 do_*/pkg
+do_*/target
 do_*/tmp
 do_*/vendor
 bin/**
+*.ipr
+*.iws
+*.iml
 .project
 *.swp

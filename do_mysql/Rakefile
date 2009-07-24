@@ -8,9 +8,9 @@ require 'lib/do_mysql/version'
 ROOT    = Pathname(__FILE__).dirname.expand_path
 JRUBY   = RUBY_PLATFORM =~ /java/
 WINDOWS = Gem.win_platform?
-SUDO    = (WINDOWS || JRUBY) ? '' : ('sudo' unless ENV['SUDOLESS'])
-BINARY_VERSION = '5.0.77'
+SUDO    = WINDOWS ? '' : ('sudo' unless ENV['SUDOLESS'])
+BINARY_VERSION = '5.0.83'
 
-Dir['tasks/*.rake'].each { |f| import f }
+Dir['tasks/*.rake'].sort.each { |f| import f }
 
 CLEAN.include(%w[ {tmp,pkg}/ **/*.{o,so,bundle,jar,log,a,gem,dSYM,obj,pdb,exp,DS_Store,rbc,db} ext/do_mysql_ext/Makefile ext-java/target ])
