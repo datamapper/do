@@ -1,0 +1,15 @@
+require 'rubygems'
+require 'rake'
+require 'rake/clean'
+
+require 'pathname'
+require 'lib/do_sqlserver/version'
+
+ROOT    = Pathname(__FILE__).dirname.expand_path
+JRUBY   = RUBY_PLATFORM =~ /java/
+WINDOWS = Gem.win_platform?
+SUDO    = WINDOWS ? '' : ('sudo' unless ENV['SUDOLESS'])
+
+Dir['tasks/*.rake'].sort.each { |f| import f }
+
+CLEAN.include(%w[ {tmp,pkg}/ **/*.{o,so,bundle,jar,log,a,gem,dSYM,obj,pdb,exp,DS_Store,rbc,db} ext-java/target ])

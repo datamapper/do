@@ -88,6 +88,7 @@
     <module>do_oracle</module>
     <module>do_postgres</module>
     <module>do_sqlite3</module>
+    <module>do_sqlserver</module>
   </modules>
 
   <reporting>
