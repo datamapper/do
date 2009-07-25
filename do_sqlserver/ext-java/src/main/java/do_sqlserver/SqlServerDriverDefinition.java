@@ -27,7 +27,7 @@ public class SqlServerDriverDefinition extends AbstractDriverDefinition {
 
     public final static String URI_SCHEME = "sqlserver";
     // . will be replaced with : in Connection.java before connection
-    public final static String JDBC_URI_SCHEME = "jdts.sqlserver";
+    public final static String JDBC_URI_SCHEME = "jtds.sqlserver";
     public final static String RUBY_MODULE_NAME = "SqlServer";
 
     public SqlServerDriverDefinition() {
