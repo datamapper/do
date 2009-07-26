@@ -3,20 +3,6 @@ if RUBY_PLATFORM =~ /java/
   require 'do_jdbc'
   require 'java'
 
-  # ojdbc14.jar file should be in JRUBY_HOME/lib or should be in ENV['PATH'] or load path
-
-  ojdbc_jar = "ojdbc14.jar"
-
-  unless ENV_JAVA['java.class.path'] =~ Regexp.new(ojdbc_jar)
-    # Adds JRuby classloader to current thread classloader - as a result ojdbc14.jar should not be in $JRUBY_HOME/lib
-    # not necessary anymore for JRuby 1.3
-    # java.lang.Thread.currentThread.setContextClassLoader(JRuby.runtime.jruby_class_loader)
-
-    if ojdbc_jar_path = ENV["PATH"].split(/[:;]/).concat($LOAD_PATH).find{|d| File.exists?(File.join(d,ojdbc_jar))}
-      require File.join(ojdbc_jar_path,ojdbc_jar)
-    end
-  end
-
 else # MRI and Ruby 1.9
   gem 'ruby-oci8', '>=2.0.2'
   require 'oci8'
@@ -25,8 +11,18 @@ end
 
 require 'do_oracle_ext'
 require File.expand_path(File.join(File.dirname(__FILE__), 'do_oracle', 'version'))
-if RUBY_PLATFORM !~ /java/
+
+if RUBY_PLATFORM =~ /java/
+  # Oracle JDBC driver (ojdbc14.jar or ojdbc5.jar) file should be in JRUBY_HOME/lib or should be in Java class path
+  # Register Oracle JDBC driver
+  begin
+    java.sql.DriverManager.registerDriver Java::oracle.jdbc.OracleDriver.new
+  rescue NameError => e
+    raise OracleError, "Cannot load Oracle JDBC driver, put it (ojdbc14.jar or ojdbc5.jar) in JRUBY_HOME/lib or include in Java class path"
+  end
   # JDBC driver has transactions implementation in Java
+
+else # MRI and Ruby 1.9
   require File.expand_path(File.join(File.dirname(__FILE__), 'do_oracle', 'transaction'))
 end
 
@@ -120,8 +116,6 @@ if RUBY_PLATFORM !~ /java/
 end
 
 if RUBY_PLATFORM =~ /java/
-  # Register Oracle JDBC driver
-  java.sql.DriverManager.registerDriver Java::oracle.jdbc.driver.OracleDriver.new
 
   module DataObjects
     module Oracle

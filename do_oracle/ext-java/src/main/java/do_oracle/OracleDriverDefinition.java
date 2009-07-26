@@ -1,6 +1,7 @@
 package do_oracle;
 
 import java.io.IOException;
+import java.lang.reflect.Field;
 
 import java.sql.Connection;
 import java.sql.Statement;
@@ -197,13 +198,30 @@ public class OracleDriverDefinition extends AbstractDriverDefinition {
 
     @Override
     public String statementToString(Statement s) {
-        try {
-            String sqlText = ((oracle.jdbc.driver.OracleStatement) s).getOriginalSql();
-            // ParameterMetaData md = ps.getParameterMetaData();
-            return sqlText;
-        } catch (SQLException sqle) {
-            return "(exception in getOriginalSql)";
+        // String sqlText = ((oracle.jdbc.driver.OraclePreparedStatement) s).getOriginalSql();
+        // in ojdbc5 need to retrieve statement field at first
+        Statement s2 = (Statement) getFieldValue(s, "statement");
+        if (s2 == null)
+            s2 = s;
+        String sqlText = (String) getFieldValue(getFieldValue(s2, "sqlObject"), "originalSql");
+        // ParameterMetaData md = ps.getParameterMetaData();
+        return sqlText;
+    }
+
+    private Object getFieldValue(Object obj, String field) {
+        Class c = obj.getClass();
+        while (c != null) {
+            try {
+                Field f = c.getDeclaredField(field);
+                f.setAccessible(true);
+                return f.get(obj);
+            } catch (NoSuchFieldException e) {
+                c = c.getSuperclass();
+            } catch (IllegalAccessException e) {
+                return null;
+            }
         }
+        return null;
     }
 
     // for execution of session initialization SQL statements
