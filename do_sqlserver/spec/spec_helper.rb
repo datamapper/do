@@ -147,9 +147,10 @@ module DataObjectsSpecHelpers
       update widgets set release_datetime = NULL where id = 8
     EOF
 
-    conn.create_command(<<-EOF).execute_non_query
-      update widgets set release_timestamp = NULL where id = 9
-    EOF
+    # (cannot update a Timestamp column w/MSSQL)
+    #conn.create_command(<<-EOF).execute_non_query
+    #  update widgets set release_timestamp = NULL where id = 9
+    #EOF
 
     conn.close
 
