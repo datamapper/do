@@ -2,6 +2,7 @@ package do_sqlserver;
 
 import java.io.IOException;
 
+import java.lang.reflect.InvocationTargetException;
 import java.sql.Connection;
 import java.sql.Statement;
 import java.sql.PreparedStatement;
@@ -10,18 +11,17 @@ import java.sql.SQLException;
 import java.sql.Types;
 
 import java.util.Properties;
-import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import org.jruby.Ruby;
 import org.jruby.runtime.builtin.IRubyObject;
 import org.jruby.RubyString;
 
-import org.joda.time.DateTime;
 
 import data_objects.RubyType;
 import data_objects.drivers.AbstractDriverDefinition;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+import java.sql.DriverManager;
 
 public class SqlServerDriverDefinition extends AbstractDriverDefinition {
 
@@ -29,6 +29,7 @@ public class SqlServerDriverDefinition extends AbstractDriverDefinition {
     // . will be replaced with : in Connection.java before connection
     public final static String JDBC_URI_SCHEME = "jtds.sqlserver";
     public final static String RUBY_MODULE_NAME = "SqlServer";
+    private final static String UTF8_ENCODING = "UTF-8";
 
     public SqlServerDriverDefinition() {
         super(URI_SCHEME, JDBC_URI_SCHEME, RUBY_MODULE_NAME);
@@ -123,22 +124,93 @@ public class SqlServerDriverDefinition extends AbstractDriverDefinition {
     public boolean supportsJdbcScrollableResultSets() {
         return true;
     }
+    @Override
+    public boolean supportsConnectionEncodings()
+    {
+        return true;
+    }
 
-   // @Override
-   // public String prepareSqlTextForPs(String sqlText, IRubyObject[] args) {
-   //     String newSqlText = sqlText.replaceFirst(":insert_id", "?");
-   //     return newSqlText;
-   // }
+    @Override
+    public void setEncodingProperty(Properties props, String encodingName) {
+        props.put("charset", encodingName);
+    }
+
+    @Override
+    public java.sql.Connection getConnectionWithEncoding(Ruby runtime,
+            IRubyObject connection, String url, Properties props) throws SQLException {
+        java.sql.Connection conn;
+
+        // TODO: We need to do the checking for the Encoding Property ourselves,
+        // as a SQLException will not be thrown if an unknown encoding is set.
+
+        conn = DriverManager.getConnection(url, props);
+
+        try {
+            Class<?> c = Class.forName("net.sourceforge.jtds.jdbc.ConnectionJDBC2");
+            Method getCharset = c.getDeclaredMethod("getCharset", new Class[] {});
+            getCharset.setAccessible(true);
+            String charsetName = (String) getCharset.invoke(conn, new Object[] {});
+
+            API.setInstanceVariable(connection, "@encoding", runtime.newString(charsetName));
+
+        } catch (Exception ex) {
+            // IllegalArgumentException
+            // InvocationTargetException
+            // ClassNotFoundException
+            // NoSuchMethodException
+            // SecurityException
+            // IllegalAccessException
+            System.out.println(ex);
+        }
+
+        return conn;
+    }
+
+    private String replace(String sql, Object param)
+    {
+        return sql.replaceFirst("[?]", param.toString());
+    }
+
+    private String replace(String sql, String param)
+    {
+        return sql.replaceFirst("[?]", "'" + param + "'");
+    }
 
     @Override
     public String statementToString(Statement s) {
-        //try {
-            String sqlText = (s).toString();
-            // ParameterMetaData md = ps.getParameterMetaData();
-            return sqlText;
-        //} catch (SQLException sqle) {
-        //    return "(exception in getOriginalSql)";
-        //}
+        try {
+            Class<?> psClazz = Class.forName("net.sourceforge.jtds.jdbc.JtdsPreparedStatement");
+            Class<?> piClazz = Class.forName("net.sourceforge.jtds.jdbc.ParamInfo");
+            Field sqlField = psClazz.getDeclaredField("sql");
+            sqlField.setAccessible(true);
+            String sql = sqlField.get(s).toString();
+            Field paramsField = psClazz.getDeclaredField("parameters");
+            paramsField.setAccessible(true);
+            Field jdbcTypeField = piClazz.getDeclaredField("jdbcType");
+            jdbcTypeField.setAccessible(true);
+            Field valueField = piClazz.getDeclaredField("value");
+            valueField.setAccessible(true);
+
+            Object[] params = (Object[]) paramsField.get(s);
+            for (Object param : params) {
+                int jdbcType = jdbcTypeField.getInt(param);
+                Object value = valueField.get(param);
+
+                switch (jdbcType) {
+                    case Types.CHAR:
+                    case Types.LONGVARCHAR:
+                    case Types.VARCHAR:
+                        sql = replace(sql, value.toString());
+                    default:
+                        sql = replace(sql, value);
+                }
+            }
+            return sql;
+        }
+        catch(Exception e) {
+            // just fall to the toString of the PreparedStatement
+            return s.toString();
+        }
     }
 
     // for execution of session initialization SQL statements
