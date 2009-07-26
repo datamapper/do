@@ -46,8 +46,9 @@ CONFIG.pass     = ENV['DO_SQLSERVER_PASS'] || 'do_test'
 CONFIG.host     = ENV['DO_SQLSERVER_HOST'] || '192.168.2.110'
 CONFIG.port     = ENV['DO_SQLSERVER_PORT'] || '1433'
 CONFIG.database = ENV['DO_SQLSERVER_DATABASE'] || '/do_test'
+CONFIG.instance = ENV['DO_SQLSERVER_INSTANCE'] || 'SQLEXPRESS'
 
-CONFIG.uri = ENV["DO_SQLSERVER_SPEC_URI"] ||"#{CONFIG.scheme}://#{CONFIG.user}:#{CONFIG.pass}@#{CONFIG.host}:#{CONFIG.port}/#{CONFIG.database}"
+CONFIG.uri = ENV["DO_SQLSERVER_SPEC_URI"] ||"#{CONFIG.scheme}://#{CONFIG.user}:#{CONFIG.pass}@#{CONFIG.host}:#{CONFIG.port}#{CONFIG.database};instance=#{CONFIG.instance}"
 CONFIG.sleep = "WAITFOR DELAY '00:00:01'"
 
 module DataObjectsSpecHelpers
