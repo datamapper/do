@@ -127,6 +127,30 @@ module DataObjectsSpecHelpers
       update widgets set ad_description = NULL where id = 3
     EOF
 
+    conn.create_command(<<-EOF).execute_non_query
+      update widgets set flags = NULL where id = 4
+    EOF
+
+    conn.create_command(<<-EOF).execute_non_query
+      update widgets set cost1 = NULL where id = 5
+    EOF
+
+    conn.create_command(<<-EOF).execute_non_query
+      update widgets set cost2 = NULL where id = 6
+    EOF
+
+    #conn.create_command(<<-EOF).execute_non_query
+    #  update widgets set release_date = NULL where id = 7
+    #EOF
+
+    conn.create_command(<<-EOF).execute_non_query
+      update widgets set release_datetime = NULL where id = 8
+    EOF
+
+    conn.create_command(<<-EOF).execute_non_query
+      update widgets set release_timestamp = NULL where id = 9
+    EOF
+
     conn.close
 
   end
