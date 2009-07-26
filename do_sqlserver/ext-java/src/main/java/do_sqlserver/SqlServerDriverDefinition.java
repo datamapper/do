@@ -22,6 +22,8 @@ import data_objects.drivers.AbstractDriverDefinition;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.sql.DriverManager;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class SqlServerDriverDefinition extends AbstractDriverDefinition {
 
@@ -139,30 +141,26 @@ public class SqlServerDriverDefinition extends AbstractDriverDefinition {
     public java.sql.Connection getConnectionWithEncoding(Ruby runtime,
             IRubyObject connection, String url, Properties props) throws SQLException {
         java.sql.Connection conn;
+        try  {
+            conn = DriverManager.getConnection(url, props);
+        } catch (SQLException eex) {
+            Pattern p = Pattern.compile("Could not find a Java charset equivalent to DB charset (.+).");
+            Matcher m = p.matcher(eex.getMessage());
 
-        // TODO: We need to do the checking for the Encoding Property ourselves,
-        // as a SQLException will not be thrown if an unknown encoding is set.
-
-        conn = DriverManager.getConnection(url, props);
-
-        try {
-            Class<?> c = Class.forName("net.sourceforge.jtds.jdbc.ConnectionJDBC2");
-            Method getCharset = c.getDeclaredMethod("getCharset", new Class[] {});
-            getCharset.setAccessible(true);
-            String charsetName = (String) getCharset.invoke(conn, new Object[] {});
-
-            API.setInstanceVariable(connection, "@encoding", runtime.newString(charsetName));
-
-        } catch (Exception ex) {
-            // IllegalArgumentException
-            // InvocationTargetException
-            // ClassNotFoundException
-            // NoSuchMethodException
-            // SecurityException
-            // IllegalAccessException
-            System.out.println(ex);
+            if (m.matches()) {
+                // re-attempt connection, but this time with UTF-8
+                // set as the encoding
+                runtime.getWarnings().warn(String.format(
+                        "Encoding %s is not a known Ruby encoding for %s\n",
+                        m.group(1), RUBY_MODULE_NAME));
+                setEncodingProperty(props, UTF8_ENCODING);
+                API.setInstanceVariable(connection,
+                        "@encoding", runtime.newString(UTF8_ENCODING));
+                conn = DriverManager.getConnection(url, props);
+            } else {
+                throw eex;
+            }
         }
-
         return conn;
     }
 
