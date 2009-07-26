@@ -13,7 +13,6 @@ module DataObjects
     # Note that the physical connection may be delayed until the first command is issued, so success here doesn't necessarily mean you can connect.
     def self.new(uri_s)
       uri = DataObjects::URI::parse(uri_s)
-      puts uri.to_s
 
       case uri.scheme.to_sym
       when :java
