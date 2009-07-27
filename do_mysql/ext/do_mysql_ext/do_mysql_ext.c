@@ -139,8 +139,6 @@ static VALUE infer_ruby_type(MYSQL_FIELD *field) {
     case MYSQL_TYPE_TIMESTAMP:
     case MYSQL_TYPE_DATETIME:
       return rb_cDateTime;
-    case MYSQL_TYPE_TIME:
-      return rb_cDateTime;
     case MYSQL_TYPE_DATE:
     case MYSQL_TYPE_NEWDATE:
       return rb_cDate;
