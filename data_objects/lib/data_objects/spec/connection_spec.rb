@@ -23,7 +23,7 @@ share_examples_for 'a Connection' do
 
     describe 'on open connection' do
       before do
-        @open_connection = DataObjects::Connection.new(CONFIG.uri)
+        @open_connection = DataObjects::Connection.new("#{@driver}://#{@user}:#{@password}@#{@host}:#{@port}#{@database}")
         @open_connection.detach
       end
 
@@ -36,7 +36,7 @@ share_examples_for 'a Connection' do
 
     describe 'on closed connection' do
       before do
-        @closed_connection = DataObjects::Connection.new(CONFIG.uri)
+        @closed_connection = DataObjects::Connection.new("#{@driver}://#{@user}:#{@password}@#{@host}:#{@port}#{@database}")
         @closed_connection.detach
         @closed_connection.dispose
       end
