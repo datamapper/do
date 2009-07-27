@@ -45,8 +45,8 @@ GEM_SPEC = Gem::Specification.new do |s|
   s.rubyforge_project = 'dorb'
 
   # author and contributors
-  s.author      = 'Alex Coles'
-  s.email       = 'alex@alexcolesportfolio.com'
+  s.author      = 'Clifford Heath'
+  s.email       = 'clifford.heath@gmail.com'
 end
 
 gem_package = Gem::PackageTask.new(GEM_SPEC) do |pkg|
