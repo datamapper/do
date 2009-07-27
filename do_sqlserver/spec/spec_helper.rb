@@ -97,7 +97,7 @@ module DataObjectsSpecHelpers
         "ad_image" image NULL,
         "whitepaper_text" text NULL,
         "cad_drawing" image NULL,
-        "flags" tinyint default 0,
+        "flags" bit default 0,
         "number_in_stock" smallint default 500,
         "number_sold" int default 0,
         "super_number" bigint default 9223372036854775807,
@@ -106,16 +106,16 @@ module DataObjectsSpecHelpers
         "cost2" decimal(8,2) default 50.23,
         "release_date" date default '2008-02-14',
         "release_datetime" datetime default '2008-02-14 00:31:12',
-        "release_timestamp" timestamp /* default '2008-02-14 00:31:31' */,
+        "release_timestamp" smalldatetime /* default '2008-02-14 00:31:31' */,
         -- "status" enum('active','out of stock') NOT NULL default 'active',
         PRIMARY KEY ("id")
       );
     EOF
 
     1.upto(16) do |n|
-      conn.create_command(<<-EOF).execute_non_query
+      conn.create_command(<<-EOF).execute_non_query(::Extlib::ByteArray.new("CAD \001 \000 DRAWING"))
         insert into widgets(code, name, shelf_location, description, image_data, ad_description, ad_image, whitepaper_text, cad_drawing, super_number, weight)
-        VALUES ('W#{n.to_s.rjust(7,"0")}', 'Widget #{n}', 'A14', 'This is a description', 'IMAGE DATA', 'Buy this product now!', 'AD IMAGE DATA', 'String', 0x0102030405060708090A0B0C0D0E0F101112131415161718191A1B1C1D1E1F, 1234, 13.4);
+        VALUES ('W#{n.to_s.rjust(7,"0")}', 'Widget #{n}', 'A14', 'This is a description', 'IMAGE DATA', 'Buy this product now!', 'AD IMAGE DATA', 'String', ?, 1234, 13.4);
       EOF
     end
 
@@ -148,9 +148,10 @@ module DataObjectsSpecHelpers
     EOF
 
     # (cannot update a Timestamp column w/MSSQL)
-    #conn.create_command(<<-EOF).execute_non_query
-    #  update widgets set release_timestamp = NULL where id = 9
-    #EOF
+    # so we use a smalldatetime
+    conn.create_command(<<-EOF).execute_non_query
+      update widgets set release_timestamp = NULL where id = 9
+    EOF
 
     conn.close
 

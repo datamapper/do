@@ -22,8 +22,10 @@ import data_objects.drivers.AbstractDriverDefinition;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.sql.DriverManager;
+import java.sql.Timestamp;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.joda.time.DateTime;
 
 public class SqlServerDriverDefinition extends AbstractDriverDefinition {
 
@@ -41,6 +43,7 @@ public class SqlServerDriverDefinition extends AbstractDriverDefinition {
     public RubyType jdbcTypeToRubyType(int type, int precision, int scale) {
         RubyType primitiveType;
         switch (type) {
+
 //        case SqlServerTypes.DATE:
 //            primitiveType = RubyType.TIME;
 //            break;
@@ -72,33 +75,20 @@ public class SqlServerDriverDefinition extends AbstractDriverDefinition {
             ResultSet rs, int col, RubyType type) throws SQLException,
             IOException {
         switch (type) {
-        case TIME:
-            switch (rs.getMetaData().getColumnType(col)) {
-//            case SqlServerTypes.DATE:
-//            case SqlServerTypes.TIMESTAMP:
-//            case SqlServerTypes.TIMESTAMPTZ:
-//            case SqlServerTypes.TIMESTAMPLTZ:
-//                java.sql.Timestamp dt = null;
-//                try {
-//                    dt = rs.getTimestamp(col);
-//                } catch (SQLException sqle) {
-//                }
-//                if (dt == null) {
-//                    return runtime.getNil();
-//                }
-//                return prepareRubyTimeFromSqlTime(runtime, new DateTime(dt));
-            default:
-                String str = rs.getString(col);
-                if (str == null) {
+            case DATE_TIME:
+                String dt = null;
+                // SQL Server appears to give us an unparsable
+                try {
+                    dt = rs.getString(col);
+                } catch (SQLException sqle) {
+                }
+                if (dt == null) {
                     return runtime.getNil();
                 }
-                RubyString return_str = RubyString.newUnicodeString(runtime,
-                        str);
-                return_str.setTaint(true);
-                return return_str;
-            }
-        default:
-            return super.doGetTypecastResultSetValue(runtime, rs, col, type);
+                return prepareRubyDateTimeFromSqlTimestamp(runtime,
+                        new DateTime(dt));
+            default:
+                return super.doGetTypecastResultSetValue(runtime, rs, col, type);
         }
     }
 
