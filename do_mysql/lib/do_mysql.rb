@@ -2,7 +2,21 @@ require 'data_objects'
 if RUBY_PLATFORM =~ /java/
   require 'do_jdbc'
   require 'java'
-  require 'jdbc/mysql' # the JDBC driver, packaged as a gem
+
+  driver = 'com.mysql.jdbc.Driver'
+  begin
+    java.lang.Thread.currentThread.getContextClassLoader().loadClass(driver, true)
+  rescue
+    require 'jdbc/mysql' # the JDBC driver, packaged as a gem
+  end
+
+  # Another way of loading the JDBC Class. This seems to be more reliable
+  # than Class.forName() or
+  # Thread.currentThread.getContextClassLoader().loadClass() within the
+  # data_objects.Connection Java class, which is currently not working as
+  # expected.
+  import driver
+
 end
 
 require 'do_mysql_ext'
@@ -11,10 +25,6 @@ require File.expand_path(File.join(File.dirname(__FILE__), 'do_mysql', 'transact
 require File.expand_path(File.join(File.dirname(__FILE__), 'do_mysql', 'encoding'))
 
 if RUBY_PLATFORM =~ /java/
-  # Another way of loading the JDBC Class. This seems to be more reliable
-  # than Class.forName() within the data_objects.Connection Java class,
-  # which is currently not working as expected.
-  import 'com.mysql.jdbc.Driver'
 
   module DataObjects
     module Mysql
