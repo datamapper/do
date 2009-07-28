@@ -52,7 +52,8 @@ if RUBY_PLATFORM !~ /java/
           replacements = 0
           mismatch     = false
 
-          sql.gsub!(/(IS |IS NOT )?\?/) do |x|
+          sql.gsub!(/'[^']*'|"[^"]*"|(IS |IS NOT )?\?/) do |x|
+            next x unless x =~ /\?$/
             arg = args[replacements]
             replacements += 1
             case arg

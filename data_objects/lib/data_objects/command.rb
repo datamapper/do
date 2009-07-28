@@ -58,7 +58,8 @@ module DataObjects
       replacements = 0
       mismatch     = false
 
-      sql.gsub!(/\?/) do |x|
+      sql.gsub!(/'[^']*'|"[^"]*"|`[^`]*`|\?/) do |x|
+        next x unless x == '?'
         replacements += 1
         if vars.empty?
           mismatch = true

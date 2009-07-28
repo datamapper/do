@@ -52,6 +52,18 @@ share_examples_for 'a Command' do
 
     end
 
+    describe 'with a valid statement and ? inside quotes' do
+
+      before :each do
+        @command_with_quotes = @connection.create_command("INSERT INTO users (name) VALUES ('will it work? ')")
+      end
+
+      it 'should not raise an error' do
+        lambda { @command_with_quotes.execute_non_query }.should_not raise_error
+      end
+
+    end
+
   end
 
   it { @command.should respond_to(:execute_reader) }
@@ -85,6 +97,19 @@ share_examples_for 'a Command' do
       end
 
     end
+
+    describe 'with a valid reader and ? inside column alias' do
+    
+      before :each do
+        @reader_with_quotes = @connection.create_command("SELECT code AS \"code?\", name FROM widgets WHERE ad_description = ?")
+      end
+    
+      it 'should not raise an error' do
+        lambda { @reader_with_quotes.execute_reader(nil) }.should_not raise_error
+      end
+    
+    end
+
 
   end
 
