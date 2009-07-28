@@ -18,7 +18,7 @@ if RUBY_PLATFORM =~ /java/
   begin
     java.sql.DriverManager.registerDriver Java::oracle.jdbc.OracleDriver.new
   rescue NameError => e
-    raise OracleError, "Cannot load Oracle JDBC driver, put it (ojdbc14.jar or ojdbc5.jar) in JRUBY_HOME/lib or include in Java class path"
+    raise OracleError, "Cannot load Oracle JDBC driver, put it (ojdbc14.jar or ojdbc5.jar) in JRUBY_HOME/lib or in the java extension directory or include in Java class path or call jruby with the option -J-Djava.ext.dirs=/path/to/directory/with/oracle/jars"
   end
   # JDBC driver has transactions implementation in Java
 
