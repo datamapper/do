@@ -492,7 +492,6 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
         }
 
         RubyTime rbTime = RubyTime.newTime(runtime, time);
-        rbTime.extend(new IRubyObject[] { runtime.getModule("TimeFormatter") });
         return rbTime;
     }
 
@@ -503,7 +502,6 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
             return runtime.getNil();
         }
         RubyTime rbTime = RubyTime.newTime(runtime, date.getTime());
-        rbTime.extend(new IRubyObject[] { runtime.getModule("TimeFormatter") });
         return rbTime;
     }
 
