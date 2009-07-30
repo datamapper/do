@@ -136,15 +136,6 @@ public class Sqlite3DriverDefinition extends AbstractDriverDefinition {
         return false;
     }
 
-    @Override
-    public String quoteString(String str) {
-        StringBuffer quotedValue = new StringBuffer(str.length() + 2);
-        quotedValue.append("\'");
-        quotedValue.append(str.replaceAll("'", "''"));
-        quotedValue.append("\'");
-        return quotedValue.toString();
-    }
-
     private String replace(String sql, Object param)
     {
         return sql.replaceFirst("[?]", param.toString());

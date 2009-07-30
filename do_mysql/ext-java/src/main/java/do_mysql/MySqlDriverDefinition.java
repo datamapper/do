@@ -80,7 +80,9 @@ public class MySqlDriverDefinition extends AbstractDriverDefinition {
     public Properties getDefaultConnectionProperties() {
         Properties props = new Properties();
         props.put("useUnicode", "yes");
-        props.put("sessionVariables", "sql_auto_is_null=0,sql_mode='ANSI,NO_AUTO_VALUE_ON_ZERO,NO_DIR_IN_CREATE,NO_ENGINE_SUBSTITUTION,NO_UNSIGNED_SUBTRACTION,TRADITIONAL'");
+        // removed NO_AUTO_VALUE_ON_ZERO because of MySQL bug http://bugs.mysql.com/bug.php?id=42270
+        // added NO_BACKSLASH_ESCAPES so that backslashes should not be escaped as in other databases
+        props.put("sessionVariables", "sql_auto_is_null=0,sql_mode='ANSI,NO_BACKSLASH_ESCAPES,NO_DIR_IN_CREATE,NO_ENGINE_SUBSTITUTION,NO_UNSIGNED_SUBTRACTION,TRADITIONAL'");
         return props;
     }
 
@@ -114,16 +116,6 @@ public class MySqlDriverDefinition extends AbstractDriverDefinition {
             }
         }
         return conn;
-    }
-
-    @Override
-    public String quoteString(String str) {
-        StringBuffer quotedValue = new StringBuffer(str.length() + 2);
-        quotedValue.append("\'");
-        quotedValue.append(str.replaceAll("'", "\\\\'"));
-        // TODO: handle backslashes
-        quotedValue.append("\'");
-        return quotedValue.toString();
     }
 
     @Override

@@ -444,10 +444,11 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
                 + " for drivers that support specifiying an encoding.");
     }
 
+    @Override
     public String quoteString(String str) {
         StringBuffer quotedValue = new StringBuffer(str.length() + 2);
         quotedValue.append("\'");
-        quotedValue.append(str);
+        quotedValue.append(str.replaceAll("'", "''"));
         quotedValue.append("\'");
         return quotedValue.toString();
     }
