@@ -7,32 +7,32 @@
 #include "error.h"
 
 #ifdef HAVE_RUBY_ENCODING_H
-/*
- * Sqlite3 only supports UTF-8, so all strings are
- * created as such
- */
 #include <ruby/encoding.h>
 
-#define DO_STR_NEW2(str) \
+#define DO_STR_NEW2(str, encoding) \
   ({ \
     VALUE _string = rb_str_new2((const char *)str); \
-    rb_enc_associate_index(_string, rb_enc_find_index("UTF-8")); \
+    if(encoding != -1) { \
+      rb_enc_associate_index(_string, encoding); \
+    } \
     _string; \
   })
 
-#define DO_STR_NEW(str, len) \
+#define DO_STR_NEW(str, len, encoding) \
   ({ \
     VALUE _string = rb_str_new((const char *)str, (long)len); \
-    rb_enc_associate_index(_string, rb_enc_find_index("UTF-8")); \
+    if(encoding != -1) { \
+      rb_enc_associate_index(_string, encoding); \
+    } \
     _string; \
   })
 
 #else
 
-#define DO_STR_NEW2(str) \
+#define DO_STR_NEW2(str, encoding) \
   rb_str_new2((const char *)str)
 
-#define DO_STR_NEW(str, len) \
+#define DO_STR_NEW(str, len, encoding) \
   rb_str_new((const char *)str, (long)len)
 #endif
 
@@ -44,7 +44,7 @@
 #define ID_QUERY rb_intern("query")
 
 #define RUBY_CLASS(name) rb_const_get(rb_cObject, rb_intern(name))
-#define CONST_GET(scope, constant) (rb_funcall(scope, ID_CONST_GET, 1, DO_STR_NEW2(constant)))
+#define CONST_GET(scope, constant) (rb_funcall(scope, ID_CONST_GET, 1, rb_str_new2(constant)))
 #define SQLITE3_CLASS(klass, parent) (rb_define_class_under(mSqlite3, klass, parent))
 
 #define TRUE_CLASS CONST_GET(rb_mKernel, "TrueClass")
@@ -153,7 +153,7 @@ static void data_objects_debug(VALUE string, struct timeval* start) {
     snprintf(total_time, 32, "%.6f", duration / 1000000.0);
     message = (char *)calloc(length + strlen(total_time) + 4, sizeof(char));
     snprintf(message, length + strlen(total_time) + 4, "(%s) %s", total_time, query);
-    rb_funcall(logger, ID_DEBUG, 1, DO_STR_NEW(message, length + strlen(total_time) + 3));
+    rb_funcall(logger, ID_DEBUG, 1, rb_str_new(message, length + strlen(total_time) + 3));
   }
 }
 
@@ -176,9 +176,9 @@ static void raise_error(VALUE self, sqlite3 *result, VALUE query) {
   VALUE uri = rb_funcall(rb_iv_get(self, "@connection"), rb_intern("to_s"), 0);
 
   exception = rb_funcall(CONST_GET(mDO, exception_type), ID_NEW, 5,
-                         DO_STR_NEW2(message),
+                         rb_str_new2(message),
                          INT2NUM(sqlite3_errno),
-                         DO_STR_NEW2(""),
+                         rb_str_new2(""),
                          query,
                          uri);
   rb_exc_raise(exception);
@@ -335,7 +335,7 @@ static VALUE parse_time(char *date) {
   return rb_funcall(rb_cTime, rb_intern("local"), 7, INT2NUM(year), INT2NUM(month), INT2NUM(day), INT2NUM(hour), INT2NUM(min), INT2NUM(sec), INT2NUM(usec));
 }
 
-static VALUE typecast(sqlite3_stmt *stmt, int i, VALUE type) {
+static VALUE typecast(sqlite3_stmt *stmt, int i, VALUE type, int encoding) {
   VALUE ruby_value = Qnil;
   int original_type = sqlite3_column_type(stmt, i);
   int length        = sqlite3_column_bytes(stmt, i);
@@ -367,11 +367,11 @@ static VALUE typecast(sqlite3_stmt *stmt, int i, VALUE type) {
   if (type == rb_cInteger) {
     return LL2NUM(sqlite3_column_int64(stmt, i));
   } else if (type == rb_cString) {
-    return DO_STR_NEW((char*)sqlite3_column_text(stmt, i), length);
+    return DO_STR_NEW((char*)sqlite3_column_text(stmt, i), length, encoding);
   } else if (type == rb_cFloat) {
     return rb_float_new(sqlite3_column_double(stmt, i));
   } else if (type == rb_cBigDecimal) {
-    return rb_funcall(rb_cBigDecimal, ID_NEW, 1, DO_STR_NEW((char*)sqlite3_column_text(stmt, i), length));
+    return rb_funcall(rb_cBigDecimal, ID_NEW, 1, rb_str_new((char*)sqlite3_column_text(stmt, i), length));
   } else if (type == rb_cDate) {
     return parse_date((char*)sqlite3_column_text(stmt, i));
   } else if (type == rb_cDateTime) {
@@ -381,15 +381,15 @@ static VALUE typecast(sqlite3_stmt *stmt, int i, VALUE type) {
   } else if (type == rb_cTrueClass) {
     return strcmp((char*)sqlite3_column_text(stmt, i), "t") == 0 ? Qtrue : Qfalse;
   } else if (type == rb_cByteArray) {
-    return rb_funcall(rb_cByteArray, ID_NEW, 1, DO_STR_NEW((char*)sqlite3_column_blob(stmt, i), length));
+    return rb_funcall(rb_cByteArray, ID_NEW, 1, rb_str_new((char*)sqlite3_column_blob(stmt, i), length));
   } else if (type == rb_cClass) {
-    return rb_funcall(rb_cObject, rb_intern("full_const_get"), 1, DO_STR_NEW((char*)sqlite3_column_text(stmt, i), length));
+    return rb_funcall(rb_cObject, rb_intern("full_const_get"), 1, rb_str_new((char*)sqlite3_column_text(stmt, i), length));
   } else if (type == rb_cObject) {
-    return rb_marshal_load(DO_STR_NEW((char*)sqlite3_column_text(stmt, i), length));
+    return rb_marshal_load(rb_str_new((char*)sqlite3_column_text(stmt, i), length));
   } else if (type == rb_cNilClass) {
     return Qnil;
   } else {
-    return DO_STR_NEW((char*)sqlite3_column_text(stmt, i), length);
+    return DO_STR_NEW((char*)sqlite3_column_text(stmt, i), length, encoding);
   }
 }
 
@@ -452,6 +452,11 @@ static VALUE cConnection_initialize(VALUE self, VALUE uri) {
 
   rb_iv_set(self, "@uri", uri);
   rb_iv_set(self, "@connection", Data_Wrap_Struct(rb_cObject, 0, 0, db));
+  // Sqlite3 only supports UTF-8, so this is the standard encoding
+  rb_iv_set(self, "@encoding", rb_str_new2("UTF-8"));
+#ifdef HAVE_RUBY_ENCODING_H
+  rb_iv_set(self, "@encoding_id", INT2FIX(rb_enc_find_index("UTF-8")));
+#endif
 
   return Qtrue;
 }
@@ -521,7 +526,10 @@ static VALUE cConnection_quote_string(VALUE self, VALUE string) {
   // Wrap the escaped string in single-quotes, this is DO's convention
   escaped_with_quotes = sqlite3_mprintf("%Q", source);
 
-  result = DO_STR_NEW2(escaped_with_quotes);
+  result = rb_str_new2(escaped_with_quotes);
+#ifdef HAVE_RUBY_ENCODING_H
+  rb_enc_associate_index(result, FIX2INT(rb_iv_get(self, "@encoding_id")));
+#endif
   sqlite3_free(escaped_with_quotes);
   return result;
 }
@@ -610,7 +618,7 @@ static VALUE cCommand_execute_reader(int argc, VALUE *argv, VALUE self) {
   }
 
   for ( i = 0; i < field_count; i++ ) {
-    rb_ary_push(field_names, DO_STR_NEW2((char *)sqlite3_column_name(sqlite3_reader, i)));
+    rb_ary_push(field_names, rb_str_new2((char *)sqlite3_column_name(sqlite3_reader, i)));
   }
 
   rb_iv_set(reader, "@fields", field_names);
@@ -660,9 +668,18 @@ static VALUE cReader_next(VALUE self) {
     return Qfalse;
   }
 
+  int enc = -1;
+#ifdef HAVE_RUBY_ENCODING_H
+  VALUE encoding_id = rb_iv_get(rb_iv_get(self, "@connection"), "@encoding_id");
+  if (encoding_id != Qnil) {
+    enc = FIX2INT(encoding_id);
+  }
+#endif
+
+
   for ( i = 0; i < field_count; i++ ) {
     field_type = rb_ary_entry(field_types, i);
-    value = typecast(reader, i, field_type);
+    value = typecast(reader, i, field_type, enc);
     rb_ary_push(arr, value);
   }
 
@@ -699,7 +716,7 @@ void Init_do_sqlite3_ext() {
   rb_cDateTime = RUBY_CLASS( "DateTime");
   rb_cBigDecimal = RUBY_CLASS("BigDecimal");
 
-  rb_funcall(rb_mKernel, rb_intern("require"), 1, DO_STR_NEW2("data_objects"));
+  rb_funcall(rb_mKernel, rb_intern("require"), 1, rb_str_new2("data_objects"));
 
 #ifdef RUBY_LESS_THAN_186
   ID_NEW_DATE = rb_intern("new0");

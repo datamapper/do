@@ -61,12 +61,8 @@
 #define DO_STR_NEW2(str, encoding) \
   ({ \
     VALUE _string = rb_str_new2((const char *)str); \
-    if(NULL != encoding) { \
-      int _enc = rb_enc_find_index(encoding); \
-      if(_enc == -1) \
-        rb_enc_associate_index(_string, rb_enc_find_index("UTF-8")); \
-      else \
-        rb_enc_associate_index(_string, _enc); \
+    if(encoding != -1) { \
+      rb_enc_associate_index(_string, encoding); \
     } \
     _string; \
   })
@@ -74,12 +70,8 @@
 #define DO_STR_NEW(str, len, encoding) \
   ({ \
     VALUE _string = rb_str_new((const char *)str, (long)len); \
-    if(NULL != encoding) { \
-      int _enc = rb_enc_find_index(encoding); \
-      if(_enc == -1) \
-        rb_enc_associate_index(_string, rb_enc_find_index("UTF-8")); \
-      else \
-        rb_enc_associate_index(_string, _enc); \
+    if(encoding != -1) { \
+      rb_enc_associate_index(_string, encoding); \
     } \
     _string; \
   })
@@ -367,7 +359,7 @@ static VALUE infer_ruby_type(Oid type) {
   }
 }
 
-static VALUE typecast(const char *value, long length, const VALUE type, const char *encoding) {
+static VALUE typecast(const char *value, long length, const VALUE type, int encoding) {
 
   if (type == rb_cInteger) {
     return rb_cstr2inum(value, 10);
@@ -388,13 +380,13 @@ static VALUE typecast(const char *value, long length, const VALUE type, const ch
   } else if (type == rb_cByteArray) {
     size_t new_length = 0;
     char* unescaped = (char *)PQunescapeBytea((unsigned char*)value, &new_length);
-    VALUE byte_array = rb_funcall(rb_cByteArray, ID_NEW, 1, DO_STR_NEW(unescaped, new_length, "ASCII-8BIT"));
+    VALUE byte_array = rb_funcall(rb_cByteArray, ID_NEW, 1, rb_str_new(unescaped, new_length));
     PQfreemem(unescaped);
     return byte_array;
   } else if (type == rb_cClass) {
     return rb_funcall(rb_cObject, rb_intern("full_const_get"), 1, rb_str_new(value, length));
   } else if (type == rb_cObject) {
-    return rb_marshal_load(DO_STR_NEW2(value, encoding));
+    return rb_marshal_load(rb_str_new(value, length));
   } else if (type == rb_cNilClass) {
     return Qnil;
   } else {
@@ -525,7 +517,7 @@ static VALUE cConnection_quote_string(VALUE self, VALUE string) {
 
   result = rb_str_new(escaped, quoted_length + 2);
 #ifdef HAVE_RUBY_ENCODING_H
-  rb_enc_associate_index(result, rb_enc_find_index(RSTRING_PTR(rb_iv_get(self, "@encoding"))));
+  rb_enc_associate_index(result, FIX2INT(rb_iv_get(self, "@encoding_id")));
 #endif
 
   free(escaped);
@@ -552,7 +544,7 @@ static VALUE cConnection_quote_byte_array(VALUE self, VALUE string) {
   // Wrap the escaped string in single-quotes, this is DO's convention (replace trailing \0)
   escaped_quotes[quoted_length] = escaped_quotes[0] = '\'';
 
-  result = DO_STR_NEW(escaped_quotes, quoted_length + 1, "ASCII-8BIT");
+  result = rb_str_new(escaped_quotes, quoted_length + 1);
   PQfreemem(escaped);
   free(escaped_quotes);
   return result;
@@ -696,7 +688,7 @@ static VALUE cConnection_initialize(VALUE self, VALUE uri) {
   if (!encoding) { encoding = get_uri_option(r_query, "charset"); }
   if (!encoding) { encoding = "UTF-8"; }
 
-  rb_iv_set(self, "@encoding", DO_STR_NEW2(encoding, NULL));
+  rb_iv_set(self, "@encoding", rb_str_new2(encoding));
 
   full_connect(self, db);
 
@@ -804,11 +796,17 @@ static void full_connect(VALUE self, PGconn *db) {
     if(PQsetClientEncoding(db, RSTRING_PTR(pg_encoding))) {
       rb_raise(eConnectionError, "Couldn't set encoding: %s", RSTRING_PTR(encoding));
     } else {
+#ifdef HAVE_RUBY_ENCODING_H
+      rb_iv_set(self, "@encoding_id", INT2FIX(rb_enc_find_index(RSTRING_PTR(encoding))));
+#endif
       rb_iv_set(self, "@pg_encoding", pg_encoding);
     }
   } else {
-    rb_warn("Encoding %s is not a known Ruby encoding for PostgreSQL\n", RSTRING_PTR(encoding));
+    rb_warn("Encoding %s is not a known Ruby encoding for MySQL\n", RSTRING_PTR(encoding));
     rb_iv_set(self, "@encoding", rb_str_new2("UTF-8"));
+#ifdef HAVE_RUBY_ENCODING_H
+    rb_iv_set(self, "@encoding_id", INT2FIX(rb_enc_find_index("UTF-8")));
+#endif
     rb_iv_set(self, "@pg_encoding", rb_str_new2("UTF8"));
   }
 #endif
@@ -945,23 +943,22 @@ static VALUE cReader_next(VALUE self) {
   VALUE array = rb_ary_new();
   VALUE field_types, field_type;
   VALUE value;
-  VALUE pg_encoding;
 
   row_count = NUM2INT(rb_iv_get(self, "@row_count"));
   field_count = NUM2INT(rb_iv_get(self, "@field_count"));
   field_types = rb_iv_get(self, "@field_types");
-  pg_encoding = rb_iv_get(rb_iv_get(self, "@connection"), "@pg_encoding");
   position = NUM2INT(rb_iv_get(self, "@position"));
 
-  if ( position > (row_count-1) ) {
+  if ( position > (row_count - 1) ) {
     rb_iv_set(self, "@values", Qnil);
     return Qfalse;
   }
 
-  char* enc = NULL;
+  int enc = -1;
 #ifdef HAVE_RUBY_ENCODING_H
-  if (pg_encoding != Qnil) {
-    enc = RSTRING_PTR(pg_encoding);
+  VALUE encoding_id = rb_iv_get(rb_iv_get(self, "@connection"), "@encoding_id");
+  if (encoding_id != Qnil) {
+    enc = FIX2INT(encoding_id);
   }
 #endif
 

@@ -39,12 +39,8 @@
 #define DO_STR_NEW2(str, encoding) \
   ({ \
     VALUE _string = rb_str_new2((const char *)str); \
-    if(NULL != encoding) { \
-      int _enc = rb_enc_find_index(encoding); \
-      if(_enc == -1) \
-        rb_enc_associate_index(_string, rb_enc_find_index("UTF-8")); \
-      else \
-        rb_enc_associate_index(_string, _enc); \
+    if(encoding != -1) { \
+      rb_enc_associate_index(_string, encoding); \
     } \
     _string; \
   })
@@ -52,22 +48,18 @@
 #define DO_STR_NEW(str, len, encoding) \
   ({ \
     VALUE _string = rb_str_new((const char *)str, (long)len); \
-    if(NULL != encoding) { \
-      int _enc = rb_enc_find_index(encoding); \
-      if(_enc == -1) \
-        rb_enc_associate_index(_string, rb_enc_find_index("UTF-8")); \
-      else \
-        rb_enc_associate_index(_string, _enc); \
+    if(encoding != -1) { \
+      rb_enc_associate_index(_string, encoding); \
     } \
     _string; \
   })
 
 #else
 
-#define DO_STR_NEW2(str, doc) \
+#define DO_STR_NEW2(str, encoding) \
   rb_str_new2((const char *)str)
 
-#define DO_STR_NEW(str, len, doc) \
+#define DO_STR_NEW(str, len, encoding) \
   rb_str_new((const char *)str, (long)len)
 #endif
 
@@ -332,7 +324,7 @@ static VALUE parse_date_time(const char *date) {
 }
 
 // Convert C-string to a Ruby instance of Ruby type "type"
-static VALUE typecast(const char *value, long length, const VALUE type, const char *encoding) {
+static VALUE typecast(const char *value, long length, const VALUE type, int encoding) {
 
   if(NULL == value) {
     return Qnil;
@@ -345,7 +337,7 @@ static VALUE typecast(const char *value, long length, const VALUE type, const ch
   } else if (type == rb_cFloat) {
     return rb_float_new(rb_cstr_to_dbl(value, Qfalse));
   } else if (type == rb_cBigDecimal) {
-    return rb_funcall(rb_cBigDecimal, ID_NEW, 1, DO_STR_NEW(value, length, encoding));
+    return rb_funcall(rb_cBigDecimal, ID_NEW, 1, rb_str_new(value, length));
   } else if (type == rb_cDate) {
     return parse_date(value);
   } else if (type == rb_cDateTime) {
@@ -355,9 +347,9 @@ static VALUE typecast(const char *value, long length, const VALUE type, const ch
   } else if (type == rb_cTrueClass) {
     return (0 == value || 0 == strcmp("0", value)) ? Qfalse : Qtrue;
   } else if (type == rb_cByteArray) {
-    return rb_funcall(rb_cByteArray, ID_NEW, 1, DO_STR_NEW(value, length, encoding));
+    return rb_funcall(rb_cByteArray, ID_NEW, 1, rb_str_new(value, length));
   } else if (type == rb_cClass) {
-    return rb_funcall(rb_cObject, rb_intern("full_const_get"), 1, DO_STR_NEW(value, length, encoding));
+    return rb_funcall(rb_cObject, rb_intern("full_const_get"), 1, rb_str_new(value, length));
   } else if (type == rb_cObject) {
     return rb_marshal_load(rb_str_new(value, length));
   } else if (type == rb_cNilClass) {
@@ -621,11 +613,17 @@ static void full_connect(VALUE self, MYSQL* db) {
     if (0 != encoding_error) {
       raise_error(self, db, Qnil);
     } else {
+#ifdef HAVE_RUBY_ENCODING_H
+      rb_iv_set(self, "@encoding_id", INT2FIX(rb_enc_find_index(RSTRING_PTR(encoding))));
+#endif
       rb_iv_set(self, "@my_encoding", my_encoding);
     }
   } else {
     rb_warn("Encoding %s is not a known Ruby encoding for MySQL\n", RSTRING_PTR(encoding));
     rb_iv_set(self, "@encoding", rb_str_new2("UTF-8"));
+#ifdef HAVE_RUBY_ENCODING_H
+    rb_iv_set(self, "@encoding_id", INT2FIX(rb_enc_find_index("UTF-8")));
+#endif
     rb_iv_set(self, "@my_encoding", rb_str_new2("utf8"));
   }
 
@@ -680,7 +678,7 @@ static VALUE cConnection_initialize(VALUE self, VALUE uri) {
   if (!encoding) { encoding = get_uri_option(r_query, "charset"); }
   if (!encoding) { encoding = "UTF-8"; }
 
-  rb_iv_set(self, "@encoding", DO_STR_NEW2(encoding, NULL));
+  rb_iv_set(self, "@encoding", rb_str_new2(encoding));
 
   full_connect(self, db);
 
@@ -803,7 +801,7 @@ static VALUE cConnection_quote_string(VALUE self, VALUE string) {
   escaped[0] = escaped[quoted_length + 1] = '\'';
   result = rb_str_new(escaped, quoted_length + 2);
 #ifdef HAVE_RUBY_ENCODING_H
-  rb_enc_associate_index(result, rb_enc_find_index(RSTRING_PTR(rb_iv_get(self, "@encoding"))));
+  rb_enc_associate_index(result, FIX2INT(rb_iv_get(self, "@encoding_id")));
 #endif
 
   free(escaped);
@@ -944,7 +942,7 @@ static VALUE cReader_close(VALUE self) {
 static VALUE cReader_next(VALUE self) {
   // Get the reader from the instance variable, maybe refactor this?
   VALUE reader_container = rb_iv_get(self, "@reader");
-  VALUE field_types, field_type, row, my_encoding;
+  VALUE field_types, field_type, row;
 
   MYSQL_RES *reader;
   MYSQL_ROW result;
@@ -960,7 +958,6 @@ static VALUE cReader_next(VALUE self) {
 
   // The Meat
   field_types = rb_iv_get(self, "@field_types");
-  my_encoding = rb_iv_get(rb_iv_get(self, "@connection"), "@my_encoding");
   row = rb_ary_new();
   result = mysql_fetch_row(reader);
   lengths = mysql_fetch_lengths(reader);
@@ -971,10 +968,11 @@ static VALUE cReader_next(VALUE self) {
     return Qfalse;
   }
 
-  char* enc = NULL;
+  int enc = -1;
 #ifdef HAVE_RUBY_ENCODING_H
-  if (my_encoding != Qnil) {
-    enc = RSTRING_PTR(my_encoding);
+  VALUE encoding_id = rb_iv_get(rb_iv_get(self, "@connection"), "@encoding_id");
+  if (encoding_id != Qnil) {
+    enc = FIX2INT(encoding_id);
   }
 #endif
 
