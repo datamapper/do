@@ -99,15 +99,15 @@ share_examples_for 'a Command' do
     end
 
     describe 'with a valid reader and ? inside column alias' do
-    
+
       before :each do
         @reader_with_quotes = @connection.create_command("SELECT code AS \"code?\", name FROM widgets WHERE ad_description = ?")
       end
-    
+
       it 'should not raise an error' do
         lambda { @reader_with_quotes.execute_reader(nil) }.should_not raise_error
       end
-    
+
     end
 
 
