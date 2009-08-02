@@ -180,7 +180,8 @@ public class Command extends DORubyObject {
             }
             if (usePS && keys != null) {
                 insert_key = unmarshal_id_result(keys);
-                affectedCount = (affectedCount > 0) ? affectedCount : 1;
+                if (insert_key != runtime.getNil())
+                    affectedCount = (affectedCount > 0) ? affectedCount : 1;
             }
 
         } catch (SQLException sqle) {
@@ -200,11 +201,6 @@ public class Command extends DORubyObject {
                     } catch (SQLException sqle2) {
                     }
                 }
-        }
-
-        // return nil if no updates are made
-        if (affectedCount <= 0) {
-            return runtime.getNil();
         }
 
         IRubyObject affected_rows = runtime.newFixnum(affectedCount);
