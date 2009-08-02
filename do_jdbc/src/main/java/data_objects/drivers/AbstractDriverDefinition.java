@@ -244,7 +244,7 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
             if (date == null) {
                 return runtime.getNil();
             }
-            return prepareRubyDateFromSqlDate(runtime, new DateTime(date));
+            return prepareRubyDateFromSqlDate(runtime, sqlDateToDateTime(date));
         case DATE_TIME:
             java.sql.Timestamp dt = null;
             // DateTimes with all-zero components throw a SQLException with
@@ -258,8 +258,7 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
             if (dt == null) {
                 return runtime.getNil();
             }
-            return prepareRubyDateTimeFromSqlTimestamp(runtime,
-                    new DateTime(dt));
+            return prepareRubyDateTimeFromSqlTimestamp(runtime, sqlTimestampToDateTime(dt));
         case TIME:
             switch (rs.getMetaData().getColumnType(col)) {
             case Types.TIME:
@@ -269,11 +268,11 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
                 }
                 return prepareRubyTimeFromSqlTime(runtime, new DateTime(tm));
             case Types.TIMESTAMP:
-                java.sql.Time ts = rs.getTime(col);
+                java.sql.Timestamp ts = rs.getTimestamp(col);
                 if (ts == null) {
                     return runtime.getNil();
                 }
-                return prepareRubyTimeFromSqlTime(runtime, new DateTime(ts));
+                return prepareRubyTimeFromSqlTime(runtime, sqlTimestampToDateTime(ts));
             case Types.DATE:
                 java.sql.Date da = rs.getDate(col);
                 if (da == null) {
@@ -459,6 +458,22 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
         return s.toString();
     }
 
+    protected static DateTime sqlDateToDateTime(Date date) {
+        date.getYear();
+        if (date == null)
+            return null;
+        else
+            return new DateTime(date.getYear()+1900, date.getMonth()+1, date.getDate(),
+                        0, 0, 0, 0);
+    }
+
+    protected static DateTime sqlTimestampToDateTime(Timestamp ts) {
+        if (ts == null)
+            return null;
+        return new DateTime(ts.getYear()+1900, ts.getMonth()+1, ts.getDate(),
+                    ts.getHours(), ts.getMinutes(), ts.getSeconds(), ts.getNanos()/1000);
+    }
+
     protected static IRubyObject prepareRubyDateTimeFromSqlTimestamp(
             Ruby runtime, DateTime stamp) {
 
@@ -488,7 +503,7 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
 
     protected static IRubyObject prepareRubyTimeFromSqlTime(Ruby runtime,
             DateTime time) {
-
+        // TODO: why in this case nil is returned?
         if (time.getMillis() + 3600000 == 0) {
             return runtime.getNil();
         }

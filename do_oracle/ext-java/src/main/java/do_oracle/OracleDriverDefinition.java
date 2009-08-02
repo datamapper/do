@@ -79,15 +79,11 @@ public class OracleDriverDefinition extends AbstractDriverDefinition {
             case OracleTypes.TIMESTAMP:
             case OracleTypes.TIMESTAMPTZ:
             case OracleTypes.TIMESTAMPLTZ:
-                java.sql.Timestamp dt = null;
-                try {
-                    dt = rs.getTimestamp(col);
-                } catch (SQLException sqle) {
-                }
+                java.sql.Timestamp dt = rs.getTimestamp(col);
                 if (dt == null) {
                     return runtime.getNil();
                 }
-                return prepareRubyTimeFromSqlTime(runtime, new DateTime(dt));
+                return prepareRubyTimeFromSqlTime(runtime, sqlTimestampToDateTime(dt));
             default:
                 String str = rs.getString(col);
                 if (str == null) {
