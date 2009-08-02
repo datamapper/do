@@ -83,6 +83,8 @@ public class MySqlDriverDefinition extends AbstractDriverDefinition {
         // removed NO_AUTO_VALUE_ON_ZERO because of MySQL bug http://bugs.mysql.com/bug.php?id=42270
         // added NO_BACKSLASH_ESCAPES so that backslashes should not be escaped as in other databases
         props.put("sessionVariables", "sql_auto_is_null=0,sql_mode='ANSI,NO_BACKSLASH_ESCAPES,NO_DIR_IN_CREATE,NO_ENGINE_SUBSTITUTION,NO_UNSIGNED_SUBTRACTION,TRADITIONAL'");
+        // by default enable auto reconnection
+        props.put("autoReconnect","true");
         return props;
     }
 
@@ -98,10 +100,10 @@ public class MySqlDriverDefinition extends AbstractDriverDefinition {
         try {
             conn = DriverManager.getConnection(url, props);
         } catch (SQLException eex) {
-            Pattern p = Pattern.compile("Unsupported character encoding '(.+)'.");
+            Pattern p = Pattern.compile("Unsupported character encoding '(.+)'\\.");
             Matcher m = p.matcher(eex.getMessage());
 
-            if (m.matches()) {
+            if (m.find()) {
                 // re-attempt connection, but this time with UTF-8
                 // set as the encoding
                 runtime.getWarnings().warn(String.format(
