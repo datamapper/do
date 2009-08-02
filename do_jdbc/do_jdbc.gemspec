@@ -1,108 +1,37 @@
---- !ruby/object:Gem::Specification 
-name: do_jdbc
-version: !ruby/object:Gem::Version 
-  version: 0.10.0
-platform: java
-authors: 
-- Alex Coles
-autorequire: 
-bindir: bin
-cert_chain: []
+require 'lib/do_jdbc/version'
 
-date: 2009-05-27 00:00:00 -07:00
-default_executable: 
-dependencies: 
-- !ruby/object:Gem::Dependency 
-  name: addressable
-  type: :runtime
-  version_requirement: 
-  version_requirements: !ruby/object:Gem::Requirement 
-    requirements: 
-    - - ~>
-      - !ruby/object:Gem::Version 
-        version: "2.0"
-    version: 
-- !ruby/object:Gem::Dependency 
-  name: extlib
-  type: :runtime
-  version_requirement: 
-  version_requirements: !ruby/object:Gem::Requirement 
-    requirements: 
-    - - ~>
-      - !ruby/object:Gem::Version 
-        version: 0.9.12
-    version: 
-- !ruby/object:Gem::Dependency 
-  name: data_objects
-  type: :runtime
-  version_requirement: 
-  version_requirements: !ruby/object:Gem::Requirement 
-    requirements: 
-    - - "="
-      - !ruby/object:Gem::Version 
-        version: 0.10.0
-    version: 
-- !ruby/object:Gem::Dependency 
-  name: rspec
-  type: :development
-  version_requirement: 
-  version_requirements: !ruby/object:Gem::Requirement 
-    requirements: 
-    - - ~>
-      - !ruby/object:Gem::Version 
-        version: 1.2.0
-    version: 
-description: Provides JDBC support for usage in DO drivers for JRuby
-email: alex@alexcolesportfolio.com
-executables: []
+Gem::Specification.new do |s|
+  # basic information
+  s.name        = "do_jdbc"
+  s.version     = DataObjects::Jdbc::VERSION
 
-extensions: []
+  # description and details
+  s.summary     = 'DataObjects JDBC support library'
+  s.description = "Provides JDBC support for usage in DO drivers for JRuby"
 
-extra_rdoc_files: []
+  # dependencies
+  s.add_dependency "addressable", "~>2.0"
+  s.add_dependency "extlib", "~>0.9.12"
+  s.add_dependency "data_objects", DataObjects::Jdbc::VERSION
+  s.platform = "java"
 
-files: 
-- lib/do_jdbc/date_formatter.rb
-- lib/do_jdbc/datetime_formatter.rb
-- lib/do_jdbc/time_formatter.rb
-- lib/do_jdbc/version.rb
-- lib/do_jdbc.rb
-- tasks/gem.rake
-- tasks/install.rake
-- tasks/native.rake
-- tasks/release.rake
-- MIT-LICENSE
-- Rakefile
-- History.txt
-- Manifest.txt
-- README.txt
-- lib/do_jdbc_internal.jar
-has_rdoc: true
-homepage: http://github.com/datamapper/do
-licenses: []
+  # development dependencies
+  s.add_development_dependency 'rspec', '~>1.2.0'
 
-post_install_message: 
-rdoc_options: []
+  # components, files and paths
+  s.files = FileList["lib/**/*.rb", "spec/**/*.rb", "tasks/**/*.rake",
+                      "MIT-LICENSE", "Rakefile", "*.{rdoc,txt,yml}", "lib/*.jar"]
 
-require_paths: 
-- lib
-required_ruby_version: !ruby/object:Gem::Requirement 
-  requirements: 
-  - - ">="
-    - !ruby/object:Gem::Version 
-      version: "0"
-  version: 
-required_rubygems_version: !ruby/object:Gem::Requirement 
-  requirements: 
-  - - ">="
-    - !ruby/object:Gem::Version 
-      version: "0"
-  version: 
-requirements: []
+  s.require_path = 'lib'
 
-rubyforge_project: dorb
-rubygems_version: 1.3.3
-signing_key: 
-specification_version: 3
-summary: DataObjects JDBC support library
-test_files: []
+  # documentation
+  s.has_rdoc = false
 
+  # project information
+  s.homepage          = 'http://github.com/datamapper/do'
+  s.rubyforge_project = 'dorb'
+
+  # author and contributors
+  s.author      = 'Alex Coles'
+  s.email       = 'alex@alexcolesportfolio.com'
+end

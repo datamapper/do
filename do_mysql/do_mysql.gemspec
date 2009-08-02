@@ -1,129 +1,46 @@
---- !ruby/object:Gem::Specification 
-name: do_mysql
-version: !ruby/object:Gem::Version 
-  version: 0.10.0
-platform: ruby
-authors: 
-- Dirkjan Bussink
-autorequire: 
-bindir: bin
-cert_chain: []
+require 'lib/do_mysql/version'
 
-date: 2009-05-27 00:00:00 -07:00
-default_executable: 
-dependencies: 
-- !ruby/object:Gem::Dependency 
-  name: addressable
-  type: :runtime
-  version_requirement: 
-  version_requirements: !ruby/object:Gem::Requirement 
-    requirements: 
-    - - ~>
-      - !ruby/object:Gem::Version 
-        version: "2.0"
-    version: 
-- !ruby/object:Gem::Dependency 
-  name: extlib
-  type: :runtime
-  version_requirement: 
-  version_requirements: !ruby/object:Gem::Requirement 
-    requirements: 
-    - - ~>
-      - !ruby/object:Gem::Version 
-        version: 0.9.12
-    version: 
-- !ruby/object:Gem::Dependency 
-  name: data_objects
-  type: :runtime
-  version_requirement: 
-  version_requirements: !ruby/object:Gem::Requirement 
-    requirements: 
-    - - "="
-      - !ruby/object:Gem::Version 
-        version: 0.10.0
-    version: 
-- !ruby/object:Gem::Dependency 
-  name: rspec
-  type: :development
-  version_requirement: 
-  version_requirements: !ruby/object:Gem::Requirement 
-    requirements: 
-    - - ~>
-      - !ruby/object:Gem::Version 
-        version: 1.2.0
-    version: 
-description: Implements the DataObjects API for MySQL
-email: d.bussink@gmail.com
-executables: []
+Gem::Specification.new do |s|
+  # basic information
+  s.name        = 'do_mysql'
+  s.version     = DataObjects::Mysql::VERSION
 
-extensions: 
-- ext/do_mysql_ext/extconf.rb
-extra_rdoc_files: []
+  # description and details
+  s.summary     = 'DataObjects MySQL Driver'
+  s.description = 'Implements the DataObjects API for MySQL'
 
-files: 
-- lib/do_mysql/transaction.rb
-- lib/do_mysql/version.rb
-- lib/do_mysql.rb
-- spec/command_spec.rb
-- spec/connection_spec.rb
-- spec/encoding_spec.rb
-- spec/lib/rspec_immediate_feedback_formatter.rb
-- spec/reader_spec.rb
-- spec/result_spec.rb
-- spec/spec_helper.rb
-- spec/typecast/array_spec.rb
-- spec/typecast/bigdecimal_spec.rb
-- spec/typecast/boolean_spec.rb
-- spec/typecast/byte_array_spec.rb
-- spec/typecast/class_spec.rb
-- spec/typecast/date_spec.rb
-- spec/typecast/datetime_spec.rb
-- spec/typecast/float_spec.rb
-- spec/typecast/integer_spec.rb
-- spec/typecast/nil_spec.rb
-- spec/typecast/range_spec.rb
-- spec/typecast/string_spec.rb
-- spec/typecast/time_spec.rb
-- tasks/gem.rake
-- tasks/install.rake
-- tasks/native.rake
-- tasks/release.rake
-- tasks/retrieve.rake
-- tasks/spec.rake
-- ext/do_mysql_ext/extconf.rb
-- ext/do_mysql_ext/do_mysql_ext.c
-- LICENSE
-- Rakefile
-- History.txt
-- Manifest.txt
-- README.txt
-has_rdoc: true
-homepage: http://github.com/datamapper/do
-licenses: []
+  # dependencies
+  s.add_dependency 'addressable', '~>2.0'
+  s.add_dependency 'extlib', '~>0.9.12'
+  s.add_dependency 'data_objects', DataObjects::Mysql::VERSION
 
-post_install_message: 
-rdoc_options: []
+  if RUBY_PLATFORM =~ /java/
+    s.add_dependency 'jdbc-mysql', '>=5.0.4'
+    s.add_dependency 'do_jdbc', DataObjects::Mysql::VERSION
+    s.platform = 'java'
+    # components, files and paths
+    s.files = Dir['lib/**/*.rb', 'spec/**/*.rb', 'tasks/**/*.rake',
+                  'LICENSE', 'Rakefile', '*.{rdoc,txt,yml}', 'lib/*.jar']
+  else
+    s.platform    = Gem::Platform::RUBY
+    s.extensions << 'ext/do_mysql_ext/extconf.rb'
+    s.files = Dir['lib/**/*.rb', 'spec/**/*.rb', 'tasks/**/*.rake', 'ext/**/*.{rb,c,h}',
+                  'LICENSE', 'Rakefile', '*.{rdoc,txt,yml}']
+  end
 
-require_paths: 
-- lib
-required_ruby_version: !ruby/object:Gem::Requirement 
-  requirements: 
-  - - ">="
-    - !ruby/object:Gem::Version 
-      version: "0"
-  version: 
-required_rubygems_version: !ruby/object:Gem::Requirement 
-  requirements: 
-  - - ">="
-    - !ruby/object:Gem::Version 
-      version: "0"
-  version: 
-requirements: []
+  # development dependencies
+  s.add_development_dependency 'rspec', '~>1.2.0'
 
-rubyforge_project: dorb
-rubygems_version: 1.3.3
-signing_key: 
-specification_version: 3
-summary: DataObjects MySQL Driver
-test_files: []
+  s.require_path = 'lib'
 
+  # documentation
+  s.has_rdoc = false
+
+  # project information
+  s.homepage          = 'http://github.com/datamapper/do'
+  s.rubyforge_project = 'dorb'
+
+  # author and contributors
+  s.author      = 'Dirkjan Bussink'
+  s.email       = 'd.bussink@gmail.com'
+end

@@ -515,10 +515,7 @@ static VALUE cConnection_quote_string(VALUE self, VALUE string) {
   // Wrap the escaped string in single-quotes, this is DO's convention
   escaped[quoted_length + 1] = escaped[0] = '\'';
 
-  result = rb_str_new(escaped, quoted_length + 2);
-#ifdef HAVE_RUBY_ENCODING_H
-  rb_enc_associate_index(result, FIX2INT(rb_iv_get(self, "@encoding_id")));
-#endif
+  result = DO_STR_NEW(escaped, quoted_length + 2, FIX2INT(rb_iv_get(self, "@encoding_id")));
 
   free(escaped);
   return result;
@@ -544,7 +541,7 @@ static VALUE cConnection_quote_byte_array(VALUE self, VALUE string) {
   // Wrap the escaped string in single-quotes, this is DO's convention (replace trailing \0)
   escaped_quotes[quoted_length] = escaped_quotes[0] = '\'';
 
-  result = rb_str_new(escaped_quotes, quoted_length + 1);
+  result = rb_str_new((const char *)escaped_quotes, quoted_length + 1);
   PQfreemem(escaped);
   free(escaped_quotes);
   return result;
@@ -802,7 +799,7 @@ static void full_connect(VALUE self, PGconn *db) {
       rb_iv_set(self, "@pg_encoding", pg_encoding);
     }
   } else {
-    rb_warn("Encoding %s is not a known Ruby encoding for MySQL\n", RSTRING_PTR(encoding));
+    rb_warn("Encoding %s is not a known Ruby encoding for PostgreSQL\n", RSTRING_PTR(encoding));
     rb_iv_set(self, "@encoding", rb_str_new2("UTF-8"));
 #ifdef HAVE_RUBY_ENCODING_H
     rb_iv_set(self, "@encoding_id", INT2FIX(rb_enc_find_index("UTF-8")));

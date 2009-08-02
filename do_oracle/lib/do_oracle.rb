@@ -4,7 +4,6 @@ if RUBY_PLATFORM =~ /java/
   require 'java'
 
 else # MRI and Ruby 1.9
-  gem 'ruby-oci8', '>=2.0.2'
   require 'oci8'
   require File.expand_path(File.join(File.dirname(__FILE__), 'oci8_patch'))
 end

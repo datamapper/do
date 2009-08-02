@@ -799,10 +799,7 @@ static VALUE cConnection_quote_string(VALUE self, VALUE string) {
 
   // Wrap the escaped string in single-quotes, this is DO's convention
   escaped[0] = escaped[quoted_length + 1] = '\'';
-  result = rb_str_new(escaped, quoted_length + 2);
-#ifdef HAVE_RUBY_ENCODING_H
-  rb_enc_associate_index(result, FIX2INT(rb_iv_get(self, "@encoding_id")));
-#endif
+  result = DO_STR_NEW(escaped, quoted_length + 2, FIX2INT(rb_iv_get(self, "@encoding_id")));
 
   free(escaped);
   return result;
