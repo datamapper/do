@@ -471,7 +471,7 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
         if (ts == null)
             return null;
         return new DateTime(ts.getYear()+1900, ts.getMonth()+1, ts.getDate(),
-                    ts.getHours(), ts.getMinutes(), ts.getSeconds(), ts.getNanos()/1000);
+                    ts.getHours(), ts.getMinutes(), ts.getSeconds(), ts.getNanos()/1000000);
     }
 
     protected static IRubyObject prepareRubyDateTimeFromSqlTimestamp(
