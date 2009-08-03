@@ -219,13 +219,23 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
         case FIXNUM:
         case INTEGER:
         case BIGNUM:
-            // to get NULL values we need to use getBigDecimal
-            BigDecimal bdi = rs.getBigDecimal(col);
-            if (bdi == null) {
-                return runtime.getNil();
+            try {
+                // in most cases integers will fit into long type
+                // and therefore should be faster to use getLong
+                long lng = rs.getLong(col);
+                if (rs.wasNull()) {
+                    return runtime.getNil();
+                }
+                return RubyNumeric.int2fix(runtime, lng);
+            } catch (SQLException sqle) {
+                // if getLong failed then use getBigDecimal
+                BigDecimal bdi = rs.getBigDecimal(col);
+                if (bdi == null) {
+                    return runtime.getNil();
+                }
+                // will return either Fixnum or Bignum
+                return RubyBignum.bignorm(runtime, bdi.toBigInteger());
             }
-            // will return either Fixnum or Bignum
-            return RubyBignum.bignorm(runtime, bdi.toBigInteger());
         case FLOAT:
             // TODO: why getDouble is not used here?
             BigDecimal bdf = rs.getBigDecimal(col);

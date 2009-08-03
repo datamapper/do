@@ -15,6 +15,7 @@ import org.joda.time.format.ISODateTimeFormat;
 import org.jruby.Ruby;
 import org.jruby.RubyBigDecimal;
 import org.jruby.RubyBignum;
+import org.jruby.RubyNumeric;
 import org.jruby.RubyFloat;
 import org.jruby.RubyTime;
 import org.jruby.runtime.builtin.IRubyObject;
@@ -78,13 +79,23 @@ public class Sqlite3DriverDefinition extends AbstractDriverDefinition {
         case FIXNUM:
         case INTEGER:
         case BIGNUM:
-            // as SQLite JDBC driver has not implemented getBigDecimal we need to get as String
-            String ivalue = rs.getString(col);
-            if (ivalue == null) {
-                return runtime.getNil();
+            try {
+                // in most cases integers will fit into long type
+                // and therefore should be faster to use getLong
+                long lng = rs.getLong(col);
+                if (rs.wasNull()) {
+                    return runtime.getNil();
+                }
+                return RubyNumeric.int2fix(runtime, lng);
+            } catch (SQLException sqle) {
+                // as SQLite JDBC driver has not implemented getBigDecimal we need to get as String
+                String ivalue = rs.getString(col);
+                if (ivalue == null) {
+                    return runtime.getNil();
+                }
+                // will return either Fixnum or Bignum
+                return RubyBignum.bignorm(runtime, (new BigDecimal(ivalue)).toBigInteger());
             }
-            // will return either Fixnum or Bignum
-            return RubyBignum.bignorm(runtime, (new BigDecimal(ivalue)).toBigInteger());
         case FLOAT:
             String fvalue = rs.getString(col);
             if (fvalue == null) {
