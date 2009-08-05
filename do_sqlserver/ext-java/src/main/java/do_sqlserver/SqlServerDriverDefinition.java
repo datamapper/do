@@ -19,6 +19,7 @@ import org.jruby.RubyString;
 
 import data_objects.RubyType;
 import data_objects.drivers.AbstractDriverDefinition;
+import data_objects.util.JDBCUtil;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.sql.DriverManager;
@@ -209,12 +210,7 @@ public class SqlServerDriverDefinition extends AbstractDriverDefinition {
             s = conn.createStatement();
             s.execute(sql);
         } finally {
-            if (s != null) {
-                try {
-                    s.close();
-                } catch (SQLException sqle2) {
-                }
-            }
+            JDBCUtil.close(s);
         }
     }
 

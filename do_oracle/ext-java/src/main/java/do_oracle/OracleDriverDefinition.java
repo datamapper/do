@@ -26,6 +26,7 @@ import org.joda.time.DateTime;
 
 import data_objects.RubyType;
 import data_objects.drivers.AbstractDriverDefinition;
+import data_objects.util.JDBCUtil;
 
 public class OracleDriverDefinition extends AbstractDriverDefinition {
 
@@ -137,9 +138,7 @@ public class OracleDriverDefinition extends AbstractDriverDefinition {
             }
             return 0;
         } finally {
-            try {
-                rs.close();
-            } catch (Exception e) {}
+            JDBCUtil.close(rs);
         }
     }
 
@@ -228,12 +227,7 @@ public class OracleDriverDefinition extends AbstractDriverDefinition {
             s = conn.createStatement();
             s.execute(sql);
         } finally {
-            if (s != null) {
-                try {
-                    s.close();
-                } catch (SQLException sqle2) {
-                }
-            }
+            JDBCUtil.close(s);
         }
     }
 
