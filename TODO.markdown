@@ -68,6 +68,13 @@ Stored procedures are still a pretty common thing in RDBMS land, so we should ha
 that allows for calling these. My knowledge is pretty limited on this, but from what I've
 heard it should be possible to unify this.
 
+Future plugins
+==============
+
+There are some features that should not be integrated into DO directly, but would be really
+nice to have as a plugin so it can be shared between for example different ORM's. This
+section contains ideas for these plugins.
+
 Inflection API
 --------------
 Inflection is something quite a few projects use, ActiveRecord directly for it's models,
