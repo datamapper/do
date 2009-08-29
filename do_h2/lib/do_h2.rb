@@ -17,7 +17,7 @@ if RUBY_PLATFORM =~ /java/
   # Another way of loading the JDBC Class. This seems to be more reliable
   # than Class.forName() within the data_objects.Connection Java class,
   # which is currently not working as expected.
-  import driver
+  java_import driver
 
   module DataObjects
     module H2

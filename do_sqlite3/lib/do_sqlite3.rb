@@ -15,7 +15,7 @@ if RUBY_PLATFORM =~ /java/
   # Thread.currentThread.getContextClassLoader().loadClass() within the
   # data_objects.Connection Java class, which is currently not working as
   # expected.
-  import driver
+  java_import driver
 end
 
 require 'do_sqlite3_ext'
