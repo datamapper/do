@@ -1,4 +1,3 @@
-gem 'addressable', '~>2.0'
 require 'addressable/uri'
 
 module DataObjects
