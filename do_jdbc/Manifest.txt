@@ -1,10 +1,10 @@
 MIT-LICENSE
-History.txt
+HISTORY.markdown
 INSTALL
 MIT-LICENSE
 Manifest.txt
 README.markdown
-README.txt
+README.markdown
 Rakefile
 build.xml
 lib/do_jdbc.rb

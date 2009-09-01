@@ -26,19 +26,19 @@ if defined?(RubyForge) then
 
       # read project info and overview
       notes = begin
-                r = File.read("README.rdoc")
-                r.split(/^(=+ .*)/)[1..4].join.strip
+                r = File.read("README.markdown")
+                r.split(/^(.*\n\-+)//)[1..4].join.strip
               rescue
-                warn "Missing README.rdoc"
+                warn "Missing README.markdown"
                 ''
               end
 
       # read changes
       changes = begin
-                  h = File.read("History.txt")
-                  h.split(/^(==+ .*)/)[1..2].join.strip
+                  h = File.read("HISTORY.markdown")
+                  h.split(/^(##+ .*)/)[1..2].join.strip
                 rescue
-                  warn "Missing History.txt"
+                  warn "Missing HISTORY.markdown"
                   ''
                 end
 

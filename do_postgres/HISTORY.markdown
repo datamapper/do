@@ -1,12 +1,12 @@
-== 0.9.12 2009-05-17
+## 0.9.12 2009-05-17
 * Improvements
   * Windows support
 
-== 0.9.11 2009-01-19
+## 0.9.11 2009-01-19
 * Improvements
   * Ruby 1.9 support
 * Fixes
   * Fix build issue on certain platforms introduces with 0.9.10
 
-== 0.9.9 2008-11-27
+## 0.9.9 2008-11-27
 * No changes since 0.9.8

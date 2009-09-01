@@ -1,7 +1,7 @@
-History.txt
+HISTORY.markdown
 LGPL-LICENSE
 Manifest.txt
-README.txt
+README.markdown
 Rakefile
 lib/do_jdbc/sqlserver.rb
 lib/do_jdbc/sqlserver_version.rb

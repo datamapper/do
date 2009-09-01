@@ -1,7 +1,7 @@
-History.txt
+HISTORY.markdown
 LICENSE
 Manifest.txt
-README.txt
+README.markdown
 Rakefile
 buildfile
 ext-java/src/main/java/DoDerbyExtService.java

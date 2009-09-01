@@ -1,3 +1,4 @@
-= do_mysql
+do_mysql
+========
 
 A MySQL driver for DataObjects

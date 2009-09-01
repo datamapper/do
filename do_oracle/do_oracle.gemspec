@@ -20,13 +20,13 @@ Gem::Specification.new do |s|
     s.add_dependency "do_jdbc", DataObjects::Oracle::VERSION
     s.platform = "java"
     s.files = Dir['lib/**/*.rb', 'spec/**/*.rb', 'tasks/**/*.rake',
-                  'LICENSE', 'Rakefile', '*.{rdoc,txt,yml}', 'lib/*.jar']
+                  'LICENSE', 'Rakefile', '*.{markdown,rdoc,txt,yml}', 'lib/*.jar']
   else
     s.add_dependency "ruby-oci8", "~>2.0"
     s.platform    = Gem::Platform::RUBY
     s.extensions << 'ext/do_oracle_ext/extconf.rb'
     s.files = Dir['lib/**/*.rb', 'spec/**/*.rb', 'tasks/**/*.rake', 'ext/**/*.{rb,c,h}',
-                  'LICENSE', 'Rakefile', '*.{rdoc,txt,yml}']
+                  'LICENSE', 'Rakefile', '*.{markdown,rdoc,txt,yml}']
   end
 
 

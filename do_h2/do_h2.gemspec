@@ -20,7 +20,7 @@ Gem::Specification.new do |s|
 
   # components, files and paths
   s.files = FileList["lib/**/*.rb", "spec/**/*.rb", "tasks/**/*.rake",
-                      "LICENSE", "Rakefile", "*.{rdoc,txt,yml}", "lib/*.jar"]
+                      "LICENSE", "Rakefile", "*.{markdown,rdoc,txt,yml}", "lib/*.jar"]
 
   # development dependencies
   s.add_development_dependency 'rspec', '~>1.2.0'

@@ -20,13 +20,13 @@ Gem::Specification.new do |s|
     s.platform = "java"
     # components, files and paths
     s.files = FileList["lib/**/*.rb", "spec/**/*.rb", "tasks/**/*.rake",
-                        "LICENSE", "Rakefile", "*.{rdoc,txt,yml}", "lib/*.jar"]
+                        "LICENSE", "Rakefile", "*.{markdown,rdoc,txt,yml}", "lib/*.jar"]
   else
     s.platform    = Gem::Platform::RUBY
     s.extensions << 'ext/do_sqlite3_ext/extconf.rb'
     # components, files and paths
     s.files = FileList["lib/**/*.rb", "spec/**/*.rb", "tasks/**/*.rake", "ext/**/*.{rb,c,h}",
-                        "LICENSE", "Rakefile", "*.{rdoc,txt,yml}"]
+                        "LICENSE", "Rakefile", "*.{markdown,rdoc,txt,yml}"]
   end
 
   # development dependencies

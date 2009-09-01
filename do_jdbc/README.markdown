@@ -1,5 +1,5 @@
 do_jdbc 'Doppio'
-=========================
+================
 
 *Native JDBC Support for DataObjects*
 

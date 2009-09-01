@@ -34,7 +34,7 @@ Gem::Specification.new do |s|
 
   # components, files and paths
   s.files = FileList["lib/**/*.rb", "spec/**/*.rb", "tasks/**/*.rake", "ext/**/*.{rb,c}",
-                      "LICENSE", "Rakefile", "*.{rdoc,txt,yml}", "lib/*.jar"]
+                      "LICENSE", "Rakefile", "*.{markdown,rdoc,txt,yml}", "lib/*.jar"]
 
   s.require_path = 'lib'
 

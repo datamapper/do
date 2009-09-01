@@ -1,6 +1,6 @@
-History.txt
+HISTORY.markdown
 Manifest.txt
-README.rdoc
+README.markdown
 Rakefile
 lib/do_sqlserver.rb
 lib/do_sqlserver/version.rb

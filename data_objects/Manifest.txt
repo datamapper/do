@@ -1,8 +1,8 @@
 .gitignore
-History.txt
+HISTORY.markdown
 LICENSE
 Manifest.txt
-README.txt
+README.markdown
 Rakefile
 lib/data_objects.rb
 lib/data_objects/command.rb
