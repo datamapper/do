@@ -5,7 +5,7 @@ if RUBY_PLATFORM =~ /java/
 
 else # MRI and Ruby 1.9
   require 'oci8'
-  require File.expand_path(File.join(File.dirname(__FILE__), 'oci8_patch'))
+  require 'oci8_patch'
 end
 
 require 'do_oracle_ext'
@@ -22,7 +22,7 @@ if RUBY_PLATFORM =~ /java/
   # JDBC driver has transactions implementation in Java
 
 else # MRI and Ruby 1.9
-  require File.expand_path(File.join(File.dirname(__FILE__), 'do_oracle', 'transaction'))
+  require 'do_oracle/transaction'
 end
 
 if RUBY_PLATFORM !~ /java/

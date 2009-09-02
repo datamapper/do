@@ -20,9 +20,9 @@ if RUBY_PLATFORM =~ /java/
 end
 
 require 'do_mysql_ext'
-require File.expand_path(File.join(File.dirname(__FILE__), 'do_mysql', 'version'))
-require File.expand_path(File.join(File.dirname(__FILE__), 'do_mysql', 'transaction'))
-require File.expand_path(File.join(File.dirname(__FILE__), 'do_mysql', 'encoding'))
+require 'do_mysql/version'
+require 'do_mysql/transaction'
+require 'do_mysql/encoding'
 
 if RUBY_PLATFORM =~ /java/
 

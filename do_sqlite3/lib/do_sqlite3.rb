@@ -19,9 +19,8 @@ if RUBY_PLATFORM =~ /java/
 end
 
 require 'do_sqlite3_ext'
-
-require File.expand_path(File.join(File.dirname(__FILE__), 'do_sqlite3', 'version'))
-require File.expand_path(File.join(File.dirname(__FILE__), 'do_sqlite3', 'transaction'))
+require 'do_sqlite3/version'
+require 'do_sqlite3/transaction'
 
 if RUBY_PLATFORM =~ /java/
 

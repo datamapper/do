@@ -1,5 +1,3 @@
-require 'set'
-
 begin
   require 'fastthread'
 rescue LoadError

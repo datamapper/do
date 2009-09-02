@@ -1,4 +1,3 @@
-require 'rubygems'
 require 'data_objects'
 
 if RUBY_PLATFORM =~ /java/
