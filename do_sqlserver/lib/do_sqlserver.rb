@@ -11,7 +11,7 @@ end
 require 'bigdecimal'
 require 'date'
 require 'base64'
-require 'do_sqlserver_ext'
+require 'do_sqlserver_ext' if RUBY_PLATFORM =~ /java/
 require File.expand_path(File.join(File.dirname(__FILE__), 'do_sqlserver', 'version'))
 if RUBY_PLATFORM !~ /java/
   # JDBC driver has transactions implementation in Java

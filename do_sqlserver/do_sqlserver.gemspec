@@ -23,8 +23,9 @@ Gem::Specification.new do |s|
     s.add_dependency "do_jdbc", DataObjects::SqlServer::VERSION
     s.platform = "java"
   else
+    s.add_dependency 'dbi', '0.4.2'
+    s.add_dependency 'dbd-odbc', '0.2.5'
     s.platform    = Gem::Platform::RUBY
-    #s.extensions << 'ext/do_sqlserver_ext/extconf.rb'
   end
 
 
