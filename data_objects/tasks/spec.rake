@@ -5,6 +5,7 @@ desc 'Run specifications'
 Spec::Rake::SpecTask.new(:spec) do |t|
   t.spec_opts << '--options' << ROOT + 'spec/spec.opts'
   t.spec_files = Pathname.glob(ENV['FILES'] || 'spec/**/*_spec.rb').map { |f| f.to_s }
+  t.libs << 'lib'
 
   begin
     # RCov is run by default, except on the JRuby platform

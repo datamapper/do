@@ -11,21 +11,24 @@ require 'ostruct'
 require 'pathname'
 require 'fileutils'
 
+dir = File.dirname(__FILE__)
+lib_path = File.expand_path("#{dir}/../lib")
+$LOAD_PATH.unshift lib_path unless $LOAD_PATH.include?(lib_path)
 # put data_objects from repository in the load path
 # DO NOT USE installed gem of data_objects!
-$:.unshift File.expand_path(File.join(File.dirname(__FILE__), '..', '..', 'data_objects', 'lib'))
+do_lib_path = File.expand_path("#{dir}/../../data_objects/lib")
+$LOAD_PATH.unshift do_lib_path unless $LOAD_PATH.include?(do_lib_path)
+
+if JRUBY
+  jdbc_lib_path = File.expand_path(File.join(File.dirname(__FILE__), '..', '..', 'do_jdbc', 'lib'))
+  $LOAD_PATH.unshift jdbc_lib_path unless $LOAD_PATH.include?(jdbc_lib_path)
+  require 'do_jdbc'
+end
+
 require 'data_objects'
 
 DATAOBJECTS_SPEC_ROOT = Pathname(__FILE__).dirname.parent.parent + 'data_objects' + 'spec'
 Pathname.glob((DATAOBJECTS_SPEC_ROOT + 'lib/**/*.rb').to_s).each { |f| require f }
-
-if JRUBY
-  $:.unshift File.expand_path(File.join(File.dirname(__FILE__), '..', '..', 'do_jdbc', 'lib'))
-  require 'do_jdbc'
-end
-
-# put the pre-compiled extension in the path to be found
-$:.unshift File.expand_path(File.join(File.dirname(__FILE__), '..', 'lib'))
 require 'do_postgres'
 
 log_path = File.expand_path(File.join(File.dirname(__FILE__), '..', 'log', 'do.log'))
