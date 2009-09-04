@@ -15,6 +15,8 @@ An SQL Server adapter for DataObjects
 
 DataObjects::Connection.new('sqlserver:///mydatabase')
 
+* See the accompanying CONNECTING.markdown.
+
 == REQUIREMENTS:
 
 * DBI gem
@@ -22,7 +24,9 @@ DataObjects::Connection.new('sqlserver:///mydatabase')
 
 == INSTALL:
 
-* sudo gem install do_sqlserver
+* Installation of do_sqlserver is signficantly more involved than for other
+  drivers. Please see the accompanying INSTALL.markdown.
+* Once those steps are followed: sudo gem install do_sqlserver
 
 == LICENSE:
 
