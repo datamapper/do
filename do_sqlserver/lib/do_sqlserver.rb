@@ -5,7 +5,8 @@ if RUBY_PLATFORM =~ /java/
   require 'do_jdbc/sqlserver'   # the JDBC driver, packaged as a gem
 else # MRI and Ruby 1.9
   require 'dbi' unless defined?(DBI)
-  #require 'core_ext/dbi'           # A hack to work around ODBC millisecond handling in Timestamps
+  require 'dbd_odbc_patch'      # a monkey patch for DNS-less connections
+  #require 'core_ext/dbi'       # a hack to work around ODBC millisecond handling in Timestamps
 end
 
 require 'bigdecimal'
@@ -38,11 +39,25 @@ if RUBY_PLATFORM !~ /java/
           host = uri.host.blank? ? nil : uri.host
           user = uri.user || "sa"
           password = uri.password || ""
-          path = uri.path.sub(%r{^/}, '')
+          path = uri.path.sub(%r{^/*}, '')
+          port = uri.port || "1433"
           if Mode == :ado
             connection_string = "DBI:ADO:Provider=SQLOLEDB;Data Source=#{host};Initial Catalog=#{path};User ID=#{user};Password=#{password};"
           else
-            connection_string = "DBI:ODBC:#{path}"
+            # FIXME: Cannot get a DNS-less configuration without freetds.conf to
+            # connect successfully, i.e.:
+            # connection_string = "DBI:ODBC:DRIVER=FreeTDS;SERVER=#{host};DATABASE=#{path};TDS_Version=5.0;Port=#{port}"
+            #
+            # Currently need to setup a dataserver entry in freetds.conf (if
+            # using MacPorts, full path is /opt/local/etc/freetds/freetds.conf):
+            #
+            # [sqlserver]
+            #   host = hostname
+            #   port = 1433
+            #   instance = SQLEXPRESS
+            #   tds version = 8.0
+            #
+            connection_string = "DBI:ODBC:DRIVER=FreeTDS;SERVERNAME=sqlserver;DATABASE=#{path};"
           end
 
           begin
