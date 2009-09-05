@@ -1,3 +1,7 @@
+## 0.10.0 (unreleased)
+* Improvements
+  * JRuby Support (using *do_jdbc*)
+
 ## 0.9.12 2009-05-17
 * Improvements
   * rake-compiler for Windows support
