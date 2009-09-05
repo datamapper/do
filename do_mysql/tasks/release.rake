@@ -27,7 +27,7 @@ if defined?(RubyForge) then
       # read project info and overview
       notes = begin
                 r = File.read("README.markdown")
-                r.split(/^(.*\n\-+)//)[1..4].join.strip
+                r.split(/^(.*\n\-+)/)[1..4].join.strip
               rescue
                 warn "Missing README.markdown"
                 ''
