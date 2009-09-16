@@ -9,7 +9,7 @@ ROOT    = Pathname(__FILE__).dirname.expand_path
 JRUBY   = RUBY_PLATFORM =~ /java/
 WINDOWS = Gem.win_platform?
 SUDO    = WINDOWS ? '' : ('sudo' unless ENV['SUDOLESS'])
-BINARY_VERSION = '5.0.83'
+BINARY_VERSION = '5.0.85'
 
 Dir['tasks/*.rake'].sort.each { |f| import f }
 
