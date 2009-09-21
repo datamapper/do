@@ -10,8 +10,8 @@ Gem::Specification.new do |s|
   s.description = "Implements the DataObjects API for SqlServer"
 
   # dependencies
-  s.add_dependency "addressable", "~>2.0"
-  s.add_dependency "extlib", "~>0.9.12"
+  s.add_dependency "addressable", "~>2.1"
+  s.add_dependency "extlib", "~>0.9.14"
   s.add_dependency "data_objects", DataObjects::SqlServer::VERSION
 
   if JRUBY
@@ -30,7 +30,7 @@ Gem::Specification.new do |s|
 
 
   # development dependencies
-  s.add_development_dependency 'rspec', '~>1.2.0'
+  s.add_development_dependency "rspec", "~>1.2"
 
   # components, files and paths
   s.files = FileList["lib/**/*.rb", "spec/**/*.rb", "tasks/**/*.rake", "ext/**/*.{rb,c}",
