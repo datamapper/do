@@ -117,8 +117,14 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
             if (host != null && !"".equals(host)) {
                 // a client/server database (e.g. MySQL, PostgreSQL, MS
                 // SQLServer)
+                String normalizedPath;
+                if (path != null && path.length() > 0 && path.charAt(0) != '/') {
+                    normalizedPath = '/' + path;
+                } else {
+                    normalizedPath = path;
+                }
                 uri = new URI(this.jdbcScheme, userInfo.toString(), host, port,
-                        path, query, fragment);
+                        normalizedPath, query, fragment);
             } else {
                 // an embedded / file-based database (e.g. SQLite3, Derby
                 // (embedded mode), HSQLDB - use opaque uri
