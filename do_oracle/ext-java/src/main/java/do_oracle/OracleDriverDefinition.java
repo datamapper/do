@@ -177,7 +177,7 @@ public class OracleDriverDefinition extends AbstractDriverDefinition {
     }
 
     @Override
-    public void afterConnectionCallback(Connection conn, Map<String, String> query)
+    public void afterConnectionCallback(IRubyObject doConn, Connection conn, Map<String, String> query)
             throws SQLException {
         exec(conn, "alter session set nls_date_format = 'YYYY-MM-DD HH24:MI:SS'");
         exec(conn, "alter session set nls_timestamp_format = 'YYYY-MM-DD HH24:MI:SS.FF'");

@@ -448,7 +448,8 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
         return new Properties();
     }
 
-    public void afterConnectionCallback(Connection connection, Map<String, String> query) throws SQLException {
+    public void afterConnectionCallback(IRubyObject doConn, Connection conn,
+            Map<String, String> query) throws SQLException {
         // do nothing
     }
 
@@ -468,6 +469,10 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
         quotedValue.append(str.replaceAll("'", "''"));
         quotedValue.append("\'");
         return quotedValue.toString();
+    }
+
+    public String quoteByteArray(IRubyObject connection, IRubyObject value) {
+        return quoteString(value.asJavaString());
     }
 
     public String statementToString(Statement s) {

@@ -211,7 +211,7 @@ public final class Connection extends DORubyObject {
 
         // Callback for setting connection properties after connection is established
         try {
-            driver.afterConnectionCallback(conn, query);
+            driver.afterConnectionCallback(this, conn, query);
         } catch (SQLException ex) {
             throw driver.newDriverError(runtime, "Connection initialization error:"
                                         + "\n\t" + ex.getLocalizedMessage());
@@ -251,6 +251,12 @@ public final class Connection extends DORubyObject {
     @JRubyMethod(required = 1)
     public IRubyObject quote_string(final IRubyObject value) {
         String quoted = driver.quoteString(value.asJavaString());
+        return getRuntime().newString(quoted);
+    }
+
+    @JRubyMethod(required = 1)
+    public IRubyObject quote_byte_array(final IRubyObject value) {
+        String quoted = driver.quoteByteArray(this, value);
         return getRuntime().newString(quoted);
     }
 

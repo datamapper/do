@@ -134,7 +134,8 @@ public interface DriverDefinition {
      *
      * @return
      */
-    public void afterConnectionCallback(Connection connection, Map<String, String> query) throws SQLException;
+    public void afterConnectionCallback(IRubyObject doConn, Connection conn,
+            Map<String, String> query) throws SQLException;
 
     /**
      * If the driver supports setting connection encodings, specify the appropriate
@@ -158,6 +159,7 @@ public interface DriverDefinition {
             String url, Properties props) throws SQLException;
 
     public String quoteString(String str);
+    public String quoteByteArray(IRubyObject connection, IRubyObject value);
 
     public String statementToString(Statement s);
 
