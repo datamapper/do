@@ -107,7 +107,7 @@ module DataObjectsSpecHelpers
         "weight" float default 1.23,
         "cost1" real default 10.23,
         "cost2" decimal(8,2) default 50.23,
-        "release_date" date default '2008-02-14',
+        "release_date" smalldatetime default '2008-02-14',   -- date type is SQL Server 2008 only
         "release_datetime" datetime default '2008-02-14 00:31:12',
         "release_timestamp" smalldatetime /* default '2008-02-14 00:31:31' */,
         -- "status" enum('active','out of stock') NOT NULL default 'active',

@@ -76,18 +76,6 @@ public class SqlServerDriverDefinition extends AbstractDriverDefinition {
             ResultSet rs, int col, RubyType type) throws SQLException,
             IOException {
         switch (type) {
-            case DATE_TIME:
-                String dt = null;
-                // SQL Server appears to give us an unparsable
-                try {
-                    dt = rs.getString(col);
-                } catch (SQLException sqle) {
-                }
-                if (dt == null) {
-                    return runtime.getNil();
-                }
-                return prepareRubyDateTimeFromSqlTimestamp(runtime,
-                        new DateTime(dt));
             default:
                 return super.doGetTypecastResultSetValue(runtime, rs, col, type);
         }
