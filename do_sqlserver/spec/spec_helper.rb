@@ -46,7 +46,7 @@ CONFIG = OpenStruct.new
 CONFIG.scheme   = 'sqlserver'
 CONFIG.user     = ENV['DO_SQLSERVER_USER'] || 'do_test'
 CONFIG.pass     = ENV['DO_SQLSERVER_PASS'] || 'do_test'
-CONFIG.host     = ENV['DO_SQLSERVER_HOST'] || '192.168.2.110'
+CONFIG.host     = ENV['DO_SQLSERVER_HOST'] || '192.168.2.100'
 CONFIG.port     = ENV['DO_SQLSERVER_PORT'] || '1433'
 CONFIG.instance = ENV['DO_SQLSERVER_INSTANCE'] || 'SQLEXPRESS'
 CONFIG.database = ENV['DO_SQLSERVER_DATABASE'] || "/do_test;instance=#{CONFIG.instance};"
@@ -93,12 +93,12 @@ module DataObjectsSpecHelpers
         "id" int NOT NULL IDENTITY,
         "code" char(8) default 'A14' NULL,
         "name" varchar(200) default 'Super Widget' NULL,
-        "shelf_location" text NULL,
-        "description" text NULL,
+        "shelf_location" nvarchar(max) NULL,
+        "description" nvarchar(max) NULL,
         "image_data" image NULL,
         "ad_description" varchar(8000) NULL,
         "ad_image" image NULL,
-        "whitepaper_text" text NULL,
+        "whitepaper_text" nvarchar(max) NULL,
         "cad_drawing" image NULL,
         "flags" bit default 0,
         "number_in_stock" smallint default 500,
