@@ -1,0 +1,489 @@
+* {
+  padding:0;
+  margin:0;
+  font-weight:normal;
+  font-size:1em;
+  text-align:left;
+}
+body {
+  background:center top url(../images/page_bkg.gif);
+  color:#ffffff;
+  font-family: "Lucida Grande", "Lucida Sans", Helvetica, Verdana, sans-serif;
+  font-size:82%;
+  margin:29px 0;
+}
+#content {
+  background:left top repeat-y url(../images/content_bkg.gif);
+  width:870px;
+  margin:0 auto;
+}
+#header {
+  background:center top repeat-y url(../images/header_bkg.gif);
+  position:relative;
+  padding:4em 0 1.5em 10px;
+  margin-bottom:1.5em;
+}
+#header h1,
+#header h1 a {
+  height:85px;
+  width:340px;
+  margin:0 !important;
+  padding:0;
+  display:block;
+}
+#header h1 a {
+  background: left top no-repeat url(../images/logo.gif);
+  text-indent:-1000em; /* Hack to hide the text */
+}
+#header ul {
+  border-bottom:1px solid #152C4C;
+  width:851px;
+  padding:0 0 0 19px;
+  margin:0 !important;
+  position:absolute;
+  left:0;
+  top:0;
+}
+#header li {
+  display:inline;
+  list-style-type:none;
+}
+#header a {
+  color:#B7BAC0 !important;
+  text-decoration:none !important;
+  font-weight:bold;
+  padding:1em 10px 0.7em 10px;
+  float:left;
+}
+#getStarted {
+  background:left center no-repeat url(../images/get_started_button.gif);
+  width:125px;
+  text-indent:-1000em;
+  float:right !important;
+}
+#footer {
+  background:left bottom no-repeat url(../images/footer_bkg.gif);
+  color:#4676C0;
+  margin:3em 0 0 0;
+  padding:0.7em 0;
+  clear:both;
+}
+#footer p {
+  font-size:0.85em;
+  margin-bottom:0;
+}
+#footer a {
+  color:#ffffff !important;
+}
+
+/* TEXT */
+h1,
+h2,
+h3,
+p,
+.CodeRay,
+.puff,
+ul,
+dl,
+ol {
+  margin:0 29px 0 30px;
+}
+h1 {
+  font-size:2em;
+  padding-bottom:0.2em;
+}
+h2 {
+  color:#6680B2;
+  font-size:1.5em;
+  padding-bottom:0.1em;
+}
+h3 {
+  font-size:1.2em;
+  font-weight:bold;
+}
+p,
+ul,
+ol {
+  margin-bottom:1.5em;
+  line-height:1.5;
+}
+a:link {
+  color:#66FF33;
+}
+a:visited {
+  color:#cccccc;
+}
+.CodeRay {
+  background:#0C182A;
+  border:1px solid #26518A;
+  padding:1em 15px;
+  line-height:1.5;
+  margin-bottom:2em;
+  font-family: 'Courier New', 'Terminal', monospace;
+  color: #E6E0DB;
+  overflow: auto;
+  font-size: 12px;
+}
+ul,
+ol {
+  padding:0 0 0 2em;
+}
+blockquote {
+  margin: auto 1em;
+  font-style: italic;
+}
+
+/* HOME PAGE */
+#home #content {
+  background-image:url(../images/home_bkg.gif);
+}
+#home .blurb {
+  font-size:1.2em;
+}
+#home h1,
+#home h2,
+#home h3,
+#home p,
+#home .CodeRay,
+#home .puff {
+  margin-right:240px;
+}
+#help,
+#bugs {
+  background:#11233D left 0.5em no-repeat;
+  padding:1em 20px 1em 60px;
+  margin-bottom:1.5em;
+  height:10em;
+  display:block;
+  text-decoration:none !important;
+  color:#ffffff !important;
+}
+#help h2,
+#bugs h2 {
+  margin-right:0 !important;
+}
+#help p,
+#bugs p {
+  font-size:0.85em;
+  margin-right:auto;
+}
+#help a,
+#bugs a {
+  font-size:1.2em;
+}
+#help {
+  background-image:url(/images/waiter.gif);
+  margin-left:30px;
+  width:220px;
+  float:left;
+}
+#bugs {
+  background-image:url(/images/bug.gif);
+  margin-right:240px;
+  width:219px;
+  float:right;
+}
+#home h1 {
+  clear:both;
+}
+#home dd {
+  width:347px;
+}
+/* NEWS AND HOME LISTINGS */
+#news dd p,
+#home dd p {
+  margin:0;
+}
+#news dd .meta,
+#home dd .meta {
+  font-size:0.85em;
+}
+/* PUFFS */
+div.puff,
+div.puff h2,
+h2.latestRelease {
+  background:no-repeat url(/images/puff_bkg.gif);
+}
+div.puff {
+  background-position:bottom left;
+  padding-bottom:0.4em;
+  margin-bottom:1.5em;
+}
+div.puff h2 {
+  background-position:left top;
+  margin:0;
+  padding:0.9em 30px 0 30px;
+  color:#ffffff;
+}
+
+/* LATEST RELEASE */
+h2.latest-release,
+p.latest-release {
+  background-color:#11233D;
+  padding-left:30px;
+  padding-right:30px;
+}
+h2.latest-release {
+  color:#ffffff;
+  padding-top:20px;
+}
+p.latest-release {
+  padding-bottom:20px;
+  margin-bottom:1px;
+}
+/* NEW RELEASE */
+h2.newRelease,
+p.newRelease {
+  background:no-repeat url(../images/new_release_bkg.gif);
+  padding-left:30px;
+  padding-right:30px;
+}
+h2.newRelease {
+  background-position:left top;
+  color:#ffffff;
+  padding-top:20px;
+  padding-bottom:0;
+}
+p.newRelease {
+  background-position:left bottom;
+  padding-bottom:20px;
+}
+p#download {
+  margin-top:-6em;
+  margin-bottom:5em;
+  margin-right:290px;
+  float:right;
+}
+p#download a {
+  background:center center no-repeat url(../images/download_button.gif);
+  text-indent:-1000em;
+  width:147px;
+  height:31px;
+  display:block;
+}
+p.attribution {
+  font-size:0.8em;
+  margin-top:-2em;
+}
+
+p.footnote {
+  font-size:0.8em;
+}
+
+/* DEFINITION LIST */
+dl {
+  margin-top:1em;
+  margin-bottom:2em;
+  border-bottom:1px dotted #ffffff;
+  float:left;
+}
+dt,
+dd {
+  border-top:1px dotted #ffffff;
+  padding:1.2em 0;
+}
+dt {
+  width:240px;
+  float:left;
+  clear:left;
+}
+dd {
+  width:570px;
+  float:left;
+  clear:right;
+}
+dt a {
+  color:#66FF33 !important;
+  text-decoration:none !important;
+  font-weight:bold;
+  display:block;
+}
+dd {
+  clear:right;
+}
+/* COMMUNITY YEARBOOK */
+#yearbook {
+  margin:0;
+  padding:0;
+}
+#yearbook li {
+  list-style-type:none;
+  width:20%;
+  padding:1em 0 0 0;
+  height:9em;
+  margin:0;
+  text-align:center;
+  float:left;
+}
+#yearbook li p {
+  margin:0;
+  text-align:center;
+}
+
+/* LOGGER */
+#logger form {
+  margin:-2.5em 30px 2em 0;
+  float:right;
+}
+#logger form input {
+  background:transparent left top no-repeat url(/images/search_bkg.gif);
+  color:#ffffff;
+  border:0;
+  padding:0 15px;
+  height:27px;
+  width:150px;
+}
+#logger form button {
+  background:transparent left top no-repeat url(/images/search_button_bkg.gif);
+  border:0;
+  text-indent:-1000em;
+  height:27px;
+  width:40px;
+}
+#logger #transcripts {
+  width:630px;
+  float:left;
+}
+#logger table {
+  width:100%;
+  margin:0 0 0 30px;
+  float:left;
+}
+#logger td {
+  vertical-align:top;
+  border-top:1px solid #152C4C;
+}
+#logger tr.odd td {
+  background-color:#133053;
+}
+#logger tr.even td {
+  background-color:#0F3459;
+}
+#logger th {
+  background:right top no-repeat url(/images/puff_bkg.gif);
+  font-weight:bold;
+  padding:0.5em 0;
+}
+#logger th.person {
+  background-position:left top;
+}
+#logger table .person {
+  width:170px;
+  padding:0 0 0 10px;
+}
+#logger .person h2,
+#logger .person p {
+  padding-left: 42px;
+}
+#logger .person h2 {
+  color:#ffffff;
+  font-weight:bold;
+  font-size:1em;
+  margin:0.5em 0 0 0;
+}
+#logger td.person img {
+  margin:-32px 0 0 0;
+}
+#logger .person p {
+  font-size:0.8em;
+  margin:0 0 -1em 0;
+}
+#logger td.log p {
+  font-size:0.9em !important;
+  padding:0.5em 10px 0.5em 0;
+  margin:0;
+}
+#logger .action {
+  background-color:#11233D;
+  color:#1D64A9;
+}
+#logger .action p {
+  margin:0.5em 10px;
+}
+#meMessages {
+  margin-right:30px;
+  width:180px;
+  float:right;
+}
+#meMessages h2 {
+  font-size:1.2em;
+  margin-bottom:1em;
+}
+#meMessages p {
+  font-size:0.9em;
+  line-height:1.2;
+}
+#meMessages h3 {
+  color:#777777;
+  font-size:0.9em;
+}
+#logger #paginator {
+  background:bottom left no-repeat url(/images/paginator_bkg.gif);
+  padding:0;
+  width:100%;
+  float:left;
+}
+#logger #paginator li {
+  list-style-type:none;
+  padding:0.7em 10px;
+  width:160px;
+}
+#logger #paginator a {
+  text-decoration:none !important;
+  color: #ffffff !important;
+}
+#logger #paginator #previous {
+  float:left;
+}
+#logger #paginator #current {
+  text-align:center;
+  width:250px;
+  float:left;
+}
+#logger #paginator #next {
+  text-align:right;
+  float:right;
+}
+
+table {
+  margin:15px 29px 29px 30px;
+  width:90%;
+}
+table tr.head {
+  height:2em;
+  margin-bottom:20em;
+}
+table tr.head th {
+  font-weight:bold;
+  text-align:center;
+  padding-bottom:5px;
+}
+table tr td {
+/*  padding:5px;*/
+  vertical-align:top;
+}
+table tr td.pointer {
+  vertical-align:middle;
+  text-align:center;
+}
+
+/* CHANGE SUMMARY */
+.changeSummary {
+  width: 840px !important;
+}
+.changeSummary thead th {
+  font-size: 1.5em;
+}
+.changeSummary tbody th {
+  width: 120px !important;
+  vertical-align: top;
+  padding-top: 1em;
+}
+.changeSummary td {
+  width: 358px;
+  padding-top: 1em;
+}
+.changeSummary .CodeRay {
+  width: 298px;
+  margin: 0 30px 0 0;
+}
