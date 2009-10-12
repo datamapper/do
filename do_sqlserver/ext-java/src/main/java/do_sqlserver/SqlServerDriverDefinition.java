@@ -168,6 +168,11 @@ public class SqlServerDriverDefinition extends AbstractDriverDefinition {
             Field valueField = piClazz.getDeclaredField("value");
             valueField.setAccessible(true);
 
+            // Appended by jTDS Driver appends to support returning generated
+            // keys. Strip for debugging output.
+            sql = sql.replace(" SELECT SCOPE_IDENTITY() AS ID", "");
+            sql = sql.replace(" SELECT @@IDENTITY AS ID", "");
+
             Object[] params = (Object[]) paramsField.get(s);
             for (Object param : params) {
                 int jdbcType = jdbcTypeField.getInt(param);
