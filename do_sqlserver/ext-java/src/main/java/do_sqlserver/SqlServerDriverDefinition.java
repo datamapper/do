@@ -41,62 +41,6 @@ public class SqlServerDriverDefinition extends AbstractDriverDefinition {
     }
 
     @Override
-    public RubyType jdbcTypeToRubyType(int type, int precision, int scale) {
-        RubyType primitiveType;
-        switch (type) {
-
-//        case SqlServerTypes.DATE:
-//            primitiveType = RubyType.TIME;
-//            break;
-//        case SqlServerTypes.TIMESTAMP:
-//        case SqlServerTypes.TIMESTAMPTZ:
-//        case SqlServerTypes.TIMESTAMPLTZ:
-//            primitiveType = RubyType.TIME;
-//            break;
-//        case SqlServerTypes.NUMBER:
-//            if (precision == 1 && scale == 0)
-//                primitiveType = RubyType.TRUE_CLASS;
-//            else if (precision > 1 && scale == 0)
-//                primitiveType = RubyType.INTEGER;
-//            else
-//                primitiveType = RubyType.BIG_DECIMAL;
-//            break;
-//        case SqlServerTypes.BINARY_FLOAT:
-//        case SqlServerTypes.BINARY_DOUBLE:
-//            primitiveType = RubyType.FLOAT;
-//            break;
-        default:
-            return super.jdbcTypeToRubyType(type, precision, scale);
-        }
-        //return primitiveType;
-    }
-
-    @Override
-    protected IRubyObject doGetTypecastResultSetValue(Ruby runtime,
-            ResultSet rs, int col, RubyType type) throws SQLException,
-            IOException {
-        switch (type) {
-            default:
-                return super.doGetTypecastResultSetValue(runtime, rs, col, type);
-        }
-    }
-
-    @Override
-    public void setPreparedStatementParam(PreparedStatement ps,
-            IRubyObject arg, int idx) throws SQLException {
-        switch (RubyType.getRubyType(arg.getType().getName())) {
-        case NIL:
-            // XXX ps.getParameterMetaData().getParameterType(idx) produces
-            // com.mysql.jdbc.ResultSetMetaData:397:in `getField': java.lang.NullPointerException
-            // from com.mysql.jdbc.ResultSetMetaData:275:in `getColumnType'
-            ps.setNull(idx, Types.NULL);
-            break;
-        default:
-            super.setPreparedStatementParam(ps, arg, idx);
-        }
-    }
-
-    @Override
     public boolean supportsJdbcGeneratedKeys() {
         return true;
     }
