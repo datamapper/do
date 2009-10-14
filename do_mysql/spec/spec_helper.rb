@@ -47,12 +47,17 @@ CONFIG = OpenStruct.new
 CONFIG.scheme   = 'mysql'
 CONFIG.user     = ENV['DO_MYSQL_USER'] || 'root'
 CONFIG.pass     = ENV['DO_MYSQL_PASS'] || ''
+CONFIG.user_info = unless CONFIG.user == 'root' && CONFIG.pass.empty?
+  "#{CONFIG.user}:#{CONFIG.pass}@"
+else
+  ''
+end
 CONFIG.host     = ENV['DO_MYSQL_HOST'] || 'localhost'
 CONFIG.port     = ENV['DO_MYSQL_PORT'] || '3306'
 CONFIG.database = ENV['DO_MYSQL_DATABASE'] || '/do_test'
 CONFIG.ssl      = SSLHelpers.query(:ca_cert, :client_cert, :client_key)
 
-CONFIG.uri = ENV["DO_MYSQL_SPEC_URI"] ||"#{CONFIG.scheme}://#{CONFIG.user}:#{CONFIG.pass}@#{CONFIG.host}:#{CONFIG.port}#{CONFIG.database}"
+CONFIG.uri = ENV["DO_MYSQL_SPEC_URI"] ||"#{CONFIG.scheme}://#{CONFIG.user_info}#{CONFIG.host}:#{CONFIG.port}#{CONFIG.database}"
 CONFIG.sleep = "SELECT sleep(1)"
 
 module DataObjectsSpecHelpers

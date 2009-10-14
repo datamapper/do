@@ -164,9 +164,7 @@ public final class Connection extends DORubyObject {
                 String jdbcUri;
                 Properties props = driver.getDefaultConnectionProperties();
 
-                if (connectionUri.toString().contains("@")) {
-                    // uri.getUserInfo() gave always null, so do it manually
-                    // TODO: See if we can replace with connectionUri.getUserInfo()
+                if (connectionUri.getUserInfo() != null || connectionUri.toString().contains("@")) {
                     String userInfo =
                             connectionUri.toString().replaceFirst(".*://", "").replaceFirst("@.*", "");
                     jdbcUri = connectionUri.toString().replaceFirst(userInfo + "@", "");

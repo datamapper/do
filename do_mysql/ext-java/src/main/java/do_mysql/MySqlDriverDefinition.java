@@ -79,6 +79,11 @@ public class MySqlDriverDefinition extends AbstractDriverDefinition {
     @Override
     public Properties getDefaultConnectionProperties() {
         Properties props = new Properties();
+
+        // by default we connect with root and a empty password
+        props.put("user", "root");
+        props.put("password", "");
+
         props.put("useUnicode", "yes");
         // removed NO_AUTO_VALUE_ON_ZERO because of MySQL bug http://bugs.mysql.com/bug.php?id=42270
         // added NO_BACKSLASH_ESCAPES so that backslashes should not be escaped as in other databases

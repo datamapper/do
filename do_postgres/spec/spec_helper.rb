@@ -43,14 +43,20 @@ Spec::Runner.configure do |config|
 end
 
 CONFIG = OpenStruct.new
-CONFIG.scheme   = 'postgres'
-CONFIG.user     = ENV['DO_POSTGRES_USER'] || 'postgres'
-CONFIG.pass     = ENV['DO_POSTGRES_PASS'] || ''
-CONFIG.host     = ENV['DO_POSTGRES_HOST'] || 'localhost'
-CONFIG.port     = ENV['DO_POSTGRES_PORT'] || '5432'
-CONFIG.database = ENV['DO_POSTGRES_DATABASE'] || '/do_test'
+CONFIG.scheme    = 'postgres'
+CONFIG.user      = ENV['DO_POSTGRES_USER'] || 'postgres'
+CONFIG.pass      = ENV['DO_POSTGRES_PASS'] || ''
+CONFIG.user_info = unless CONFIG.user == 'postgres' && CONFIG.pass.empty?
+  "#{CONFIG.user}:#{CONFIG.pass}@"
+else
+  ''
+end
+CONFIG.host      = ENV['DO_POSTGRES_HOST'] || 'localhost'
+CONFIG.port      = ENV['DO_POSTGRES_PORT'] || '5432'
+CONFIG.database  = ENV['DO_POSTGRES_DATABASE'] || '/do_test'
 
-CONFIG.uri = ENV["DO_POSTGRES_SPEC_URI"] ||"#{CONFIG.scheme}://#{CONFIG.user}:#{CONFIG.pass}@#{CONFIG.host}:#{CONFIG.port}#{CONFIG.database}"
+CONFIG.uri = ENV["DO_POSTGRES_SPEC_URI"] ||"#{CONFIG.scheme}://#{CONFIG.user_info}#{CONFIG.host}:#{CONFIG.port}#{CONFIG.database}"
+puts CONFIG.uri
 CONFIG.sleep = "SELECT pg_sleep(1)"
 
 module DataObjectsSpecHelpers

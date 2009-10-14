@@ -15,6 +15,7 @@ import org.jruby.runtime.builtin.IRubyObject;
 import data_objects.RubyType;
 import data_objects.drivers.AbstractDriverDefinition;
 import data_objects.util.JDBCUtil;
+import java.util.Properties;
 
 public class PostgresDriverDefinition extends AbstractDriverDefinition {
 
@@ -35,6 +36,19 @@ public class PostgresDriverDefinition extends AbstractDriverDefinition {
     @Override
     public boolean supportsJdbcScrollableResultSets() {
         return true;
+    }
+
+    @Override
+    public Properties getDefaultConnectionProperties() {
+        Properties props = new Properties();
+        // the underlying PostgreSQL JDBC driver, as with libpg, defaults to the
+        // same user as "as the operating system name of the user running the
+        // application", i.e. System.getProperty("user.name").
+        // TODO: Check this is the CORRECT behavior: we override this to use
+        // "postgres" user instead as default. As convention, this is the unix
+        // account that with  PG root/superuser privileges.
+        props.put("user", "postgres");
+        return props;
     }
 
     @Override
