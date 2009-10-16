@@ -55,6 +55,8 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
             .newObjectAdapter();
 
     protected final static DateTimeFormatter DATE_TIME_FORMAT = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
+    private final static BigInteger LONG_MAX = BigInteger.valueOf(Long.MAX_VALUE);
+    private final static BigInteger LONG_MIN = BigInteger.valueOf(Long.MIN_VALUE);
 
     private final String scheme;
     private final String jdbcScheme;
@@ -370,22 +372,13 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
             break;
         case BIGNUM:
             BigInteger big = ((RubyBignum) arg).getValue();
-
-            int BIT_SIZE = 64;
-            long MAX = (1L << (BIT_SIZE - 1)) - 1;
-            BigInteger LONG_MAX = BigInteger.valueOf(MAX);
-            BigInteger LONG_MIN = BigInteger.valueOf(-MAX - 1);
-
             if (big.compareTo(LONG_MIN) < 0 || big.compareTo(LONG_MAX) > 0) {
                 // set as big decimal
-                System.out.println(arg.toString() + "cannot be treated as a long");
-                ps.setString(idx, arg.toString());
-                //ps.setBigDecimal(idx, new BigDecimal(((RubyBignum) arg).getValue()));
+                ps.setBigDecimal(idx, new BigDecimal(((RubyBignum) arg).getValue()));
             } else {
                 // set as long
                 ps.setLong(idx, ((RubyBignum) arg).getLongValue());
             }
-
             break;
         case FLOAT:
             ps.setDouble(idx, RubyNumeric.num2dbl(arg));
