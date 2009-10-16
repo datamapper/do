@@ -41,6 +41,7 @@ import org.jruby.util.ByteList;
 
 import data_objects.RubyType;
 import java.lang.UnsupportedOperationException;
+import java.math.BigInteger;
 
 /**
  *
@@ -368,7 +369,23 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
             ps.setInt(idx, Integer.parseInt(arg.toString()));
             break;
         case BIGNUM:
-            ps.setLong(idx, ((RubyBignum) arg).getLongValue());
+            BigInteger big = ((RubyBignum) arg).getValue();
+
+            int BIT_SIZE = 64;
+            long MAX = (1L << (BIT_SIZE - 1)) - 1;
+            BigInteger LONG_MAX = BigInteger.valueOf(MAX);
+            BigInteger LONG_MIN = BigInteger.valueOf(-MAX - 1);
+
+            if (big.compareTo(LONG_MIN) < 0 || big.compareTo(LONG_MAX) > 0) {
+                // set as big decimal
+                System.out.println(arg.toString() + "cannot be treated as a long");
+                ps.setString(idx, arg.toString());
+                //ps.setBigDecimal(idx, new BigDecimal(((RubyBignum) arg).getValue()));
+            } else {
+                // set as long
+                ps.setLong(idx, ((RubyBignum) arg).getLongValue());
+            }
+
             break;
         case FLOAT:
             ps.setDouble(idx, RubyNumeric.num2dbl(arg));
