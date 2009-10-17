@@ -242,7 +242,7 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
                 //
                 // Currently problematic as JRUBY has different boundaries for
                 // Bignum/Fixnum: see http://jira.codehaus.org/browse/JRUBY-1587
-                if (lng >= (double) MRI_FIXNUM_MAX || lng < (double) MRI_FIXNUM_MIN) {
+                if (lng >= MRI_FIXNUM_MAX || lng < MRI_FIXNUM_MIN) {
                     return RubyBignum.newBignum(runtime, lng);
                 }
                 return RubyFixnum.newFixnum(runtime, lng);
