@@ -57,6 +57,8 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
     protected final static DateTimeFormatter DATE_TIME_FORMAT = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
     private final static BigInteger LONG_MAX = BigInteger.valueOf(Long.MAX_VALUE);
     private final static BigInteger LONG_MIN = BigInteger.valueOf(Long.MIN_VALUE);
+    private final static long MRI_FIXNUM_MAX = (1L<<32) - 1;
+    private final static long MRI_FIXNUM_MIN = -1 * MRI_FIXNUM_MAX - 1;
 
     private final String scheme;
     private final String jdbcScheme;
@@ -236,7 +238,14 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
                 if (rs.wasNull()) {
                     return runtime.getNil();
                 }
-                return RubyNumeric.int2fix(runtime, lng);
+                // return RubyNumeric.int2fix(runtime, lng);
+                //
+                // Currently problematic as JRUBY has different boundaries for
+                // Bignum/Fixnum: see http://jira.codehaus.org/browse/JRUBY-1587
+                if (lng >= (double) MRI_FIXNUM_MAX || lng < (double) MRI_FIXNUM_MIN) {
+                    return RubyBignum.newBignum(runtime, lng);
+                }
+                return RubyFixnum.newFixnum(runtime, lng);
             } catch (SQLException sqle) {
                 // if getLong failed then use getBigDecimal
                 BigDecimal bdi = rs.getBigDecimal(col);
