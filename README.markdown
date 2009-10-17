@@ -43,7 +43,7 @@ At present the following drivers are available:
   <tr>
     <td>SQL Server</td>
     <td><em>pending</em></td>
-    <td><em>pending</em></td></tr>
+    <td>x</td></tr>
 </table>
 
 There is experimental support for [Rubinius][rubinius].
