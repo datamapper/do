@@ -46,7 +46,7 @@ CONFIG = OpenStruct.new
 CONFIG.scheme   = 'sqlserver'
 CONFIG.user     = ENV['DO_SQLSERVER_USER'] || 'do_test'
 CONFIG.pass     = ENV['DO_SQLSERVER_PASS'] || 'do_test'
-CONFIG.host     = ENV['DO_SQLSERVER_HOST'] || '192.168.2.100'
+CONFIG.host     = ENV['DO_SQLSERVER_HOST'] || 'localhost'
 CONFIG.port     = ENV['DO_SQLSERVER_PORT'] || '1433'
 CONFIG.instance = ENV['DO_SQLSERVER_INSTANCE'] || 'SQLEXPRESS'
 CONFIG.database = ENV['DO_SQLSERVER_DATABASE'] || "/do_test;instance=#{CONFIG.instance};"
