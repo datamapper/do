@@ -48,7 +48,7 @@ share_examples_for 'a Connection' do
       it { @closed_connection.dispose.should be_false }
 
       it 'should raise an error on creating a command' do
-        lambda { @closed_connection.create_command("INSERT INTO non_existant_table (tester) VALUES (1)").execute_non_query }.should raise_error
+        lambda { @closed_connection.create_command("INSERT INTO non_existent_table (tester) VALUES (1)").execute_non_query }.should raise_error
       end
     end
 

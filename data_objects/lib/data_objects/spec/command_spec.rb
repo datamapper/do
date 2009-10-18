@@ -213,7 +213,7 @@ share_examples_for 'a Command with async' do
     end
 
     it "should finish within 2 seconds" do
-      pending_if("Ruby on Windows doesn't support asynchronious operations", WINDOWS) do
+      pending_if("Ruby on Windows doesn't support asynchronous operations", WINDOWS) do
         (@finish - @start).should < 2
       end
     end
