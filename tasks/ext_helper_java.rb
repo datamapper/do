@@ -40,7 +40,7 @@ def setup_java_extension(extension_name, gem_spec = nil, opts = {})
       # just use the extension directory from the executing java
       # for compilation as well
       extdir = java.lang.System.getProperty('java.ext.dirs')
-      extdir_arg = extdir.nil? ? "" : "-extdirs #{extdir}"
+      extdir_arg = extdir.nil? ? "" : "-extdirs \"#{extdir}\""
 
       # Check if DO_JAVA_DEBUG env var was set to TRUE
       # TRUE means compile java classes with debug info
