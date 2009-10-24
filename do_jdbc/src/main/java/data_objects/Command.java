@@ -21,9 +21,7 @@ import org.jruby.RubyString;
 import org.jruby.anno.JRubyClass;
 import org.jruby.anno.JRubyMethod;
 import org.jruby.exceptions.RaiseException;
-import org.jruby.javasupport.Java;
 import org.jruby.javasupport.JavaEmbedUtils;
-import org.jruby.javasupport.JavaObject;
 import org.jruby.runtime.Block;
 import org.jruby.runtime.ObjectAllocator;
 import org.jruby.runtime.builtin.IRubyObject;
@@ -76,15 +74,10 @@ public class Command extends DORubyObject {
     @JRubyMethod(optional = 1, rest = true)
     public IRubyObject execute_non_query(IRubyObject[] args) {
         Ruby runtime = getRuntime();
-        IRubyObject connection_instance = api.getInstanceVariable(this,
+        Connection connection_instance = (Connection) api.getInstanceVariable(this,
                 "@connection");
-        IRubyObject wrapped_jdbc_connection = api.getInstanceVariable(
-                connection_instance, "@connection");
-        if (wrapped_jdbc_connection.isNil()) {
-            throw driver.newDriverError(runtime,
-                    "This connection has already been closed.");
-        }
-        java.sql.Connection conn = getConnection(wrapped_jdbc_connection);
+        java.sql.Connection conn = connection_instance.getInternalConnection();
+        checkConnectionNotClosed(conn);
 
         IRubyObject insert_key = runtime.getNil();
         RubyClass resultClass = Result.createResultClass(runtime, driver);
@@ -205,15 +198,10 @@ public class Command extends DORubyObject {
     @JRubyMethod(optional = 1, rest = true)
     public IRubyObject execute_reader(IRubyObject[] args) {
         Ruby runtime = getRuntime();
-        IRubyObject connection_instance = api.getInstanceVariable(this,
+        Connection connection_instance = (Connection) api.getInstanceVariable(this,
                 "@connection");
-        IRubyObject wrapped_jdbc_connection = api.getInstanceVariable(
-                connection_instance, "@connection");
-        if (wrapped_jdbc_connection.isNil()) {
-            throw driver.newDriverError(runtime,
-                    "This connection has already been closed.");
-        }
-        java.sql.Connection conn = getConnection(wrapped_jdbc_connection);
+        java.sql.Connection conn = connection_instance.getInternalConnection();
+        checkConnectionNotClosed(conn);
 
         RubyClass readerClass = Reader.createReaderClass(runtime, driver);
         boolean inferTypes = false;
@@ -223,7 +211,7 @@ public class Command extends DORubyObject {
         ResultSetMetaData metaData;
 
         // instantiate a new reader
-        IRubyObject reader = readerClass.newInstance(runtime.getCurrentContext(),
+        Reader reader = (Reader) readerClass.newInstance(runtime.getCurrentContext(),
                                                      new IRubyObject[] { }, Block.NULL_BLOCK);
 
         // execute the query
@@ -254,12 +242,7 @@ public class Command extends DORubyObject {
                 columnCount--;
 
             // pass the response to the reader
-            IRubyObject wrappedResultSet = Java.java_to_ruby(this, JavaObject
-                    .wrap(getRuntime(), resultSet), Block.NULL_BLOCK);
-            reader.getInstanceVariables().setInstanceVariable("@reader",
-                    wrappedResultSet);
-
-            wrappedResultSet.dataWrapStruct(resultSet);
+            reader.setResultset(resultSet);
 
             // handle each result
 
@@ -317,13 +300,9 @@ public class Command extends DORubyObject {
             // XXX sqlite3 jdbc driver happily throws an exception if the result set is empty :P
             // this sets up a minimal empty reader
             if (sqle.getMessage().equals("query does not return results")) {
-                IRubyObject wrappedResultSet = Java.java_to_ruby(this,
-                        JavaObject.wrap(getRuntime(), resultSet),
-                        Block.NULL_BLOCK);
-                reader.getInstanceVariables().setInstanceVariable("@reader",
-                        wrappedResultSet);
 
-                wrappedResultSet.dataWrapStruct(resultSet);
+                reader.setResultset(resultSet);
+
                 // get the field types
                 RubyArray field_names = runtime.newArray();
                 // for each field
@@ -383,8 +362,13 @@ public class Command extends DORubyObject {
 
     // ---------------------------------------------------------- HELPER METHODS
 
-    private static java.sql.Connection getConnection(IRubyObject recv) {
-        return (java.sql.Connection) recv.dataGetStruct();
+    private void checkConnectionNotClosed(java.sql.Connection conn) {
+        try {
+            if (conn == null || conn.isClosed()) {
+                throw driver.newDriverError(getRuntime(), "This connection has already been closed.");
+            }
+        } catch (SQLException ignored) {
+        }
     }
 
     /**

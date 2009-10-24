@@ -5,9 +5,6 @@ import static data_objects.DataObjects.DATA_OBJECTS_MODULE_NAME;
 import java.io.IOException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import org.jruby.Ruby;
 import org.jruby.RubyArray;
@@ -20,6 +17,7 @@ import org.jruby.runtime.ObjectAllocator;
 import org.jruby.runtime.builtin.IRubyObject;
 
 import data_objects.drivers.DriverDefinition;
+import data_objects.util.JDBCUtil;
 
 /**
  * Reader Class
@@ -31,6 +29,7 @@ import data_objects.drivers.DriverDefinition;
 public class Reader extends DORubyObject {
 
     public final static String RUBY_CLASS_NAME = "Reader";
+    private ResultSet resultSet;
 
     private final static ObjectAllocator READER_ALLOCATOR = new ObjectAllocator() {
 
@@ -62,25 +61,9 @@ public class Reader extends DORubyObject {
     @JRubyMethod
     public IRubyObject close() {
         Ruby runtime = getRuntime();
-        IRubyObject reader = api.getInstanceVariable(this, "@reader");
 
-        if (!(reader == null || reader.isNil())) {
-
-            ResultSet rs = (ResultSet) reader.dataGetStruct();
-            try {
-                Statement st = rs.getStatement();
-                rs.close();
-                rs = null;
-                st.close();
-                st = null;
-            } catch (SQLException ex) {
-                Logger.getLogger(Reader.class.getName()).log(Level.SEVERE,
-                        null, ex);
-            } finally {
-                reader = api.setInstanceVariable(this, "@reader", runtime
-                        .getNil());
-            }
-
+        if (resultSet != null) {
+            JDBCUtil.close(resultSet);
             return runtime.getTrue();
         } else {
             return runtime.getFalse();
@@ -97,8 +80,7 @@ public class Reader extends DORubyObject {
     public IRubyObject next() {
         Ruby runtime = getRuntime();
         try {
-            IRubyObject reader = api.getInstanceVariable(this, "@reader");
-            ResultSet rs = (ResultSet) reader.dataGetStruct();
+            ResultSet rs = resultSet;
 
             if (rs == null) {
                 return runtime.getFalse();
@@ -184,4 +166,15 @@ public class Reader extends DORubyObject {
     public IRubyObject field_count() {
         return api.getInstanceVariable(this, "@field_count");
     }
+
+    // ------------------------------------------------- PUBLIC JAVA API METHODS
+
+    public ResultSet getResultSet() {
+        return resultSet;
+    }
+
+    public void setResultset(ResultSet resultSet) {
+        this.resultSet = resultSet;
+    }
+
 }

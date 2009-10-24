@@ -20,8 +20,6 @@ import org.jruby.RubyClass;
 import org.jruby.RubyModule;
 import org.jruby.anno.JRubyClass;
 import org.jruby.anno.JRubyMethod;
-import org.jruby.javasupport.Java;
-import org.jruby.javasupport.JavaObject;
 import org.jruby.runtime.Arity;
 import org.jruby.runtime.Block;
 import org.jruby.runtime.ObjectAllocator;
@@ -44,6 +42,8 @@ public final class Connection extends DORubyObject {
 
     private static final String JNDI_PROTO = "jndi://";
     private static final String UTF8_ENCODING = "UTF-8";
+
+    private java.sql.Connection sqlConnection;
 
     private static final ObjectAllocator CONNECTION_ALLOCATOR = new ObjectAllocator() {
 
@@ -215,11 +215,9 @@ public final class Connection extends DORubyObject {
                                         + "\n\t" + ex.getLocalizedMessage());
         }
 
-        IRubyObject rubyconn = wrappedConnection(conn);
 
         api.setInstanceVariable(this, "@uri", uri);
-        api.setInstanceVariable(this, "@connection", rubyconn);
-        rubyconn.dataWrapStruct(conn);
+        this.sqlConnection = conn;
 
         return runtime.getTrue();
     }
@@ -228,19 +226,19 @@ public final class Connection extends DORubyObject {
     public IRubyObject dispose() {
         // System.out.println("============== dispose called");
         Ruby runtime = getRuntime();
-        IRubyObject connection = api.getInstanceVariable(this, "@connection");
-        if (connection.isNil()) {
+
+        if (sqlConnection == null) {
             return runtime.getFalse();
         }
 
-        java.sql.Connection conn = getConnection(connection);
-        if (conn == null) {
-            return runtime.getFalse();
+        try {
+            if (sqlConnection.isClosed()) {
+                return runtime.getFalse();
+            }
+        } catch (SQLException ignored) {
         }
 
-        JDBCUtil.close(conn);
-
-        api.setInstanceVariable(this, "@connection", runtime.getNil());
+        JDBCUtil.close(sqlConnection);
         return runtime.getTrue();
     }
 
@@ -258,15 +256,13 @@ public final class Connection extends DORubyObject {
         return getRuntime().newString(quoted);
     }
 
-    // -------------------------------------------------- PRIVATE HELPER METHODS
-    private IRubyObject wrappedConnection(final java.sql.Connection c) {
-        return Java.java_to_ruby(this, JavaObject.wrap(this.getRuntime(), c),
-                Block.NULL_BLOCK);
+    // ------------------------------------------------- PUBLIC JAVA API METHODS
+
+    public java.sql.Connection getInternalConnection() {
+        return sqlConnection;
     }
 
-    private static java.sql.Connection getConnection(final IRubyObject recv) {
-        return (java.sql.Connection) recv.dataGetStruct();
-    }
+    // -------------------------------------------------- PRIVATE HELPER METHODS
 
     /**
      * Convert a query string (e.g.
