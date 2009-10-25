@@ -2,10 +2,12 @@
 ./doc
 ./cov
 pkg/*
+_Yardoc
 .DS_Store
 *.o
 *.so
 *.bundle
+.yardoc
 Makefile
 **/*.db
 mem.*

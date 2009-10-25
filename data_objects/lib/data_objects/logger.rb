@@ -51,16 +51,16 @@ module DataObjects
     # The name of the log file
     attr_reader   :log
 
-    # @note
-    #   Ruby (standard) logger levels:
-    #     off:   absolutely nothing
-    #     fatal: an unhandleable error that results in a program crash
-    #     error: a handleable error condition
-    #     warn:  a warning
-    #     info:  generic (useful) information about system operation
-    #     debug: low-level information for developers
     #
-    #   DataObjects::Logger::LEVELS[:off, :fatal, :error, :warn, :info, :debug]
+    # Ruby (standard) logger levels:
+    #   off:   absolutely nothing
+    #   fatal: an unhandleable error that results in a program crash
+    #   error: a handleable error condition
+    #   warn:  a warning
+    #   info:  generic (useful) information about system operation
+    #   debug: low-level information for developers
+    #
+    # DataObjects::Logger::LEVELS[:off, :fatal, :error, :warn, :info, :debug]
     LEVELS =
     {
       :off   => 99999,
@@ -201,12 +201,12 @@ module DataObjects
 
     # Appends a string and log level to logger's buffer.
 
-    # @note
-    #   Note that the string is discarded if the string's log level less than the
-    #   logger's log level.
-    # @note
-    #   Note that if the logger is aio capable then the logger will use
-    #   non-blocking asynchronous writes.
+    #
+    # Note that the string is discarded if the string's log level less than the
+    # logger's log level.
+    #
+    # Note that if the logger is aio capable then the logger will use
+    # non-blocking asynchronous writes.
     #
     # @param level<Fixnum>  the logging level as an integer
     # @param string<String> the message string to be logged
