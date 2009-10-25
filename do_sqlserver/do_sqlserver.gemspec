@@ -19,7 +19,7 @@ Gem::Specification.new do |s|
     # Licensed) and wraps it as a gem. In the repository it may be found in the
     # ROOT/jdbc_drivers directory.
 
-    s.add_dependency "do_jdbc-sqlserver", "1.2.2"
+    s.add_dependency "do_jdbc-sqlserver", "1.2.4"
     s.add_dependency "do_jdbc", DataObjects::SqlServer::VERSION
     s.platform = "java"
   else
