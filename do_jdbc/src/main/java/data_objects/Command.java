@@ -281,7 +281,8 @@ public class Command extends DORubyObject {
 
             // for each field
             for (int i = 0; i < columnCount; i++) {
-                RubyString field_name = runtime.newString(metaData.getColumnName(i + 1));
+                // downcase the field name
+                RubyString field_name = runtime.newString(metaData.getColumnName(i + 1).toLowerCase());
                 // infer the type if no types passed
                 field_names.push_m(new IRubyObject[] { field_name });
 

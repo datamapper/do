@@ -21,9 +21,7 @@ share_examples_for 'a Reader' do
   describe 'fields' do
 
     it 'should return the correct fields in the reader' do
-      # we downcase the field names as some drivers such as do_derby, do_h2,
-      # do_hsqldb return the field names as uppercase
-      @reader.fields.map{ |f| f.downcase }.should == ['code', 'name']
+      @reader.fields.should == ['code', 'name']
     end
 
   end

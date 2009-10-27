@@ -4,12 +4,23 @@ module DataObjects
 
     include Enumerable
 
-    # Return the array of field names
+    ##
+    # Returns the array of field names
+    #
+    # Note, that relational databases may use upper case identifiers internally,
+    # but that field names should always be downcased by Driver implementations.
+    #
+    # @return [Array<String>] the field names (in lower case)
     def fields
       raise NotImplementedError.new
     end
 
-    # Return the array of field values for the current row. Not legal after next! has returned false or before it's been called
+    ##
+    # Returns the array of field values for the current row.
+    #
+    # Not legal after next! has returned false or before it's been called
+    #
+    # @return [Array] the values for the current row
     def values
       raise NotImplementedError.new
     end
