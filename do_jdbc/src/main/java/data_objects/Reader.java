@@ -64,6 +64,7 @@ public class Reader extends DORubyObject {
 
         if (resultSet != null) {
             JDBCUtil.close(resultSet);
+            resultSet = null;
             return runtime.getTrue();
         } else {
             return runtime.getFalse();
