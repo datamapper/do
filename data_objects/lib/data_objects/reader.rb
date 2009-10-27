@@ -2,6 +2,8 @@ module DataObjects
   # Abstract class to read rows from a query result
   class Reader
 
+    include Enumerable
+
     # Return the array of field names
     def fields
       raise NotImplementedError.new
@@ -25,6 +27,24 @@ module DataObjects
     # Return the number of fields in the result set.
     def field_count
       raise NotImplementedError.new
+    end
+
+    # Yield each row to the given block as a struct
+    def each
+      begin
+        while next!
+          yield struct.new(*values)
+        end
+      ensure
+        close
+        self
+      end
+    end
+
+    private
+
+    def struct
+      @struct ||= Struct.new(*fields.map {|f| f.to_sym})
     end
 
   end
