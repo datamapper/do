@@ -31,5 +31,10 @@
             <artifactId>do_jdbc</artifactId>
             <version>${pom.parent.version}</version>
         </dependency>
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <version>1.1.117</version>
+        </dependency>
     </dependencies>
 </project>

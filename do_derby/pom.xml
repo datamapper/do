@@ -31,5 +31,10 @@
             <artifactId>do_jdbc</artifactId>
             <version>${pom.parent.version}</version>
         </dependency>
+        <dependency>
+            <groupId>org.apache.derby</groupId>
+            <artifactId>derby</artifactId>
+            <version>10.5.3.0_1</version>
+        </dependency>
     </dependencies>
 </project>

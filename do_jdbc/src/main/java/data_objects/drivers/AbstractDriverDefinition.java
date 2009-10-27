@@ -4,10 +4,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.sql.Connection;
 import java.sql.Date;
+import java.sql.Driver;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -40,8 +42,6 @@ import org.jruby.runtime.marshal.UnmarshalStream;
 import org.jruby.util.ByteList;
 
 import data_objects.RubyType;
-import java.lang.UnsupportedOperationException;
-import java.math.BigInteger;
 
 /**
  *
@@ -63,16 +63,29 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
     private final String scheme;
     private final String jdbcScheme;
     private final String moduleName;
+    private final Driver driver;
 
-    protected AbstractDriverDefinition(String scheme, String moduleName) {
-        this(scheme, scheme, moduleName);
+    protected AbstractDriverDefinition(String scheme, String moduleName, String jdbcDriver) {
+        this(scheme, scheme, moduleName, jdbcDriver);
     }
 
     protected AbstractDriverDefinition(String scheme, String jdbcScheme,
-            String moduleName) {
+            String moduleName, String jdbcDriver) {
         this.scheme = scheme;
         this.jdbcScheme = jdbcScheme;
         this.moduleName = moduleName;
+        try {
+            this.driver = (Driver) Thread.currentThread().getContextClassLoader().loadClass(jdbcDriver).newInstance();
+        }
+        catch (InstantiationException e) {
+            throw new RuntimeException("should not happen", e);
+        }
+        catch (IllegalAccessException e) {
+            throw new RuntimeException("should not happen", e);
+        }
+        catch (ClassNotFoundException e) {
+            throw new RuntimeException("should not happen", e);
+        }
     }
 
     public String getModuleName() {
@@ -81,6 +94,10 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
 
     public String getErrorName() {
         return this.moduleName + "Error";
+    }
+
+    public Connection getConnection(String uri, Properties properties) throws SQLException{
+        return driver.connect(uri, properties);
     }
 
     @SuppressWarnings("unchecked")

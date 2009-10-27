@@ -35,9 +35,10 @@ public class SqlServerDriverDefinition extends AbstractDriverDefinition {
     public final static String JDBC_URI_SCHEME = "jtds.sqlserver";
     public final static String RUBY_MODULE_NAME = "SqlServer";
     private final static String UTF8_ENCODING = "UTF-8";
+    public final static String JDBC_DRIVER = "net.sourceforge.jtds.jdbc.Driver";
 
     public SqlServerDriverDefinition() {
-        super(URI_SCHEME, JDBC_URI_SCHEME, RUBY_MODULE_NAME);
+        super(URI_SCHEME, JDBC_URI_SCHEME, RUBY_MODULE_NAME, JDBC_DRIVER);
     }
 
     @Override

@@ -15,9 +15,10 @@ import data_objects.drivers.AbstractDriverDefinition;
 public class DerbyDriverDefinition extends AbstractDriverDefinition {
     public final static String URI_SCHEME = "derby";
     public final static String RUBY_MODULE_NAME = "Derby";
+    public final static String JDBC_DRIVER = "org.apache.derby.jdbc.EmbeddedDriver";
 
     public DerbyDriverDefinition() {
-        super(URI_SCHEME, RUBY_MODULE_NAME);
+        super(URI_SCHEME, RUBY_MODULE_NAME, JDBC_DRIVER);
     }
 
     @Override

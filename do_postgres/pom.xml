@@ -31,5 +31,10 @@
             <artifactId>do_jdbc</artifactId>
             <version>${pom.parent.version}</version>
         </dependency>
+        <dependency>
+            <groupId>postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <version>8.3-603.jdbc3</version>
+        </dependency>
     </dependencies>
 </project>

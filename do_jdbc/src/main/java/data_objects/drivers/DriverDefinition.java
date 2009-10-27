@@ -9,8 +9,8 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.Properties;
 import java.util.Map;
+import java.util.Properties;
 
 import org.jruby.Ruby;
 import org.jruby.RubyObjectAdapter;
@@ -122,7 +122,7 @@ public interface DriverDefinition {
      */
     public ResultSet getGeneratedKeys(Connection connection);
 
-    /**
+        /**
      * A default list of properties for a connection for a driver.
      *
      * @return
@@ -146,6 +146,14 @@ public interface DriverDefinition {
      * @see #supportsConnectionEncodings()
      */
     void setEncodingProperty(Properties props, String encodingName);
+
+    /**
+     * creates Connection from the given arguments
+     *
+     * @param uri jdbc uri for which a connection is created
+     * @param properties further properties needed to create a cconnection, i.e. username + password
+     */
+    public Connection getConnection(String uri, Properties properties) throws SQLException;
 
     /**
      *

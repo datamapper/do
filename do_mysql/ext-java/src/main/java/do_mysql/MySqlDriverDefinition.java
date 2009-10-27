@@ -22,9 +22,10 @@ public class MySqlDriverDefinition extends AbstractDriverDefinition {
     public final static String URI_SCHEME = "mysql";
     public final static String RUBY_MODULE_NAME = "Mysql";
     private final static String UTF8_ENCODING = "UTF-8";
+    public final static String JDBC_DRIVER = "com.mysql.jdbc.Driver";
 
     public MySqlDriverDefinition() {
-        super(URI_SCHEME, RUBY_MODULE_NAME);
+        super(URI_SCHEME, RUBY_MODULE_NAME, JDBC_DRIVER);
     }
 
     @Override

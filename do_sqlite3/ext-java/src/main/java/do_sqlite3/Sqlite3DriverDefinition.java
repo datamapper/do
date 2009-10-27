@@ -31,9 +31,10 @@ public class Sqlite3DriverDefinition extends AbstractDriverDefinition {
     public final static String URI_SCHEME = "sqlite3";
     public final static String JDBC_URI_SCHEME = "sqlite";
     public final static String RUBY_MODULE_NAME = "Sqlite3";
+    public final static String JDBC_DRIVER = "org.sqlite.JDBC";
 
     public Sqlite3DriverDefinition() {
-        super(URI_SCHEME, JDBC_URI_SCHEME, RUBY_MODULE_NAME);
+        super(URI_SCHEME, JDBC_URI_SCHEME, RUBY_MODULE_NAME, JDBC_DRIVER);
     }
 
     public static DateTime toDate(String date) {

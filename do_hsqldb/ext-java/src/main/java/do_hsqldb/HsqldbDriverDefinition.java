@@ -21,9 +21,10 @@ public class HsqldbDriverDefinition extends AbstractDriverDefinition {
 
     public final static String URI_SCHEME = "hsqldb";
     public final static String RUBY_MODULE_NAME = "Hsqldb";
+    public final static String JDBC_DRIVER = "org.hsqldb.jdbcDriver";
 
     public HsqldbDriverDefinition() {
-        super(URI_SCHEME, RUBY_MODULE_NAME);
+        super(URI_SCHEME, RUBY_MODULE_NAME, JDBC_DRIVER);
     }
 
     @Override

@@ -9,4 +9,16 @@
     <artifactId>do_jdbc-tools</artifactId>
     <name>do_jdbc-tools</name>
     <description>build tools for do_jdbc</description>
+
+    <build>
+      <plugins>
+         <plugin>
+           <groupId>de.saumya.mojo</groupId>
+           <artifactId>rails-maven-plugin</artifactId>
+           <configuration>
+             <skipSpecs>true</skipSpecs>
+           </configuration>
+         </plugin>
+       </plugins>
+    </build>
 </project>

@@ -4,7 +4,6 @@ import static data_objects.DataObjects.DATA_OBJECTS_MODULE_NAME;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URISyntaxException;
-import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
@@ -24,10 +23,10 @@ import org.jruby.runtime.Arity;
 import org.jruby.runtime.Block;
 import org.jruby.runtime.ObjectAllocator;
 import org.jruby.runtime.builtin.IRubyObject;
+import org.jruby.runtime.callback.Callback;
 
 import data_objects.drivers.DriverDefinition;
 import data_objects.util.JDBCUtil;
-import org.jruby.runtime.callback.Callback;
 
 /**
  * Connection Class.
@@ -85,7 +84,6 @@ public final class Connection extends DORubyObject {
     public IRubyObject initialize(final IRubyObject uri) {
         // System.out.println("============== initialize called " + uri);
         Ruby runtime = getRuntime();
-        String jdbcDriver = null;
         String encoding = null;
         java.net.URI connectionUri;
         Map<String, String> query = null;
@@ -114,7 +112,6 @@ public final class Connection extends DORubyObject {
                 throw runtime.newArgumentError("Unsupported Encoding in Query Parameters" + ex);
             }
 
-            jdbcDriver = query.get("driver");
             if (driver.supportsConnectionEncodings()) {
                 encoding = query.get("encoding");
                 if (encoding == null) {
@@ -129,21 +126,6 @@ public final class Connection extends DORubyObject {
                 encoding = UTF8_ENCODING;
             }
             api.setInstanceVariable(this, "@encoding", runtime.newString(encoding));
-        }
-
-        // Load JDBC Driver Class
-        if (jdbcDriver != null) {
-            try {
-                Class.forName(jdbcDriver).newInstance();
-            } catch (ClassNotFoundException cfe) {
-                throw runtime.newArgumentError("Driver class library (" + jdbcDriver + ") not found.");
-            } catch (InstantiationException ine) {
-                throw runtime.newArgumentError("Driver class library you specified could not be instantiated");
-            } catch (IllegalAccessException iae) {
-                throw runtime.newArgumentError("Driver class library is not available:" + iae.getLocalizedMessage());
-            }
-            // should be handled implicitly
-            // DriverManager.registerDriver(driver);
         }
 
         java.sql.Connection conn;
@@ -198,7 +180,7 @@ public final class Connection extends DORubyObject {
                     conn = driver.getConnectionWithEncoding(runtime, this, jdbcUri, props);
                 } else {
                     // if the driver does not use encoding, connect normally
-                    conn = DriverManager.getConnection(jdbcUri, props);
+                    conn = driver.getConnection(jdbcUri, props);
                 }
             }
 

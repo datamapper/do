@@ -16,6 +16,13 @@
        <finalName>do_jdbc_internal</finalName>
        <plugins>
          <plugin>
+           <groupId>de.saumya.mojo</groupId>
+           <artifactId>rails-maven-plugin</artifactId>
+           <configuration>
+             <skipSpecs>true</skipSpecs>
+           </configuration>
+         </plugin>
+         <plugin>
            <groupId>org.apache.maven.plugins</groupId>
            <artifactId>maven-checkstyle-plugin</artifactId>
          </plugin>

@@ -34,9 +34,10 @@ public class OracleDriverDefinition extends AbstractDriverDefinition {
     // . will be replaced with : in Connection.java before connection
     public final static String JDBC_URI_SCHEME = "oracle.thin";
     public final static String RUBY_MODULE_NAME = "Oracle";
+    public final static String JDBC_DRIVER = "oracle.jdbc.OracleDriver";
 
     public OracleDriverDefinition() {
-        super(URI_SCHEME, JDBC_URI_SCHEME, RUBY_MODULE_NAME);
+        super(URI_SCHEME, JDBC_URI_SCHEME, RUBY_MODULE_NAME, JDBC_DRIVER);
     }
 
     @Override

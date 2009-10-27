@@ -22,9 +22,10 @@ public class PostgresDriverDefinition extends AbstractDriverDefinition {
     public final static String URI_SCHEME = "postgres";
     public final static String JDBC_URI_SCHEME = "postgresql";
     public final static String RUBY_MODULE_NAME = "Postgres";
+    public final static String JDBC_DRIVER = "org.postgresql.Driver";
 
     public PostgresDriverDefinition() {
-        super(URI_SCHEME, JDBC_URI_SCHEME, RUBY_MODULE_NAME);
+        super(URI_SCHEME, JDBC_URI_SCHEME, RUBY_MODULE_NAME, JDBC_DRIVER);
     }
 
     @Override
