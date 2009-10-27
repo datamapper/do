@@ -46,10 +46,10 @@ CONFIG = OpenStruct.new
 CONFIG.scheme    = 'postgres'
 CONFIG.user      = ENV['DO_POSTGRES_USER'] || 'postgres'
 CONFIG.pass      = ENV['DO_POSTGRES_PASS'] || ''
-CONFIG.user_info = unless CONFIG.user == 'postgres' && CONFIG.pass.empty?
+CONFIG.user_info = unless CONFIG.pass.empty?
   "#{CONFIG.user}:#{CONFIG.pass}@"
 else
-  ''
+  "#{CONFIG.user}@"
 end
 CONFIG.host      = ENV['DO_POSTGRES_HOST'] || 'localhost'
 CONFIG.port      = ENV['DO_POSTGRES_PORT'] || '5432'
