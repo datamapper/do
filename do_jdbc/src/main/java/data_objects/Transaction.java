@@ -117,16 +117,17 @@ public class Transaction extends DORubyObject {
     // ---------------------------------------------------------- HELPER METHODS
 
     private java.sql.Connection getConnection() {
-        Ruby runtime = getRuntime();
-        IRubyObject connection_instance = api.getInstanceVariable(this,
+        Connection connection_instance = (Connection) api.getInstanceVariable(this,
                 "@connection");
-        IRubyObject wrapped_jdbc_connection = api.getInstanceVariable(
-                connection_instance, "@connection");
-        if (wrapped_jdbc_connection.isNil()) {
-            throw driver.newDriverError(runtime,
-                    "This connection has already been closed.");
+        java.sql.Connection conn = connection_instance.getInternalConnection();
+        try {
+            if (conn == null || conn.isClosed()) {
+                throw driver.newDriverError(getRuntime(), "This connection has already been closed.");
+            }
+        } catch (SQLException ignored) {
         }
-        return (java.sql.Connection) wrapped_jdbc_connection.dataGetStruct();
+
+        return conn;
     }
 
 }
