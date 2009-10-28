@@ -14,11 +14,8 @@ require 'date'
 require 'base64'
 require 'do_sqlserver_ext' if RUBY_PLATFORM =~ /java/
 require 'do_sqlserver/version'
-if RUBY_PLATFORM !~ /java/
-  # JDBC driver has transactions implementation in Java
-  require 'do_sqlserver/transaction'
-end
-
+# JDBC driver has transactions implementation in Java
+require 'do_sqlserver/transaction' if RUBY_PLATFORM !~ /java/
 
 if RUBY_PLATFORM !~ /java/
   module DataObjects

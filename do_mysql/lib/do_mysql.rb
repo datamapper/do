@@ -21,7 +21,7 @@ end
 
 require 'do_mysql_ext'
 require 'do_mysql/version'
-require 'do_mysql/transaction'
+require 'do_mysql/transaction' if RUBY_PLATFORM !~ /java/
 require 'do_mysql/encoding'
 
 if RUBY_PLATFORM =~ /java/
