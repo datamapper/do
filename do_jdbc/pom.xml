@@ -11,6 +11,38 @@
     <packaging>jar</packaging>
     <name>do_jdbc</name>
     <description>JDBC support for DataObjects.rb drivers</description>
+    <dependencies>
+      <dependency>
+        <groupId>junit</groupId>
+        <artifactId>junit</artifactId>
+        <version>3.8.2</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>tyrex</groupId>
+        <artifactId>tyrex</artifactId>
+        <version>1.0.1</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>commons-dbcp</groupId>
+        <artifactId>commons-dbcp</artifactId>
+        <version>1.2.2</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.sqlite</groupId>
+        <artifactId>sqlite3</artifactId>
+        <version>3.5.8</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>javax.transaction</groupId>
+        <artifactId>jta</artifactId>
+        <version>1.1</version>
+        <scope>test</scope>
+      </dependency>
+    </dependencies>
     <build>
        <sourceDirectory>src/main/java</sourceDirectory>
        <finalName>do_jdbc_internal</finalName>
@@ -32,6 +64,13 @@
            <configuration>
              <outputDirectory>pkg</outputDirectory>
            </configuration>
+           <executions>
+             <execution>
+               <goals>
+                 <goal>test-jar</goal>
+               </goals>
+             </execution>
+           </executions>
          </plugin>
        </plugins>
     </build>
