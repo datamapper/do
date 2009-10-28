@@ -1,7 +1,8 @@
-require 'extlib'
-
 require 'data_objects/version'
+require 'data_objects/utilities'
 require 'data_objects/logger'
+require 'data_objects/byte_array'
+require 'data_objects/pooling'
 require 'data_objects/connection'
 require 'data_objects/uri'
 require 'data_objects/transaction'

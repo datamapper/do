@@ -349,7 +349,7 @@ static VALUE typecast(const char *value, long length, const VALUE type, int enco
   } else if (type == rb_cByteArray) {
     return rb_funcall(rb_cByteArray, ID_NEW, 1, rb_str_new(value, length));
   } else if (type == rb_cClass) {
-    return rb_funcall(rb_cObject, rb_intern("full_const_get"), 1, rb_str_new(value, length));
+    return rb_funcall(mDO, rb_intern("full_const_get"), 1, rb_str_new(value, length));
   } else if (type == rb_cObject) {
     return rb_marshal_load(rb_str_new(value, length));
   } else if (type == rb_cNilClass) {
@@ -699,16 +699,6 @@ static VALUE cConnection_ssl_cipher(VALUE self) {
   return rb_iv_get(self, "@ssl_cipher");
 }
 
-static VALUE cConnection_secure(VALUE self) {
-  VALUE blank_cipher = rb_funcall(rb_iv_get(self, "@ssl_cipher"), rb_intern("blank?"), 0);
-
-  if (blank_cipher == Qtrue) {
-    return Qfalse;
-  } else {
-    return Qtrue;
-  }
-}
-
 static VALUE cConnection_dispose(VALUE self) {
   VALUE connection_container = rb_iv_get(self, "@connection");
 
@@ -1056,7 +1046,6 @@ void Init_do_mysql_ext() {
   rb_define_method(cConnection, "initialize", cConnection_initialize, 1);
   rb_define_method(cConnection, "using_socket?", cConnection_is_using_socket, 0);
   rb_define_method(cConnection, "ssl_cipher", cConnection_ssl_cipher, 0);
-  rb_define_method(cConnection, "secure?", cConnection_secure, 0);
   rb_define_method(cConnection, "character_set", cConnection_character_set , 0);
   rb_define_method(cConnection, "dispose", cConnection_dispose, 0);
   rb_define_method(cConnection, "quote_string", cConnection_quote_string, 1);

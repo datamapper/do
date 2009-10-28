@@ -12,7 +12,6 @@ Gem::Specification.new do |s|
 
   # dependencies
   s.add_dependency "addressable", "~>2.1"
-  s.add_dependency "extlib", "~>0.9.14"
 
   # development dependencies
   s.add_development_dependency "rspec", "~>1.2"

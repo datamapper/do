@@ -11,7 +11,6 @@ Gem::Specification.new do |s|
 
   # dependencies
   s.add_dependency "addressable", "~>2.1"
-  s.add_dependency "extlib", "~>0.9.14"
   s.add_dependency "data_objects", DataObjects::H2::VERSION
   s.add_dependency "jdbc-h2", "~>1.1.107"
   s.add_dependency "do_jdbc", DataObjects::H2::VERSION

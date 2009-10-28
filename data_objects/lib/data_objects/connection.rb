@@ -50,7 +50,7 @@ module DataObjects
     end
 
     # Ensure that all Connection subclasses handle pooling and logging uniformly.
-    # See also Extlib::Pooling and DataObjects::Logger
+    # See also DataObjects::Pooling and DataObjects::Logger
     def self.inherited(target)
       target.class_eval do
 
@@ -61,7 +61,7 @@ module DataObjects
           instance
         end
 
-        include Extlib::Pooling
+        include Pooling
         include Quoting
 
         alias close release

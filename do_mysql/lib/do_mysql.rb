@@ -44,4 +44,16 @@ if RUBY_PLATFORM =~ /java/
     end
   end
 
+else
+
+  module DataObjects
+    module Mysql
+      class Connection
+        def secure?
+          !(@ssl_cipher.nil? || @ssl_cipher.empty?)
+        end
+      end
+    end
+  end
+
 end

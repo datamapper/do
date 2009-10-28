@@ -384,7 +384,7 @@ static VALUE typecast(const char *value, long length, const VALUE type, int enco
     PQfreemem(unescaped);
     return byte_array;
   } else if (type == rb_cClass) {
-    return rb_funcall(rb_cObject, rb_intern("full_const_get"), 1, rb_str_new(value, length));
+    return rb_funcall(mDO, rb_intern("full_const_get"), 1, rb_str_new(value, length));
   } else if (type == rb_cObject) {
     return rb_marshal_load(rb_str_new(value, length));
   } else if (type == rb_cNilClass) {

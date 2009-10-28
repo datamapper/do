@@ -15,7 +15,7 @@ share_examples_for 'a Connection' do
   end
 
   it { @connection.should be_kind_of(DataObjects::Connection) }
-  it { @connection.should be_kind_of(Extlib::Pooling) }
+  it { @connection.should be_kind_of(DataObjects::Pooling) }
 
   it { @connection.should respond_to(:dispose) }
 
