@@ -39,7 +39,6 @@ public final class Connection extends DORubyObject {
 
     public static final String RUBY_CLASS_NAME = "Connection";
 
-    private static final String JNDI_PROTO = "jndi://";
     private static final String UTF8_ENCODING = "UTF-8";
 
     private java.sql.Connection sqlConnection;
@@ -131,8 +130,9 @@ public final class Connection extends DORubyObject {
         java.sql.Connection conn;
 
         try {
-            if (connectionUri.getPath() != null && connectionUri.getPath().startsWith(JNDI_PROTO)) {
-                String jndiName = connectionUri.getPath().substring(JNDI_PROTO.length());
+            if (connectionUri.getPath() != null && connectionUri.getScheme().equals("java")) {
+                String jndiName = connectionUri.toString().replace("://", ":");
+
                 try {
                     InitialContext context = new InitialContext();
                     DataSource dataSource = (DataSource) context.lookup(jndiName);
@@ -140,7 +140,7 @@ public final class Connection extends DORubyObject {
                     conn = dataSource.getConnection();
                 } catch (NamingException ex) {
                     throw runtime.newRuntimeError("Can't lookup datasource: "
-                                                  + connectionUri.toString() + "\n\t" + ex.getLocalizedMessage());
+                                                  + jndiName + "\n\t" + ex.getLocalizedMessage());
                 }
             } else {
                 String jdbcUri;
@@ -187,6 +187,12 @@ public final class Connection extends DORubyObject {
         } catch (SQLException ex) {
             throw driver.newDriverError(runtime, "Can't connect: "
                                         + connectionUri.toString() + "\n\t" + ex.getLocalizedMessage());
+        }
+
+        // some jdbc driver just return null if the subscheme of URI does not match
+        if(conn == null){
+            throw driver.newDriverError(runtime, "Can't connect: "
+                                        + connectionUri.toString());
         }
 
         // Callback for setting connection properties after connection is established

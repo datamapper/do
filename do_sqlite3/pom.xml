@@ -32,6 +32,13 @@
             <version>${pom.parent.version}</version>
         </dependency>
         <dependency>
+            <groupId>${pom.parent.groupId}</groupId>
+            <artifactId>do_jdbc</artifactId>
+            <version>${pom.parent.version}</version>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>org.sqlite</groupId>
             <artifactId>sqlite3</artifactId>
             <version>3.5.8</version>

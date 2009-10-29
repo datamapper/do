@@ -15,4 +15,5 @@ describe DataObjects::Sqlite3::Connection do
   end
 
   it_should_behave_like 'a Connection'
+  it_should_behave_like 'a Connection via JDNI' if JRUBY
 end

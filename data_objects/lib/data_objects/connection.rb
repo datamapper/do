@@ -15,7 +15,8 @@ module DataObjects
       case uri.scheme.to_sym
       when :java
         warn 'JNDI URLs (connection strings) are only for use with JRuby' unless RUBY_PLATFORM =~ /java/
-        # TODO: handle jndi connection strings
+        driver_name = uri.query.delete("scheme")
+        conn_uri = uri.to_s.gsub(/\?$/, '')
       when :jdbc
         warn 'JDBC URLs (connection strings) are only for use with JRuby' unless RUBY_PLATFORM =~ /java/
 

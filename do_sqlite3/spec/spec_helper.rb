@@ -47,6 +47,7 @@ CONFIG.scheme   = 'sqlite3'
 CONFIG.database = ENV['DO_SQLITE3_DATABASE'] || "#{File.expand_path(File.dirname(__FILE__))}/test.db"
 
 CONFIG.uri = ENV["DO_SQLITE3_SPEC_URI"] || "#{CONFIG.scheme}://#{CONFIG.database}"
+CONFIG.jdbc_driver = 'org.sqlite.JDBC'
 
 module DataObjectsSpecHelpers
 

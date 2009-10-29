@@ -126,3 +126,30 @@ share_examples_for 'a Connection with SSL support' do
   end
 
 end
+
+share_examples_for 'a Connection via JDNI' do
+
+  if JRUBY
+    describe 'connecting with JNDI' do
+
+      before :each do
+        begin
+          @jndi = Java::data_objects.JNDITestSetup.new("jdbc:#{CONFIG.uri}".gsub(/:sqlite3:/, ':sqlite:'), CONFIG.jdbc_driver, 'mydb')
+          @jndi.setup()
+        rescue => e
+          p e
+        end
+      end
+
+      after :each do
+        @jndi.teardown() unless @jndi.nil?
+      end
+
+      it 'should conntect' do
+        c = DataObjects::Connection.new("java:comp/env/jdbc/mydb?scheme=#{CONFIG.scheme}")
+        c.should_not be_nil
+      end
+
+    end
+  end
+end

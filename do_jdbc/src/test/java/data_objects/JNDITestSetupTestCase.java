@@ -11,7 +11,7 @@ public class JNDITestSetupTestCase extends TestCase {
 
     public void test() throws Exception{
         String JNDI = "mydb";
-        JNDITestSetup jndi = new JNDITestSetup("jdbc:sqlite:memory:", "org.sqlite.JDBC", JNDI );
+        JNDITestSetup jndi = new JNDITestSetup("jdbc:sqlite::memory:", "org.sqlite.JDBC", JNDI );
         
         jndi.setup();
 

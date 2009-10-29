@@ -47,15 +47,6 @@
       <plugin>
         <groupId>de.saumya.mojo</groupId>
         <artifactId>rails-maven-plugin</artifactId>
-        <executions>
-           <execution>
-            <id>spec</id>
-            <phase>integration-test</phase>
-            <goals>
-              <goal>spec</goal>
-            </goals>
-           </execution>
-        </executions>
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
@@ -71,9 +62,11 @@
         <plugin>
           <groupId>de.saumya.mojo</groupId>
           <artifactId>rails-maven-plugin</artifactId>
+          <version>0.2.1</version>
           <executions>
             <execution>
               <id>spec</id>
+              <phase>integration-test</phase>
               <goals>
                 <goal>spec</goal>
               </goals>
