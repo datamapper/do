@@ -8,13 +8,13 @@ import tyrex.naming.MemoryContext;
 import tyrex.tm.RuntimeContext;
 
 /**
- * 
+ *
  */
 
 public class JNDITestSetup {
-    
+
     private final Context root;
-    
+
     public JNDITestSetup(String uri, String jdbcDriverClassName, String jndiDatabase) throws NamingException{
         // reference to that implementation
         // http://commons.apache.org/dbcp/guide/jndi-howto.html
@@ -33,7 +33,7 @@ public class JNDITestSetup {
       ctx = ctx.createSubcontext( "jdbc" );
       ctx.bind( jndiDatabase, ref );
     }
-    
+
     public void setup() throws NamingException{
         // Associate the memory context with a new
         // runtime context and associate the runtime context
@@ -41,7 +41,7 @@ public class JNDITestSetup {
         RuntimeContext runCtx = RuntimeContext.newRuntimeContext( root, null );
         RuntimeContext.setRuntimeContext( runCtx );
     }
-    
+
     public void teardown(){
         // Dissociate the runtime context from the thread
         RuntimeContext.unsetRuntimeContext();

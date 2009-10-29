@@ -12,7 +12,7 @@ public class JNDITestSetupTestCase extends TestCase {
     public void test() throws Exception{
         String JNDI = "mydb";
         JNDITestSetup jndi = new JNDITestSetup("jdbc:sqlite::memory:", "org.sqlite.JDBC", JNDI );
-        
+
         jndi.setup();
 
         DataSource ds = (DataSource) new InitialContext().lookup("java:comp/env/jdbc/" + JNDI);
@@ -20,7 +20,7 @@ public class JNDITestSetupTestCase extends TestCase {
         Connection conn = ds.getConnection();
         assertNotNull(conn);
         conn.close();
-        
+
         jndi.teardown();
     }
 }
