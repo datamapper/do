@@ -12,10 +12,6 @@ jruby -S gem install jruby-openssl -v 0.2
 jruby -S gem install hoe -v 1.6.0
 jruby -S gem install buildr
 
-# go to your extlib/pkg directory (git clone if you need to)
-# adjust the version number below to what .gem file you have
-jruby -S gem install extlib-0.9.x.gem
-
 # you'll also need to have data_objects installed
 jruby -S gem install data_object-0.9.x.gem
 

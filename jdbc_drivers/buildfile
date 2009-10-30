@@ -3,7 +3,6 @@
 # tasks to help download and keep various driver Maven artefacts up-to-date
 # see http://incubator.apache.org/buildr/ for more information on Apache Buildr
 require 'buildr'
-require 'extlib'
 require 'pathname'
 
 dir = Pathname(__FILE__).dirname.expand_path

@@ -363,7 +363,7 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
             RubyString class_name_str = RubyString.newUnicodeString(runtime, rs
                     .getString(col));
             class_name_str.setTaint(true);
-            return API.callMethod(runtime.getObject(), "full_const_get",
+            return API.callMethod(runtime.fastGetModule("DataObjects"), "full_const_get",
                     class_name_str);
         case OBJECT:
             InputStream asciiStream = rs.getAsciiStream(col);
