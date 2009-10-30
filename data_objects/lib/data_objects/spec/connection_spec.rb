@@ -145,7 +145,7 @@ share_examples_for 'a Connection via JDNI' do
         @jndi.teardown() unless @jndi.nil?
       end
 
-      it 'should conntect' do
+      it 'should connect' do
         c = DataObjects::Connection.new("java:comp/env/jdbc/mydb?scheme=#{CONFIG.scheme}")
         c.should_not be_nil
       end
