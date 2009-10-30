@@ -1,4 +1,4 @@
-WINDOWS = Gem.win_platform?
+WINDOWS = Gem.win_platform? || (JRUBY && ENV_JAVA['os.name'] =~ /windows/i)
 
 share_examples_for 'a Command' do
 
