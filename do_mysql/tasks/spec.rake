@@ -8,8 +8,8 @@ Spec::Rake::SpecTask.new(:spec => [ :clean, :compile ]) do |t|
   t.libs << 'lib'
 
   begin
-    # RCov is run by default, except on the JRuby platform
-    t.rcov = JRUBY ? false : (ENV.has_key?('NO_RCOV') ? ENV['NO_RCOV'] != 'true' : true)
+    # RCov is run by default, except on the JRuby and IronRuby platforms
+    t.rcov = JRUBY || IRONRUBY ? false : (ENV.has_key?('NO_RCOV') ? ENV['NO_RCOV'] != 'true' : true)
     t.rcov_opts << '--exclude' << 'spec'
     t.rcov_opts << '--text-summary'
     t.rcov_opts << '--sort' << 'coverage' << '--sort-reverse'

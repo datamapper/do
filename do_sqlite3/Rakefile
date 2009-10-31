@@ -5,10 +5,11 @@ require 'rake/clean'
 require 'pathname'
 require 'lib/do_sqlite3/version'
 
-ROOT    = Pathname(__FILE__).dirname.expand_path
-JRUBY   = RUBY_PLATFORM =~ /java/
-WINDOWS = Gem.win_platform? || (JRUBY && ENV_JAVA['os.name'] =~ /windows/i)
-SUDO    = WINDOWS ? '' : ('sudo' unless ENV['SUDOLESS'])
+ROOT     = Pathname(__FILE__).dirname.expand_path
+JRUBY    = RUBY_PLATFORM =~ /java/
+IRONRUBY = defined?(RUBY_ENGINE) && RUBY_ENGINE == 'ironruby'
+WINDOWS  = Gem.win_platform? || (JRUBY && ENV_JAVA['os.name'] =~ /windows/i)
+SUDO     = WINDOWS ? '' : ('sudo' unless ENV['SUDOLESS'])
 BINARY_VERSION = '3_6_13'
 
 Dir['tasks/*.rake'].sort.each { |f| import f }
