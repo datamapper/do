@@ -293,6 +293,7 @@ public final class Connection extends DORubyObject {
      *
      * @param query
      * @return
+     * @throws UnsupportedEncodingException
      */
     private static Map<String, String> parseQueryString(final String query)
             throws UnsupportedEncodingException {

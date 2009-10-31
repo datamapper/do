@@ -1,32 +1,18 @@
 package do_sqlserver;
 
-import java.io.IOException;
-
-import java.lang.reflect.InvocationTargetException;
 import java.sql.Connection;
 import java.sql.Statement;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
-
 import java.util.Properties;
-
 import org.jruby.Ruby;
 import org.jruby.runtime.builtin.IRubyObject;
-import org.jruby.RubyString;
-
-
-import data_objects.RubyType;
 import data_objects.drivers.AbstractDriverDefinition;
 import data_objects.util.JDBCUtil;
 import java.lang.reflect.Field;
-import java.lang.reflect.Method;
 import java.sql.DriverManager;
-import java.sql.Timestamp;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import org.joda.time.DateTime;
 
 public class SqlServerDriverDefinition extends AbstractDriverDefinition {
 

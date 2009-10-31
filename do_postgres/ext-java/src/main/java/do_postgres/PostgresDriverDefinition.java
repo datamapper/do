@@ -190,7 +190,7 @@ public class PostgresDriverDefinition extends AbstractDriverDefinition {
                 output[offset++] = (char)b;
             }
         }
-        output[offset++] = '\'';
+        output[offset] = '\'';
         return new String(output);
     }
 
