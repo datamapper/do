@@ -73,7 +73,7 @@ public interface DriverDefinition {
      * Callback for doing driver specific SQL statement modification
      * Necessary for Oracle driver to replace :insert_id with ?
      *
-     * @param SqlText
+     * @param sqlText
      * @param args
      * @return a SQL Text formatted for preparing a PreparedStatement
      */

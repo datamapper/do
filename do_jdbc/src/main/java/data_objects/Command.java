@@ -376,7 +376,6 @@ public class Command extends DORubyObject {
      * Unmarshal a java.sql.Resultset containing generated keys, and return a
      * Ruby Fixnum with the last key.
      *
-     * @param runtime
      * @param rs
      * @return
      * @throws java.sql.SQLException
@@ -424,7 +423,6 @@ public class Command extends DORubyObject {
      * DataObjects-style to JDBC PreparedStatement-style.
      *
      * @param doSqlText
-     * @param recv
      * @param args
      * @return a SQL Text java.lang.String formatted for preparing a PreparedStatement
      */
@@ -517,8 +515,8 @@ public class Command extends DORubyObject {
     /**
      * Assist with setting the parameter values on a PreparedStatement
      *
+     * @param sqlText
      * @param ps the PreparedStatement for which parameters should be set
-     * @param recv
      * @param args an array of parameter values
      *
      * @return true if there is return parameter, false if there is not
@@ -604,7 +602,6 @@ public class Command extends DORubyObject {
     /**
      * Output a log message
      *
-     * @param runtime
      * @param logMessage
      * @param executionTime
      */

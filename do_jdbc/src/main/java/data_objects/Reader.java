@@ -74,7 +74,6 @@ public class Reader extends DORubyObject {
     /**
      * Moves the cursor forward.
      *
-     * @param recv
      * @return
      */
     @JRubyMethod(name = "next!")
