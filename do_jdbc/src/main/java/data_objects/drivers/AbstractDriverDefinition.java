@@ -517,7 +517,6 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
     }
 
     protected static DateTime sqlDateToDateTime(Date date) {
-        date.getYear();
         if (date == null)
             return null;
         else
