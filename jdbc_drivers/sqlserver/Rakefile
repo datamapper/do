@@ -33,5 +33,5 @@ task :default => [ :install ]
 
 desc "Install #{GEM_NAME} #{GEM_VERSION}"
 task :install =>  [ :package ] do
-  sh %{jruby -S gem install --local pkg/#{GEM_NAME}-#{GEM_VERSION} --no-update-sources}, :verbose => false
+  sh %{jruby -S gem install --local pkg/#{GEM_NAME}-#{GEM_VERSION}}, :verbose => false
 end
