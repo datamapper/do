@@ -196,6 +196,7 @@ public class Command extends DORubyObject {
         } catch (SQLException sqle) {
             throw newQueryError(runtime, sqle, usePS ? sqlStatement : sqlSimpleStatement);
         } finally {
+            // JDBCUtil.close(keys) - not needed because closing Statement closes all RS
             if (usePS) {
                 JDBCUtil.close(sqlStatement);
             } else {
