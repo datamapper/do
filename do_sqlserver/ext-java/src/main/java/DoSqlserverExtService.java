@@ -8,6 +8,10 @@ public class DoSqlserverExtService extends AbstractDataObjectsExtService {
 
     private final static DriverDefinition driver = new SqlServerDriverDefinition();
 
+    /**
+     * 
+     * @return
+     */
     @Override
     public DriverDefinition getDriverDefinition() {
         return driver;

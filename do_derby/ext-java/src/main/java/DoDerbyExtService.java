@@ -5,6 +5,10 @@ public class DoDerbyExtService extends AbstractDataObjectsExtService {
 
     private final static DriverDefinition driver = new DerbyDriverDefinition();
 
+    /**
+     * 
+     * @return
+     */
     @Override
     public DriverDefinition getDriverDefinition() {
         return driver;

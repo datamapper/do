@@ -25,31 +25,91 @@ import data_objects.RubyType;
  */
 public interface DriverDefinition {
 
+    /**
+     *
+     * @return
+     */
     public String getModuleName();
 
+    /**
+     *
+     * @return
+     */
     public String getErrorName();
 
+    /**
+     *
+     * @param uri
+     * @return
+     * @throws URISyntaxException
+     * @throws UnsupportedEncodingException
+     */
     public URI parseConnectionURI(IRubyObject uri) throws URISyntaxException,
             UnsupportedEncodingException;
 
+    /**
+     *
+     * @param runtime
+     * @param message
+     * @return
+     */
     public RaiseException newDriverError(Ruby runtime, String message);
 
+    /**
+     *
+     * @param runtime
+     * @param sqe
+     * @return
+     */
     public RaiseException newDriverError(Ruby runtime, SQLException sqe);
 
+    /**
+     *
+     * @param runtime
+     * @param sqle
+     * @param statement
+     * @return
+     */
     public RaiseException newDriverError(Ruby runtime, SQLException sqle,
             Statement statement);
 
+    /**
+     *
+     * @return
+     */
     public RubyObjectAdapter getObjectAdapter();
 
     /**
      * If needed this could be overrided to implement database driver specific
      * JDBC type to Ruby type mapping
+     *
+     * @param type
+     * @param precision
+     * @param scale
+     * @return
      */
     public RubyType jdbcTypeToRubyType(int type, int precision, int scale);
 
+    /**
+     *
+     * @param runtime
+     * @param rs
+     * @param col
+     * @param type
+     * @return
+     * @throws SQLException
+     * @throws IOException
+     */
     public IRubyObject getTypecastResultSetValue(Ruby runtime, ResultSet rs,
             int col, RubyType type) throws SQLException, IOException;
 
+    /**
+     *
+     * @param ps
+     * @param arg
+     * @param idx
+     * @throws SQLException
+     */
     public void setPreparedStatementParam(PreparedStatement ps,
             IRubyObject arg, int idx) throws SQLException;
 
@@ -57,6 +117,10 @@ public interface DriverDefinition {
      * Callback for registering output parameter
      * Necessary for Oracle INSERT ... RETURNING ... INTO ... statements
      *
+     * @param sqlText
+     * @param ps
+     * @param idx
+     * @throws SQLException
      * @return true if output parameter was registered
      */
     public boolean registerPreparedStatementReturnParam(String sqlText, PreparedStatement ps, int idx) throws SQLException;
@@ -65,6 +129,8 @@ public interface DriverDefinition {
      * Get registered return parameter
      * Necessary for Oracle INSERT ... RETURNING ... INTO ... statements
      *
+     * @param ps
+     * @throws 
      * @return return parameter (long value)
      */
     public long getPreparedStatementReturnParam(PreparedStatement ps) throws SQLException;
@@ -122,7 +188,7 @@ public interface DriverDefinition {
      */
     public ResultSet getGeneratedKeys(Connection connection);
 
-        /**
+    /**
      * A default list of properties for a connection for a driver.
      *
      * @return
@@ -132,6 +198,9 @@ public interface DriverDefinition {
     /**
      * Callback for setting connection properties after connection is established.
      *
+     * @param doConn
+     * @param conn
+     * @param query
      * @return
      */
     public void afterConnectionCallback(IRubyObject doConn, Connection conn,
@@ -152,11 +221,14 @@ public interface DriverDefinition {
      *
      * @param uri jdbc uri for which a connection is created
      * @param properties further properties needed to create a cconnection, i.e. username + password
+     * @return
      */
     public Connection getConnection(String uri, Properties properties) throws SQLException;
 
     /**
      *
+     * @param runtime
+     * @param connection
      * @param url
      * @param props
      * @return
@@ -166,9 +238,26 @@ public interface DriverDefinition {
     Connection getConnectionWithEncoding(Ruby runtime, IRubyObject connection,
             String url, Properties props) throws SQLException;
 
+    /**
+     * 
+     * @param str
+     * @return
+     */
     public String quoteString(String str);
+
+    /**
+     *
+     * @param connection
+     * @param value
+     * @return
+     */
     public String quoteByteArray(IRubyObject connection, IRubyObject value);
 
+    /**
+     *
+     * @param s
+     * @return
+     */
     public String statementToString(Statement s);
 
 }

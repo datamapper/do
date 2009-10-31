@@ -15,13 +15,24 @@ abstract public class DORubyObject extends RubyObject {
 
     final RubyObjectAdapter api;
 
-    DORubyObject(Ruby arg0, RubyClass clazz) {
-        super(arg0, clazz);
+    /**
+     *
+     * @param runtime
+     * @param clazz
+     */
+    DORubyObject(Ruby runtime, RubyClass clazz) {
+        super(runtime, clazz);
         this.driver = (DriverDefinition) JavaEmbedUtils.rubyToJava(clazz
                 .getInstanceVariable("@__driver"));
         this.api = driver.getObjectAdapter();
     }
 
+    /**
+     *
+     * @param clazz
+     * @param runtime
+     * @param driver
+     */
     static void setDriverDefinition(RubyClass clazz, Ruby runtime, DriverDefinition driver) {
         clazz.setInstanceVariable("@__driver", JavaEmbedUtils.javaToRuby(
                 runtime, driver));

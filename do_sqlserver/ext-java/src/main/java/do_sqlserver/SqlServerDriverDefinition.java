@@ -37,30 +37,60 @@ public class SqlServerDriverDefinition extends AbstractDriverDefinition {
     private final static String UTF8_ENCODING = "UTF-8";
     public final static String JDBC_DRIVER = "net.sourceforge.jtds.jdbc.Driver";
 
+    /**
+     *
+     */
     public SqlServerDriverDefinition() {
         super(URI_SCHEME, JDBC_URI_SCHEME, RUBY_MODULE_NAME, JDBC_DRIVER);
     }
 
+    /**
+     *
+     * @return
+     */
     @Override
     public boolean supportsJdbcGeneratedKeys() {
         return true;
     }
 
+    /**
+     *
+     * @return
+     */
     @Override
     public boolean supportsJdbcScrollableResultSets() {
         return true;
     }
+
+    /**
+     *
+     * @return
+     */
     @Override
     public boolean supportsConnectionEncodings()
     {
         return true;
     }
 
+    /**
+     *
+     * @param props
+     * @param encodingName
+     */
     @Override
     public void setEncodingProperty(Properties props, String encodingName) {
         props.put("charset", encodingName);
     }
 
+    /**
+     *
+     * @param runtime
+     * @param connection
+     * @param url
+     * @param props
+     * @return
+     * @throws SQLException
+     */
     @Override
     public java.sql.Connection getConnectionWithEncoding(Ruby runtime,
             IRubyObject connection, String url, Properties props) throws SQLException {
@@ -88,16 +118,33 @@ public class SqlServerDriverDefinition extends AbstractDriverDefinition {
         return conn;
     }
 
+    /**
+     *
+     * @param sql
+     * @param param
+     * @return
+     */
     private String replace(String sql, Object param)
     {
         return sql.replaceFirst("[?]", param.toString());
     }
 
+    /**
+     *
+     * @param sql
+     * @param param
+     * @return
+     */
     private String replace(String sql, String param)
     {
         return sql.replaceFirst("[?]", "'" + param + "'");
     }
 
+    /**
+     *
+     * @param s
+     * @return
+     */
     @Override
     public String statementToString(Statement s) {
         try {
@@ -140,7 +187,13 @@ public class SqlServerDriverDefinition extends AbstractDriverDefinition {
         }
     }
 
-    // for execution of session initialization SQL statements
+    /**
+     * For execution of session initialization SQL statements
+     *
+     * @param conn
+     * @param sql
+     * @throws SQLException
+     */
     private void exec(Connection conn, String sql)
             throws SQLException {
         Statement s = null;

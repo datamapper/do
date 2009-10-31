@@ -48,6 +48,12 @@ public class Command extends DORubyObject {
         }
     };
 
+    /**
+     *
+     * @param runtime
+     * @param factory
+     * @return
+     */
     public static RubyClass createCommandClass(final Ruby runtime,
             DriverDefinition factory) {
         RubyModule doModule = runtime.getModule(DATA_OBJECTS_MODULE_NAME);
@@ -63,6 +69,11 @@ public class Command extends DORubyObject {
         return commandClass;
     }
 
+    /**
+     *
+     * @param runtime
+     * @param klass
+     */
     private Command(Ruby runtime, RubyClass klass) {
         super(runtime, klass);
     }
@@ -71,6 +82,11 @@ public class Command extends DORubyObject {
 
     // inherit initialize
 
+    /**
+     *
+     * @param args
+     * @return
+     */
     @JRubyMethod(optional = 1, rest = true)
     public IRubyObject execute_non_query(IRubyObject[] args) {
         Ruby runtime = getRuntime();
@@ -138,11 +154,9 @@ public class Command extends DORubyObject {
             long endTime = System.currentTimeMillis();
 
             if (usePS)
-                debug(driver.statementToString(sqlStatement), Long.valueOf(endTime
-                        - startTime));
+                debug(driver.statementToString(sqlStatement), Long.valueOf(endTime - startTime));
             else
-                debug(sqlText, Long.valueOf(endTime
-                        - startTime));
+                debug(sqlText, Long.valueOf(endTime - startTime));
 
             if (usePS && keys == null) {
                 if (driver.supportsJdbcGeneratedKeys()) {
@@ -195,6 +209,11 @@ public class Command extends DORubyObject {
                 new IRubyObject[] {this, affected_rows, insert_key });
     }
 
+    /**
+     *
+     * @param args
+     * @return
+     */
     @JRubyMethod(optional = 1, rest = true)
     public IRubyObject execute_reader(IRubyObject[] args) {
         Ruby runtime = getRuntime();
@@ -230,8 +249,7 @@ public class Command extends DORubyObject {
             resultSet = sqlStatement.executeQuery();
             long endTime = System.currentTimeMillis();
 
-            debug(driver.statementToString(sqlStatement), Long
-                    .valueOf(endTime - startTime));
+            debug(driver.statementToString(sqlStatement), Long.valueOf(endTime - startTime));
 
             metaData = resultSet.getMetaData();
             columnCount = metaData.getColumnCount();
@@ -335,6 +353,11 @@ public class Command extends DORubyObject {
         return reader;
     }
 
+    /**
+     *
+     * @param args
+     * @return
+     */
     @JRubyMethod(rest = true)
     public IRubyObject set_types(IRubyObject[] args) {
         Ruby runtime = getRuntime();
@@ -363,6 +386,10 @@ public class Command extends DORubyObject {
 
     // ---------------------------------------------------------- HELPER METHODS
 
+    /**
+     *
+     * @param conn
+     */
     private void checkConnectionNotClosed(java.sql.Connection conn) {
         try {
             if (conn == null || conn.isClosed()) {
@@ -395,6 +422,13 @@ public class Command extends DORubyObject {
         }
     }
 
+    /**
+     *
+     * @param runtime
+     * @param sqle
+     * @param statement
+     * @return
+     */
     private RaiseException newQueryError(Ruby runtime, SQLException sqle,
             Statement statement) {
         // TODO: provide an option to display extended debug information, for

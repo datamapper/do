@@ -5,6 +5,10 @@ public class DoPostgresExtService extends AbstractDataObjectsExtService {
 
     private final static DriverDefinition driver = new PostgresDriverDefinition();
 
+    /**
+     * 
+     * @return
+     */
     @Override
     public DriverDefinition getDriverDefinition() {
         return driver;

@@ -50,6 +50,12 @@ public final class Connection extends DORubyObject {
         }
     };
 
+    /**
+     *
+     * @param runtime
+     * @param driver
+     * @return
+     */
     public static RubyClass createConnectionClass(final Ruby runtime,
             final DriverDefinition driver) {
         RubyModule doModule = runtime.getModule(DATA_OBJECTS_MODULE_NAME);
@@ -74,11 +80,22 @@ public final class Connection extends DORubyObject {
         return connectionClass;
     }
 
+    /**
+     *
+     * @param runtime
+     * @param klass
+     */
     private Connection(final Ruby runtime, final RubyClass klass) {
         super(runtime, klass);
     }
 
     // -------------------------------------------------- DATAOBJECTS PUBLIC API
+
+    /**
+     *
+     * @param uri
+     * @return
+     */
     @JRubyMethod(required = 1)
     public IRubyObject initialize(final IRubyObject uri) {
         // System.out.println("============== initialize called " + uri);
@@ -210,6 +227,10 @@ public final class Connection extends DORubyObject {
         return runtime.getTrue();
     }
 
+    /**
+     *
+     * @return
+     */
     @JRubyMethod
     public IRubyObject dispose() {
         // System.out.println("============== dispose called");
@@ -232,12 +253,22 @@ public final class Connection extends DORubyObject {
 
     // ------------------------------------------------ ADDITIONAL JRUBY METHODS
 
+    /**
+     *
+     * @param value
+     * @return
+     */
     @JRubyMethod(required = 1)
     public IRubyObject quote_string(final IRubyObject value) {
         String quoted = driver.quoteString(value.asJavaString());
         return getRuntime().newString(quoted);
     }
 
+    /**
+     *
+     * @param value
+     * @return
+     */
     @JRubyMethod(required = 1)
     public IRubyObject quote_byte_array(final IRubyObject value) {
         String quoted = driver.quoteByteArray(this, value);
@@ -246,6 +277,10 @@ public final class Connection extends DORubyObject {
 
     // ------------------------------------------------- PUBLIC JAVA API METHODS
 
+    /**
+     *
+     * @return
+     */
     public java.sql.Connection getInternalConnection() {
         return sqlConnection;
     }

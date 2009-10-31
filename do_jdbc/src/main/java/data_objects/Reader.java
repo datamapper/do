@@ -38,6 +38,12 @@ public class Reader extends DORubyObject {
         }
     };
 
+    /**
+     * 
+     * @param runtime
+     * @param driver
+     * @return
+     */
     public static RubyClass createReaderClass(final Ruby runtime,
             DriverDefinition driver) {
         RubyModule doModule = runtime.getModule(DATA_OBJECTS_MODULE_NAME);
@@ -51,6 +57,11 @@ public class Reader extends DORubyObject {
         return readerClass;
     }
 
+    /**
+     *
+     * @param runtime
+     * @param klass
+     */
     private Reader(Ruby runtime, RubyClass klass) {
         super(runtime, klass);
     }
@@ -58,6 +69,11 @@ public class Reader extends DORubyObject {
     // -------------------------------------------------- DATAOBJECTS PUBLIC API
 
     // default initialize
+
+    /**
+     *
+     * @return
+     */
     @JRubyMethod
     public IRubyObject close() {
         Ruby runtime = getRuntime();
@@ -145,6 +161,10 @@ public class Reader extends DORubyObject {
         }
     }
 
+    /**
+     *
+     * @return
+     */
     @JRubyMethod
     public IRubyObject values() {
         Ruby runtime = getRuntime();
@@ -157,11 +177,19 @@ public class Reader extends DORubyObject {
         return (values != null) ? values : runtime.getNil();
     }
 
+    /**
+     *
+     * @return
+     */
     @JRubyMethod
     public IRubyObject fields() {
         return api.getInstanceVariable(this, "@fields");
     }
 
+    /**
+     *
+     * @return
+     */
     @JRubyMethod
     public IRubyObject field_count() {
         return api.getInstanceVariable(this, "@field_count");
@@ -169,10 +197,18 @@ public class Reader extends DORubyObject {
 
     // ------------------------------------------------- PUBLIC JAVA API METHODS
 
+    /**
+     *
+     * @return
+     */
     public ResultSet getResultSet() {
         return resultSet;
     }
 
+    /**
+     * 
+     * @param resultSet
+     */
     public void setResultset(ResultSet resultSet) {
         this.resultSet = resultSet;
     }

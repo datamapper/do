@@ -36,10 +36,20 @@ public class OracleDriverDefinition extends AbstractDriverDefinition {
     public final static String RUBY_MODULE_NAME = "Oracle";
     public final static String JDBC_DRIVER = "oracle.jdbc.OracleDriver";
 
+    /**
+     *
+     */
     public OracleDriverDefinition() {
         super(URI_SCHEME, JDBC_URI_SCHEME, RUBY_MODULE_NAME, JDBC_DRIVER);
     }
 
+    /**
+     *
+     * @param type
+     * @param precision
+     * @param scale
+     * @return
+     */
     @Override
     public RubyType jdbcTypeToRubyType(int type, int precision, int scale) {
         RubyType primitiveType;
@@ -70,6 +80,16 @@ public class OracleDriverDefinition extends AbstractDriverDefinition {
         return primitiveType;
     }
 
+    /**
+     *
+     * @param runtime
+     * @param rs
+     * @param col
+     * @param type
+     * @return
+     * @throws SQLException
+     * @throws IOException
+     */
     @Override
     protected IRubyObject doGetTypecastResultSetValue(Ruby runtime,
             ResultSet rs, int col, RubyType type) throws SQLException,
@@ -101,6 +121,13 @@ public class OracleDriverDefinition extends AbstractDriverDefinition {
         }
     }
 
+    /**
+     *
+     * @param ps
+     * @param arg
+     * @param idx
+     * @throws SQLException
+     */
     @Override
     public void setPreparedStatementParam(PreparedStatement ps,
             IRubyObject arg, int idx) throws SQLException {
@@ -116,6 +143,14 @@ public class OracleDriverDefinition extends AbstractDriverDefinition {
         }
     }
 
+    /**
+     *
+     * @param sqlText
+     * @param ps
+     * @param idx
+     * @return
+     * @throws SQLException
+     */
     @Override
     public boolean registerPreparedStatementReturnParam(String sqlText, PreparedStatement ps, int idx) throws SQLException {
         OraclePreparedStatement ops = (OraclePreparedStatement) ps;
@@ -128,6 +163,12 @@ public class OracleDriverDefinition extends AbstractDriverDefinition {
         return false;
     }
 
+    /**
+     *
+     * @param ps
+     * @return
+     * @throws SQLException
+     */
     @Override
     public long getPreparedStatementReturnParam(PreparedStatement ps) throws SQLException {
         OraclePreparedStatement ops = (OraclePreparedStatement) ps;
@@ -143,30 +184,52 @@ public class OracleDriverDefinition extends AbstractDriverDefinition {
         }
     }
 
+    /**
+     *
+     * @param sqlText
+     * @param args
+     * @return
+     */
     @Override
     public String prepareSqlTextForPs(String sqlText, IRubyObject[] args) {
         String newSqlText = sqlText.replaceFirst(":insert_id", "?");
         return newSqlText;
     }
 
+    /**
+     *
+     * @return
+     */
     @Override
     public boolean supportsJdbcGeneratedKeys()
     {
         return false;
     }
 
+    /**
+     * 
+     * @return
+     */
     @Override
     public boolean supportsJdbcScrollableResultSets() {
         // when set to true then getDouble and getBigDecimal is failing on BINARY_DOUBLE and BINARY_FLOAT columns
         return false;
     }
 
+    /**
+     *
+     * @return
+     */
     @Override
     public boolean supportsConnectionEncodings()
     {
         return false;
     }
 
+    /**
+     *
+     * @return
+     */
     @Override
     public Properties getDefaultConnectionProperties() {
         Properties props = new Properties();
@@ -177,6 +240,13 @@ public class OracleDriverDefinition extends AbstractDriverDefinition {
         return props;
     }
 
+    /**
+     *
+     * @param doConn
+     * @param conn
+     * @param query
+     * @throws SQLException
+     */
     @Override
     public void afterConnectionCallback(IRubyObject doConn, Connection conn, Map<String, String> query)
             throws SQLException {
@@ -192,6 +262,11 @@ public class OracleDriverDefinition extends AbstractDriverDefinition {
             exec(conn, "alter session set time_zone = '"+time_zone+"'");
     }
 
+    /**
+     *
+     * @param s
+     * @return
+     */
     @Override
     public String statementToString(Statement s) {
         // String sqlText = ((oracle.jdbc.driver.OraclePreparedStatement) s).getOriginalSql();
@@ -204,6 +279,12 @@ public class OracleDriverDefinition extends AbstractDriverDefinition {
         return sqlText;
     }
 
+    /**
+     *
+     * @param obj
+     * @param field
+     * @return
+     */
     private Object getFieldValue(Object obj, String field) {
         Class c = obj.getClass();
         while (c != null) {
@@ -220,7 +301,13 @@ public class OracleDriverDefinition extends AbstractDriverDefinition {
         return null;
     }
 
-    // for execution of session initialization SQL statements
+    /**
+     *  For execution of session initialization SQL statements
+     *
+     * @param conn
+     * @param sql
+     * @throws SQLException
+     */
     private void exec(Connection conn, String sql)
             throws SQLException {
         Statement s = null;

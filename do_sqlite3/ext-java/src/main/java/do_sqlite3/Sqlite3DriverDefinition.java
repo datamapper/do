@@ -33,14 +33,27 @@ public class Sqlite3DriverDefinition extends AbstractDriverDefinition {
     public final static String RUBY_MODULE_NAME = "Sqlite3";
     public final static String JDBC_DRIVER = "org.sqlite.JDBC";
 
+    /**
+     *
+     */
     public Sqlite3DriverDefinition() {
         super(URI_SCHEME, JDBC_URI_SCHEME, RUBY_MODULE_NAME, JDBC_DRIVER);
     }
 
+    /**
+     *
+     * @param date
+     * @return
+     */
     public static DateTime toDate(String date) {
         return DATE_FORMAT.parseDateTime(date.replaceFirst("T.*", ""));
     }
 
+    /**
+     *
+     * @param stamp
+     * @return
+     */
     public static DateTime toTimestamp(String stamp) {
         DateTimeFormatter formatter = stamp.contains("T") ? TIMESTAMP_FORMAT : DATE_FORMAT;// "yyyy-MM-dd'T'HH:mm:ssZ"
                                                                                            // :
@@ -48,11 +61,26 @@ public class Sqlite3DriverDefinition extends AbstractDriverDefinition {
         return formatter.parseDateTime(stamp);
     }
 
+    /**
+     *
+     * @param time
+     * @return
+     */
     public static DateTime toTime(String time) {
         DateTimeFormatter formatter = time.contains(" ") ? DATE_TIME_FORMAT : (time.contains("T") ? TIMESTAMP_FORMAT : DATE_FORMAT);
         return formatter.parseDateTime(time);
     }
 
+    /**
+     *
+     * @param runtime
+     * @param rs
+     * @param col
+     * @param type
+     * @return
+     * @throws SQLException
+     * @throws IOException
+     */
     @Override
     protected IRubyObject doGetTypecastResultSetValue(Ruby runtime,
             ResultSet rs, int col, RubyType type) throws SQLException,
@@ -114,6 +142,13 @@ public class Sqlite3DriverDefinition extends AbstractDriverDefinition {
         }
     }
 
+    /**
+     *
+     * @param ps
+     * @param arg
+     * @param idx
+     * @throws SQLException
+     */
     @Override
     public void setPreparedStatementParam(PreparedStatement ps,
             IRubyObject arg, int idx) throws SQLException {
@@ -144,31 +179,60 @@ public class Sqlite3DriverDefinition extends AbstractDriverDefinition {
         }
     }
 
+    /**
+     *
+     * @return
+     */
     @Override
     public boolean supportsJdbcGeneratedKeys() {
         return true;
     }
 
+    /**
+     *
+     * @return
+     */
     @Override
     public boolean supportsJdbcScrollableResultSets() {
         return false; // TODO
     }
 
+    /**
+     *
+     * @return
+     */
     @Override
     public boolean supportsConnectionPrepareStatementMethodWithGKFlag() {
         return false;
     }
 
+    /**
+     *
+     * @param sql
+     * @param param
+     * @return
+     */
     private String replace(String sql, Object param)
     {
         return sql.replaceFirst("[?]", param.toString());
     }
 
+    /**
+     *
+     * @param sql
+     * @param param
+     * @return
+     */
     private String replace(String sql, String param)
     {
         return sql.replaceFirst("[?]", "'" + param.toString() + "'");
     }
 
+    /**
+     *
+     * @param s
+     * @return
+     */
     @Override
     public String statementToString(Statement s)
     {

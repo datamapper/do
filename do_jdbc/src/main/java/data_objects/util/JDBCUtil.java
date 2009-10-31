@@ -56,7 +56,11 @@ public final class JDBCUtil {
         }
     }
 
-    // private constructor
+
+    /**
+     * Private constructor
+     *  
+     */
     private JDBCUtil() {
     }
 

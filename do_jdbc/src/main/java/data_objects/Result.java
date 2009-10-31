@@ -30,6 +30,12 @@ public class Result extends RubyObject {
         }
     };
 
+    /**
+     *
+     * @param runtime
+     * @param driver
+     * @return
+     */
     public static RubyClass createResultClass(final Ruby runtime, DriverDefinition driver){
         RubyModule doModule = runtime.getModule(DATA_OBJECTS_MODULE_NAME);
         RubyClass superClass = doModule.getClass(RUBY_CLASS_NAME);
@@ -41,6 +47,11 @@ public class Result extends RubyObject {
         return resultClass;
     }
 
+    /**
+     * 
+     * @param runtime
+     * @param klass
+     */
     private Result(Ruby runtime, RubyClass klass) {
         super(runtime, klass);
     }    // inherit initialize

@@ -6,6 +6,10 @@ public class DoSqlite3ExtService extends AbstractDataObjectsExtService {
 
     private final static DriverDefinition driver = new Sqlite3DriverDefinition();
 
+    /**
+     *
+     * @return
+     */
     @Override
     public DriverDefinition getDriverDefinition() {
         return driver;

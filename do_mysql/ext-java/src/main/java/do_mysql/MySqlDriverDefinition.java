@@ -24,10 +24,23 @@ public class MySqlDriverDefinition extends AbstractDriverDefinition {
     private final static String UTF8_ENCODING = "UTF-8";
     public final static String JDBC_DRIVER = "com.mysql.jdbc.Driver";
 
+    /**
+     *
+     */
     public MySqlDriverDefinition() {
         super(URI_SCHEME, RUBY_MODULE_NAME, JDBC_DRIVER);
     }
 
+    /**
+     *
+     * @param runtime
+     * @param rs
+     * @param col
+     * @param type
+     * @return
+     * @throws SQLException
+     * @throws IOException
+     */
     @Override
     protected IRubyObject doGetTypecastResultSetValue(Ruby runtime,
             ResultSet rs, int col, RubyType type) throws SQLException,
@@ -44,6 +57,13 @@ public class MySqlDriverDefinition extends AbstractDriverDefinition {
         }
     }
 
+    /**
+     *
+     * @param ps
+     * @param arg
+     * @param idx
+     * @throws SQLException
+     */
     @Override
     public void setPreparedStatementParam(PreparedStatement ps,
             IRubyObject arg, int idx) throws SQLException {
@@ -59,24 +79,40 @@ public class MySqlDriverDefinition extends AbstractDriverDefinition {
         }
     }
 
+    /**
+     *
+     * @return
+     */
     @Override
     public boolean supportsJdbcGeneratedKeys()
     {
         return true;
     }
 
+    /**
+     *
+     * @return
+     */
     @Override
     public boolean supportsJdbcScrollableResultSets()
     {
         return true;
     }
 
+    /**
+     *
+     * @return
+     */
     @Override
     public boolean supportsConnectionEncodings()
     {
         return true;
     }
 
+    /**
+     *
+     * @return
+     */
     @Override
     public Properties getDefaultConnectionProperties() {
         Properties props = new Properties();
@@ -94,11 +130,25 @@ public class MySqlDriverDefinition extends AbstractDriverDefinition {
         return props;
     }
 
+    /**
+     *
+     * @param props
+     * @param encodingName
+     */
     @Override
     public void setEncodingProperty(Properties props, String encodingName) {
         props.put("characterEncoding", encodingName);
     }
 
+    /**
+     *
+     * @param runtime
+     * @param connection
+     * @param url
+     * @param props
+     * @return
+     * @throws SQLException
+     */
     @Override
     public java.sql.Connection getConnectionWithEncoding(Ruby runtime,
             IRubyObject connection, String url, Properties props) throws SQLException {
@@ -126,6 +176,11 @@ public class MySqlDriverDefinition extends AbstractDriverDefinition {
         return conn;
     }
 
+    /**
+     * 
+     * @param s
+     * @return
+     */
     @Override
     public String statementToString(Statement s) {
         return s.toString().replaceFirst(".*].-\\s*", "");

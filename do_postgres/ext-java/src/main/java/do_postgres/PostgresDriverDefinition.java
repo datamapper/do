@@ -28,17 +28,29 @@ public class PostgresDriverDefinition extends AbstractDriverDefinition {
         super(URI_SCHEME, JDBC_URI_SCHEME, RUBY_MODULE_NAME, JDBC_DRIVER);
     }
 
+    /**
+     *
+     * @return
+     */
     @Override
     public boolean supportsJdbcGeneratedKeys()
     {
         return false;
     }
 
+    /**
+     *
+     * @return
+     */
     @Override
     public boolean supportsJdbcScrollableResultSets() {
         return true;
     }
 
+    /**
+     *
+     * @return
+     */
     @Override
     public Properties getDefaultConnectionProperties() {
         Properties props = new Properties();
@@ -52,6 +64,13 @@ public class PostgresDriverDefinition extends AbstractDriverDefinition {
         return props;
     }
 
+    /**
+     *
+     * @param ps
+     * @param arg
+     * @param idx
+     * @throws SQLException
+     */
     @Override
     public void setPreparedStatementParam(PreparedStatement ps,
             IRubyObject arg, int idx) throws SQLException {
@@ -85,12 +104,25 @@ public class PostgresDriverDefinition extends AbstractDriverDefinition {
         }
     }
 
+    /**
+     *
+     * @param doConn
+     * @param conn
+     * @param query
+     * @throws SQLException
+     */
     @Override
     public void afterConnectionCallback(IRubyObject doConn,
             Connection conn, Map<String, String> query) throws SQLException {
         checkStandardConformingStrings(doConn, conn);
     }
 
+    /**
+     *
+     * @param doConn
+     * @param conn
+     * @throws SQLException
+     */
     private void checkStandardConformingStrings(IRubyObject doConn, Connection conn) throws SQLException {
         Statement st = null;
         boolean standardConformingStrings = false;
@@ -110,6 +142,12 @@ public class PostgresDriverDefinition extends AbstractDriverDefinition {
             RubyBoolean.newBoolean(doConn.getRuntime(), standardConformingStrings));
     }
 
+    /**
+     *
+     * @param doConn
+     * @param value
+     * @return
+     */
     @Override
     public String quoteByteArray(IRubyObject doConn, IRubyObject value) {
         boolean stdStrings = getObjectAdapter().getInstanceVariable(doConn, "@standard_conforming_strings").isTrue();
@@ -118,6 +156,12 @@ public class PostgresDriverDefinition extends AbstractDriverDefinition {
         return escapeBytes(stdStrings, bytes);
     }
 
+    /**
+     *
+     * @param stdStrings
+     * @param bytes
+     * @return
+     */
     private String escapeBytes(boolean stdStrings, byte[] bytes) {
         char[] output = new char[calcEscapedLength(stdStrings, bytes)];
         int offset = 1;
@@ -150,6 +194,12 @@ public class PostgresDriverDefinition extends AbstractDriverDefinition {
         return new String(output);
     }
 
+    /**
+     *
+     * @param stdStrings
+     * @param bytes
+     * @return
+     */
     private int calcEscapedLength(boolean stdStrings, byte[] bytes) {
         int length = 2;
         int backSlashLength = stdStrings ? 1 : 2;

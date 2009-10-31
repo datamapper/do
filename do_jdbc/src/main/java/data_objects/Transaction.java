@@ -33,6 +33,12 @@ public class Transaction extends DORubyObject {
         }
     };
 
+    /**
+     *
+     * @param runtime
+     * @param driver
+     * @return
+     */
     public static RubyClass createTransactionClass(final Ruby runtime,
             DriverDefinition driver) {
         RubyModule doModule = runtime.getModule(DATA_OBJECTS_MODULE_NAME);
@@ -46,6 +52,11 @@ public class Transaction extends DORubyObject {
         return transactionClass;
     }
 
+    /**
+     *
+     * @param runtime
+     * @param klass
+     */
     private Transaction(Ruby runtime, RubyClass klass) {
         super(runtime, klass);
     }
@@ -116,6 +127,10 @@ public class Transaction extends DORubyObject {
 
     // ---------------------------------------------------------- HELPER METHODS
 
+    /**
+     * 
+     * @return
+     */
     private java.sql.Connection getConnection() {
         Connection connection_instance = (Connection) api.getInstanceVariable(this,
                 "@connection");

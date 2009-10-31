@@ -23,10 +23,20 @@ public class HsqldbDriverDefinition extends AbstractDriverDefinition {
     public final static String RUBY_MODULE_NAME = "Hsqldb";
     public final static String JDBC_DRIVER = "org.hsqldb.jdbcDriver";
 
+    /**
+     *
+     */
     public HsqldbDriverDefinition() {
         super(URI_SCHEME, RUBY_MODULE_NAME, JDBC_DRIVER);
     }
 
+    /**
+     *
+     * @param ps
+     * @param arg
+     * @param idx
+     * @throws SQLException
+     */
     @Override
     public void setPreparedStatementParam(PreparedStatement ps,
             IRubyObject arg, int idx) throws SQLException {
@@ -42,6 +52,10 @@ public class HsqldbDriverDefinition extends AbstractDriverDefinition {
         }
     }
 
+    /**
+     *
+     * @return
+     */
     @Override
     public boolean supportsJdbcGeneratedKeys()
     {
@@ -50,6 +64,7 @@ public class HsqldbDriverDefinition extends AbstractDriverDefinition {
 
     /**
      * Needed if 1.9.x driver is not used (still in beta)
+     * 
      * @param connection
      * @return
      */
@@ -63,28 +78,53 @@ public class HsqldbDriverDefinition extends AbstractDriverDefinition {
     }
 
 
+    /**
+     *
+     * @return
+     */
     @Override
     public boolean supportsConnectionPrepareStatementMethodWithGKFlag()
     {
         return false;
     }
 
+    /**
+     *
+     * @return
+     */
     @Override
     public boolean supportsJdbcScrollableResultSets()
     {
         return true;
     }
 
+    /**
+     *
+     * @param sql
+     * @param param
+     * @return
+     */
     private String replace(String sql, Object param)
     {
         return sql.replaceFirst("[?]", param.toString());
     }
 
+    /**
+     *
+     * @param sql
+     * @param param
+     * @return
+     */
     private String replace(String sql, String param)
     {
         return sql.replaceFirst("[?]", "'" + param.toString() + "'");
     }
 
+    /**
+     *
+     * @param s
+     * @return
+     */
     @Override
     public String statementToString(Statement s)
     {
@@ -116,6 +156,13 @@ public class HsqldbDriverDefinition extends AbstractDriverDefinition {
         }
     }
 
+    /**
+     *
+     * @param connection_uri
+     * @return
+     * @throws URISyntaxException
+     * @throws UnsupportedEncodingException
+     */
     @Override
     public URI parseConnectionURI(IRubyObject connection_uri)
         throws URISyntaxException, UnsupportedEncodingException {

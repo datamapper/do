@@ -65,10 +65,23 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
     private final String moduleName;
     private final Driver driver;
 
+    /**
+     *
+     * @param scheme
+     * @param moduleName
+     * @param jdbcDriver
+     */
     protected AbstractDriverDefinition(String scheme, String moduleName, String jdbcDriver) {
         this(scheme, scheme, moduleName, jdbcDriver);
     }
 
+    /**
+     *
+     * @param scheme
+     * @param jdbcScheme
+     * @param moduleName
+     * @param jdbcDriver
+     */
     protected AbstractDriverDefinition(String scheme, String jdbcScheme,
             String moduleName, String jdbcDriver) {
         this.scheme = scheme;
@@ -88,18 +101,40 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
         }
     }
 
+    /**
+     *
+     * @return
+     */
     public String getModuleName() {
         return this.moduleName;
     }
 
+    /**
+     *
+     * @return
+     */
     public String getErrorName() {
         return this.moduleName + "Error";
     }
 
+    /**
+     *
+     * @param uri jdbc uri for which a connection is created
+     * @param properties further properties needed to create a cconnection, i.e. username + password
+     * @return
+     * @throws SQLException
+     */
     public Connection getConnection(String uri, Properties properties) throws SQLException{
         return driver.connect(uri, properties);
     }
 
+    /**
+     *
+     * @param connection_uri
+     * @return
+     * @throws URISyntaxException
+     * @throws UnsupportedEncodingException
+     */
     @SuppressWarnings("unchecked")
     public URI parseConnectionURI(IRubyObject connection_uri)
             throws URISyntaxException, UnsupportedEncodingException {
@@ -161,6 +196,10 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
         return uri;
     }
 
+    /**
+     *
+     * @param scheme
+     */
     protected void verifyScheme(String scheme) {
         if (!this.scheme.equals(scheme)) {
             throw new RuntimeException("scheme mismatch, expected: "
@@ -190,15 +229,34 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
         return querySb.toString();
     }
 
+    /**
+     *
+     * @param runtime
+     * @param message
+     * @return
+     */
     public RaiseException newDriverError(Ruby runtime, String message) {
         RubyClass driverError = runtime.getClass(getErrorName());
         return new RaiseException(runtime, driverError, message, true);
     }
 
+    /**
+     *
+     * @param runtime
+     * @param exception
+     * @return
+     */
     public RaiseException newDriverError(Ruby runtime, SQLException exception) {
         return newDriverError(runtime, exception, null);
     }
 
+    /**
+     *
+     * @param runtime
+     * @param exception
+     * @param statement
+     * @return
+     */
     public RaiseException newDriverError(Ruby runtime, SQLException exception,
             java.sql.Statement statement) {
         RubyClass driverError = runtime.getClass(getErrorName());
@@ -219,14 +277,35 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
         return new RaiseException(runtime, driverError, sb.toString(), true);
     }
 
+    /**
+     *
+     * @return
+     */
     public RubyObjectAdapter getObjectAdapter() {
         return API;
     }
 
+    /**
+     *
+     * @param type
+     * @param precision
+     * @param scale
+     * @return
+     */
     public RubyType jdbcTypeToRubyType(int type, int precision, int scale) {
         return RubyType.jdbcTypeToRubyType(type, scale);
     }
 
+    /**
+     *
+     * @param runtime
+     * @param rs
+     * @param col
+     * @param type
+     * @return
+     * @throws SQLException
+     * @throws IOException
+     */
     public final IRubyObject getTypecastResultSetValue(Ruby runtime,
             ResultSet rs, int col, RubyType type) throws SQLException,
             IOException {
@@ -240,6 +319,16 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
         return doGetTypecastResultSetValue(runtime, rs, col, type);
     }
 
+    /**
+     *
+     * @param runtime
+     * @param rs
+     * @param col
+     * @param type
+     * @return
+     * @throws SQLException
+     * @throws IOException
+     */
     protected IRubyObject doGetTypecastResultSetValue(Ruby runtime,
             ResultSet rs, int col, RubyType type) throws SQLException,
             IOException {
@@ -390,6 +479,13 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
         }
     }
 
+    /**
+     *
+     * @param ps
+     * @param arg
+     * @param idx
+     * @throws SQLException
+     */
     public void setPreparedStatementParam(PreparedStatement ps,
             IRubyObject arg, int idx) throws SQLException {
         switch (RubyType.getRubyType(arg.getType().getName())) {
@@ -453,53 +549,124 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
         }
     }
 
+    /**
+     *
+     * @param sqlText
+     * @param ps
+     * @param idx
+     * @return
+     * @throws SQLException
+     */
     public boolean registerPreparedStatementReturnParam(String sqlText, PreparedStatement ps, int idx) throws SQLException {
         return false;
     }
 
+    /**
+     *
+     * @param ps
+     * @return
+     * @throws SQLException
+     */
     public long getPreparedStatementReturnParam(PreparedStatement ps) throws SQLException {
         return 0;
     }
 
+    /**
+     *
+     * @param sqlText
+     * @param args
+     * @return
+     */
     public String prepareSqlTextForPs(String sqlText, IRubyObject[] args) {
         return sqlText;
     }
 
+    /**
+     *
+     * @return
+     */
     public abstract boolean supportsJdbcGeneratedKeys();
 
+    /**
+     *
+     * @return
+     */
     public abstract boolean supportsJdbcScrollableResultSets();
 
+    /**
+     *
+     * @return
+     */
     public boolean supportsConnectionEncodings() {
         return false;
     }
 
+    /**
+     *
+     * @return
+     */
     public boolean supportsConnectionPrepareStatementMethodWithGKFlag() {
         return true;
     }
 
+    /**
+     *
+     * @param connection
+     * @return
+     */
     public ResultSet getGeneratedKeys(Connection connection) {
         return null;
     }
 
+    /**
+     *
+     * @return
+     */
     public Properties getDefaultConnectionProperties() {
         return new Properties();
     }
 
+    /**
+     *
+     * @param doConn
+     * @param conn
+     * @param query
+     * @throws SQLException
+     */
     public void afterConnectionCallback(IRubyObject doConn, Connection conn,
             Map<String, String> query) throws SQLException {
         // do nothing
     }
 
+    /**
+     *
+     * @param props
+     * @param encodingName
+     */
     public void setEncodingProperty(Properties props, String encodingName) {
         // do nothing
     }
 
+    /**
+     *
+     * @param runtime
+     * @param connection
+     * @param url
+     * @param props
+     * @return
+     * @throws SQLException
+     */
     public Connection getConnectionWithEncoding(Ruby runtime, IRubyObject connection,
             String url, Properties props) throws SQLException {
         throw new UnsupportedOperationException("This method only returns a method"
                 + " for drivers that support specifiying an encoding.");
     }
 
+    /**
+     *
+     * @param str
+     * @return
+     */
     public String quoteString(String str) {
         StringBuffer quotedValue = new StringBuffer(str.length() + 2);
         quotedValue.append("\'");
@@ -508,14 +675,30 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
         return quotedValue.toString();
     }
 
+    /**
+     *
+     * @param connection
+     * @param value
+     * @return
+     */
     public String quoteByteArray(IRubyObject connection, IRubyObject value) {
         return quoteString(value.asJavaString());
     }
 
+    /**
+     *
+     * @param s
+     * @return
+     */
     public String statementToString(Statement s) {
         return s.toString();
     }
 
+    /**
+     *
+     * @param date
+     * @return
+     */
     protected static DateTime sqlDateToDateTime(Date date) {
         if (date == null)
             return null;
@@ -524,6 +707,11 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
                         0, 0, 0, 0);
     }
 
+    /**
+     *
+     * @param ts
+     * @return
+     */
     protected static DateTime sqlTimestampToDateTime(Timestamp ts) {
         if (ts == null)
             return null;
@@ -531,6 +719,12 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
                     ts.getHours(), ts.getMinutes(), ts.getSeconds(), ts.getNanos()/1000000);
     }
 
+    /**
+     *
+     * @param runtime
+     * @param stamp
+     * @return
+     */
     protected static IRubyObject prepareRubyDateTimeFromSqlTimestamp(
             Ruby runtime, DateTime stamp) {
 
@@ -558,6 +752,12 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
                         rbOffset });
     }
 
+    /**
+     *
+     * @param runtime
+     * @param time
+     * @return
+     */
     protected static IRubyObject prepareRubyTimeFromSqlTime(Ruby runtime,
             DateTime time) {
         // TODO: why in this case nil is returned?
@@ -569,6 +769,12 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
         return rbTime;
     }
 
+    /**
+     *
+     * @param runtime
+     * @param date
+     * @return
+     */
     protected static IRubyObject prepareRubyTimeFromSqlDate(Ruby runtime,
             Date date) {
 
@@ -579,6 +785,12 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
         return rbTime;
     }
 
+    /**
+     *
+     * @param runtime
+     * @param date
+     * @return
+     */
     public static IRubyObject prepareRubyDateFromSqlDate(Ruby runtime,
             DateTime date) {
 
@@ -593,10 +805,20 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
                         runtime.newFixnum(date.getDayOfMonth()) });
     }
 
+    /**
+     *
+     * @param obj
+     * @return
+     */
     private static String stringOrNull(IRubyObject obj) {
         return (!obj.isNil()) ? obj.asJavaString() : null;
     }
 
+    /**
+     *
+     * @param obj
+     * @return
+     */
     private static int intOrMinusOne(IRubyObject obj) {
         return (!obj.isNil()) ? RubyFixnum.fix2int(obj) : -1;
     }
