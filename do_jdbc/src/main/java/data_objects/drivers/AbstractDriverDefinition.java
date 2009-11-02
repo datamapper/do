@@ -734,8 +734,7 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
         if (date == null)
             return null;
         else
-            return new DateTime(date.getYear()+1900, date.getMonth()+1, date.getDate(),
-                        0, 0, 0, 0);
+            return new DateTime(date);
     }
 
     /**
@@ -746,8 +745,8 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
     protected static DateTime sqlTimestampToDateTime(Timestamp ts) {
         if (ts == null)
             return null;
-        return new DateTime(ts.getYear()+1900, ts.getMonth()+1, ts.getDate(),
-                    ts.getHours(), ts.getMinutes(), ts.getSeconds(), ts.getNanos()/1000000);
+        else
+            return new DateTime(ts);
     }
 
     /**
