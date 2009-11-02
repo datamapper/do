@@ -160,35 +160,19 @@ public final class Connection extends DORubyObject {
                                                   + jndiName + "\n\t" + ex.getLocalizedMessage());
                 }
             } else {
-                String jdbcUri;
                 Properties props = driver.getDefaultConnectionProperties();
 
-                if (connectionUri.getUserInfo() != null || connectionUri.toString().contains("@")) {
-                    String userInfo =
-                            connectionUri.toString().replaceFirst(".*://", "").replaceFirst("@.*", "");
-                    jdbcUri = connectionUri.toString().replaceFirst(userInfo + "@", "");
-                    if (!userInfo.contains(":")) {
-                        userInfo += ":";
-                    }
+                String jdbcUri = driver.getJdbcUri(connectionUri);
 
-                    // Replace . with : in scheme name - necessary for Oracle scheme oracle:thin
-                    // : cannot be used in JDBC_URI_SCHEME as then it is identified as opaque URI
-                    jdbcUri = jdbcUri.replaceFirst("^([a-z]+)(\\.)", "$1:");
-
-                    if (!jdbcUri.startsWith("jdbc:")) {
-                        jdbcUri = "jdbc:" + jdbcUri;
-                    }
-                    String username = userInfo.substring(0, userInfo.indexOf(":"));
-                    String password = userInfo.substring(userInfo.indexOf(":") + 1);
-
-                    props.put("user", username);
-                    props.put("password", password);
-
-                } else {
-                    jdbcUri = connectionUri.toString();
-                    if (!jdbcUri.startsWith("jdbc:")) {
-                        jdbcUri = "jdbc:" + jdbcUri;
-                    }
+                String userInfo = connectionUri.getUserInfo();
+                if (userInfo != null) {
+                  if (!userInfo.contains(":")) {
+                      userInfo += ":";
+                  }
+                  String username = userInfo.substring(0, userInfo.indexOf(":"));
+                  String password = userInfo.substring(userInfo.indexOf(":") + 1);
+                  props.put("user", username);
+                  props.put("password", password);
                 }
 
                 if (driver.supportsConnectionEncodings()) {

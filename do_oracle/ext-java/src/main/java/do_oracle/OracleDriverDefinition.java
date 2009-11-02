@@ -2,6 +2,7 @@ package do_oracle;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.net.URI;
 
 import java.sql.Connection;
 import java.sql.Statement;
@@ -237,6 +238,34 @@ public class OracleDriverDefinition extends AbstractDriverDefinition {
         // TODO: should clarify if this is needed for faster performance
         // props.put("SetFloatAndDoubleUseBinary", "true");
         return props;
+    }
+
+    /**
+     *
+     * @param connectionUri
+     * @return
+     */
+    @Override
+    public String getJdbcUri(URI connectionUri) {
+      String jdbcUri = connectionUri.toString();
+      if (jdbcUri.contains("@")) {
+          jdbcUri = connectionUri.toString().replaceFirst("://.*@", "://");
+      }
+
+      // Replace . with : in scheme name - necessary for Oracle scheme oracle:thin
+      // : cannot be used in JDBC_URI_SCHEME as then it is identified as opaque URI
+      jdbcUri = jdbcUri.replaceFirst("^([a-z]+)(\\.)", "$1:");
+
+      // Replace :// with :@// as @ is required in Oracle JDBC connect string
+      jdbcUri = jdbcUri.replaceFirst("://", ":@//");
+
+      // Remove options after ?
+      jdbcUri = jdbcUri.replaceFirst("\\?.*$", "");
+
+      if (!jdbcUri.startsWith("jdbc:")) {
+          jdbcUri = "jdbc:" + jdbcUri;
+      }
+      return jdbcUri;
     }
 
     /**

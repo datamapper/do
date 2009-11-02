@@ -196,6 +196,14 @@ public interface DriverDefinition {
     public Properties getDefaultConnectionProperties();
 
     /**
+     * Return database specific JDBC connection string from DataObjects URI
+     *
+     * @param connectionUri
+     * @return
+     */
+    public String getJdbcUri(URI connectionUri);
+
+    /**
      * Callback for setting connection properties after connection is established.
      *
      * @param doConn

@@ -638,6 +638,27 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
 
     /**
      *
+     * @param connectionUri
+     * @return
+     */
+    public String getJdbcUri(URI connectionUri) {
+      String jdbcUri = connectionUri.toString();
+      if (jdbcUri.contains("@")) {
+          jdbcUri = connectionUri.toString().replaceFirst("://.*@", "://");
+      }
+
+      // Replace . with : in scheme name - necessary for Oracle scheme oracle:thin
+      // : cannot be used in JDBC_URI_SCHEME as then it is identified as opaque URI
+      // jdbcUri = jdbcUri.replaceFirst("^([a-z]+)(\\.)", "$1:");
+
+      if (!jdbcUri.startsWith("jdbc:")) {
+          jdbcUri = "jdbc:" + jdbcUri;
+      }
+      return jdbcUri;
+    }
+
+    /**
+     *
      * @param doConn
      * @param conn
      * @param query
