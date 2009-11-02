@@ -6,7 +6,7 @@ public class DoHsqldbExtService extends AbstractDataObjectsExtService {
     private final static DriverDefinition driver = new HsqldbDriverDefinition();
 
     /**
-     * 
+     *
      * @return
      */
     @Override

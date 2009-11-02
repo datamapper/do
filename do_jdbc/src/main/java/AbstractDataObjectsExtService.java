@@ -21,7 +21,7 @@ import static data_objects.DataObjects.DATA_OBJECTS_MODULE_NAME;
 public abstract class AbstractDataObjectsExtService implements BasicLibraryService {
 
     /**
-     * 
+     *
      * @param runtime
      * @return
      * @throws IOException
@@ -51,7 +51,7 @@ public abstract class AbstractDataObjectsExtService implements BasicLibraryServi
     }
 
     /**
-     * 
+     *
      * @return
      */
     public abstract DriverDefinition getDriverDefinition();

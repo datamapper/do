@@ -128,7 +128,7 @@ public class Transaction extends DORubyObject {
     // ---------------------------------------------------------- HELPER METHODS
 
     /**
-     * 
+     *
      * @return
      */
     private java.sql.Connection getConnection() {

@@ -130,7 +130,7 @@ public interface DriverDefinition {
      * Necessary for Oracle INSERT ... RETURNING ... INTO ... statements
      *
      * @param ps
-     * @throws 
+     * @throws
      * @return return parameter (long value)
      */
     public long getPreparedStatementReturnParam(PreparedStatement ps) throws SQLException;
@@ -247,7 +247,7 @@ public interface DriverDefinition {
             String url, Properties props) throws SQLException;
 
     /**
-     * 
+     *
      * @param str
      * @return
      */

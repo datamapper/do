@@ -25,7 +25,7 @@ public class H2DriverDefinition extends AbstractDriverDefinition {
     }
 
     /**
-     * 
+     *
      * @return
      */
     @Override

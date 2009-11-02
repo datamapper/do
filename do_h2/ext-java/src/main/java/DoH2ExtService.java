@@ -6,7 +6,7 @@ public class DoH2ExtService extends AbstractDataObjectsExtService {
     private final static DriverDefinition driver = new H2DriverDefinition();
 
     /**
-     * 
+     *
      * @return
      */
     @Override

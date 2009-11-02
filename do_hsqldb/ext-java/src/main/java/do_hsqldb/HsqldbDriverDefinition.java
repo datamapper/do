@@ -64,7 +64,7 @@ public class HsqldbDriverDefinition extends AbstractDriverDefinition {
 
     /**
      * Needed if 1.9.x driver is not used (still in beta)
-     * 
+     *
      * @param connection
      * @return
      */

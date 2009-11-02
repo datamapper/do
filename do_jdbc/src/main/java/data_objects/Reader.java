@@ -39,7 +39,7 @@ public class Reader extends DORubyObject {
     };
 
     /**
-     * 
+     *
      * @param runtime
      * @param driver
      * @return
@@ -206,7 +206,7 @@ public class Reader extends DORubyObject {
     }
 
     /**
-     * 
+     *
      * @param resultSet
      */
     public void setResultset(ResultSet resultSet) {

@@ -48,7 +48,7 @@ public class Result extends RubyObject {
     }
 
     /**
-     * 
+     *
      * @param runtime
      * @param klass
      */

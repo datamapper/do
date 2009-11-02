@@ -65,7 +65,7 @@ public class DerbyDriverDefinition extends AbstractDriverDefinition {
     }
 
     /**
-     * 
+     *
      * @return
      */
     @Override

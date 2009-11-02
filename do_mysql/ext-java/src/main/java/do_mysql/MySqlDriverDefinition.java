@@ -177,7 +177,7 @@ public class MySqlDriverDefinition extends AbstractDriverDefinition {
     }
 
     /**
-     * 
+     *
      * @param s
      * @return
      */
