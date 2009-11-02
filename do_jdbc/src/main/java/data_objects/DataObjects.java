@@ -5,8 +5,14 @@ package data_objects;
  *
  * @author alexbcoles
  */
-public class DataObjects {
+final public class DataObjects {
 
     public final static String DATA_OBJECTS_MODULE_NAME = "DataObjects";
+
+    /**
+     * Private constructor
+     */
+    private DataObjects(){
+    }
 
 }
