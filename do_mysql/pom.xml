@@ -11,20 +11,7 @@
     <packaging>jar</packaging>
     <name>do_mysql</name>
     <description>A DataObjects.rb driver for MySQL</description>
-    <build>
-        <outputDirectory>pkg/classes</outputDirectory>
-        <sourceDirectory>ext-java/src/main/java</sourceDirectory>
-        <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <source>1.5</source>
-                    <target>1.5</target>
-                </configuration>
-            </plugin>
-        </plugins>
-    </build>
+
     <dependencies>
         <dependency>
             <groupId>${pom.parent.groupId}</groupId>
@@ -38,4 +25,12 @@
             <version>5.0.4</version>
         </dependency>
     </dependencies>
+    <profiles>
+        <profile>
+     <id>skip_mysql</id>
+     <properties>
+         <skipSpecs>true</skipSpecs>
+     </properties>
+ </profile>
+    </profiles>
 </project>

@@ -11,20 +11,6 @@
     <packaging>jar</packaging>
     <name>do_derby</name>
     <description>A DataObjects.rb driver for Derby</description>
-    <build>
-        <outputDirectory>pkg/classes</outputDirectory>
-        <sourceDirectory>ext-java/src/main/java</sourceDirectory>
-        <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <source>1.5</source>
-                    <target>1.5</target>
-                </configuration>
-            </plugin>
-        </plugins>
-    </build>
     <dependencies>
         <dependency>
             <groupId>${pom.parent.groupId}</groupId>
@@ -37,4 +23,12 @@
             <version>10.5.3.0_1</version>
         </dependency>
     </dependencies>
+    <profiles>
+        <profile>
+     <id>skip_derby</id>
+     <properties>
+         <skipSpecs>true</skipSpecs>
+     </properties>
+ </profile>
+    </profiles>
 </project>

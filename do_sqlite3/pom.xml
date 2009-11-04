@@ -11,20 +11,7 @@
     <packaging>jar</packaging>
     <name>do_sqlite3</name>
     <description>A DataObjects.rb driver for SQLite3</description>
-    <build>
-        <outputDirectory>pkg/classes</outputDirectory>
-        <sourceDirectory>ext-java/src/main/java</sourceDirectory>
-        <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <source>1.5</source>
-                    <target>1.5</target>
-                </configuration>
-            </plugin>
-        </plugins>
-    </build>
+
     <dependencies>
         <dependency>
             <groupId>${pom.parent.groupId}</groupId>
@@ -39,9 +26,23 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>org.sqlite</groupId>
-            <artifactId>sqlite3</artifactId>
-            <version>3.5.8</version>
+            <groupId>org.xerial</groupId>
+            <artifactId>sqlite-jdbc</artifactId>
+            <version>3.6.10</version>
+     <exclusions>
+              <exclusion>
+  <groupId>org.xerial.thirdparty</groupId>
+  <artifactId>nestedvm</artifactId>
+              </exclusion>
+     </exclusions>
         </dependency>
     </dependencies>
+    <profiles>
+        <profile>
+     <id>skip_sqlite3</id>
+     <properties>
+         <skipSpecs>true</skipSpecs>
+     </properties>
+ </profile>
+    </profiles>
 </project>

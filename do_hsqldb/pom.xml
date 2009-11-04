@@ -11,20 +11,7 @@
     <packaging>jar</packaging>
     <name>do_hsqldb</name>
     <description>A DataObjects.rb driver for HSQLDB</description>
-    <build>
-        <outputDirectory>pkg/classes</outputDirectory>
-        <sourceDirectory>ext-java/src/main/java</sourceDirectory>
-        <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <source>1.5</source>
-                    <target>1.5</target>
-                </configuration>
-            </plugin>
-        </plugins>
-    </build>
+
     <dependencies>
         <dependency>
             <groupId>${pom.parent.groupId}</groupId>
@@ -32,9 +19,24 @@
             <version>${pom.parent.version}</version>
         </dependency>
         <dependency>
+            <groupId>${pom.parent.groupId}</groupId>
+            <artifactId>do_jdbc</artifactId>
+            <version>${pom.parent.version}</version>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>hsqldb</groupId>
             <artifactId>hsqldb</artifactId>
             <version>1.8.0.7</version>
         </dependency>
     </dependencies>
+    <profiles>
+        <profile>
+     <id>skip_hsqldb</id>
+     <properties>
+         <skipSpecs>true</skipSpecs>
+     </properties>
+ </profile>
+    </profiles>
 </project>
