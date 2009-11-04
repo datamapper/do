@@ -19,6 +19,7 @@ describe DataObjects::Mysql::Connection do
   it_should_behave_like 'a Connection'
   it_should_behave_like 'a Connection with authentication support'
   it_should_behave_like 'a Connection with SSL support' unless JRUBY
+  it_should_behave_like 'a Connection via JDNI' if JRUBY
 
   if DataObjectsSpecHelpers.test_environment_supports_ssl?
 
