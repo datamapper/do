@@ -46,7 +46,20 @@ module DataObjects
         driver_name.capitalize
       end
 
-      DataObjects.const_get(driver_class)::Connection.new(conn_uri)
+      clazz = DataObjects.const_get(driver_class)::Connection
+      unless clazz.method_defined? :close
+        if (uri.scheme.to_sym == :java)
+          clazz.class_eval do
+            alias close dispose
+          end
+        else
+          clazz.class_eval do
+            include Pooling
+            alias close release
+          end
+        end
+      end
+      clazz.new(conn_uri)
     end
 
     # Ensure that all Connection subclasses handle pooling and logging uniformly.
@@ -61,10 +74,7 @@ module DataObjects
           instance
         end
 
-        include Pooling
         include Quoting
-
-        alias close release
       end
 
       if driver_module_name = target.name.split('::')[-2]

@@ -30,10 +30,12 @@ describe DataObjects::Connection do
     it "should return the Connection specified by the scheme" do
       c = DataObjects::Connection.new(Addressable::URI.parse('mock://localhost/database'))
       c.should be_kind_of(DataObjects::Mock::Connection)
-
-      c = DataObjects::Connection.new(Addressable::URI.parse('mock:jndi://jdbc/database'))
-      c.should be_kind_of(DataObjects::Mock::Connection)
+      c.should be_kind_of(DataObjects::Pooling)
     end
 
+    it "should return the Connection specefied by the scheme without pooling" do
+      c = DataObjects::Connection.new(Addressable::URI.parse('java://jdbc/database?scheme=mock2'))
+      c.should_not be_kind_of(DataObjects::Pooling)
+    end
   end
 end
