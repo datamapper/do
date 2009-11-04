@@ -101,8 +101,7 @@ module DataObjects
         end
 
         def self.new(*args)
-          pool_size = args.delete_at(1)
-          (@__pools[args] ||= __pool_lock.synchronize { pool_size.nil? ? Pool.new(self.pool_size, self, args) : (pool_size.to_i == 0 ? NoPool.new(self, args) : Pool.new(pool_size.to_i, self, args) )}).new
+          (@__pools[args] ||= __pool_lock.synchronize { Pool.new(self.pool_size, self, args) }).new
         end
 
         def self.__pools
@@ -121,23 +120,6 @@ module DataObjects
 
     def detach
       @__pool.delete(self) unless @__pool.nil?
-    end
-
-    class NoPool
-      def initialize(resource, args)
-        @resource = resource
-        @args = args
-      end    
-
-      def new
-        instance = @resource.__new(*@args)
-        raise InvalidResourceError.new("#{@resource} constructor created a nil object") if instance.nil?
-        instance
-      end
-
-      def release
-        dispose
-      end
     end
 
     class Pool

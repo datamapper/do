@@ -35,27 +35,5 @@ describe DataObjects::Connection do
       c.should be_kind_of(DataObjects::Mock::Connection)
     end
 
-    it "should set max_size as given in query part of URI" do
-      c = DataObjects::Connection.new(Addressable::URI.parse('mock://localhost/database?pool_max_size=2'))
-      c.instance_variable_get(:@__pool).instance_variable_get(:@max_size).should == 2
-    end
-
-    it "should have a NoPool if max_size == 0" do
-      c = DataObjects::Connection.new(Addressable::URI.parse('mock://localhost/database2?pool_max_size=0'))
-      c.instance_variable_get(:@__pool).should be_nil
-
-      cc = DataObjects::Connection.new(Addressable::URI.parse('mock://localhost/database2?pool_max_size=0'))
-      c.object_id.should_not == cc.object_id
-    end
-
-    it "should have a NoPool for JNDI URIs" do
-      c = DataObjects::Connection.new(Addressable::URI.parse('java://jdbc/database?scheme=mock'))
-      c.instance_variable_get(:@__pool).should be_nil
-    end
-
-    it "should have a Pool for JNDI URIs when max_size is given" do
-      c = DataObjects::Connection.new(Addressable::URI.parse('java://jdbc/database3?scheme=mock&pool_max_size=5'))
-      c.instance_variable_get(:@__pool).should_not be_nil
-    end
   end
 end

@@ -12,13 +12,10 @@ module DataObjects
     def self.new(uri_s)
       uri = DataObjects::URI::parse(uri_s)
 
-      pool_max_size = uri.query.delete("pool_max_size") if uri.query
-
       case uri.scheme.to_sym
       when :java
         warn 'JNDI URLs (connection strings) are only for use with JRuby' unless RUBY_PLATFORM =~ /java/
         driver_name = uri.query.delete("scheme")
-        pool_max_size ||= 0
         conn_uri = uri.to_s.gsub(/\?$/, '')
       when :jdbc
         warn 'JDBC URLs (connection strings) are only for use with JRuby' unless RUBY_PLATFORM =~ /java/
@@ -49,7 +46,7 @@ module DataObjects
         driver_name.capitalize
       end
 
-      DataObjects.const_get(driver_class)::Connection.new(conn_uri, pool_max_size)
+      DataObjects.const_get(driver_class)::Connection.new(conn_uri)
     end
 
     # Ensure that all Connection subclasses handle pooling and logging uniformly.
