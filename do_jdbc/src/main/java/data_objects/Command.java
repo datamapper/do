@@ -28,6 +28,8 @@ import org.jruby.runtime.builtin.IRubyObject;
 
 import data_objects.drivers.DriverDefinition;
 import data_objects.util.JDBCUtil;
+import java.util.ArrayList;
+import java.util.List;
 
 
 /**
@@ -41,6 +43,8 @@ import data_objects.util.JDBCUtil;
 public class Command extends DORubyObject {
 
     public final static String RUBY_CLASS_NAME = "Command";
+
+    private List<String> fieldTypes;
 
     private final static ObjectAllocator COMMAND_ALLOCATOR = new ObjectAllocator() {
         public IRubyObject allocate(Ruby runtime, RubyClass klass) {
@@ -263,30 +267,20 @@ public class Command extends DORubyObject {
             // pass the response to the reader
             reader.setResultset(resultSet);
 
-            // handle each result
-
-            // mark the reader as opened
-            api.setInstanceVariable(reader, "@opened", runtime.getTrue());
-            // TODO: if no response return nil
-
-            api.setInstanceVariable(reader, "@position", runtime.newFixnum(0));
-
-            // save the field_count in reader
-            api.setInstanceVariable(reader, "@field_count", runtime.newFixnum(columnCount));
+            // save the field count in Reader
+            reader.setFieldCount(columnCount);
 
             // get the field types
-            RubyArray field_names = runtime.newArray();
-            IRubyObject field_types = api.getInstanceVariable(this,
-                    "@field_types");
+            List<String> fieldNames = new ArrayList<String>();
 
             // If no types are passed in, infer them
-            if (field_types == null) {
-                field_types = runtime.newArray();
+            if (fieldTypes == null || fieldTypes.isEmpty()) {
+                fieldTypes = new ArrayList<String>();
                 inferTypes = true;
             } else {
-                int fieldTypesCount = field_types.convertToArray().getLength();
-                if (field_types.isNil() || fieldTypesCount == 0) {
-                    field_types = runtime.newArray();
+                int fieldTypesCount = fieldTypes.size();
+                if (fieldTypes == null || fieldTypesCount == 0) {
+                    fieldTypes = new ArrayList<String>();
                     inferTypes = true;
                 } else if (fieldTypesCount != columnCount) {
                     // Wrong number of fields passed to set_types. Close the reader
@@ -301,18 +295,18 @@ public class Command extends DORubyObject {
             // for each field
             for (int i = 0; i < columnCount; i++) {
                 // downcase the field name
-                RubyString field_name = runtime.newString(metaData.getColumnName(i + 1).toLowerCase());
+                fieldNames.add(metaData.getColumnName(i + 1).toLowerCase());
+
                 // infer the type if no types passed
-                field_names.push_m(new IRubyObject[] { field_name });
 
                 if (inferTypes) {
                     // TODO: do something
                 }
             }
 
-            // set the reader @field_names and @types (guessed or otherwise)
-            api.setInstanceVariable(reader, "@fields", field_names);
-            api.setInstanceVariable(reader, "@field_types", field_types);
+            // set the reader field names and types (guessed or otherwise)
+            reader.setFields(fieldNames);
+            reader.setFieldTypes(fieldTypes);
 
             // keep the statement open
 
@@ -324,15 +318,13 @@ public class Command extends DORubyObject {
                 reader.setResultset(resultSet);
 
                 // get the field types
-                RubyArray field_names = runtime.newArray();
+                List<String> fieldNames = new ArrayList<String>();
                 // for each field
                 try {
                     metaData = sqlStatement.getMetaData();
                     for (int i = 0; i < columnCount; i++) {
-                        RubyString field_name = runtime.newString(metaData
-                                .getColumnName(i + 1));
-                        // infer the type if no types passed
-                        field_names.push_m(new IRubyObject[] { field_name });
+                        // downcase the field name
+                        fieldNames.add(metaData.getColumnName(i + 1).toLowerCase());
 
                         if (inferTypes) {
                             // TODO: do something
@@ -342,8 +334,8 @@ public class Command extends DORubyObject {
                     e.printStackTrace();
                 }
 
-                // set the reader @field_names and @types (guessed or otherwise)
-                api.setInstanceVariable(reader, "@fields", field_names);
+                // set the reader field names and types (guessed or otherwise)
+                reader.setFields(fieldNames);
                 return reader;
             }
 
@@ -363,15 +355,15 @@ public class Command extends DORubyObject {
     public IRubyObject set_types(IRubyObject[] args) {
         Ruby runtime = getRuntime();
         RubyArray types = RubyArray.newArray(runtime, args);
-        RubyArray type_strings = RubyArray.newArray(runtime);
+        List<String> typeList = new ArrayList<String>();
 
         for (IRubyObject arg : args) {
             if (arg instanceof RubyClass) {
-                type_strings.append(arg);
+                typeList.add(arg.toString());
             } else if (arg instanceof RubyArray) {
                 for (IRubyObject sub_arg : arg.convertToArray().toJavaArray()) {
                     if (sub_arg instanceof RubyClass) {
-                        type_strings.append(sub_arg);
+                        typeList.add(sub_arg.toString());
                     } else {
                         throw runtime.newArgumentError("Invalid type given");
                     }
@@ -381,7 +373,7 @@ public class Command extends DORubyObject {
             }
         }
 
-        api.setInstanceVariable(this, "@field_types", type_strings);
+        fieldTypes = typeList; //FIX THIS!!!!
         return types;
     }
 

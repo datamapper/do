@@ -1,16 +1,18 @@
 package data_objects;
 
 import static data_objects.DataObjects.DATA_OBJECTS_MODULE_NAME;
+import static data_objects.util.StringUtil.appendJoined;
+import static data_objects.util.StringUtil.appendJoinedAndQuoted;
 
 import java.io.IOException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.List;
 
 import org.jruby.Ruby;
 import org.jruby.RubyArray;
 import org.jruby.RubyClass;
 import org.jruby.RubyModule;
-import org.jruby.RubyNumeric;
 import org.jruby.anno.JRubyClass;
 import org.jruby.anno.JRubyMethod;
 import org.jruby.runtime.ObjectAllocator;
@@ -30,6 +32,10 @@ public class Reader extends DORubyObject {
 
     public final static String RUBY_CLASS_NAME = "Reader";
     private ResultSet resultSet;
+    private List<String> fieldNames;
+    private List<String> fieldTypes;
+    private int fieldCount;
+    private boolean opened = false;
 
     private final static ObjectAllocator READER_ALLOCATOR = new ObjectAllocator() {
 
@@ -81,6 +87,7 @@ public class Reader extends DORubyObject {
         if (resultSet != null) {
             JDBCUtil.close(resultSet);
             resultSet = null;
+            opened = false;
             return runtime.getTrue();
         } else {
             return runtime.getFalse();
@@ -102,32 +109,24 @@ public class Reader extends DORubyObject {
                 return runtime.getFalse();
             }
 
-            IRubyObject field_types = api.getInstanceVariable(this,
-                    "@field_types");
-            IRubyObject field_count = api.getInstanceVariable(this,
-                    "@field_count");
             RubyArray row = runtime.newArray();
             IRubyObject value;
-            int fieldTypesCount = field_types.convertToArray().getLength();
+            int fieldTypesCount = fieldTypes.size();
 
             try {
-                boolean hasNext = rs.next();
-                api.setInstanceVariable(this, "@state", runtime
-                        .newBoolean(hasNext));
+                opened = rs.next();
 
-                if (!hasNext) {
+                if (!opened) {
                     return runtime.getFalse();
                 }
 
-                for (int i = 0; i < RubyNumeric.fix2int(field_count
-                        .convertToInteger()); i++) {
+                for (int i = 0; i < fieldCount; i++) {
                     int col = i + 1;
                     RubyType type;
 
                     if (fieldTypesCount > 0) {
                         // use the specified type
-                        String typeName = field_types.convertToArray().get(i)
-                                .toString();
+                        String typeName = fieldTypes.get(i);
                         type = RubyType.getRubyType(typeName.toUpperCase());
                     } else {
                         // infer the type
@@ -168,9 +167,8 @@ public class Reader extends DORubyObject {
     @JRubyMethod
     public IRubyObject values() {
         Ruby runtime = getRuntime();
-        IRubyObject state = api.getInstanceVariable(this, "@state");
 
-        if (state == null || state.isNil() || !state.isTrue()) {
+        if (!opened) {
             throw driver.newDriverError(runtime, "Reader is not initialized");
         }
         IRubyObject values = api.getInstanceVariable(this, "@values");
@@ -183,7 +181,11 @@ public class Reader extends DORubyObject {
      */
     @JRubyMethod
     public IRubyObject fields() {
-        return api.getInstanceVariable(this, "@fields");
+        RubyArray fields = getRuntime().newArray();
+        for (String f : fieldNames) {
+            fields.append(getRuntime().newString(f));
+        }
+        return fields;
     }
 
     /**
@@ -192,7 +194,33 @@ public class Reader extends DORubyObject {
      */
     @JRubyMethod
     public IRubyObject field_count() {
-        return api.getInstanceVariable(this, "@field_count");
+        return getRuntime().newFixnum(fieldCount);
+    }
+
+    /**
+     * @{@inheritDoc}
+     */
+    @JRubyMethod
+    @Override
+    public IRubyObject inspect() {
+        StringBuilder sb = new StringBuilder();
+
+        String cname = getMetaClass().getRealClass().getName();
+        sb.append("#<").append(cname).append(":0x");
+        sb.append(Integer.toHexString(System.identityHashCode(this)));
+
+        sb.append(" field_types=[");
+        appendJoined(sb, fieldTypes);
+        sb.append("], ");
+        sb.append("field_count=").append(fieldCount).append(", ");
+        sb.append("opened=").append(opened).append(", ");
+        sb.append("fields=[");
+        appendJoinedAndQuoted(sb, fieldNames);
+        sb.append("]");
+
+        sb.append(">");
+
+        return getRuntime().newString(sb.toString());
     }
 
     // ------------------------------------------------- PUBLIC JAVA API METHODS
@@ -211,6 +239,18 @@ public class Reader extends DORubyObject {
      */
     public void setResultset(ResultSet resultSet) {
         this.resultSet = resultSet;
+    }
+
+    public void setFields(List<String> fields) {
+        this.fieldNames = fields;
+    }
+
+    public void setFieldTypes(List<String> fieldTypes) {
+        this.fieldTypes = fieldTypes;
+    }
+
+    public void setFieldCount(int count) {
+        this.fieldCount = count;
     }
 
 }

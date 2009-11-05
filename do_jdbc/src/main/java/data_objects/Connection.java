@@ -1,6 +1,7 @@
 package data_objects;
 
 import static data_objects.DataObjects.DATA_OBJECTS_MODULE_NAME;
+import static data_objects.util.StringUtil.appendQuoted;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URISyntaxException;
@@ -24,6 +25,7 @@ import org.jruby.runtime.Block;
 import org.jruby.runtime.ObjectAllocator;
 import org.jruby.runtime.builtin.IRubyObject;
 import org.jruby.runtime.callback.Callback;
+import org.jruby.runtime.Visibility;
 
 import data_objects.drivers.DriverDefinition;
 import data_objects.util.JDBCUtil;
@@ -42,6 +44,7 @@ public final class Connection extends DORubyObject {
     private static final String UTF8_ENCODING = "UTF-8";
 
     private java.sql.Connection sqlConnection;
+    private java.net.URI connectionUri;
 
     private static final ObjectAllocator CONNECTION_ALLOCATOR = new ObjectAllocator() {
 
@@ -101,7 +104,6 @@ public final class Connection extends DORubyObject {
         // System.out.println("============== initialize called " + uri);
         Ruby runtime = getRuntime();
         String encoding = null;
-        java.net.URI connectionUri;
         Map<String, String> query = null;
 
         try {
@@ -205,7 +207,9 @@ public final class Connection extends DORubyObject {
         }
 
 
+        // #to_s implemented in Ruby relies on this @uri ivar
         api.setInstanceVariable(this, "@uri", uri);
+
         this.sqlConnection = conn;
 
         return runtime.getTrue();
@@ -257,6 +261,47 @@ public final class Connection extends DORubyObject {
     public IRubyObject quote_byte_array(final IRubyObject value) {
         String quoted = driver.quoteByteArray(this, value);
         return getRuntime().newString(quoted);
+    }
+
+    /**
+     * @{@inheritDoc}
+     */
+    @JRubyMethod
+    @Override
+    public IRubyObject inspect() {
+        StringBuilder sb = new StringBuilder();
+
+        String cname = getMetaClass().getRealClass().getName();
+        sb.append("#<").append(cname).append(":0x");
+        sb.append(Integer.toHexString(System.identityHashCode(this)));
+
+        // display both @uri ivar and internal JDBC URI
+        sb.append(" @uri=").append(api.getInstanceVariable(this, "@uri").inspect());
+        sb.append(" (jdbc_uri=");
+        appendQuoted(sb, connectionUri.toString());
+        sb.append(")");
+
+        // inspecting @__pool is noisy, for now turn it off
+        // sb.append("@__pool=").append(api.getInstanceVariable(this, "@__pool").inspect());
+
+        if (driver.supportsConnectionEncodings()) {
+            sb.append(", @encoding=").append(api.getInstanceVariable(this, "@encoding").inspect());
+        }
+        sb.append(">");
+        return getRuntime().newString(sb.toString());
+    }
+
+    /**
+     * Returns the JDBC URI used internally.
+     *
+     * Not part of the DataObjects API. This is an implementation-specific
+     * method that is provided for inspection and debugging from Ruby code.
+     *
+     * @return the JDBC URI used internally
+     */
+    @JRubyMethod(name = "_jdbc_uri", visibility = Visibility.PRIVATE)
+    public IRubyObject jdbc_uri() {
+        return getRuntime().newString(connectionUri.toString());
     }
 
     // ------------------------------------------------- PUBLIC JAVA API METHODS
