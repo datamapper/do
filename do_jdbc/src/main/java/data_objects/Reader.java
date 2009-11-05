@@ -33,7 +33,7 @@ public class Reader extends DORubyObject {
     public final static String RUBY_CLASS_NAME = "Reader";
     private ResultSet resultSet;
     private List<String> fieldNames;
-    private List<String> fieldTypes;
+    private List<RubyType> fieldTypes;
     private int fieldCount;
     private boolean opened = false;
 
@@ -121,29 +121,8 @@ public class Reader extends DORubyObject {
                 }
 
                 for (int i = 0; i < fieldCount; i++) {
-                    int col = i + 1;
-                    RubyType type;
-
-                    if (fieldTypesCount > 0) {
-                        // use the specified type
-                        String typeName = fieldTypes.get(i);
-                        type = RubyType.getRubyType(typeName.toUpperCase());
-                    } else {
-                        // infer the type
-
-                        // assume the mapping from jdbc type to ruby type to be
-                        // complete
-                        type = driver.jdbcTypeToRubyType(rs.getMetaData().getColumnType(col),
-                            rs.getMetaData().getPrecision(col), rs.getMetaData().getScale(col));
-
-                    }
-
-                    if (type == null)
-                        throw runtime
-                                .newRuntimeError("Problem automatically mapping JDBC Type to Ruby Type");
-
-                    value = driver.getTypecastResultSetValue(runtime, rs, col,
-                            type);
+                    RubyType type = fieldTypes.get(i);
+                    value = driver.getTypecastResultSetValue(runtime, rs, i + 1, type);
                     row.push_m(new IRubyObject[] { value });
                 }
             } catch (SQLException sqe) {
@@ -245,7 +224,7 @@ public class Reader extends DORubyObject {
         this.fieldNames = fields;
     }
 
-    public void setFieldTypes(List<String> fieldTypes) {
+    public void setFieldTypes(List<RubyType> fieldTypes) {
         this.fieldTypes = fieldTypes;
     }
 

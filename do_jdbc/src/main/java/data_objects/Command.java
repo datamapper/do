@@ -44,7 +44,7 @@ public class Command extends DORubyObject {
 
     public final static String RUBY_CLASS_NAME = "Command";
 
-    private List<String> fieldTypes;
+    private List<RubyType> fieldTypes;
 
     private final static ObjectAllocator COMMAND_ALLOCATOR = new ObjectAllocator() {
         public IRubyObject allocate(Ruby runtime, RubyClass klass) {
@@ -275,32 +275,27 @@ public class Command extends DORubyObject {
 
             // If no types are passed in, infer them
             if (fieldTypes == null || fieldTypes.isEmpty()) {
-                fieldTypes = new ArrayList<String>();
+                fieldTypes = new ArrayList<RubyType>();
                 inferTypes = true;
-            } else {
-                int fieldTypesCount = fieldTypes.size();
-                if (fieldTypes == null || fieldTypesCount == 0) {
-                    fieldTypes = new ArrayList<String>();
-                    inferTypes = true;
-                } else if (fieldTypesCount != columnCount) {
-                    // Wrong number of fields passed to set_types. Close the reader
-                    // and raise an error.
-                    api.callMethod(reader, "close");
-                    throw runtime.newArgumentError(String.format("Field-count mismatch. Expected %1$d fields, but the query yielded %2$d",
-                                                                 fieldTypesCount,
-                                                                 columnCount));
-                }
+            } else if (fieldTypes.size() != columnCount) {
+                // Wrong number of fields passed to set_types. Close the reader
+                // and raise an error.
+                api.callMethod(reader, "close");
+                throw runtime.newArgumentError(String.format("Field-count mismatch. Expected %1$d fields, but the query yielded %2$d",
+                        fieldTypes.size(), columnCount));
             }
 
             // for each field
             for (int i = 0; i < columnCount; i++) {
+                int col = i + 1;
                 // downcase the field name
-                fieldNames.add(metaData.getColumnName(i + 1).toLowerCase());
-
-                // infer the type if no types passed
+                fieldNames.add(metaData.getColumnName(col).toLowerCase());
 
                 if (inferTypes) {
-                    // TODO: do something
+                    // infer the type if no types passed
+                    fieldTypes.add(
+                            driver.jdbcTypeToRubyType(metaData.getColumnType(col),
+                            metaData.getPrecision(col), metaData.getScale(col)));
                 }
             }
 
@@ -323,12 +318,14 @@ public class Command extends DORubyObject {
                 try {
                     metaData = sqlStatement.getMetaData();
                     for (int i = 0; i < columnCount; i++) {
+                        int col = i + 1;
                         // downcase the field name
                         fieldNames.add(metaData.getColumnName(i + 1).toLowerCase());
 
-                        if (inferTypes) {
-                            // TODO: do something
-                        }
+                        // infer the type if no types passed
+                        fieldTypes.add(
+                                driver.jdbcTypeToRubyType(metaData.getColumnType(col),
+                                metaData.getPrecision(col), metaData.getScale(col)));
                     }
                 } catch (SQLException e) {
                     e.printStackTrace();
@@ -355,15 +352,25 @@ public class Command extends DORubyObject {
     public IRubyObject set_types(IRubyObject[] args) {
         Ruby runtime = getRuntime();
         RubyArray types = RubyArray.newArray(runtime, args);
-        List<String> typeList = new ArrayList<String>();
+        fieldTypes = new ArrayList<RubyType>();
 
         for (IRubyObject arg : args) {
             if (arg instanceof RubyClass) {
-                typeList.add(arg.toString());
+                // XXX: clean up this ugliness!
+                RubyType t = RubyType.getRubyType(arg.toString().toUpperCase());
+                if (t == null) {
+                    throw runtime.newArgumentError("Invalid type given: " + arg.toString());
+                }
+                fieldTypes.add(t);
             } else if (arg instanceof RubyArray) {
                 for (IRubyObject sub_arg : arg.convertToArray().toJavaArray()) {
                     if (sub_arg instanceof RubyClass) {
-                        typeList.add(sub_arg.toString());
+                        // XXX: clean up this ugliness!
+                        RubyType t = RubyType.getRubyType(sub_arg.toString().toUpperCase());
+                        if (t == null) {
+                            throw runtime.newArgumentError("Invalid type given: " + sub_arg.toString());
+                        }
+                        fieldTypes.add(t);
                     } else {
                         throw runtime.newArgumentError("Invalid type given");
                     }
@@ -373,7 +380,6 @@ public class Command extends DORubyObject {
             }
         }
 
-        fieldTypes = typeList; //FIX THIS!!!!
         return types;
     }
 
