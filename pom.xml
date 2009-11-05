@@ -1,6 +1,5 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<?xml version="1.0"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.dataobjects</groupId>
   <artifactId>dataobjects</artifactId>
@@ -12,18 +11,15 @@
     to build the project at the moment.
   </description>
   <url>http://datamapper.org/</url>
-
   <issueManagement>
     <system>lighthouse</system>
     <url>http://datamapper.lighthouseapp.com/projects/20609-datamapper</url>
   </issueManagement>
-
   <scm>
     <connection>scm:git:git://github.com/datamapper/do.git</connection>
     <developerConnection>scm:git:git@github.com:datamapper/do.git</developerConnection>
     <url>http://github.com/datamapper/do</url>
   </scm>
-
   <licenses>
     <license>
       <name>MIT</name>
@@ -31,7 +27,6 @@
       <distribution>repo</distribution>
     </license>
   </licenses>
-
   <pluginRepositories>
     <pluginRepository>
       <id>saumya</id>
@@ -40,7 +35,6 @@
       <layout>default</layout>
     </pluginRepository>
   </pluginRepositories>
-
   <build>
     <outputDirectory>pkg/classes</outputDirectory>
     <sourceDirectory>ext-java/src/main/java</sourceDirectory>
@@ -54,7 +48,7 @@
         <artifactId>maven-compiler-plugin</artifactId>
         <configuration>
           <source>1.5</source>
-   <target>1.5</target>
+          <target>1.5</target>
         </configuration>
       </plugin>
     </plugins>
@@ -62,35 +56,34 @@
       <plugins>
         <plugin>
           <groupId>de.saumya.mojo</groupId>
-   <artifactId>rails-maven-plugin</artifactId>
-   <version>0.3.0-SNAPSHOT</version>
-   <configuration>
-      <skipSpecs>${skipSpecs}</skipSpecs>
-   </configuration>
-   <executions>
-     <execution>
+          <artifactId>rails-maven-plugin</artifactId>
+          <version>0.2.2</version>
+          <configuration>
+            <skipSpecs>${skipSpecs}</skipSpecs>
+          </configuration>
+          <executions>
+            <execution>
               <id>spec</id>
-       <phase>integration-test</phase>
-       <goals>
-  <goal>spec</goal>
-       </goals>
-     </execution>
-   </executions>
+              <phase>integration-test</phase>
+              <goals>
+                <goal>spec</goal>
+              </goals>
+            </execution>
+          </executions>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
-   <artifactId>maven-checkstyle-plugin</artifactId>
-   <configuration>
-     <failOnViolation>false</failOnViolation>
-     <consoleOutput>true</consoleOutput>
-     <configLocation>${basedir}/../do_jdbc-tools/src/main/resources/data_objects/checkstyle.xml</configLocation>
-     <headerLocation>${basedir}/../do_jdbc-tools/src/main/resources/data_objects/LICENSE.txt</headerLocation>
-   </configuration>
+          <artifactId>maven-checkstyle-plugin</artifactId>
+          <configuration>
+            <failOnViolation>false</failOnViolation>
+            <consoleOutput>true</consoleOutput>
+            <configLocation>${basedir}/../do_jdbc-tools/src/main/resources/data_objects/checkstyle.xml</configLocation>
+            <headerLocation>${basedir}/../do_jdbc-tools/src/main/resources/data_objects/LICENSE.txt</headerLocation>
+          </configuration>
         </plugin>
       </plugins>
     </pluginManagement>
   </build>
-
   <dependencies>
     <dependency>
       <groupId>org.jruby</groupId>
@@ -99,7 +92,6 @@
       <scope>provided</scope>
     </dependency>
   </dependencies>
-
   <modules>
     <!-- the "core" module -->
     <module>do_jdbc</module>
@@ -115,7 +107,6 @@
     <module>do_sqlite3</module>
     <module>do_sqlserver</module>
   </modules>
-
   <reporting>
     <plugins>
       <plugin>
@@ -129,5 +120,4 @@
       </plugin>
     </plugins>
   </reporting>
-
 </project>

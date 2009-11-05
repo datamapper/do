@@ -1,34 +1,34 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
-    <modelVersion>4.0.0</modelVersion>
-    <parent>
-        <groupId>org.dataobjects</groupId>
-        <artifactId>dataobjects</artifactId>
-        <version>0.10.1</version>
-        <relativePath>../pom.xml</relativePath>
-    </parent>
-    <artifactId>do_derby</artifactId>
-    <packaging>jar</packaging>
-    <name>do_derby</name>
-    <description>A DataObjects.rb driver for Derby</description>
-    <dependencies>
-        <dependency>
-            <groupId>${pom.parent.groupId}</groupId>
-            <artifactId>do_jdbc</artifactId>
-            <version>${pom.parent.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.derby</groupId>
-            <artifactId>derby</artifactId>
-            <version>10.5.3.0_1</version>
-        </dependency>
-    </dependencies>
-    <profiles>
-        <profile>
-     <id>skip_derby</id>
-     <properties>
-         <skipSpecs>true</skipSpecs>
-     </properties>
- </profile>
-    </profiles>
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>org.dataobjects</groupId>
+    <artifactId>dataobjects</artifactId>
+    <version>0.10.1</version>
+    <relativePath>../pom.xml</relativePath>
+  </parent>
+  <artifactId>do_derby</artifactId>
+  <packaging>jar</packaging>
+  <name>do_derby</name>
+  <description>A DataObjects.rb driver for Derby</description>
+  <dependencies>
+    <dependency>
+      <groupId>${pom.parent.groupId}</groupId>
+      <artifactId>do_jdbc</artifactId>
+      <version>${pom.parent.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.derby</groupId>
+      <artifactId>derby</artifactId>
+      <version>10.5.3.0_1</version>
+    </dependency>
+  </dependencies>
+  <profiles>
+    <profile>
+      <id>skip_derby</id>
+      <properties>
+        <skipSpecs>true</skipSpecs>
+      </properties>
+    </profile>
+  </profiles>
 </project>
