@@ -42,7 +42,7 @@ public class MySqlDriverDefinition extends AbstractDriverDefinition {
      * @throws IOException
      */
     @Override
-    protected IRubyObject doGetTypecastResultSetValue(Ruby runtime,
+    public IRubyObject getTypecastResultSetValue(Ruby runtime,
             ResultSet rs, int col, RubyType type) throws SQLException,
             IOException {
         switch (type) {
@@ -53,7 +53,7 @@ public class MySqlDriverDefinition extends AbstractDriverDefinition {
                 return runtime.newBoolean(bool);
             }
         default:
-            return super.doGetTypecastResultSetValue(runtime, rs, col, type);
+            return super.getTypecastResultSetValue(runtime, rs, col, type);
         }
     }
 
