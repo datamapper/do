@@ -82,7 +82,7 @@ public class Sqlite3DriverDefinition extends AbstractDriverDefinition {
      * @throws IOException
      */
     @Override
-    protected IRubyObject doGetTypecastResultSetValue(Ruby runtime,
+    public IRubyObject getTypecastResultSetValue(Ruby runtime,
             ResultSet rs, int col, RubyType type) throws SQLException,
             IOException {
         // System.out.println(rs.getMetaData().getColumnTypeName(col) + " = " + type.toString());
@@ -138,7 +138,7 @@ public class Sqlite3DriverDefinition extends AbstractDriverDefinition {
             }
             return new RubyBigDecimal(runtime, new BigDecimal(dvalue));
         default:
-            return super.doGetTypecastResultSetValue(runtime, rs, col, type);
+            return super.getTypecastResultSetValue(runtime, rs, col, type);
         }
     }
 

@@ -35,7 +35,7 @@ public class DerbyDriverDefinition extends AbstractDriverDefinition {
      * @throws IOException
      */
     @Override
-    protected IRubyObject doGetTypecastResultSetValue(Ruby runtime,
+    public IRubyObject getTypecastResultSetValue(Ruby runtime,
             ResultSet rs, int col, RubyType type) throws SQLException,
             IOException {
         switch (type) {
@@ -60,7 +60,7 @@ public class DerbyDriverDefinition extends AbstractDriverDefinition {
             return API.callMethod(runtime.fastGetModule("Extlib").fastGetClass(
             "ByteArray"), "new", runtime.newString(bytes));
         default:
-            return super.doGetTypecastResultSetValue(runtime, rs, col, type);
+            return super.getTypecastResultSetValue(runtime, rs, col, type);
         }
     }
 

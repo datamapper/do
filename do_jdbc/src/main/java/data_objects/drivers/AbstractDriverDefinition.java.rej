@@ -1,0 +1,40 @@
+*************** public abstract class AbstractDriverDefinition implements DriverDefinition {
+*** 306,335 ****
+       * @throws SQLException
+       * @throws IOException
+       */
+-     public final IRubyObject getTypecastResultSetValue(Ruby runtime,
+-             ResultSet rs, int col, RubyType type) throws SQLException,
+-             IOException {
+-         // TODO assert to needs to be turned on with the java call
+-         // better throw something
+-         assert (type != null); // this method does not expect a null Ruby Type
+-         if (rs == null) {// || rs.wasNull()) {
+-             return runtime.getNil();
+-         }
+- 
+-         return doGetTypecastResultSetValue(runtime, rs, col, type);
+-     }
+- 
+-     /**
+-      *
+-      * @param runtime
+-      * @param rs
+-      * @param col
+-      * @param type
+-      * @return
+-      * @throws SQLException
+-      * @throws IOException
+-      */
+-     protected IRubyObject doGetTypecastResultSetValue(Ruby runtime,
+              ResultSet rs, int col, RubyType type) throws SQLException,
+              IOException {
+          //System.out.println(rs.getMetaData().getColumnTypeName(col) + " = " + type.toString());
+--- 306,312 ----
+       * @throws SQLException
+       * @throws IOException
+       */
++     public IRubyObject getTypecastResultSetValue(Ruby runtime,
+              ResultSet rs, int col, RubyType type) throws SQLException,
+              IOException {
+          //System.out.println(rs.getMetaData().getColumnTypeName(col) + " = " + type.toString());

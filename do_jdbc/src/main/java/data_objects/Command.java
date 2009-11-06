@@ -7,9 +7,11 @@ import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.Formatter;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.Formatter;
 
 import org.jruby.Ruby;
 import org.jruby.RubyArray;
@@ -17,7 +19,6 @@ import org.jruby.RubyClass;
 import org.jruby.RubyModule;
 import org.jruby.RubyNumeric;
 import org.jruby.RubyRange;
-import org.jruby.RubyString;
 import org.jruby.anno.JRubyClass;
 import org.jruby.anno.JRubyMethod;
 import org.jruby.exceptions.RaiseException;
@@ -28,8 +29,6 @@ import org.jruby.runtime.builtin.IRubyObject;
 
 import data_objects.drivers.DriverDefinition;
 import data_objects.util.JDBCUtil;
-import java.util.ArrayList;
-import java.util.List;
 
 
 /**
@@ -265,13 +264,13 @@ public class Command extends DORubyObject {
                 columnCount--;
 
             // pass the response to the reader
-            reader.setResultset(resultSet);
+            reader.resultSet = resultSet;
 
             // save the field count in Reader
-            reader.setFieldCount(columnCount);
+            reader.fieldCount = columnCount;
 
             // get the field types
-            List<String> fieldNames = new ArrayList<String>();
+            List<String> fieldNames = new ArrayList<String>(columnCount);
 
             // If no types are passed in, infer them
             if (fieldTypes == null || fieldTypes.isEmpty()) {
@@ -300,8 +299,8 @@ public class Command extends DORubyObject {
             }
 
             // set the reader field names and types (guessed or otherwise)
-            reader.setFields(fieldNames);
-            reader.setFieldTypes(fieldTypes);
+            reader.fieldNames = fieldNames;
+            reader.fieldTypes = fieldTypes;
 
             // keep the statement open
 
@@ -310,7 +309,7 @@ public class Command extends DORubyObject {
             // this sets up a minimal empty reader
             if (sqle.getMessage().equals("query does not return results")) {
 
-                reader.setResultset(resultSet);
+                reader.resultSet = resultSet;
 
                 // get the field types
                 List<String> fieldNames = new ArrayList<String>();
@@ -332,7 +331,7 @@ public class Command extends DORubyObject {
                 }
 
                 // set the reader field names and types (guessed or otherwise)
-                reader.setFields(fieldNames);
+                reader.fieldNames = fieldNames;
                 return reader;
             }
 
@@ -352,7 +351,7 @@ public class Command extends DORubyObject {
     public IRubyObject set_types(IRubyObject[] args) {
         Ruby runtime = getRuntime();
         RubyArray types = RubyArray.newArray(runtime, args);
-        fieldTypes = new ArrayList<RubyType>();
+        fieldTypes = new ArrayList<RubyType>(types.size());
 
         for (IRubyObject arg : args) {
             if (arg instanceof RubyClass) {

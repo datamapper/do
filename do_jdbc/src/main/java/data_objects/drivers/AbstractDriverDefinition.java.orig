@@ -306,7 +306,7 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
      * @throws SQLException
      * @throws IOException
      */
-    public IRubyObject getTypecastResultSetValue(Ruby runtime,
+    public final IRubyObject getTypecastResultSetValue(Ruby runtime,
             ResultSet rs, int col, RubyType type) throws SQLException,
             IOException {
         //System.out.println(rs.getMetaData().getColumnTypeName(col) + " = " + type.toString());

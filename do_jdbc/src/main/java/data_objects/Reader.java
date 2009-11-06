@@ -31,11 +31,16 @@ import data_objects.util.JDBCUtil;
 public class Reader extends DORubyObject {
 
     public final static String RUBY_CLASS_NAME = "Reader";
-    private ResultSet resultSet;
-    private List<String> fieldNames;
-    private List<RubyType> fieldTypes;
-    private int fieldCount;
-    private boolean opened = false;
+    ResultSet resultSet;
+    List<String> fieldNames;
+    List<RubyType> fieldTypes;
+    int fieldCount;
+    boolean opened = false;
+    RubyArray values;
+
+    private final IRubyObject TRUE;
+    private final IRubyObject FALSE;
+    private final IRubyObject NIL;
 
     private final static ObjectAllocator READER_ALLOCATOR = new ObjectAllocator() {
 
@@ -70,6 +75,9 @@ public class Reader extends DORubyObject {
      */
     private Reader(Ruby runtime, RubyClass klass) {
         super(runtime, klass);
+        TRUE = runtime.getTrue();
+        FALSE = runtime.getFalse();
+        NIL = runtime.getNil();
     }
 
     // -------------------------------------------------- DATAOBJECTS PUBLIC API
@@ -82,15 +90,13 @@ public class Reader extends DORubyObject {
      */
     @JRubyMethod
     public IRubyObject close() {
-        Ruby runtime = getRuntime();
-
         if (resultSet != null) {
             JDBCUtil.close(resultSet);
             resultSet = null;
             opened = false;
-            return runtime.getTrue();
+            return TRUE;
         } else {
-            return runtime.getFalse();
+            return FALSE;
         }
     }
 
@@ -103,36 +109,32 @@ public class Reader extends DORubyObject {
     public IRubyObject next() {
         Ruby runtime = getRuntime();
         try {
-            ResultSet rs = resultSet;
-
-            if (rs == null) {
-                return runtime.getFalse();
+            if (resultSet == null) {
+                return FALSE;
             }
 
-            RubyArray row = runtime.newArray();
-            IRubyObject value;
-            int fieldTypesCount = fieldTypes.size();
+            values = runtime.newArray(fieldTypes.size());
 
             try {
-                opened = rs.next();
+                opened = resultSet.next();
 
                 if (!opened) {
-                    return runtime.getFalse();
+                    return FALSE;
+                }
+                int i = 1;
+                for(RubyType type: fieldTypes){
+                    values.append(driver.getTypecastResultSetValue(runtime, resultSet, i++, type));
                 }
 
-                for (int i = 0; i < fieldCount; i++) {
-                    RubyType type = fieldTypes.get(i);
-                    value = driver.getTypecastResultSetValue(runtime, rs, i + 1, type);
-                    row.push_m(new IRubyObject[] { value });
-                }
             } catch (SQLException sqe) {
                 throw driver.newDriverError(runtime, sqe);
             } catch (IOException ioe) {
                 throw driver.newDriverError(runtime, ioe.getLocalizedMessage());
             }
 
-            api.setInstanceVariable(this, "@values", row);
-            return runtime.getTrue();
+            //TODO needed on ruby side ?
+            //api.setInstanceVariable(this, "@values", values);
+            return TRUE;
         } catch (RuntimeException e) {
             e.printStackTrace();
             throw driver.newDriverError(runtime, e.getMessage());
@@ -145,13 +147,11 @@ public class Reader extends DORubyObject {
      */
     @JRubyMethod
     public IRubyObject values() {
-        Ruby runtime = getRuntime();
-
         if (!opened) {
-            throw driver.newDriverError(runtime, "Reader is not initialized");
+            throw driver.newDriverError(getRuntime(), "Reader is not initialized");
         }
-        IRubyObject values = api.getInstanceVariable(this, "@values");
-        return (values != null) ? values : runtime.getNil();
+
+        return values != null ? values : NIL;
     }
 
     /**
@@ -160,7 +160,7 @@ public class Reader extends DORubyObject {
      */
     @JRubyMethod
     public IRubyObject fields() {
-        RubyArray fields = getRuntime().newArray();
+        RubyArray fields = getRuntime().newArray(fieldNames.size());
         for (String f : fieldNames) {
             fields.append(getRuntime().newString(f));
         }
@@ -203,33 +203,5 @@ public class Reader extends DORubyObject {
     }
 
     // ------------------------------------------------- PUBLIC JAVA API METHODS
-
-    /**
-     *
-     * @return
-     */
-    public ResultSet getResultSet() {
-        return resultSet;
-    }
-
-    /**
-     *
-     * @param resultSet
-     */
-    public void setResultset(ResultSet resultSet) {
-        this.resultSet = resultSet;
-    }
-
-    public void setFields(List<String> fields) {
-        this.fieldNames = fields;
-    }
-
-    public void setFieldTypes(List<RubyType> fieldTypes) {
-        this.fieldTypes = fieldTypes;
-    }
-
-    public void setFieldCount(int count) {
-        this.fieldCount = count;
-    }
 
 }
