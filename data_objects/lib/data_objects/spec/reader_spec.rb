@@ -161,21 +161,19 @@ share_examples_for 'a Reader' do
       rows_yielded = 0
       @reader.each do |row|
         row.should respond_to(:[])
-        row.should respond_to(:name)
-        row.should respond_to(:code)
 
         row.size.should == 2
 
-        row.name.should be_a(String)
-        row.code.should be_a(String)
-        row[:name].should be_a(String)
-        row[:code].should be_a(String)
-        row[0].should be_a(String)
-        row[1].should be_a(String)
+        row['name'].should be_a(String)
+        row['code'].should be_a(String)
 
         rows_yielded += 1
       end
       rows_yielded.should == 15
+    end
+
+    it 'should return the reader' do
+      @reader.each { |row| }.should equal(@reader)
     end
 
   end

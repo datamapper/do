@@ -29,22 +29,16 @@ module DataObjects
       raise NotImplementedError.new
     end
 
-    # Yield each row to the given block as a struct
+    # Yield each row to the given block as a Hash
     def each
       begin
         while next!
-          yield struct.new(*values)
+          yield Hash[fields.zip(values)]
         end
       ensure
         close
-        self
       end
-    end
-
-    private
-
-    def struct
-      @struct ||= Struct.new(*fields.map {|f| f.to_sym})
+      self
     end
 
   end
