@@ -33,7 +33,7 @@ module DataObjects
     def each
       begin
         while next!
-          yield Hash[fields.zip(values)]
+          yield Hash[*fields.zip(values).flatten]
         end
       ensure
         close
