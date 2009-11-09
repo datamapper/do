@@ -33,7 +33,9 @@ module DataObjects
     def each
       begin
         while next!
-          yield Hash[*fields.zip(values).flatten]
+          row = {}
+          fields.each_with_index { |field, index| row[field] = values[index] }
+          yield row
         end
       ensure
         close
