@@ -10,6 +10,7 @@ import org.jruby.runtime.builtin.IRubyObject;
 import data_objects.drivers.AbstractDriverDefinition;
 import data_objects.util.JDBCUtil;
 import java.lang.reflect.Field;
+import java.net.URI;
 import java.sql.DriverManager;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -102,6 +103,28 @@ public class SqlServerDriverDefinition extends AbstractDriverDefinition {
             }
         }
         return conn;
+    }
+
+    /**
+     *
+     * @param connectionUri
+     * @return
+     */
+    @Override
+    public String getJdbcUri(URI connectionUri) {
+      String jdbcUri = connectionUri.toString();
+      if (jdbcUri.contains("@")) {
+          jdbcUri = connectionUri.toString().replaceFirst("://.*@", "://");
+      }
+
+      // Replace . with : in scheme name - necessary for scheme jtds.sqlserver
+      // : cannot be used in JDBC_URI_SCHEME as then it is identified as opaque URI
+      jdbcUri = jdbcUri.replaceFirst("^([a-z]+)(\\.)", "$1:");
+
+      if (!jdbcUri.startsWith("jdbc:")) {
+          jdbcUri = "jdbc:" + jdbcUri;
+      }
+      return jdbcUri;
     }
 
     /**
