@@ -292,8 +292,8 @@ else
           20
         end
 
-        def using_socket?
-          @using_socket
+        def quote_boolean(value)
+          value ? 1 : 0
         end
 
 =begin
