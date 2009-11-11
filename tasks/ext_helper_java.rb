@@ -19,6 +19,14 @@ def setup_java_extension(extension_name, gem_spec = nil, opts = {})
       pkg_classes = File.join(*%w(pkg classes))
       mkdir_p pkg_classes
 
+      not_jruby_compile_msg = <<-EOF
+WARNING: You're compiling a binary extension for JRuby, but are using another
+interpreter. If your Java classpath or extension dir settings are not correctly
+detected, then either check the appropriate environment variables or execute the
+Rake compilation task using the JRuby interpreter (`jruby -S rake compile`).
+      EOF
+      warn(not_jruby_compile_msg) unless defined?(JRUBY_VERSION)
+
       if extension_name == 'do_jdbc_internal'
         classpath_arg = java_classpath_arg
       else
@@ -37,19 +45,15 @@ def setup_java_extension(extension_name, gem_spec = nil, opts = {})
         classpath_arg = java_classpath_arg '../do_jdbc/lib/do_jdbc_internal.jar'
       end
 
-      # just use the extension directory from the executing java
-      # for compilation as well
-      extdir = java.lang.System.getProperty('java.ext.dirs')
-      extdir_arg = extdir.nil? ? "" : "-extdirs \"#{extdir}\""
-
       # Check if DO_JAVA_DEBUG env var was set to TRUE
       # TRUE means compile java classes with debug info
-      if ENV['DO_JAVA_DEBUG'] && ENV['DO_JAVA_DEBUG'].upcase.eql?("TRUE")
-        sh "javac #{extdir_arg} -target 1.5 -source 1.5 -Xlint:unchecked -g -d pkg/classes #{classpath_arg} #{FileList["#{opts[:source_dir]}/**/*.java"].join(' ')}"
+      debug_arg = if ENV['DO_JAVA_DEBUG'] && ENV['DO_JAVA_DEBUG'].upcase.eql?("TRUE")
+        '-g'
       else
-        sh "javac #{extdir_arg} -target 1.5 -source 1.5 -Xlint:unchecked -d pkg/classes #{classpath_arg} #{FileList["#{opts[:source_dir]}/**/*.java"].join(' ')}"
+        ''
       end
 
+      sh "javac #{java_extdirs_arg} -target 1.5 -source 1.5 -Xlint:unchecked #{debug_arg} -d pkg/classes #{classpath_arg} #{FileList["#{opts[:source_dir]}/**/*.java"].join(' ')}"
       sh "jar cf lib/#{ext_name} -C #{pkg_classes} ."
     end
 
@@ -77,13 +81,22 @@ def setup_java_extension(extension_name, gem_spec = nil, opts = {})
 end
 
 #
-# Discover the JRuby classpath and build a classpath argument
+# Discover Java Extension Directories and build an extdirs argument
 #
-# ==== Parameters
-# *args:: Additional classpath arguments to append
+def java_extdirs_arg
+  extdirs = Java::java.lang.System.getProperty('java.ext.dirs') rescue nil
+  extdirs = ENV['JAVA_EXT_DIR'] unless extdirs
+  java_extdir = extdirs.nil? ? "" : "-extdirs \"#{extdirs}\""
+end
+
 #
-# ==== Note
-# Copied from the ActiveRecord-JDBC project
+# Discover the Java/JRuby classpath and build a classpath argument
+#
+# @params
+#   *args:: Additional classpath arguments to append
+#
+# Copied verbatim from the ActiveRecord-JDBC project. There are a small myriad
+# of ways to discover the Java classpath correctly.
 #
 def java_classpath_arg(*args)
   begin
@@ -96,6 +109,7 @@ def java_classpath_arg(*args)
     jruby_cpath = ENV['JRUBY_PARENT_CLASSPATH'] || ENV['JRUBY_HOME'] &&
       FileList["#{ENV['JRUBY_HOME']}/lib/*.jar"].join(File::PATH_SEPARATOR)
   end
+  raise "JRUBY_HOME or JRUBY_PARENT_CLASSPATH are not set" unless jruby_cpath
   jruby_cpath += File::PATH_SEPARATOR + args.join(File::PATH_SEPARATOR) unless args.empty?
   jruby_cpath ? "-cp \"#{jruby_cpath}\"" : ""
 end
