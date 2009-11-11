@@ -162,8 +162,10 @@ share_examples_for 'a Reader' do
 
         row.size.should == 2
 
-        row['name'].should be_a(String)
-        row['code'].should be_a(String)
+        # the field names need to be case insensitive as some drivers such as
+        # do_derby, do_h2, do_hsqldb return the field names as uppercase
+        (row['name'] || row['NAME']).should be_a(String)
+        (row['code'] || row['CODE']).should be_a(String)
 
         rows_yielded += 1
       end
