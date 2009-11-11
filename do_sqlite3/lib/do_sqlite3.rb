@@ -20,7 +20,7 @@ end
 
 require 'do_sqlite3_ext'
 require 'do_sqlite3/version'
-require 'do_sqlite3/transaction'
+require 'do_sqlite3/transaction' if RUBY_PLATFORM !~ /java/
 
 if RUBY_PLATFORM =~ /java/
 
