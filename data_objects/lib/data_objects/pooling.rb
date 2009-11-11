@@ -2,6 +2,21 @@ require 'set'
 require 'thread'
 
 module DataObjects
+
+  def self.exiting= bool
+    if bool && DataObjects.const_defined?('Pooling')
+      if DataObjects::Pooling.scavenger?
+        DataObjects::Pooling.scavenger.wakeup
+      end
+    end
+    @exiting = true
+  end
+
+  def self.exiting
+    return @exiting if defined?(@exiting)
+    @exiting = false
+  end
+
   # ==== Notes
   # Provides pooling support to class it got included in.
   #
