@@ -67,7 +67,7 @@ share_examples_for 'supporting ByteArray' do
   describe 'writing a ByteArray' do
 
     before  do
-      @reader = @connection.create_command("SELECT id FROM widgets WHERE id = ?").execute_reader(::Extlib::ByteArray.new("2"))
+      @reader = @connection.create_command("SELECT ad_description FROM widgets WHERE cad_drawing = ?").execute_reader(::Extlib::ByteArray.new("CAD \001 \000 DRAWING"))
       @reader.next!
       @values = @reader.values
     end
@@ -78,7 +78,7 @@ share_examples_for 'supporting ByteArray' do
 
     it 'should return the correct entry' do
       #Some of the drivers starts autoincrementation from 0 not 1
-      @values.first.should satisfy { |val| val == 2 or val == 1 }
+      @values.first.should == 'Buy this product now!'
     end
 
   end

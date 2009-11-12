@@ -534,6 +534,18 @@ static VALUE cConnection_quote_string(VALUE self, VALUE string) {
   return result;
 }
 
+static VALUE cConnection_quote_byte_array(VALUE self, VALUE string) {
+  VALUE source = StringValue(string);
+  VALUE array = rb_funcall(source, rb_intern("unpack"), 1, rb_str_new2("H*"));
+  rb_ary_unshift(array, rb_str_new2("X'"));
+  rb_ary_push(array, rb_str_new2("'"));
+  return rb_ary_join(array, Qnil);
+}
+
+static VALUE cConnection_character_set(VALUE self) {
+  return rb_iv_get(self, "@encoding");
+}
+
 static VALUE build_query_from_args(VALUE klass, int count, VALUE *args) {
   VALUE query = rb_iv_get(klass, "@text");
   int i;
@@ -604,6 +616,7 @@ static VALUE cCommand_execute_reader(int argc, VALUE *argv, VALUE self) {
 
   rb_iv_set(reader, "@reader", Data_Wrap_Struct(rb_cObject, 0, 0, sqlite3_reader));
   rb_iv_set(reader, "@field_count", INT2NUM(field_count));
+  rb_iv_set(reader, "@connection", conn_obj);
 
   field_names = rb_ary_new();
   field_types = rb_iv_get(self, "@field_types");
@@ -752,6 +765,8 @@ void Init_do_sqlite3_ext() {
   rb_define_method(cConnection, "dispose", cConnection_dispose, 0);
   rb_define_method(cConnection, "quote_boolean", cConnection_quote_boolean, 1);
   rb_define_method(cConnection, "quote_string", cConnection_quote_string, 1);
+  rb_define_method(cConnection, "quote_byte_array", cConnection_quote_byte_array, 1);
+  rb_define_method(cConnection, "character_set", cConnection_character_set, 0);
 
   cCommand = SQLITE3_CLASS("Command", cDO_Command);
   rb_define_method(cCommand, "set_types", cCommand_set_types, -1);
