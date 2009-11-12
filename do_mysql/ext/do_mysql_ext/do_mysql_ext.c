@@ -448,9 +448,9 @@ static MYSQL_RES* cCommand_execute_sync(VALUE self, MYSQL* db, VALUE query) {
   }
   gettimeofday(&start, NULL);
   retval = mysql_real_query(db, str, len);
-  CHECK_AND_RAISE(retval, query);
-
   data_objects_debug(query, &start);
+
+  CHECK_AND_RAISE(retval, query);
 
   return mysql_store_result(db);
 }
@@ -474,6 +474,8 @@ static MYSQL_RES* cCommand_execute_async(VALUE self, MYSQL* db, VALUE query) {
 
   socket_fd = db->net.fd;
 
+  data_objects_debug(query, &start);
+
   for(;;) {
     FD_ZERO(&rset);
     FD_SET(socket_fd, &rset);
@@ -495,8 +497,6 @@ static MYSQL_RES* cCommand_execute_async(VALUE self, MYSQL* db, VALUE query) {
 
   retval = mysql_read_query_result(db);
   CHECK_AND_RAISE(retval, query);
-
-  data_objects_debug(query, &start);
 
   return mysql_store_result(db);
 }
@@ -989,9 +989,7 @@ static VALUE cReader_values(VALUE self) {
   if ( state == Qnil || state == Qfalse ) {
     rb_raise(eDataError, "Reader is not initialized");
   }
-  else {
-    return rb_iv_get(self, "@values");
-  }
+  return rb_iv_get(self, "@values");
 }
 
 static VALUE cReader_fields(VALUE self) {

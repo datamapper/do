@@ -563,6 +563,8 @@ static PGresult* cCommand_execute_sync(VALUE self, PGconn *db, VALUE query) {
 
   response = PQexec(db, str);
 
+  data_objects_debug(query, &start);
+
   if (response == NULL) {
     if(PQstatus(db) != CONNECTION_OK) {
       PQreset(db);
@@ -580,7 +582,6 @@ static PGresult* cCommand_execute_sync(VALUE self, PGconn *db, VALUE query) {
     }
   }
 
-  data_objects_debug(query, &start);
   return response;
 }
 #else
@@ -618,6 +619,8 @@ static PGresult* cCommand_execute_async(VALUE self, PGconn *db, VALUE query) {
   gettimeofday(&start, NULL);
   socket_fd = PQsocket(db);
 
+  data_objects_debug(query, &start);
+
   for(;;) {
       FD_ZERO(&rset);
       FD_SET(socket_fd, &rset);
@@ -639,7 +642,6 @@ static PGresult* cCommand_execute_async(VALUE self, PGconn *db, VALUE query) {
       }
   }
 
-  data_objects_debug(query, &start);
   return PQgetResult(db);
 }
 #endif
