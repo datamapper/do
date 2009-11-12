@@ -19,6 +19,7 @@ import org.jruby.RubyNumeric;
 import org.jruby.RubyFloat;
 import org.jruby.RubyTime;
 import org.jruby.runtime.builtin.IRubyObject;
+import org.jruby.util.ByteList;
 
 import data_objects.RubyType;
 import data_objects.drivers.AbstractDriverDefinition;
@@ -108,6 +109,13 @@ public class Sqlite3DriverDefinition extends AbstractDriverDefinition {
                 return runtime.getNil();
             }
             return new RubyBigDecimal(runtime, new BigDecimal(dvalue));
+        case BYTE_ARRAY:
+            ByteList bytes = new ByteList(rs.getBytes(col));
+            if (rs.wasNull() || bytes.length() == 0) {
+                return runtime.getNil();
+            }
+            return API.callMethod(runtime.fastGetModule("Extlib").fastGetClass(
+                    "ByteArray"), "new", runtime.newString(bytes));
         default:
             return super.doGetTypecastResultSetValue(runtime, rs, col, type);
         }
