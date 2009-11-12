@@ -1,4 +1,4 @@
-share_examples_for 'a driver supporting encodings' do
+share_examples_for 'a driver supporting different encodings' do
 
   before :each do
     @connection = DataObjects::Connection.new(CONFIG.uri)
@@ -37,7 +37,64 @@ share_examples_for 'a driver supporting encodings' do
 
       it { @latin1_connection.character_set.should == 'UTF-8' }
     end
-
-
   end
+end
+
+share_examples_for 'returning correctly encoded strings for the default encoding' do
+
+  include DataObjectsSpecHelpers
+
+  before :all do
+    setup_test_environment
+  end
+
+  before :each do
+    @connection = DataObjects::Connection.new(CONFIG.uri)
+  end
+
+  after :each do
+    @connection.close
+  end
+
+  if defined?(::Encoding)
+    describe 'with encoded string support' do
+
+      describe 'reading a String' do
+        before  do
+          @reader = @connection.create_command("SELECT name FROM widgets WHERE ad_description = ?").execute_reader('Buy this product now!')
+          @reader.next!
+          @values = @reader.values
+        end
+
+        after do
+          @reader.close
+        end
+
+        it 'should return UTF-8 encoded String' do
+          @values.first.should be_kind_of(String)
+          @values.first.encoding.name.should == 'UTF-8'
+        end
+      end
+
+      describe 'reading a ByteArray' do
+        before  do
+          @command = @connection.create_command("SELECT ad_image FROM widgets WHERE ad_description = ?")
+          @command.set_types(Extlib::ByteArray)
+          @reader = @command.execute_reader('Buy this product now!')
+          @reader.next!
+          @values = @reader.values
+        end
+
+        after do
+          @reader.close
+        end
+
+        it 'should return ASCII-8BIT encoded ByteArray' do
+          @values.first.should be_kind_of(::Extlib::ByteArray)
+          @values.first.encoding.name.should == 'ASCII-8BIT'
+        end
+      end
+    end
+  end
+
 end

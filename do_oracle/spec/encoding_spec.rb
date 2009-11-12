@@ -4,7 +4,7 @@
 # require 'data_objects/spec/encoding_spec'
 #
 # describe DataObjects::Oracle::Connection do
-#   it_should_behave_like 'a driver supporting encodings'
+#   it_should_behave_like 'a driver supporting different encodings'
 # end
 
 
