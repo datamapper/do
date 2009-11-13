@@ -7,6 +7,7 @@ import static data_objects.util.StringUtil.appendJoinedAndQuoted;
 import java.io.IOException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.List;
 
 import org.jruby.Ruby;
@@ -32,6 +33,7 @@ public class Reader extends DORubyObject {
 
     public final static String RUBY_CLASS_NAME = "Reader";
     ResultSet resultSet;
+    Statement statement;
     List<String> fieldNames;
     List<RubyType> fieldTypes;
     int fieldCount;
@@ -92,7 +94,9 @@ public class Reader extends DORubyObject {
     public IRubyObject close() {
         if (resultSet != null) {
             JDBCUtil.close(resultSet);
+            JDBCUtil.close(statement);
             resultSet = null;
+            statement = null;
             opened = false;
             return TRUE;
         } else {

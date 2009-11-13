@@ -263,8 +263,11 @@ public class Command extends DORubyObject {
             if (metaData.getColumnName(columnCount).equals("RAW_RNUM_"))
                 columnCount--;
 
-            // pass the response to the reader
+            // pass the response to the Reader
             reader.resultSet = resultSet;
+
+            // pass reference to the Statement object and close it later in the Reader
+            reader.statement = sqlStatement;
 
             // save the field count in Reader
             reader.fieldCount = columnCount;
