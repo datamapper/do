@@ -60,4 +60,11 @@ public final class StringUtil {
         return sb;
     }
 
+    /**
+     * Private constructor
+     */
+    private StringUtil(){
+
+    }
+
 }
