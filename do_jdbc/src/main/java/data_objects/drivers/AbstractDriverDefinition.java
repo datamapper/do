@@ -142,7 +142,7 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
 
         if ("DataObjects::URI".equals(connection_uri.getType().getName())) {
             String query;
-            StringBuffer userInfo = new StringBuffer();
+            StringBuilder userInfo = new StringBuilder();
 
             verifyScheme(stringOrNull(API.callMethod(connection_uri, "scheme")));
 
@@ -216,7 +216,7 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
      */
     private String mapToQueryString(Map<Object, Object> map)
             throws UnsupportedEncodingException {
-        StringBuffer querySb = new StringBuffer();
+        StringBuilder querySb = new StringBuilder();
         for (Map.Entry<Object, Object> pairs: map.entrySet()){
             String key = (pairs.getKey() != null) ? pairs.getKey().toString()
                     : "";
@@ -261,7 +261,7 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
             java.sql.Statement statement) {
         RubyClass driverError = runtime.getClass(getErrorName());
         int code = exception.getErrorCode();
-        StringBuffer sb = new StringBuffer("(");
+        StringBuilder sb = new StringBuilder("(");
 
         // Append the Vendor Code, if there is one
         // TODO: parse vendor exception codes
@@ -676,7 +676,7 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
      * @return
      */
     public String quoteString(String str) {
-        StringBuffer quotedValue = new StringBuffer(str.length() + 2);
+        StringBuilder quotedValue = new StringBuilder(str.length() + 2);
         quotedValue.append("\'");
         quotedValue.append(str.replaceAll("'", "''"));
         quotedValue.append("\'");

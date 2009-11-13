@@ -476,7 +476,7 @@ public class Command extends DORubyObject {
                 // calculate replacement string, depending on the length of the
                 // RubyArray - i.e. should it be "(?)" or "(?,?,?)
                 // System.out.println(""+timeStamp+" RubyArray @: " + args[i]); // XXX for debug
-                StringBuffer replaceSb = new StringBuffer("(");
+                StringBuilder replaceSb = new StringBuilder("(");
                 int arrayLength = args[i].convertToArray().getLength();
 
                 for (int j = 0; j < arrayLength; j++) {
@@ -647,7 +647,7 @@ public class Command extends DORubyObject {
         int level = RubyNumeric.fix2int(api.callMethod(logger, "level"));
 
         if (level == 0) {
-            StringBuffer msgSb = new StringBuffer();
+            StringBuilder msgSb = new StringBuilder();
             Formatter formatter = new Formatter(msgSb);
 
             if (executionTime != null) {
