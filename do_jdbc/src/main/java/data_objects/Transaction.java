@@ -13,6 +13,7 @@ import org.jruby.runtime.ObjectAllocator;
 import org.jruby.runtime.builtin.IRubyObject;
 
 import data_objects.drivers.DriverDefinition;
+import data_objects.util.JDBCUtil;
 
 /**
  * Transaction Class
@@ -76,6 +77,7 @@ public class Transaction extends DORubyObject {
         try {
             conn.setAutoCommit(false);
         } catch (SQLException sqle) {
+            JDBCUtil.close(conn);
             throw driver.newDriverError(getRuntime(), sqle);
         }
         return getRuntime().getTrue();
@@ -92,11 +94,13 @@ public class Transaction extends DORubyObject {
         try {
             conn.commit();
         } catch (SQLException sqle) {
+            JDBCUtil.close(conn);
             throw driver.newDriverError(getRuntime(), sqle);
         } finally {
             try {
                 conn.setAutoCommit(true);
             } catch (SQLException sqle) {
+                JDBCUtil.close(conn);
                 throw driver.newDriverError(getRuntime(), sqle);
             }
         }
@@ -114,11 +118,13 @@ public class Transaction extends DORubyObject {
         try {
             conn.rollback();
         } catch (SQLException sqle) {
+            JDBCUtil.close(conn);
             throw driver.newDriverError(getRuntime(), sqle);
         } finally {
             try {
                 conn.setAutoCommit(true);
             } catch (SQLException sqle) {
+                JDBCUtil.close(conn);
                 throw driver.newDriverError(getRuntime(), sqle);
             }
         }
@@ -140,6 +146,7 @@ public class Transaction extends DORubyObject {
                 throw driver.newDriverError(getRuntime(), "This connection has already been closed.");
             }
         } catch (SQLException ignored) {
+        //TODO log this
         }
 
         return conn;

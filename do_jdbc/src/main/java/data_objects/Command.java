@@ -125,7 +125,7 @@ public class Command extends DORubyObject {
             if (usePS) {
                 if (driver.supportsConnectionPrepareStatementMethodWithGKFlag()) {
                     sqlStatement = conn.prepareStatement(sqlText,
-                                                         driver.supportsJdbcGeneratedKeys() ? Statement.RETURN_GENERATED_KEYS : Statement.NO_GENERATED_KEYS);
+                    driver.supportsJdbcGeneratedKeys() ? Statement.RETURN_GENERATED_KEYS : Statement.NO_GENERATED_KEYS);
                 } else {
                     // If java.sql.PreparedStatement#getGeneratedKeys() is not supported,
                     // then it is important to call java.sql.Connection#prepareStatement(String)
@@ -199,12 +199,14 @@ public class Command extends DORubyObject {
         } catch (SQLException sqle) {
             throw newQueryError(runtime, sqle, usePS ? sqlStatement : sqlSimpleStatement);
         } finally {
-            // JDBCUtil.close(keys) - not needed because closing Statement closes all RS
             if (usePS) {
-                JDBCUtil.close(sqlStatement);
+                JDBCUtil.close(keys,sqlStatement);
             } else {
-                JDBCUtil.close(sqlSimpleStatement);
+                JDBCUtil.close(keys,sqlSimpleStatement);
             }
+            keys = null;
+            sqlStatement = null;
+            sqlSimpleStatement = null;
         }
 
         IRubyObject affected_rows = runtime.newFixnum(affectedCount);
@@ -305,14 +307,16 @@ public class Command extends DORubyObject {
             reader.fieldNames = fieldNames;
             reader.fieldTypes = fieldTypes;
 
-            // keep the statement open
-
         } catch (SQLException sqle) {
             // XXX sqlite3 jdbc driver happily throws an exception if the result set is empty :P
             // this sets up a minimal empty reader
             if (sqle.getMessage().equals("query does not return results")) {
 
+                // pass the response to the Reader
                 reader.resultSet = resultSet;
+
+                // pass reference to the Statement object and close it later in the Reader
+                reader.statement = sqlStatement;
 
                 // get the field types
                 List<String> fieldNames = new ArrayList<String>();
@@ -338,6 +342,7 @@ public class Command extends DORubyObject {
                 return reader;
             }
 
+            api.callMethod(reader, "close");
             throw newQueryError(runtime, sqle, sqlStatement);
         }
 

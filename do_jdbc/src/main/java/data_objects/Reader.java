@@ -93,8 +93,7 @@ public class Reader extends DORubyObject {
     @JRubyMethod
     public IRubyObject close() {
         if (resultSet != null) {
-            JDBCUtil.close(resultSet);
-            JDBCUtil.close(statement);
+            JDBCUtil.close(resultSet,statement);
             resultSet = null;
             statement = null;
             opened = false;
@@ -131,8 +130,10 @@ public class Reader extends DORubyObject {
                 }
 
             } catch (SQLException sqe) {
+                JDBCUtil.close(resultSet,statement);
                 throw driver.newDriverError(runtime, sqe);
             } catch (IOException ioe) {
+                JDBCUtil.close(resultSet,statement);
                 throw driver.newDriverError(runtime, ioe.getLocalizedMessage());
             }
 
@@ -140,6 +141,7 @@ public class Reader extends DORubyObject {
             //api.setInstanceVariable(this, "@values", values);
             return TRUE;
         } catch (RuntimeException e) {
+            JDBCUtil.close(resultSet,statement);
             e.printStackTrace();
             throw driver.newDriverError(runtime, e.getMessage());
         }
@@ -152,6 +154,7 @@ public class Reader extends DORubyObject {
     @JRubyMethod
     public IRubyObject values() {
         if (!opened) {
+            JDBCUtil.close(resultSet,statement);
             throw driver.newDriverError(getRuntime(), "Reader is not initialized");
         }
 
