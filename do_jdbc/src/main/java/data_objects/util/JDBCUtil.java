@@ -56,6 +56,23 @@ public final class JDBCUtil {
         }
     }
 
+    /**
+     *
+     * Close a java.sql.ResultSet and java.sql.Statement, 
+     * while ignoring any database errors (in the
+     * form of SQLException) that may result from freeing the resource.
+     *
+     * @param rs
+     * @param stmt
+     *
+     * @see data_objects.util.JDBCUtil#close(java.sql.ResultSet)
+     * @see data_objects.util.JDBCUtil#close(java.sql.Statement)
+     */
+    public static void close(java.sql.ResultSet rs,java.sql.Statement stmt) {
+        close(rs);
+        close(stmt);
+    }
+
 
     /**
      * Private constructor
