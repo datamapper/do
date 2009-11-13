@@ -8,28 +8,28 @@ import java.util.List;
  */
 public final class StringUtil {
 
-    public static String join(List<? extends Object> list, CharSequence delim) {
+    public static String join(List<?> list, CharSequence delim) {
         StringBuilder sb = new StringBuilder();
         return appendJoined(sb, list, delim).toString();
     }
 
     public static StringBuilder appendJoined(StringBuilder sb,
-            List<? extends Object> list) {
+            List<?> list) {
         return appendJoined(sb, list, ",", false);
     }
 
     public static StringBuilder appendJoined(StringBuilder sb,
-            List<? extends Object> list, CharSequence delim) {
+            List<?> list, CharSequence delim) {
         return appendJoined(sb, list, delim, false);
     }
 
     public static StringBuilder appendJoinedAndQuoted(StringBuilder sb,
-            List<? extends Object> list) {
+            List<?> list) {
         return appendJoined(sb, list, ",", true);
     }
 
     public static StringBuilder appendJoinedAndQuoted(StringBuilder sb,
-            List<? extends Object> list, CharSequence delim) {
+            List<?> list, CharSequence delim) {
         return appendJoined(sb, list, delim, true);
     }
 
@@ -39,7 +39,7 @@ public final class StringUtil {
     }
 
     private static StringBuilder appendJoined(StringBuilder sb,
-            List<? extends Object> list, CharSequence delim, boolean quote) {
+            List<?> list, CharSequence delim, boolean quote) {
         if (list.isEmpty()) {
             return sb.append("");
         }
@@ -64,7 +64,6 @@ public final class StringUtil {
      * Private constructor
      */
     private StringUtil(){
-
     }
 
 }
