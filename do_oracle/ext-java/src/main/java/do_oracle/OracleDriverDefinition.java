@@ -131,11 +131,8 @@ public class OracleDriverDefinition extends AbstractDriverDefinition {
     @Override
     public void setPreparedStatementParam(PreparedStatement ps,
             IRubyObject arg, int idx) throws SQLException {
-        switch (RubyType.getRubyType(arg.getType().getName())) {
+        switch (RubyType.inferRubyType(arg)) {
         case NIL:
-            // XXX ps.getParameterMetaData().getParameterType(idx) produces
-            // com.mysql.jdbc.ResultSetMetaData:397:in `getField': java.lang.NullPointerException
-            // from com.mysql.jdbc.ResultSetMetaData:275:in `getColumnType'
             ps.setNull(idx, Types.NULL);
             break;
         default:

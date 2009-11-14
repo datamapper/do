@@ -75,7 +75,7 @@ public class PostgresDriverDefinition extends AbstractDriverDefinition {
     public void setPreparedStatementParam(PreparedStatement ps,
             IRubyObject arg, int idx) throws SQLException {
         int jdbcType;
-        switch (RubyType.getRubyType(arg.getType().getName())) {
+        switch (RubyType.inferRubyType(arg)) {
         case STRING:
             jdbcType = ps.getParameterMetaData().getParameterType(idx);
             switch (jdbcType) {

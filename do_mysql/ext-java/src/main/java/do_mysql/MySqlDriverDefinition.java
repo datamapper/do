@@ -67,7 +67,7 @@ public class MySqlDriverDefinition extends AbstractDriverDefinition {
     @Override
     public void setPreparedStatementParam(PreparedStatement ps,
             IRubyObject arg, int idx) throws SQLException {
-        switch (RubyType.getRubyType(arg.getType().getName())) {
+        switch (RubyType.inferRubyType(arg)) {
         case NIL:
             // XXX ps.getParameterMetaData().getParameterType(idx) produces
             // com.mysql.jdbc.ResultSetMetaData:397:in `getField': java.lang.NullPointerException

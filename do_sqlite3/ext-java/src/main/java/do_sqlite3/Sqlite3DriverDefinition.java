@@ -160,7 +160,7 @@ public class Sqlite3DriverDefinition extends AbstractDriverDefinition {
     @Override
     public void setPreparedStatementParam(PreparedStatement ps,
             IRubyObject arg, int idx) throws SQLException {
-        switch (RubyType.getRubyType(arg.getType().getName())) {
+        switch (RubyType.inferRubyType(arg)) {
         case BIG_DECIMAL:
             ps.setString(idx, ((RubyBigDecimal) arg).toString());
             break;
