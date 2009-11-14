@@ -83,4 +83,25 @@ share_examples_for 'supporting String' do
 
   end
 
+  class StringWithExtraPowers < String; end
+
+  describe 'writing a kind of (subclass of) String' do
+
+    before do
+      @reader = @connection.create_command("SELECT id FROM widgets WHERE id = ?").execute_reader(StringWithExtraPowers.new("2"))
+      @reader.next!
+      @values = @reader.values
+    end
+
+    after do
+      @reader.close
+    end
+
+    it 'should return the correct entry' do
+      # Some of the drivers starts autoincrementation from 0 not 1
+      @values.first.should satisfy { |val| val == 1 or val == 2 }
+    end
+
+  end
+
 end
