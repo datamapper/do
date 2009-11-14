@@ -1,5 +1,7 @@
 package data_objects;
 
+import org.jruby.runtime.builtin.IRubyObject;
+import org.jruby.*;
 import java.sql.Types;
 import java.util.HashMap;
 import java.util.Map;
@@ -111,4 +113,47 @@ public enum RubyType {
         return primitiveType;
     }
 
+    public static RubyType inferRubyType(IRubyObject obj){
+        RubyType primitiveType = null;
+        Ruby runtime = obj.getRuntime();
+
+        //XXX Remember that types must by correctly ordered
+        // RubyObject must be last, Extlib::ByteArray must be before String, etc (inheritance)
+        if(obj instanceof RubyFixnum){
+            primitiveType = RubyType.FIXNUM;
+        }else if(obj instanceof RubyBignum){
+            primitiveType = RubyType.BIGNUM;
+        }else if(obj instanceof RubyInteger){
+            primitiveType = RubyType.INTEGER;
+        }else if(obj instanceof RubyFloat){
+            primitiveType = RubyType.FLOAT;
+        }else if(obj instanceof RubyBigDecimal){
+            primitiveType = RubyType.BIG_DECIMAL;
+        }else if(obj.getMetaClass().hasModuleInHierarchy(runtime.fastGetModule("Extlib").fastGetClass("ByteArray"))){
+            primitiveType = RubyType.BYTE_ARRAY;
+        }else if(obj instanceof RubyString){
+            primitiveType = RubyType.STRING;
+        }else if(obj instanceof RubyTime){
+            primitiveType = RubyType.TIME;
+        }else if(obj.getMetaClass().hasModuleInHierarchy(runtime.fastGetClass("DateTime"))){
+            primitiveType = RubyType.DATE_TIME;
+        }else if(obj.getMetaClass().hasModuleInHierarchy(runtime.fastGetClass("Date"))){
+            primitiveType = RubyType.DATE;
+        }else if(obj instanceof RubyNil){
+            primitiveType = RubyType.NIL;
+        }else if(obj.getMetaClass().hasModuleInHierarchy(runtime.fastGetClass("TrueClass"))){
+            primitiveType = RubyType.TRUE_CLASS;
+        }else if(obj.getMetaClass().hasModuleInHierarchy(runtime.fastGetClass("FalseClass"))){
+            primitiveType = RubyType.FALSE_CLASS;
+        }else if(obj instanceof RubyRational){
+            primitiveType = RubyType.RATIONAL;
+        }else if(obj instanceof RubyRegexp){
+            primitiveType = RubyType.REGEXP;
+        }else if(obj instanceof RubyClass){
+            primitiveType = RubyType.CLASS;
+        }else{
+            primitiveType = RubyType.OBJECT;
+        }
+        return primitiveType;
+    }
 }
