@@ -56,8 +56,20 @@ public enum RubyType {
         }
     }
 
-    public static RubyType getRubyType(String rubyName) {
-        return TABLE.get(rubyName.toLowerCase());
+    public static RubyType getRubyType(RubyClass rubyClass) {
+        RubyType result = TABLE.get(rubyClass.getName().toLowerCase());
+        if(result == null){
+            rubyClass = rubyClass.getSuperClass();
+            if(rubyClass.getName().equals("Object")){
+                return null;
+            }
+            else {
+                return getRubyType(rubyClass);
+            }
+        }
+        else{
+          return result;
+        }
     }
 
     public static RubyType jdbcTypeToRubyType(int type, int scale) {

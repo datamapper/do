@@ -161,6 +161,14 @@ share_examples_for 'a Command' do
         @result.close
       end
 
+      it 'should allow subtype types' do
+        class MyString < String; end
+        @reader.set_types(MyString, String)
+        lambda { @result = @reader.execute_reader('Buy this product now!') }.should_not raise_error
+        lambda { @result.next! }.should_not raise_error
+        lambda { @result.values }.should_not raise_error
+        @result.close
+      end
     end
 
   end

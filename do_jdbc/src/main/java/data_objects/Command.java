@@ -364,7 +364,7 @@ public class Command extends DORubyObject {
         for (IRubyObject arg : args) {
             if (arg instanceof RubyClass) {
                 // XXX: clean up this ugliness!
-                RubyType t = RubyType.getRubyType(arg.toString().toUpperCase());
+                RubyType t = RubyType.getRubyType((RubyClass)arg);
                 if (t == null) {
                     throw runtime.newArgumentError("Invalid type given: " + arg.toString());
                 }
@@ -373,7 +373,7 @@ public class Command extends DORubyObject {
                 for (IRubyObject sub_arg : arg.convertToArray().toJavaArray()) {
                     if (sub_arg instanceof RubyClass) {
                         // XXX: clean up this ugliness!
-                        RubyType t = RubyType.getRubyType(sub_arg.toString().toUpperCase());
+                        RubyType t = RubyType.getRubyType((RubyClass)sub_arg);
                         if (t == null) {
                             throw runtime.newArgumentError("Invalid type given: " + sub_arg.toString());
                         }
