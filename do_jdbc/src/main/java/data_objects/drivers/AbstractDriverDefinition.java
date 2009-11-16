@@ -475,8 +475,7 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
      */
     public void setPreparedStatementParam(PreparedStatement ps,
             IRubyObject arg, int idx) throws SQLException {
-        //switch (RubyType.getRubyType(arg.getType().getName())) {
-        switch (RubyType.inferRubyType(arg)) {
+        switch (RubyType.getRubyType(arg.getType().getName())) {
         case FIXNUM:
             ps.setInt(idx, Integer.parseInt(arg.toString()));
             break;
