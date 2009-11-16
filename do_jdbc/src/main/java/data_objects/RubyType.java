@@ -3,6 +3,8 @@ package data_objects;
 import java.sql.Types;
 import java.util.HashMap;
 import java.util.Map;
+import org.jruby.RubyClass;
+import org.jruby.runtime.builtin.IRubyObject;
 
 /**
  * Enum representing the Ruby classes that DataObjects must handle (marshal,
@@ -52,6 +54,14 @@ public enum RubyType {
         for (RubyType t : RubyType.values()) {
             TABLE.put(t.rubyName.toLowerCase(), t);
         }
+    }
+
+    public static RubyType inferRubyType(IRubyObject arg) {
+        RubyType t = getRubyType(arg.getType());
+        if (t == null) {
+            throw arg.getRuntime().newArgumentError("Invalid type inferred: " + arg.toString());
+        }
+        return t;
     }
 
     public static RubyType getRubyType(RubyClass rubyClass) {
