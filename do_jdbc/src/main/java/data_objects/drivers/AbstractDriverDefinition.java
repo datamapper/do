@@ -88,7 +88,7 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
         this.jdbcScheme = jdbcScheme;
         this.moduleName = moduleName;
         try {
-            this.driver = (Driver) Thread.currentThread().getContextClassLoader().loadClass(jdbcDriver).newInstance();
+            this.driver = (Driver)loadClass(jdbcDriver).newInstance();
         }
         catch (InstantiationException e) {
             throw new RuntimeException("should not happen", e);
@@ -99,6 +99,25 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
         catch (ClassNotFoundException e) {
             throw new RuntimeException("should not happen", e);
         }
+    }
+
+    private Class<?> loadClass(String className)
+            throws ClassNotFoundException {
+        ClassLoader ccl = Thread.currentThread().getContextClassLoader();
+        Class<?> result = null;
+        try {
+            if (ccl != null) {
+                result = ccl.loadClass(className);
+            }
+        } catch (ClassNotFoundException e) {
+            // ignore
+        }
+
+        if (result == null) {
+            result = getClass().getClassLoader().loadClass(className);
+        }
+
+        return result;
     }
 
     /**
