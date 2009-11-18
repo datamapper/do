@@ -1,9 +1,7 @@
-require 'lib/do_jdbc/version'
-
 Gem::Specification.new do |s|
   # basic information
   s.name        = "do_jdbc"
-  s.version     = DataObjects::Jdbc::VERSION
+  s.version     = '0.10.1'
 
   # description and details
   s.summary     = 'DataObjects JDBC support library'
@@ -12,7 +10,7 @@ Gem::Specification.new do |s|
   # dependencies
   s.add_dependency "addressable", "~>2.1"
   s.add_dependency "extlib", "~>0.9.14"
-  s.add_dependency "data_objects", DataObjects::Jdbc::VERSION
+  s.add_dependency "data_objects", '0.10.1'
   s.platform = "java"
 
   # development dependencies

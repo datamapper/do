@@ -1,9 +1,7 @@
-require 'lib/do_postgres/version'
-
 Gem::Specification.new do |s|
   # basic information
   s.name        = 'do_postgres'
-  s.version     = DataObjects::Postgres::VERSION
+  s.version     = '0.10.1'
 
   # description and details
   s.summary     = 'DataObjects PostgreSQL Driver'
@@ -12,11 +10,11 @@ Gem::Specification.new do |s|
   # dependencies
   s.add_dependency 'addressable', '~>2.1'
   s.add_dependency 'extlib', '~>0.9.14'
-  s.add_dependency 'data_objects', DataObjects::Postgres::VERSION
+  s.add_dependency 'data_objects', '0.10.1'
 
   if RUBY_PLATFORM =~ /java/
     s.add_dependency "jdbc-postgres", ">=8.2"
-    s.add_dependency 'do_jdbc', DataObjects::Postgres::VERSION
+    s.add_dependency 'do_jdbc', '0.10.1'
     s.platform = 'java'
     # components, files and paths
     s.files = Dir['lib/**/*.rb', 'spec/**/*.rb', 'tasks/**/*.rake',
