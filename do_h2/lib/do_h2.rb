@@ -19,16 +19,6 @@ if RUBY_PLATFORM =~ /java/
   # which is currently not working as expected.
   java_import driver
 
-  module DataObjects
-    module H2
-      class Connection
-        def self.pool_size
-          20
-        end
-      end
-    end
-  end
-
 else
   warn "do_h2 is only for use with JRuby"
 end
