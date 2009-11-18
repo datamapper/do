@@ -1,9 +1,7 @@
-require 'lib/do_sqlserver/version'
-
 Gem::Specification.new do |s|
   # basic information
   s.name        = "do_sqlserver"
-  s.version     = DataObjects::SqlServer::VERSION
+  s.version     = '0.10.1'
 
   # description and details
   s.summary     = 'DataObjects SqlServer Driver'
@@ -11,7 +9,7 @@ Gem::Specification.new do |s|
 
   # dependencies
   s.add_dependency "addressable", "~>2.1"
-  s.add_dependency "data_objects", DataObjects::SqlServer::VERSION
+  s.add_dependency "data_objects", '0.10.1'
 
   if JRUBY
     # DataObjects.rb project bundles the jTDS JDBC Driver for SQL Server (LGPL-
@@ -19,7 +17,7 @@ Gem::Specification.new do |s|
     # ROOT/jdbc_drivers directory.
 
     s.add_dependency "do_jdbc-sqlserver", "1.2.4"
-    s.add_dependency "do_jdbc", DataObjects::SqlServer::VERSION
+    s.add_dependency "do_jdbc", '0.10.1'
     s.platform = "java"
   else
     s.add_dependency 'dbi', '0.4.2'

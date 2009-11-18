@@ -1,9 +1,7 @@
-require 'lib/do_oracle/version'
-
 Gem::Specification.new do |s|
   # basic information
   s.name        = "do_oracle"
-  s.version     = DataObjects::Oracle::VERSION
+  s.version     = '0.10.1'
 
   # description and details
   s.summary     = 'DataObjects Oracle Driver'
@@ -11,12 +9,12 @@ Gem::Specification.new do |s|
 
   # dependencies
   s.add_dependency "addressable", "~>2.1"
-  s.add_dependency "data_objects", DataObjects::Oracle::VERSION
+  s.add_dependency "data_objects", '0.10.1'
 
   if JRUBY
     # no jdbc-oracle available
     # s.add_dependency "jdbc-mysql", ">=5.0.4"
-    s.add_dependency "do_jdbc", DataObjects::Oracle::VERSION
+    s.add_dependency "do_jdbc", '0.10.1'
     s.platform = "java"
     s.files = Dir['lib/**/*.rb', 'spec/**/*.rb', 'tasks/**/*.rake',
                   'LICENSE', 'Rakefile', '*.{markdown,rdoc,txt,yml}', 'lib/*.jar']

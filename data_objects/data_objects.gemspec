@@ -1,9 +1,7 @@
-require 'lib/data_objects/version'
-
 Gem::Specification.new do |s|
   # basic information
   s.name        = "data_objects"
-  s.version     = DataObjects::VERSION
+  s.version     = '0.10.1'
   s.platform    = Gem::Platform::RUBY
 
   # description and details
