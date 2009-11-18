@@ -288,31 +288,12 @@ else
   # Register SqlServer JDBC driver
   java.sql.DriverManager.registerDriver Java::net.sourceforge.jtds.jdbc.Driver.new
 
-  module DataObjects
-    module SqlServer
-      class Connection
-        def self.pool_size
-          20
-        end
+  DataObjects::SqlServer::Connection.class_eval do
 
-        def using_socket?
-          @using_socket
-        end
-
-=begin
-        # REVISIT: Does this problem even exist for Sqlserver?
-        def character_set
-          # JDBC API does not provide an easy way to get the current character set
-          reader = self.create_command("SHOW VARIABLES LIKE 'character_set_client'").execute_reader
-          reader.next!
-          char_set = reader.values[1]
-          reader.close
-          char_set.downcase
-        end
-=end
-
-      end
+    def using_socket?
+      @using_socket
     end
+
   end
 
 end

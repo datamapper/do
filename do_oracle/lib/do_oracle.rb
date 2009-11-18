@@ -114,18 +114,3 @@ if RUBY_PLATFORM !~ /java/
     end
   end
 end
-
-if RUBY_PLATFORM =~ /java/
-
-  module DataObjects
-    module Oracle
-      class Connection
-        def self.pool_size
-          20
-        end
-
-      end
-    end
-  end
-
-end

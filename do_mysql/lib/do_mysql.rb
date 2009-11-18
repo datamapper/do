@@ -26,22 +26,16 @@ require 'do_mysql/encoding'
 
 if RUBY_PLATFORM =~ /java/
 
-  module DataObjects
-    module Mysql
-      class Connection
-        def self.pool_size
-          20
-        end
+  DataObjects::Mysql::Connection.class_eval do
 
-        def using_socket?
-          @using_socket
-        end
-
-        def secure?
-          false
-        end
-      end
+    def using_socket?
+      @using_socket
     end
+
+    def secure?
+      false
+    end
+
   end
 
 end

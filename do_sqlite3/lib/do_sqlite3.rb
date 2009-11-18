@@ -24,16 +24,14 @@ require 'do_sqlite3/transaction'
 
 if RUBY_PLATFORM =~ /java/
 
-  module DataObjects
-    module Sqlite3
-      class Connection
-        def self.pool_size
-          # sqlite3 can have only one write access at a time, with this
-          # concurrent write access will result in "Database locked" errors
-          1
-        end
-      end
+  DataObjects::Sqlite3::Connection.class_eval do
+
+    def self.pool_size
+      # sqlite3 can have only one write access at a time, with this
+      # concurrent write access will result in "Database locked" errors
+      1
     end
+
   end
 
 end

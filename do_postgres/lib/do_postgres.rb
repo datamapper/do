@@ -21,17 +21,3 @@ require 'do_postgres_ext'
 require 'do_postgres/version'
 require 'do_postgres/transaction'
 require 'do_postgres/encoding'
-
-if RUBY_PLATFORM =~ /java/
-
-  module DataObjects
-    module Postgres
-      class Connection
-        def self.pool_size
-          20
-        end
-      end
-    end
-  end
-
-end
