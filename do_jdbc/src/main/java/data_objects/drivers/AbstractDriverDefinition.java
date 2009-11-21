@@ -177,7 +177,7 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
 
             if (user != null && !"".equals(user)) {
                 userInfo.append(user);
-                if (password != null && !"".equals(password)) {
+                if (password != null) {
                     userInfo.append(":").append(password);
                 }
             }

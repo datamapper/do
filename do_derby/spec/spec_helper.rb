@@ -52,6 +52,7 @@ CONFIG = OpenStruct.new
 # CONFIG.database = ENV['DO_DERBY_DATABASE'] || "#{File.expand_path(File.dirname(__FILE__))}/testdb"
 
 CONFIG.uri = ENV["DO_DERBY_SPEC_URI"] || "jdbc:derby:testdb;create=true"
+CONFIG.testsql = "SELECT 1 FROM SYSIBM.SYSDUMMY1"
 
 module DataObjectsSpecHelpers
 

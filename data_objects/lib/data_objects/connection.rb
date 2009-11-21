@@ -20,12 +20,13 @@ module DataObjects
       when :jdbc
         warn 'JDBC URLs (connection strings) are only for use with JRuby' unless RUBY_PLATFORM =~ /java/
 
-        driver_name = if uri.path.split(':').first == 'sqlite'
+        path = uri.path.sub(/jdbc:/, '')
+        driver_name = if path.split(':').first == 'sqlite'
           'sqlite3'
-        elsif uri.path.split(':').first == 'postgresql'
+        elsif path.split(':').first == 'postgresql'
           'postgres'
         else
-          uri.path.split(':').first
+          path.split(':').first
         end
 
         conn_uri = uri_s # NOTE: for now, do not reformat this JDBC connection

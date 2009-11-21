@@ -60,6 +60,43 @@ share_examples_for 'a Connection' do
     it { @connection.create_command('This is a dummy command').should be_kind_of(DataObjects::Command) }
   end
 
+  describe 'various connection URIs' do
+
+    def test_connection(conn)
+      reader = conn.create_command(CONFIG.testsql || "SELECT 1").execute_reader
+      reader.next!
+      reader.values[0]
+    end
+
+    after do
+      @open_connection.close if @open_connection
+    end
+
+    it 'should open with an uri object' do
+      uri = DataObjects::URI.new(
+              @driver,
+              @user,
+              @password,
+              @host,
+              @port.to_i,
+              @database,
+              nil, nil
+            )
+      test_connection(DataObjects::Connection.new(uri)).should == 1
+    end
+
+    it 'should work with non jdbc URIs' do
+      conn = DataObjects::Connection.new("#{CONFIG.uri.sub(/jdbc:/, '')}")
+      test_connection(conn).should == 1
+    end
+
+    if JRUBY
+      it 'should work with jdbc URIs' do
+        conn = DataObjects::Connection.new(CONFIG.jdbc_uri || "jdbc:#{CONFIG.uri.sub(/jdbc:/, '')}")
+        test_connection(conn).should == 1
+      end
+    end
+  end
 end
 
 share_examples_for 'a Connection with authentication support' do

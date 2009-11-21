@@ -56,6 +56,7 @@ CONFIG.database = ENV['DO_ORACLE_DATABASE'] || '/orcl'
 
 CONFIG.uri = ENV["DO_ORACLE_SPEC_URI"] ||"#{CONFIG.scheme}://#{CONFIG.user}:#{CONFIG.pass}@#{CONFIG.host}:#{CONFIG.port}#{CONFIG.database}"
 CONFIG.sleep = "BEGIN SYS.DBMS_LOCK.sleep(seconds => 1); END;"
+CONFIG.testsql = "SELECT 1 FROM dual"
 
 module DataObjectsSpecHelpers
 
