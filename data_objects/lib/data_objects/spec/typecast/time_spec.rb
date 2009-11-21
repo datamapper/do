@@ -1,16 +1,12 @@
-share_examples_for 'supporting Time' do
+shared 'supporting Time' do
 
-  include DataObjectsSpecHelpers
+  setup_test_environment
 
-  before :all do
-    setup_test_environment
-  end
-
-  before :each do
+  before do
     @connection = DataObjects::Connection.new(CONFIG.uri)
   end
 
-  after :each do
+  after do
     @connection.close
   end
 
@@ -18,7 +14,7 @@ share_examples_for 'supporting Time' do
 
     describe 'with manual typecasting' do
 
-      before  do
+      before do
         @command = @connection.create_command("SELECT release_date FROM widgets WHERE ad_description = ?")
         @command.set_types(Time)
         @reader = @command.execute_reader('Buy this product now!')
@@ -31,7 +27,7 @@ share_examples_for 'supporting Time' do
       end
 
       it 'should return the correctly typed result' do
-        @values.first.should be_kind_of(Time)
+        @values.first.should.be.kind_of(Time)
       end
 
       it 'should return the correct result' do
@@ -42,7 +38,7 @@ share_examples_for 'supporting Time' do
 
     describe 'with manual typecasting a nil value' do
 
-      before  do
+      before do
         @command = @connection.create_command("SELECT release_timestamp FROM widgets WHERE id = ?")
         @command.set_types(Time)
         @reader = @command.execute_reader(9)
@@ -55,11 +51,11 @@ share_examples_for 'supporting Time' do
       end
 
       it 'should return a nil class' do
-        @values.first.should be_kind_of(NilClass)
+        @values.first.should.be.kind_of(NilClass)
       end
 
       it 'should return nil' do
-        @values.first.should be_nil
+        @values.first.should.be.nil
       end
 
     end
@@ -68,7 +64,7 @@ share_examples_for 'supporting Time' do
 
   describe 'writing an Time' do
 
-    before  do
+    before do
       @reader = @connection.create_command("SELECT id FROM widgets WHERE release_datetime = ? ORDER BY id").execute_reader(Time.local(2008, 2, 14, 00, 31, 12))
       @reader.next!
       @values = @reader.values
@@ -80,7 +76,7 @@ share_examples_for 'supporting Time' do
 
     it 'should return the correct entry' do
        #Some of the drivers starts autoincrementation from 0 not 1
-       @values.first.should satisfy { |val| val == 1 or val == 0 }
+       @values.first.should.satisfy { |val| val == 1 or val == 0 }
     end
 
   end

@@ -1,16 +1,12 @@
-share_examples_for 'supporting String' do
+shared 'supporting String' do
 
-  include DataObjectsSpecHelpers
+  setup_test_environment
 
-  before :all do
-    setup_test_environment
-  end
-
-  before :each do
+  before do
     @connection = DataObjects::Connection.new(CONFIG.uri)
   end
 
-  after :each do
+  after do
     @connection.close
   end
 
@@ -18,7 +14,7 @@ share_examples_for 'supporting String' do
 
     describe 'with automatic typecasting' do
 
-      before  do
+      before do
         @reader = @connection.create_command("SELECT code FROM widgets WHERE ad_description = ?").execute_reader('Buy this product now!')
         @reader.next!
         @values = @reader.values
@@ -29,7 +25,7 @@ share_examples_for 'supporting String' do
       end
 
       it 'should return the correctly typed result' do
-        @values.first.should be_kind_of(String)
+        @values.first.should.be.kind_of(String)
       end
 
       it 'should return the correct result' do
@@ -40,7 +36,7 @@ share_examples_for 'supporting String' do
 
     describe 'with manual typecasting' do
 
-      before  do
+      before do
         @command = @connection.create_command("SELECT weight FROM widgets WHERE ad_description = ?")
         @command.set_types(String)
         @reader = @command.execute_reader('Buy this product now!')
@@ -53,7 +49,7 @@ share_examples_for 'supporting String' do
       end
 
       it 'should return the correctly typed result' do
-        @values.first.should be_kind_of(String)
+        @values.first.should.be.kind_of(String)
       end
 
       it 'should return the correct result' do
@@ -66,7 +62,7 @@ share_examples_for 'supporting String' do
 
   describe 'writing a String' do
 
-    before  do
+    before do
       @reader = @connection.create_command("SELECT id FROM widgets WHERE id = ?").execute_reader("2")
       @reader.next!
       @values = @reader.values
@@ -78,7 +74,7 @@ share_examples_for 'supporting String' do
 
     it 'should return the correct entry' do
       # Some of the drivers starts autoincrementation from 0 not 1
-      @values.first.should satisfy { |val| val == 1 or val == 2 }
+      @values.first.should.satisfy { |val| val == 1 or val == 2 }
     end
 
   end
@@ -99,7 +95,7 @@ share_examples_for 'supporting String' do
 
     it 'should return the correct entry' do
       # Some of the drivers starts autoincrementation from 0 not 1
-      @values.first.should satisfy { |val| val == 1 or val == 2 }
+      @values.first.should.satisfy { |val| val == 1 or val == 2 }
     end
 
   end

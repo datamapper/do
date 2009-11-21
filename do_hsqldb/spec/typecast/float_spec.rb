@@ -4,6 +4,6 @@ require File.expand_path(File.join(File.dirname(__FILE__), '..', 'spec_helper'))
 require 'data_objects/spec/typecast/float_spec'
 
 describe 'DataObjects::Hsqldb with Float' do
-  it_should_behave_like 'supporting Float'
-  it_should_behave_like 'supporting Float autocasting'
+  behaves_like 'supporting Float'
+  behaves_like 'supporting Float autocasting'
 end

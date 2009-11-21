@@ -1,21 +1,17 @@
-share_examples_for 'a Result' do
+shared 'a Result' do
 
-  include DataObjectsSpecHelpers
+  setup_test_environment
 
-  before :all do
-    setup_test_environment
-  end
-
-  before :each do
+  before do
     @connection = DataObjects::Connection.new(CONFIG.uri)
     @result    = @connection.create_command("INSERT INTO users (name) VALUES (?)").execute_non_query("monkey")
   end
 
-  after :each do
+  after do
     @connection.close
   end
 
-  it { @result.should respond_to(:affected_rows) }
+  it 'should respond to #affected_rows' do @result.should.respond_to(:affected_rows) end
 
   describe 'affected_rows' do
 
@@ -27,15 +23,10 @@ share_examples_for 'a Result' do
 
 end
 
-share_examples_for 'a Result which returns inserted keys' do
+shared 'a Result which returns inserted keys' do
 
-  include DataObjectsSpecHelpers
-
-  before :all do
+  before do
     setup_test_environment
-  end
-
-  before :each do
     @connection = DataObjects::Connection.new(CONFIG.uri)
     command = @connection.create_command("INSERT INTO users (name) VALUES (?)")
     # execute the command twice and expose the second result
@@ -43,15 +34,15 @@ share_examples_for 'a Result which returns inserted keys' do
     @result = command.execute_non_query("monkey")
   end
 
-  after :each do
+  after do
     @connection.close
   end
 
-  it { @result.should respond_to(:affected_rows) }
+  it 'should respond to #affected_rows' do @result.should.respond_to(:affected_rows) end
 
   describe 'insert_id' do
 
-    it 'should return the number of affected rows' do
+    it 'should return the insert_id' do
       # This is actually the 2nd record inserted
       @result.insert_id.should == 2
     end

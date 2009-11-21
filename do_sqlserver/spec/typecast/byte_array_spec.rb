@@ -4,7 +4,7 @@ require File.expand_path(File.join(File.dirname(__FILE__), '..', 'spec_helper'))
 require 'data_objects/spec/typecast/byte_array_spec'
 
 describe 'DataObjects::SqlServer with ByteArray' do
-  # it_should_behave_like 'supporting ByteArray'
+  # behaves_like 'supporting ByteArray'
   #
   # ByteArray is not yet supported on JRuby:
   #

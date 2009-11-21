@@ -5,5 +5,5 @@ require 'data_objects/spec/typecast/byte_array_spec'
 
 describe 'DataObjects::Hsqldb with ByteArray' do
   # We need to switch to using parameter binding for this to work with Hsqldb
-  # it_should_behave_like 'supporting ByteArray'
+  # behaves_like 'supporting ByteArray'
 end

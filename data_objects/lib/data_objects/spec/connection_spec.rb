@@ -1,27 +1,24 @@
-share_examples_for 'a Connection' do
+shared 'a Connection' do
 
-  include DataObjectsSpecHelpers
+  setup_test_environment
 
-  before :all do
-    setup_test_environment
-  end
-
-  before :each do
+  before do
     @connection = DataObjects::Connection.new(CONFIG.uri)
   end
 
-  after :each do
+  after do
     @connection.close
   end
 
-  it { @connection.should be_kind_of(DataObjects::Connection) }
-  it { @connection.should be_kind_of(DataObjects::Pooling) }
+  it 'should be a kind of Connection' do @connection.should.be.kind_of(::DataObjects::Connection) end
+  it 'should be a kind of Pooling'    do @connection.should.be.kind_of(::DataObjects::Pooling)    end
 
-  it { @connection.should respond_to(:dispose) }
+  it 'should respond to #dispose'     do @connection.should.respond_to(:dispose) end
 
   describe 'dispose' do
 
     describe 'on open connection' do
+
       before do
         @open_connection = DataObjects::Connection.new("#{@driver}://#{@user}:#{@password}@#{@host}:#{@port}#{@database}")
         @open_connection.detach
@@ -31,10 +28,14 @@ share_examples_for 'a Connection' do
         @open_connection.close
       end
 
-      it { @open_connection.dispose.should be_true }
+      it 'dispose should be true' do
+        @open_connection.dispose.should.be.true
+      end
+
     end
 
     describe 'on closed connection' do
+
       before do
         @closed_connection = DataObjects::Connection.new("#{@driver}://#{@user}:#{@password}@#{@host}:#{@port}#{@database}")
         @closed_connection.detach
@@ -45,73 +46,76 @@ share_examples_for 'a Connection' do
         @closed_connection.close
       end
 
-      it { @closed_connection.dispose.should be_false }
+      it 'dispose should be false' do
+        @closed_connection.dispose.should.be.false
+      end
 
       it 'should raise an error on creating a command' do
-        lambda { @closed_connection.create_command("INSERT INTO non_existent_table (tester) VALUES (1)").execute_non_query }.should raise_error
+        lambda { @closed_connection.create_command("INSERT INTO non_existent_table (tester) VALUES (1)").execute_non_query }.should.raise(DataObjects::Error) # FIXME (JRuby): DataObjects::ConnectionError
       end
     end
 
   end
 
-  it { @connection.should respond_to(:create_command) }
+  it 'should respond to #create_command' do @connection.should.respond_to(:create_command) end
 
   describe 'create_command' do
-    it { @connection.create_command('This is a dummy command').should be_kind_of(DataObjects::Command) }
+    it 'should be a kind of Command' do
+      @connection.create_command('This is a dummy command').should.be.kind_of(DataObjects::Command)
+    end
   end
 
 end
 
-share_examples_for 'a Connection with authentication support' do
+shared 'a Connection with authentication support' do
 
-  before :all do
-    %w[ @driver @user @password @host @port @database ].each do |ivar|
-      raise "+#{ivar}+ should be defined in before block" unless instance_variable_get(ivar)
-    end
-
+  %w[ @driver @user @password @host @port @database ].each do |ivar|
+    raise "+#{ivar}+ should be defined in before block" unless instance_variable_get(ivar)
   end
 
   describe 'with an invalid URI' do
+
+    # FIXME JRuby (and MRI): Should these be ArgumentError or DataObjects::SQLError?
 
     def connecting_with(uri)
       lambda { DataObjects::Connection.new(uri) }
     end
 
     it 'should raise an error if no database specified' do
-      connecting_with("#{@driver}://#{@user}:#{@password}@#{@host}:#{@port}").should raise_error
+      connecting_with("#{@driver}://#{@user}:#{@password}@#{@host}:#{@port}").should.raise(ArgumentError, DataObjects::Error)
     end
 
     it 'should raise an error if bad username is given' do
-      connecting_with("#{@driver}://thisreallyshouldntexist:#{@password}@#{@host}:#{@port}#{@database}").should raise_error
+      connecting_with("#{@driver}://thisreallyshouldntexist:#{@password}@#{@host}:#{@port}#{@database}").should.raise(ArgumentError, DataObjects::Error)
     end
 
     it 'should raise an error if bad password is given' do
-      connecting_with("#{@driver}://#{@user}:completelyincorrectpassword:#{@host}:#{@port}#{@database}").should raise_error
+      connecting_with("#{@driver}://#{@user}:completelyincorrectpassword:#{@host}:#{@port}#{@database}").should.raise(ArgumentError, DataObjects::Error)
     end
 
     it 'should raise an error if an invalid port is given' do
-      connecting_with("#{@driver}://#{@user}:#{@password}:#{@host}:648646543#{@database}").should raise_error
+      connecting_with("#{@driver}://#{@user}:#{@password}:#{@host}:648646543#{@database}").should.raise(ArgumentError, DataObjects::Error)
     end
 
     it 'should raise an error if an invalid database is given' do
-      connecting_with("#{@driver}://#{@user}:#{@password}:#{@host}:#{@port}/someweirddatabase").should raise_error
+      connecting_with("#{@driver}://#{@user}:#{@password}:#{@host}:#{@port}/someweirddatabase").should.raise(ArgumentError, DataObjects::Error)
     end
 
     it 'should raise an error with a meaningless URI' do
-      connecting_with("#{@driver}://peekaboo$2!@#4543").should raise_error
+      connecting_with("#{@driver}://peekaboo$2!@#4543").should.raise(Addressable::URI::InvalidURIError)
     end
 
   end
 
 end
 
-share_examples_for 'a Connection with SSL support' do
+shared 'a Connection with SSL support' do
 
   if DataObjectsSpecHelpers.test_environment_supports_ssl?
     describe 'connecting with SSL' do
 
       it 'should connect securely' do
-        DataObjects::Connection.new("#{CONFIG.uri}?#{CONFIG.ssl}").secure?.should be_true
+        DataObjects::Connection.new("#{CONFIG.uri}?#{CONFIG.ssl}").secure?.should.be.true
       end
 
     end
@@ -120,19 +124,19 @@ share_examples_for 'a Connection with SSL support' do
   describe 'connecting without SSL' do
 
     it 'should not connect securely' do
-      DataObjects::Connection.new(CONFIG.uri).secure?.should be_false
+      DataObjects::Connection.new(CONFIG.uri).secure?.should.be.false
     end
 
   end
 
 end
 
-share_examples_for 'a Connection via JDNI' do
+shared 'a Connection via JDNI' do
 
   if JRUBY
     describe 'connecting with JNDI' do
 
-      before :each do
+      before do
         begin
           @jndi = Java::data_objects.JNDITestSetup.new("jdbc:#{CONFIG.uri}".gsub(/:sqlite3:/, ':sqlite:'), CONFIG.jdbc_driver, 'mydb')
           @jndi.setup()
@@ -142,7 +146,7 @@ share_examples_for 'a Connection via JDNI' do
         end
       end
 
-      after :each do
+      after do
         @jndi.teardown() unless @jndi.nil?
       end
 

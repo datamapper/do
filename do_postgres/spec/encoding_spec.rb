@@ -14,7 +14,7 @@ describe DataObjects::Postgres::Connection do
     #   handles setting the internal client_encoding setting appropriately. It
     #   can be overridden -- but for now, we won't support doing this.
     #
-    it_should_behave_like 'a driver supporting different encodings'
-    it_should_behave_like 'returning correctly encoded strings for the default encoding'
+    behaves_like 'a driver supporting different encodings'
+    behaves_like 'returning correctly encoded strings for the default encoding'
   end
 end

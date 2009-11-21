@@ -4,22 +4,18 @@ require File.expand_path(File.join(File.dirname(__FILE__), '..', 'spec_helper'))
 require 'data_objects/spec/typecast/time_spec'
 
 describe 'DataObjects::Oracle with Time' do
-  it_should_behave_like 'supporting Time'
+  behaves_like 'supporting Time'
 end
 
 describe 'DataObjects::Oracle with Time' do
 
-  include DataObjectsSpecHelpers
+  setup_test_environment
 
-  before :all do
-    setup_test_environment
-  end
-
-  before :each do
+  before do
     @connection = DataObjects::Connection.new(CONFIG.uri)
   end
 
-  after :each do
+  after do
     @connection.close
   end
 
@@ -38,7 +34,7 @@ describe 'DataObjects::Oracle with Time' do
       end
 
       it 'should return the correctly typed result' do
-        @values.first.should be_kind_of(Time)
+        @values.first.should.be.kind_of(Time)
       end
 
       it 'should return the correct result' do
@@ -53,13 +49,13 @@ end
 
 describe 'DataObjects::Oracle session time zone' do
 
-  after :each do
+  after do
     @connection.close
   end
 
   describe 'set from environment' do
 
-    before :each do
+    before do
       pending "set TZ environment shell variable before running this test" unless ENV['TZ']
       @connection = DataObjects::Connection.new(CONFIG.uri)
     end

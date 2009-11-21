@@ -7,5 +7,5 @@ require 'data_objects/spec/typecast/boolean_spec'
 # http://www.sqlite.org/datatype3.html
 
 describe 'DataObjects::Sqlite3 with Boolean' do
-  it_should_behave_like 'supporting Boolean'
+  behaves_like 'supporting Boolean'
 end

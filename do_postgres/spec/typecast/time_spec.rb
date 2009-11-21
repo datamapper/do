@@ -4,5 +4,5 @@ require File.expand_path(File.join(File.dirname(__FILE__), '..', 'spec_helper'))
 require 'data_objects/spec/typecast/time_spec'
 
 describe 'DataObjects::Postgres with Time' do
-  it_should_behave_like 'supporting Time'
+  behaves_like 'supporting Time'
 end

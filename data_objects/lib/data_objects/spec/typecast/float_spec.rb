@@ -1,16 +1,12 @@
-share_examples_for 'supporting Float' do
+shared 'supporting Float' do
 
-  include DataObjectsSpecHelpers
+  setup_test_environment
 
-  before :all do
-    setup_test_environment
-  end
-
-  before :each do
+  before do
     @connection = DataObjects::Connection.new(CONFIG.uri)
   end
 
-  after :each do
+  after do
     @connection.close
   end
 
@@ -18,7 +14,7 @@ share_examples_for 'supporting Float' do
 
     describe 'with manual typecasting' do
 
-      before  do
+      before do
         @command = @connection.create_command("SELECT id FROM widgets WHERE ad_description = ?")
         @command.set_types(Float)
         @reader = @command.execute_reader('Buy this product now!')
@@ -31,19 +27,19 @@ share_examples_for 'supporting Float' do
       end
 
       it 'should return the correctly typed result' do
-        @values.first.should be_kind_of(Float)
+        @values.first.should.be.kind_of(Float)
       end
 
       it 'should return the correct result' do
        #Some of the drivers starts autoincrementation from 0 not 1
-       @values.first.should satisfy { |val| val == 1.0 or val == 0.0 }
+       @values.first.should.satisfy { |val| val == 1.0 or val == 0.0 }
       end
 
     end
 
     describe 'with manual typecasting a nil' do
 
-      before  do
+      before do
         @command = @connection.create_command("SELECT cost1 FROM widgets WHERE id = ?")
         @command.set_types(Float)
         @reader = @command.execute_reader(5)
@@ -56,11 +52,11 @@ share_examples_for 'supporting Float' do
       end
 
       it 'should return the correctly typed result' do
-        @values.first.should be_kind_of(NilClass)
+        @values.first.should.be.kind_of(NilClass)
       end
 
       it 'should return the correct result' do
-       @values.first.should be_nil
+       @values.first.should.be.nil
       end
 
     end
@@ -68,7 +64,7 @@ share_examples_for 'supporting Float' do
 
   describe 'writing an Float' do
 
-    before  do
+    before do
       @reader = @connection.create_command("SELECT id FROM widgets WHERE id = ?").execute_reader(2.0)
       @reader.next!
       @values = @reader.values
@@ -80,26 +76,22 @@ share_examples_for 'supporting Float' do
 
     it 'should return the correct entry' do
        #Some of the drivers starts autoincrementation from 0 not 1
-       @values.first.should satisfy { |val| val == 1 or val == 2 }
+       @values.first.should.satisfy { |val| val == 1 or val == 2 }
     end
 
   end
 
 end
 
-share_examples_for 'supporting Float autocasting' do
+shared 'supporting Float autocasting' do
 
-  include DataObjectsSpecHelpers
+  setup_test_environment
 
-  before :all do
-    setup_test_environment
-  end
-
-  before :each do
+  before do
     @connection = DataObjects::Connection.new(CONFIG.uri)
   end
 
-  after :each do
+  after do
     @connection.close
   end
 
@@ -107,7 +99,7 @@ share_examples_for 'supporting Float autocasting' do
 
     describe 'with automatic typecasting' do
 
-      before  do
+      before do
         @reader = @connection.create_command("SELECT weight, cost1 FROM widgets WHERE ad_description = ?").execute_reader('Buy this product now!')
         @reader.next!
         @values = @reader.values
@@ -118,8 +110,8 @@ share_examples_for 'supporting Float autocasting' do
       end
 
       it 'should return the correctly typed result' do
-        @values.first.should be_kind_of(Float)
-        @values.last.should be_kind_of(Float)
+        @values.first.should.be.kind_of(Float)
+        @values.last.should.be.kind_of(Float)
       end
 
       it 'should return the correct result' do

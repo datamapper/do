@@ -5,16 +5,16 @@ require 'data_objects/spec/connection_spec'
 
 describe DataObjects::SqlServer::Connection do
 
-  before :all do
-    @driver = CONFIG.scheme
-    @user   = CONFIG.user
+  before do
+    @driver   = CONFIG.scheme
+    @user     = CONFIG.user
     @password = CONFIG.pass
-    @host   = CONFIG.host
-    @port   = CONFIG.port
+    @host     = CONFIG.host
+    @port     = CONFIG.port
     @database = CONFIG.database
   end
 
-  it_should_behave_like 'a Connection'
-  #it_should_behave_like 'a Connection with authentication support'
-  it_should_behave_like 'a Connection via JDNI' if JRUBY
+  behaves_like 'a Connection'
+  #behaves_like 'a Connection with authentication support'
+  behaves_like 'a Connection via JDNI' if JRUBY
 end

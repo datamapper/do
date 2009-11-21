@@ -1,16 +1,12 @@
-share_examples_for 'supporting Nil' do
+shared 'supporting Nil' do
 
-  include DataObjectsSpecHelpers
+  setup_test_environment
 
-  before :all do
-    setup_test_environment
-  end
-
-  before :each do
+  before do
     @connection = DataObjects::Connection.new(CONFIG.uri)
   end
 
-  after :each do
+  after do
     @connection.close
   end
 
@@ -18,7 +14,7 @@ share_examples_for 'supporting Nil' do
 
     describe 'with manual typecasting' do
 
-      before  do
+      before do
         @command = @connection.create_command("SELECT flags FROM widgets WHERE ad_description = ?")
         @command.set_types(NilClass)
         @reader = @command.execute_reader('Buy this product now!')
@@ -31,7 +27,7 @@ share_examples_for 'supporting Nil' do
       end
 
       it 'should return the correctly typed result' do
-        @values.first.should be_kind_of(NilClass)
+        @values.first.should.be.kind_of(NilClass)
       end
 
       it 'should return the correct result' do
@@ -44,19 +40,15 @@ share_examples_for 'supporting Nil' do
 
 end
 
-share_examples_for 'supporting writing an Nil' do
+shared 'supporting writing an Nil' do
 
-  include DataObjectsSpecHelpers
+  setup_test_environment
 
-  before :all do
-    setup_test_environment
-  end
-
-  before :each do
+  before do
     @connection = DataObjects::Connection.new(CONFIG.uri)
   end
 
-  after :each do
+  after do
     @connection.close
   end
 
@@ -68,7 +60,7 @@ share_examples_for 'supporting writing an Nil' do
 
     describe 'as a parameter' do
 
-        before  do
+        before do
           @reader = @connection.create_command("SELECT id FROM widgets WHERE ad_description IN (?) ORDER BY id").execute_reader(nil)
       end
 
@@ -77,7 +69,7 @@ share_examples_for 'supporting writing an Nil' do
         end
 
         it 'should return the correct entry' do
-          @reader.next!.should be_false
+          @reader.next!.should.be.false
         end
 
     end
@@ -86,19 +78,15 @@ share_examples_for 'supporting writing an Nil' do
 
 end
 
-share_examples_for 'supporting Nil autocasting' do
+shared 'supporting Nil autocasting' do
 
-  include DataObjectsSpecHelpers
+  setup_test_environment
 
-  before :all do
-    setup_test_environment
-  end
-
-  before :each do
+  before do
     @connection = DataObjects::Connection.new(CONFIG.uri)
   end
 
-  after :each do
+  after do
     @connection.close
   end
 
@@ -106,7 +94,7 @@ share_examples_for 'supporting Nil autocasting' do
 
     describe 'with automatic typecasting' do
 
-      before  do
+      before do
         @reader = @connection.create_command("SELECT ad_description FROM widgets WHERE id = ?").execute_reader(3)
         @reader.next!
         @values = @reader.values
@@ -117,7 +105,7 @@ share_examples_for 'supporting Nil autocasting' do
       end
 
       it 'should return the correctly typed result' do
-        @values.first.should be_kind_of(NilClass)
+        @values.first.should.be.kind_of(NilClass)
       end
 
       it 'should return the correct result' do

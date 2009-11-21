@@ -1,16 +1,12 @@
-share_examples_for 'supporting Boolean' do
+shared 'supporting Boolean' do
 
-  include DataObjectsSpecHelpers
+  setup_test_environment
 
-  before :all do
-    setup_test_environment
-  end
-
-  before :each do
+  before do
     @connection = DataObjects::Connection.new(CONFIG.uri)
   end
 
-  after :each do
+  after do
     @connection.close
   end
 
@@ -18,7 +14,7 @@ share_examples_for 'supporting Boolean' do
 
     describe 'with manual typecasting' do
 
-      before  do
+      before do
         @command = @connection.create_command("SELECT flags FROM widgets WHERE ad_description = ?")
         @command.set_types(TrueClass)
         @reader = @command.execute_reader('Buy this product now!')
@@ -31,7 +27,7 @@ share_examples_for 'supporting Boolean' do
       end
 
       it 'should return the correctly typed result' do
-        @values.first.should be_kind_of(FalseClass)
+        @values.first.should.be.kind_of(FalseClass)
       end
 
       it 'should return the correct result' do
@@ -42,7 +38,7 @@ share_examples_for 'supporting Boolean' do
 
     describe 'with manual typecasting a nil value' do
 
-      before  do
+      before do
         @command = @connection.create_command("SELECT flags FROM widgets WHERE id = ?")
         @command.set_types(TrueClass)
         @reader = @command.execute_reader(4)
@@ -55,11 +51,11 @@ share_examples_for 'supporting Boolean' do
       end
 
       it 'should return the correctly typed result' do
-        @values.first.should be_kind_of(NilClass)
+        @values.first.should.be.kind_of(NilClass)
       end
 
       it 'should return the correct result' do
-       @values.first.should be_nil
+       @values.first.should.be.nil
       end
 
     end
@@ -68,7 +64,7 @@ share_examples_for 'supporting Boolean' do
 
   describe 'writing an Boolean' do
 
-    before  do
+    before do
       @reader = @connection.create_command("SELECT id FROM widgets WHERE flags = ?").execute_reader(true)
       @reader.next!
       @values = @reader.values
@@ -86,19 +82,15 @@ share_examples_for 'supporting Boolean' do
 
 end
 
-share_examples_for 'supporting Boolean autocasting' do
+shared 'supporting Boolean autocasting' do
 
-  include DataObjectsSpecHelpers
+  setup_test_environment
 
-  before :all do
-    setup_test_environment
-  end
-
-  before :each do
+  before do
     @connection = DataObjects::Connection.new(CONFIG.uri)
   end
 
-  after :each do
+  after do
     @connection.close
   end
 
@@ -106,7 +98,7 @@ share_examples_for 'supporting Boolean autocasting' do
 
     describe 'with automatic typecasting' do
 
-      before  do
+      before do
         @reader = @connection.create_command("SELECT flags FROM widgets WHERE ad_description = ?").execute_reader('Buy this product now!')
         @reader.next!
         @values = @reader.values
@@ -117,7 +109,7 @@ share_examples_for 'supporting Boolean autocasting' do
       end
 
       it 'should return the correctly typed result' do
-        @values.first.should be_kind_of(FalseClass)
+        @values.first.should.be.kind_of(FalseClass)
       end
 
       it 'should return the correct result' do

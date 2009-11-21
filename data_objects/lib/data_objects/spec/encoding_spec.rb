@@ -1,15 +1,15 @@
-share_examples_for 'a driver supporting different encodings' do
+shared 'a driver supporting different encodings' do
 
-  before :each do
+  before do
     @connection = DataObjects::Connection.new(CONFIG.uri)
   end
 
-  after :each do
+  after do
     @connection.close
   end
 
 
-  it { @connection.should respond_to(:character_set) }
+  it 'should respond to #character_set' do @connection.should.respond_to(:character_set) end
 
   describe 'character_set' do
 
@@ -25,7 +25,9 @@ share_examples_for 'a driver supporting different encodings' do
 
       after { @latin1_connection.close }
 
-      it { @latin1_connection.character_set.should == 'ISO-8859-1' }
+      it 'the character set should be ISO-8859-1' do
+        @latin1_connection.character_set.should == 'ISO-8859-1'
+      end
     end
 
     describe 'uses UTF-8 when an invalid encoding is given' do
@@ -35,24 +37,23 @@ share_examples_for 'a driver supporting different encodings' do
 
       after { @latin1_connection.close }
 
-      it { @latin1_connection.character_set.should == 'UTF-8' }
+      it 'the character set should be UTF-8' do
+        @latin1_connection.character_set.should == 'UTF-8'
+      end
     end
   end
 end
 
-share_examples_for 'returning correctly encoded strings for the default encoding' do
+shared 'returning correctly encoded strings for the default encoding' do
 
-  include DataObjectsSpecHelpers
 
-  before :all do
-    setup_test_environment
-  end
+  setup_test_environment
 
-  before :each do
+  before do
     @connection = DataObjects::Connection.new(CONFIG.uri)
   end
 
-  after :each do
+  after do
     @connection.close
   end
 
@@ -60,7 +61,7 @@ share_examples_for 'returning correctly encoded strings for the default encoding
     describe 'with encoded string support' do
 
       describe 'reading a String' do
-        before  do
+        before do
           @reader = @connection.create_command("SELECT name FROM widgets WHERE ad_description = ?").execute_reader('Buy this product now!')
           @reader.next!
           @values = @reader.values
@@ -71,13 +72,13 @@ share_examples_for 'returning correctly encoded strings for the default encoding
         end
 
         it 'should return UTF-8 encoded String' do
-          @values.first.should be_kind_of(String)
+          @values.first.should.be.kind_of(String)
           @values.first.encoding.name.should == 'UTF-8'
         end
       end
 
       describe 'reading a ByteArray' do
-        before  do
+        before do
           @command = @connection.create_command("SELECT ad_image FROM widgets WHERE ad_description = ?")
           @command.set_types(Extlib::ByteArray)
           @reader = @command.execute_reader('Buy this product now!')
@@ -90,7 +91,7 @@ share_examples_for 'returning correctly encoded strings for the default encoding
         end
 
         it 'should return ASCII-8BIT encoded ByteArray' do
-          @values.first.should be_kind_of(::Extlib::ByteArray)
+          @values.first.should.be.kind_of(::Extlib::ByteArray)
           @values.first.encoding.name.should == 'ASCII-8BIT'
         end
       end

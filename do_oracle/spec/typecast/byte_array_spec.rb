@@ -4,17 +4,14 @@ require File.expand_path(File.join(File.dirname(__FILE__), '..', 'spec_helper'))
 require 'data_objects/spec/typecast/byte_array_spec'
 
 describe 'DataObjects::Oracle with ByteArray' do
-  include DataObjectsSpecHelpers
 
-  before :all do
-    setup_test_environment
-  end
+  setup_test_environment
 
-  before :each do
+  before do
     @connection = DataObjects::Connection.new(CONFIG.uri)
   end
 
-  after :each do
+  after do
     @connection.close
   end
 
@@ -33,7 +30,7 @@ describe 'DataObjects::Oracle with ByteArray' do
       end
 
       it 'should return the correctly typed result' do
-        @values.first.should be_kind_of(::Extlib::ByteArray)
+        @values.first.should.be.kind_of(::Extlib::ByteArray)
       end
 
       it 'should return the correct result' do
@@ -57,7 +54,7 @@ describe 'DataObjects::Oracle with ByteArray' do
       end
 
       it 'should return the correctly typed result' do
-        @values.first.should be_kind_of(::Extlib::ByteArray)
+        @values.first.should.be.kind_of(::Extlib::ByteArray)
       end
 
       it 'should return the correct result' do

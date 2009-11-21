@@ -1,16 +1,12 @@
-share_examples_for 'supporting Class' do
+shared 'supporting Class' do
 
-  include DataObjectsSpecHelpers
+  setup_test_environment
 
-  before :all do
-    setup_test_environment
-  end
-
-  before :each do
+  before do
     @connection = DataObjects::Connection.new(CONFIG.uri)
   end
 
-  after :each do
+  after do
     @connection.close
   end
 
@@ -18,7 +14,7 @@ share_examples_for 'supporting Class' do
 
     describe 'with manual typecasting' do
 
-      before  do
+      before do
         @command = @connection.create_command("SELECT whitepaper_text FROM widgets WHERE ad_description = ?")
         @command.set_types(Class)
         @reader = @command.execute_reader('Buy this product now!')
@@ -31,7 +27,7 @@ share_examples_for 'supporting Class' do
       end
 
       it 'should return the correctly typed result' do
-        @values.first.should be_kind_of(Class)
+        @values.first.should.be.kind_of(Class)
       end
 
       it 'should return the correct result' do
@@ -44,7 +40,7 @@ share_examples_for 'supporting Class' do
 
   describe 'writing a Class' do
 
-    before  do
+    before do
       @reader = @connection.create_command("SELECT whitepaper_text FROM widgets WHERE whitepaper_text = ?").execute_reader(String)
       @reader.next!
       @values = @reader.values

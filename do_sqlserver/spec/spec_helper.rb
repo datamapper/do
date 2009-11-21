@@ -2,9 +2,7 @@ $TESTING=true
 JRUBY = RUBY_PLATFORM =~ /java/
 
 require 'rubygems'
-
-gem 'rspec', '>1.1.12'
-require 'spec'
+require 'bacon'
 
 require 'date'
 require 'ostruct'
@@ -38,9 +36,7 @@ DataObjects::SqlServer.logger = DataObjects::Logger.new(log_path, :debug)
 
 at_exit { DataObjects.logger.flush }
 
-Spec::Runner.configure do |config|
-  config.include(DataObjects::Spec::PendingHelpers)
-end
+Bacon.summary_on_exit
 
 CONFIG = OpenStruct.new
 CONFIG.scheme   = 'sqlserver'
@@ -161,3 +157,6 @@ module DataObjectsSpecHelpers
   end
 
 end
+
+include DataObjectsSpecHelpers
+include DataObjects::Spec::PendingHelpers

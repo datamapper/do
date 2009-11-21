@@ -4,22 +4,18 @@ require File.expand_path(File.join(File.dirname(__FILE__), '..', 'spec_helper'))
 require 'data_objects/spec/typecast/string_spec'
 
 # describe 'DataObjects::Oracle with String' do
-#   it_should_behave_like 'supporting String'
+#   behaves_like 'supporting String'
 # end
 
 describe 'DataObjects::Oracle with String' do
 
-  include DataObjectsSpecHelpers
+  setup_test_environment
 
-  before :all do
-    setup_test_environment
-  end
-
-  before :each do
+  before do
     @connection = DataObjects::Connection.new(CONFIG.uri)
   end
 
-  after :each do
+  after do
     @connection.close
   end
 
@@ -38,7 +34,7 @@ describe 'DataObjects::Oracle with String' do
       end
 
       it 'should return the correctly typed result' do
-        @values.first.should be_kind_of(String)
+        @values.first.should.be.kind_of(String)
       end
 
       it 'should return the correct result' do
@@ -62,7 +58,7 @@ describe 'DataObjects::Oracle with String' do
       end
 
       it 'should return the correctly typed result' do
-        @values.first.should be_kind_of(String)
+        @values.first.should.be.kind_of(String)
       end
 
       it 'should return the correct result' do
@@ -87,7 +83,7 @@ describe 'DataObjects::Oracle with String' do
 
     it 'should return the correct entry' do
       # Some of the drivers starts autoincrementation from 0 not 1
-      @values.first.should satisfy { |val| val == 1 or val == 2 }
+      @values.first.should.satisfy { |val| val == 1 or val == 2 }
     end
 
   end
@@ -96,17 +92,13 @@ end
 
 describe 'DataObjects::Oracle with Text' do
 
-  include DataObjectsSpecHelpers
+  setup_test_environment
 
-  before :all do
-    setup_test_environment
-  end
-
-  before :each do
+  before do
     @connection = DataObjects::Connection.new(CONFIG.uri)
   end
 
-  after :each do
+  after do
     @connection.close
   end
 
@@ -125,7 +117,7 @@ describe 'DataObjects::Oracle with Text' do
       end
 
       it 'should return the correctly typed result' do
-        @values.first.should be_kind_of(String)
+        @values.first.should.be.kind_of(String)
       end
 
       it 'should return the correct result' do

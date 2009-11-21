@@ -4,23 +4,19 @@ require File.expand_path(File.join(File.dirname(__FILE__), '..', 'spec_helper'))
 require 'data_objects/spec/typecast/float_spec'
 
 describe 'DataObjects::Oracle with Float' do
-  it_should_behave_like 'supporting Float'
-  # it_should_behave_like 'supporting Float autocasting'
+  behaves_like 'supporting Float'
+  # behaves_like 'supporting Float autocasting'
 end
 
 describe 'DataObjects::Oracle with Float supporting Float autocasting' do
 
-  include DataObjectsSpecHelpers
+  setup_test_environment
 
-  before :all do
-    setup_test_environment
-  end
-
-  before :each do
+  before do
     @connection = DataObjects::Connection.new(CONFIG.uri)
   end
 
-  after :each do
+  after do
     @connection.close
   end
 
@@ -39,8 +35,8 @@ describe 'DataObjects::Oracle with Float supporting Float autocasting' do
       end
 
       it 'should return the correctly typed result' do
-        @values.first.should be_kind_of(Float)
-        @values.last.should be_kind_of(Float)
+        @values.first.should.be.kind_of(Float)
+        @values.last.should.be.kind_of(Float)
       end
 
       it 'should return the correct result' do

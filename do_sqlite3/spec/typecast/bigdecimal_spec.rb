@@ -7,5 +7,5 @@ require 'data_objects/spec/typecast/bigdecimal_spec'
 # http://www.sqlite.org/datatype3.html
 
 describe 'DataObjects::Sqlite3 with BigDecimal' do
-  it_should_behave_like 'supporting BigDecimal'
+  behaves_like 'supporting BigDecimal'
 end

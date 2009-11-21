@@ -2,7 +2,7 @@ module DataObjects::Spec
   module PendingHelpers
     def pending_if(message, boolean)
       if boolean
-        pending(message) { yield }
+        should.flunk(message) { yield }
       else
         yield
       end

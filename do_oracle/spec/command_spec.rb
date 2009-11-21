@@ -4,14 +4,14 @@ require File.expand_path(File.join(File.dirname(__FILE__), 'spec_helper'))
 require 'data_objects/spec/command_spec'
 
 describe DataObjects::Oracle::Command do
-  it_should_behave_like 'a Command'
+  behaves_like 'a Command'
 
   if JRUBY
-    it_should_behave_like 'a Command with async'
+    behaves_like 'a Command with async'
   else
     describe 'running queries in parallel' do
 
-      before :each do
+      before do
 
         threads = []
         connections = []
@@ -34,7 +34,7 @@ describe DataObjects::Oracle::Command do
         connections.each {|c| c.close}
       end
 
-      # after :each do
+      # after do
       #   @connection.close
       # end
 

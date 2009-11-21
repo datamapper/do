@@ -1,45 +1,41 @@
 WINDOWS = Gem.win_platform? || (JRUBY && ENV_JAVA['os.name'] =~ /windows/i)
 
-share_examples_for 'a Command' do
+shared 'a Command' do
 
-  include DataObjectsSpecHelpers
+  setup_test_environment
 
-  before :all do
-    setup_test_environment
-  end
-
-  before :each do
+  before do
     @connection = DataObjects::Connection.new(CONFIG.uri)
     @command    = @connection.create_command("INSERT INTO users (name) VALUES (?)")
     @reader     = @connection.create_command("SELECT code, name FROM widgets WHERE ad_description = ?")
   end
 
-  after :each do
+  after do
     @connection.close
   end
 
-  it { @command.should be_kind_of(DataObjects::Command) }
+  it 'should be a kind of Command' do @command.should.be.kind_of(DataObjects::Command) end
 
-  it { @command.should respond_to(:execute_non_query) }
+  it 'should respond to #execute_non_query' do @command.should.respond_to(:execute_non_query) end
 
   describe 'execute_non_query' do
 
     describe 'with an invalid statement' do
 
-      before :each do
+      before do
         @invalid_command = @connection.create_command("INSERT INTO non_existent_table (tester) VALUES (1)")
       end
 
       it 'should raise an error on an invalid query' do
-        lambda { @invalid_command.execute_non_query }.should raise_error
+        lambda { @invalid_command.execute_non_query }.should.raise(DataObjects::Error) # FIXME JRuby: DataObjects::SQLError
       end
 
       it 'should raise an error with too few binding parameters' do
-        lambda { @command.execute_non_query("Too", "Many") }.should raise_error(ArgumentError, "Binding mismatch: 2 for 1")
+        lambda { @command.execute_non_query("Too", "Many") }.should.raise(ArgumentError, "Binding mismatch: 2 for 1")
       end
 
       it 'should raise an error with too many binding parameters' do
-        lambda { @command.execute_non_query }.should raise_error(ArgumentError, "Binding mismatch: 0 for 1")
+        lambda { @command.execute_non_query }.should.raise(ArgumentError, "Binding mismatch: 0 for 1")
       end
 
     end
@@ -47,45 +43,46 @@ share_examples_for 'a Command' do
     describe 'with a valid statement' do
 
       it 'should not raise an error with an explicit nil as parameter' do
-        lambda { @command.execute_non_query(nil) }.should_not raise_error
+        lambda { @command.execute_non_query(nil) }.should.not.raise
       end
 
     end
 
     describe 'with a valid statement and ? inside quotes' do
 
-      before :each do
+      before do
         @command_with_quotes = @connection.create_command("INSERT INTO users (name) VALUES ('will it work? ')")
       end
 
       it 'should not raise an error' do
-        lambda { @command_with_quotes.execute_non_query }.should_not raise_error
+        lambda { @command_with_quotes.execute_non_query }.should.not.raise
       end
 
     end
 
   end
 
-  it { @command.should respond_to(:execute_reader) }
+  it 'should respond to #execute_reader' do @command.should.respond_to(:execute_reader) end
 
   describe 'execute_reader' do
 
     describe 'with an invalid reader' do
 
-      before :each do
+      before do
         @invalid_reader = @connection.create_command("SELECT * FROM non_existent_widgets WHERE ad_description = ?")
       end
 
       it 'should raise an error on an invalid query' do
-        lambda { @invalid_reader.execute_reader }.should raise_error
+        # FIXME JRuby (and MRI): Should this be an argument errror or DataObjects::SQLError?
+        lambda { @invalid_reader.execute_reader }.should.raise(ArgumentError, DataObjects::Error)
       end
 
       it 'should raise an error with too few binding parameters' do
-        lambda { @reader.execute_reader("Too", "Many") }.should raise_error(ArgumentError, "Binding mismatch: 2 for 1")
+        lambda { @reader.execute_reader("Too", "Many") }.should.raise(ArgumentError, "Binding mismatch: 2 for 1")
       end
 
       it 'should raise an error with too many binding parameters' do
-        lambda { @reader.execute_reader }.should raise_error(ArgumentError, "Binding mismatch: 0 for 1")
+        lambda { @reader.execute_reader }.should.raise(ArgumentError, "Binding mismatch: 0 for 1")
       end
 
     end
@@ -93,19 +90,19 @@ share_examples_for 'a Command' do
     describe 'with a valid reader' do
 
       it 'should not raise an error with an explicit nil as parameter' do
-        lambda { @reader.execute_reader(nil) }.should_not raise_error
+        lambda { @reader.execute_reader(nil) }.should.not.raise
       end
 
     end
 
     describe 'with a valid reader and ? inside column alias' do
 
-      before :each do
+      before do
         @reader_with_quotes = @connection.create_command("SELECT code AS \"code?\", name FROM widgets WHERE ad_description = ?")
       end
 
       it 'should not raise an error' do
-        lambda { @reader_with_quotes.execute_reader(nil) }.should_not raise_error
+        lambda { @reader_with_quotes.execute_reader(nil) }.should.not.raise
       end
 
     end
@@ -113,18 +110,18 @@ share_examples_for 'a Command' do
 
   end
 
-  it { @command.should respond_to(:set_types) }
+  it 'should respond to #set_types' do @command.should.respond_to(:set_types) end
 
   describe 'set_types' do
 
     describe 'is invalid when used with a statement' do
 
-      before :each do
+      before do
         @command.set_types(String)
       end
 
       it 'should raise an error when types are set' do
-        lambda { @command.execute_non_query }.should raise_error
+        lambda { @command.execute_non_query }.should.raise(ArgumentError)
       end
 
     end
@@ -133,12 +130,12 @@ share_examples_for 'a Command' do
 
       it 'should raise an error with too few types' do
         @reader.set_types(String)
-        lambda { @reader.execute_reader("One parameter") }.should raise_error(ArgumentError, "Field-count mismatch. Expected 1 fields, but the query yielded 2")
+        lambda { @reader.execute_reader("One parameter") }.should.raise(ArgumentError, "Field-count mismatch. Expected 1 fields, but the query yielded 2")
       end
 
       it 'should raise an error with too many types' do
         @reader.set_types(String, String, BigDecimal)
-        lambda { @reader.execute_reader("One parameter") }.should raise_error(ArgumentError, "Field-count mismatch. Expected 3 fields, but the query yielded 2")
+        lambda { @reader.execute_reader("One parameter") }.should.raise(ArgumentError, "Field-count mismatch. Expected 3 fields, but the query yielded 2")
       end
 
     end
@@ -147,33 +144,33 @@ share_examples_for 'a Command' do
 
       it 'should not raise an error with correct number of types' do
         @reader.set_types(String, String)
-        lambda { @result = @reader.execute_reader('Buy this product now!') }.should_not raise_error
-        lambda { @result.next! }.should_not raise_error
-        lambda { @result.values }.should_not raise_error
+        lambda { @result = @reader.execute_reader('Buy this product now!') }.should.not.raise
+        lambda { @result.next! }.should.not.raise
+        lambda { @result.values }.should.not.raise
         @result.close
       end
 
       it 'should also support old style array argument types' do
         @reader.set_types([String, String])
-        lambda { @result = @reader.execute_reader('Buy this product now!') }.should_not raise_error
-        lambda { @result.next! }.should_not raise_error
-        lambda { @result.values }.should_not raise_error
+        lambda { @result = @reader.execute_reader('Buy this product now!') }.should.not.raise
+        lambda { @result.next! }.should.not.raise
+        lambda { @result.values }.should.not.raise
         @result.close
       end
 
       it 'should allow subtype types' do
         class MyString < String; end
         @reader.set_types(MyString, String)
-        lambda { @result = @reader.execute_reader('Buy this product now!') }.should_not raise_error
-        lambda { @result.next! }.should_not raise_error
-        lambda { @result.values }.should_not raise_error
+        lambda { @result = @reader.execute_reader('Buy this product now!') }.should.not.raise
+        lambda { @result.next! }.should.not.raise
+        lambda { @result.values }.should.not.raise
         @result.close
       end
     end
 
   end
 
-  it { @command.should respond_to(:to_s) }
+  it 'should respond to #to_s' do @command.should.respond_to(:to_s) end
 
   describe 'to_s' do
 
@@ -182,17 +179,13 @@ share_examples_for 'a Command' do
 
 end
 
-share_examples_for 'a Command with async' do
+shared 'a Command with async' do
 
-  include DataObjectsSpecHelpers
-
-  before :all do
-    setup_test_environment
-  end
+  setup_test_environment
 
   describe 'running queries in parallel' do
 
-    before :each do
+    before do
 
       threads = []
 
@@ -216,7 +209,7 @@ share_examples_for 'a Command with async' do
       @finish = Time.now
     end
 
-    after :each do
+    after do
       @connection.close
     end
 

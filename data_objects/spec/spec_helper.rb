@@ -1,5 +1,9 @@
 require 'rubygems'
 require 'bacon'
+begin
+  require 'greeneggs'
+rescue LoadError
+end
 require 'mocha/api'
 require 'mocha/object'
 
