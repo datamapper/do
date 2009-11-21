@@ -73,7 +73,7 @@ describe "DataObjects::Pooling" do
     end
   end
 
-  after :each do
+  after do
     DataObjects::Pooling.lock.synchronize do
       DataObjects::Pooling.pools.each do |pool|
         pool.lock.synchronize do
@@ -86,19 +86,19 @@ describe "DataObjects::Pooling" do
   it "should track the initialized pools" do
     bob = Person.new('Bob') # Ensure the pool is "primed"
     bob.name.should == 'Bob'
-    bob.instance_variable_get(:@__pool).should_not be_nil
+    bob.instance_variable_get(:@__pool).should.not.be.nil
     Person.__pools.size.should == 1
     bob.release
     Person.__pools.size.should == 1
 
-    DataObjects::Pooling::pools.should_not be_empty
+    DataObjects::Pooling::pools.should.not.be.empty
 
     sleep(1.2)
 
     # NOTE: This assertion is commented out, as our MockConnection objects are
     #       currently in the pool.
     # DataObjects::Pooling::pools.should be_empty
-    bob.name.should be_nil
+    bob.name.should == nil
   end
 
   it "should maintain a size of 1" do
@@ -121,7 +121,7 @@ describe "DataObjects::Pooling" do
 
   it "should allow you to overwrite Class#new" do
     bob = Overwriter.new('Bob')
-    bob.should be_overwritten
+    bob.should.be.overwritten
     bob.release
   end
 
@@ -136,7 +136,7 @@ describe "DataObjects::Pooling" do
       bob = Person.new('Bob')
       t1.join
       bob.release
-    end.should_not raise_error
+    end.should.not.raise
   end
 
   it "should allow you to flush a pool" do
@@ -150,7 +150,7 @@ describe "DataObjects::Pooling" do
     Overwriter.__pools[['Bob']].flush!
     Overwriter.__pools[['Bob']].size.should == 0
 
-    bob.name.should be_nil
+    bob.name.should.be.nil
   end
 
   it "should wake up the scavenger thread when exiting" do
@@ -158,7 +158,7 @@ describe "DataObjects::Pooling" do
     bob.release
     DataObjects.exiting = true
     sleep(0.1)
-    DataObjects::Pooling.scavenger?.should be_false
+    DataObjects::Pooling.scavenger?.should.be.false
   end
 
   it "should be able to detach an instance from the pool" do

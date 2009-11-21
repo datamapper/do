@@ -12,7 +12,8 @@ Gem::Specification.new do |s|
   s.add_dependency "addressable", "~>2.1"
 
   # development dependencies
-  s.add_development_dependency "rspec", "~>1.2"
+  s.add_development_dependency 'bacon', '~>1.1'
+  s.add_development_dependency 'mocha', '~>0.9'
 
   # components, files and paths
   s.files = FileList["lib/**/*.rb", "spec/**/*.rb", "tasks/**/*.rake",

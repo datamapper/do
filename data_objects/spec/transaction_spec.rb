@@ -2,14 +2,14 @@ require File.expand_path(File.join(File.dirname(__FILE__), 'spec_helper'))
 
 describe DataObjects::Transaction do
 
-  before :each do
+  before do
     @connection = mock("connection")
-    DataObjects::Connection.should_receive(:new).with("mock://mock/mock").once.and_return(@connection)
+    DataObjects::Connection.expects(:new).with("mock://mock/mock").once.returns(@connection)
     @transaction = DataObjects::Transaction.new("mock://mock/mock")
   end
 
   it "should have a HOST constant" do
-    DataObjects::Transaction::HOST.should_not == nil?
+    DataObjects::Transaction::HOST.should.not == nil?
   end
 
   describe "#initialize" do
@@ -17,22 +17,24 @@ describe DataObjects::Transaction do
       @transaction.connection.should == @connection
     end
     it "should provide an id" do
-      @transaction.id.should_not == nil
+      @transaction.id.should.not == nil
     end
     it "should provide a unique id" do
-      DataObjects::Connection.should_receive(:new).with("mock://mock/mock2").once.and_return(@connection)
-      @transaction.id.should_not == DataObjects::Transaction.new("mock://mock/mock2").id
+      DataObjects::Connection.expects(:new).with("mock://mock/mock2").once.returns(@connection)
+      @transaction.id.should.not == DataObjects::Transaction.new("mock://mock/mock2").id
     end
   end
+
   describe "#close" do
     it "should close its connection" do
-      @connection.should_receive(:close).once
-      @transaction.close
+      @connection.expects(:close).once
+      lambda { @transaction.close }.should.not.raise
     end
   end
+
   [:prepare, :commit_prepared, :rollback_prepared].each do |meth|
     it "should raise NotImplementedError on #{meth}" do
-      lambda do @transaction.send(meth) end.should raise_error(NotImplementedError)
+      lambda do @transaction.send(meth) end.should.raise(NotImplementedError)
     end
   end
 

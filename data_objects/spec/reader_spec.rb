@@ -9,13 +9,13 @@ describe DataObjects::Reader do
 
     reader = command.execute_reader
 
-    reader.should be_a(Enumerable)
+    reader.should.be.kind_of(Enumerable)
 
-    reader.should respond_to(:close)
-    reader.should respond_to(:next!)
-    reader.should respond_to(:values)
-    reader.should respond_to(:fields)
-    reader.should respond_to(:each)
+    reader.should.respond_to(:close)
+    reader.should.respond_to(:next!)
+    reader.should.respond_to(:values)
+    reader.should.respond_to(:fields)
+    reader.should.respond_to(:each)
 
     connection.close
   end
