@@ -58,7 +58,7 @@ public final class JDBCUtil {
 
     /**
      *
-     * Close a java.sql.ResultSet and java.sql.Statement, 
+     * Close a java.sql.ResultSet and java.sql.Statement,
      * while ignoring any database errors (in the
      * form of SQLException) that may result from freeing the resource.
      *
