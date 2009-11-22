@@ -27,7 +27,7 @@ Gem::Specification.new do |s|
   end
 
   # development dependencies
-  s.add_development_dependency "rspec", "~>1.2"
+  s.add_development_dependency 'bacon', '~>1.1'
 
 
   s.require_path = 'lib'

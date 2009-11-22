@@ -27,7 +27,7 @@ Gem::Specification.new do |s|
 
 
   # development dependencies
-  s.add_development_dependency "rspec", "~>1.2"
+  s.add_development_dependency 'bacon', '~>1.1'
 
   # components, files and paths
   s.files = FileList["lib/**/*.rb", "spec/**/*.rb", "tasks/**/*.rake", "ext/**/*.{rb,c}",

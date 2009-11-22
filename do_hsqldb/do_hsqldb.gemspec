@@ -20,7 +20,7 @@ Gem::Specification.new do |s|
                       "LICENSE", "Rakefile", "*.{markdown,rdoc,txt,yml}", "lib/*.jar"]
 
   # development dependencies
-  s.add_development_dependency "rspec", "~>1.2"
+  s.add_development_dependency 'bacon', '~>1.1'
 
   s.require_path = 'lib'
 
