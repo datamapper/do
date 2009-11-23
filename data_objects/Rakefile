@@ -14,3 +14,38 @@ SUDO     = WINDOWS ? '' : ('sudo' unless ENV['SUDOLESS'])
 Dir['tasks/*.rake'].sort.each { |f| import f }
 
 CLEAN.include(%w[ pkg/ **/*.rbc ])
+
+begin
+  require 'jeweler'
+
+  Jeweler::Tasks.new do |gem|
+    gem.name        = 'data_objects'
+    gem.version     = DataObjects::VERSION
+    gem.summary     = 'DataObjects basic API and shared driver specifications'
+    gem.description = 'Provide a standard and simplified API for communicating with RDBMS from Ruby'
+    gem.platform    = Gem::Platform::RUBY
+    gem.files = FileList["lib/**/*.rb", "spec/**/*.rb", "tasks/**/*.rake",
+                        "LICENSE", "Rakefile", "*.{markdown,rdoc,txt,yml}"]
+
+    gem.add_dependency "addressable", "~>2.1"
+
+    gem.add_development_dependency 'bacon', '~>1.1'
+    gem.add_development_dependency 'mocha', '~>0.9'
+
+    gem.require_path = 'lib'
+
+    gem.rubyforge_project = 'dorb'
+
+    gem.authors     = ['Dirkjan Bussink']
+    gem.email       = 'd.bussink@gmail.com'
+    gem.homepage    = 'http://github.com/datamapper/do'
+  end
+
+  Jeweler::RubyforgeTasks.new do |rubyforge|
+    rubyforge.doc_task = 'yardoc'
+  end
+  Jeweler::GemcutterTasks.new
+
+rescue LoadError
+  puts 'Jeweler (or a dependency) not available. Install it with: gem install jeweler'
+end

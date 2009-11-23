@@ -14,3 +14,42 @@ SUDO     = WINDOWS ? '' : ('sudo' unless ENV['SUDOLESS'])
 Dir['tasks/*.rake'].sort.each { |f| import f }
 
 CLEAN.include(%w[ {tmp,pkg}/ **/*.{o,so,bundle,jar,log,a,gem,dSYM,obj,pdb,exp,DS_Store,rbc,db} ext-java/target ])
+
+begin
+  require 'jeweler'
+
+  task :build => [ :gemspec, 'lib/do_sqlserver_ext.jar' ]
+
+  jeweler = Jeweler::Tasks.new do |gem|
+    gem.name        = 'do_sqlserver'
+    gem.version     = DataObjects::SqlServer::VERSION
+    gem.summary     = 'DataObjects SQL Server Driver'
+    gem.description = 'Implements the DataObjects API for Microsoft SQL Server'
+    gem.platform    = 'java'
+    gem.files = FileList["lib/**/*.rb", "spec/**/*.rb", "tasks/**/*.rake",
+                        "LICENSE", "Rakefile", "*.{markdown,rdoc,txt,yml}", "lib/*.jar"]
+
+    gem.add_dependency "addressable", "~>2.1"
+    gem.add_dependency "data_objects", DataObjects::SqlServer::VERSION
+    gem.add_dependency "do-jdbc_sqlserver", "~>1.1.107"
+    gem.add_dependency "do_jdbc", DataObjects::SqlServer::VERSION
+
+    gem.add_development_dependency 'bacon', '~>1.1'
+
+    gem.require_path = 'lib'
+    gem.has_rdoc = false
+    gem.rubyforge_project = 'dorb'
+    gem.authors     = [ 'Alex Coles' ]
+    gem.email       = 'alex@alexcolesportfolio.com'
+  end
+
+  $gemspec = jeweler.gemspec
+
+  Jeweler::RubyforgeTasks.new do |rubyforge|
+    rubyforge.doc_task = 'yardoc'
+  end
+  Jeweler::GemcutterTasks.new
+
+rescue LoadError
+  puts 'Jeweler (or a dependency) not available. Install it with: gem install jeweler'
+end

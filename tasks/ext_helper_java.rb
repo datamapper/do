@@ -1,7 +1,7 @@
 #
 # setup_java_extension create relevant tasks for building Java extensions
 #
-def setup_java_extension(extension_name, gem_spec = nil, opts = {})
+def setup_java_extension(extension_name, gem_spec = nil, opts = {}, &block)
   ext_name = "#{extension_name}.jar"
   directory 'lib'
   opts = {
@@ -77,6 +77,35 @@ Rake compilation task using the JRuby interpreter (`jruby -S rake compile`).
 
   end
   file "lib/#{ext_name}" => 'compile:jruby'
+
+  namespace :build do
+
+    desc 'Build the JRuby gem'
+    task :jruby => ['compile:jruby'] do
+      spec = gem_spec.dup
+
+      spec.platform = 'java'
+
+      # clear the extension (to avoid RubyGems firing the build process)
+      spec.extensions.clear
+
+      # add additional dependencies
+      spec.add_dependency('do_jdbc', spec.version)
+
+      # add the pre-compiled binaries to the list of files
+      spec.files += ["lib/#{ext_name}"] #Rake::Task['compile:jruby'].prerequisites
+
+      if block_given?
+        block.call(spec)
+      end
+
+      gem_package = Rake::GemPackageTask.new(spec) do |pkg|
+        pkg.need_zip = false
+        pkg.need_tar = false
+      end
+    end
+
+  end
 
 end
 
