@@ -40,8 +40,8 @@ describe 'DataObjects::Oracle with Float supporting Float autocasting' do
       end
 
       it 'should return the correct result' do
-        @values.first.should be_close(13.4, 0.000001)
-        @values.last.should be_close(10.23, 0.000001)
+        @values.first.should.be.close(13.4, 0.000001)
+        @values.last.should.be.close(10.23, 0.000001)
       end
 
     end

@@ -5,7 +5,6 @@ if RUBY_PLATFORM =~ /java/
 
 else # MRI and Ruby 1.9
   require 'oci8'
-  require 'oci8_patch'
 end
 
 require 'do_oracle_ext'
@@ -17,7 +16,7 @@ if RUBY_PLATFORM =~ /java/
   begin
     java.sql.DriverManager.registerDriver Java::oracle.jdbc.OracleDriver.new
   rescue NameError => e
-    raise OracleError, "Cannot load Oracle JDBC driver, put it (ojdbc14.jar or ojdbc5.jar) in JRUBY_HOME/lib or in the java extension directory or include in Java class path or call jruby with the option -J-Djava.ext.dirs=/path/to/directory/with/oracle/jars"
+    raise ConnectionError, "Cannot load Oracle JDBC driver, put it (ojdbc14.jar or ojdbc5.jar) in JRUBY_HOME/lib or in the java extension directory or include in Java class path or call jruby with the option -J-Djava.ext.dirs=/path/to/directory/with/oracle/jars"
   end
   # JDBC driver has transactions implementation in Java
 
@@ -33,10 +32,12 @@ if RUBY_PLATFORM !~ /java/
 
         def execute(*args)
           oci8_conn = @connection.instance_variable_get("@connection")
-          raise OracleError, "This connection has already been closed." unless oci8_conn
+          raise ConnectionError, "This connection has already been closed." unless oci8_conn
 
           sql, bind_variables = replace_argument_placeholders(@text, args)
           execute_internal(oci8_conn, sql, bind_variables)
+        rescue OCIError => e
+          raise SQLError.new(e.message, e.code, nil, e.sql, @connection.to_s)
         end
 
         # Replace ? placeholders with :n argument placeholders in string of SQL
@@ -100,6 +101,12 @@ if RUBY_PLATFORM !~ /java/
       end
 
       class Connection
+        def self.oci8_new(user, password, connect_string)
+          OCI8.new(user, password, connect_string)
+        rescue OCIError => e
+          raise ConnectionError.new(e.message, e.code, nil, nil, @connection.to_s)
+        end
+
         # Quote true, false as 1 and 0
         def quote_boolean(value)
           value ? 1 : 0

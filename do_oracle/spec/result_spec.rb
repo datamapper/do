@@ -7,16 +7,15 @@ describe DataObjects::Oracle::Result do
   behaves_like 'a Result'
 end
 
+def current_sequence_value(seq_name)
+  reader = @connection.create_command("SELECT #{seq_name}.currval FROM dual").execute_reader
+  reader.next!
+  value = reader.values.first
+  reader.close
+  value
+end
+
 describe DataObjects::Oracle::Result do
-
-
-  def current_sequence_value(seq_name)
-    reader = @connection.create_command("SELECT #{seq_name}.currval FROM dual").execute_reader
-    reader.next!
-    value = reader.values.first
-    reader.close
-    value
-  end
 
   setup_test_environment(false)
 

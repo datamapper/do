@@ -109,7 +109,9 @@ static VALUE cResult;
 static VALUE cReader;
 
 static VALUE eArgumentError;
-static VALUE eOracleError;
+static VALUE eSQLError;
+static VALUE eConnectionError;
+static VALUE eDataError;
 
 static void data_objects_debug(VALUE string, struct timeval* start) {
   struct timeval stop;
@@ -222,7 +224,7 @@ static VALUE parse_date(VALUE r_value) {
     
   } else {
     // Something went terribly wrong
-    rb_raise(eOracleError, "Couldn't parse date from class %s object", rb_obj_classname(r_value));
+    rb_raise(eDataError, "Couldn't parse date from class %s object", rb_obj_classname(r_value));
   }
 }
 
@@ -295,7 +297,7 @@ static VALUE parse_date_time(VALUE r_value) {
     return rb_funcall(rb_cDateTime, ID_NEW_DATE, 3, ajd, offset, INT2NUM(2299161));
   } else {
     // Something went terribly wrong
-    rb_raise(eOracleError, "Couldn't parse datetime from class %s object", rb_obj_classname(r_value));
+    rb_raise(eDataError, "Couldn't parse datetime from class %s object", rb_obj_classname(r_value));
   }
 
 }
@@ -305,7 +307,7 @@ static VALUE parse_time(VALUE r_value) {
     return r_value;
   } else {
     // Something went terribly wrong
-    rb_raise(eOracleError, "Couldn't parse time from class %s object", rb_obj_classname(r_value));
+    rb_raise(eDataError, "Couldn't parse time from class %s object", rb_obj_classname(r_value));
   }  
 }
 
@@ -317,7 +319,7 @@ static VALUE parse_boolean(VALUE r_value) {
     return value == 'Y' || value == 'y' || value == 'T' || value == 't' ? Qtrue : Qfalse;
   } else {
     // Something went terribly wrong
-    rb_raise(eOracleError, "Couldn't parse boolean from class %s object", rb_obj_classname(r_value));
+    rb_raise(eDataError, "Couldn't parse boolean from class %s object", rb_obj_classname(r_value));
   }
 }
 
@@ -388,7 +390,7 @@ static VALUE typecast(VALUE r_value, const VALUE type) {
     return rb_funcall(rb_cByteArray, ID_NEW, 1, r_data);
 
   } else if (type == rb_cClass) {
-    return rb_funcall(rb_cObject, ID_FULL_CONST_GET, 1, r_value);
+    return rb_funcall(mDO, ID_FULL_CONST_GET, 1, r_value);
 
   // TODO: where are tests for this mapping?
   } else if (type == rb_cObject) {
@@ -593,10 +595,11 @@ static VALUE cConnection_initialize(VALUE self, VALUE uri) {
     connect_string = (char *)calloc(connect_string_length, sizeof(char));
     snprintf(connect_string, connect_string_length, "//%s:%s%s", host, port, path);
   } else {
-    rb_raise(eOracleError, "Database must be specified");
+    rb_raise(eConnectionError, "Database must be specified");
   }
 
-  oci8_conn = rb_funcall(cOCI8, ID_NEW, 3, r_user, r_password, RUBY_STRING(connect_string));
+  // oci8_conn = rb_funcall(cOCI8, ID_NEW, 3, r_user, r_password, RUBY_STRING(connect_string));
+  oci8_conn = rb_funcall(cConnection, rb_intern("oci8_new"), 3, r_user, r_password, RUBY_STRING(connect_string));
 
   // Pull the querystring off the URI
   r_query = rb_funcall(uri, rb_intern("query"), 0);
@@ -656,7 +659,7 @@ static VALUE cCommand_execute_reader(int argc, VALUE *argv[], VALUE self) {
   VALUE cursor = rb_funcall2(self, ID_EXECUTE, argc, (VALUE *)argv);
 
   if (rb_obj_class(cursor) != cOCI8_Cursor) {
-    rb_raise(eOracleError, "\"%s\" is invalid SELECT query", StringValuePtr(query));
+    rb_raise(eArgumentError, "\"%s\" is invalid SELECT query", StringValuePtr(query));
   }
 
   column_metadata = rb_funcall(cursor, ID_COLUMN_METADATA, 0);  
@@ -762,7 +765,7 @@ static VALUE cReader_values(VALUE self) {
 
   VALUE values = rb_iv_get(self, "@values");
   if(values == Qnil) {
-    rb_raise(eOracleError, "Reader not initialized");
+    rb_raise(eDataError, "Reader not initialized");
     return Qnil;
   } else {
     return values;
@@ -863,9 +866,14 @@ void Init_do_oracle_ext() {
   cDO_Result = CONST_GET(mDO, "Result");
   cDO_Reader = CONST_GET(mDO, "Reader");
 
-  eArgumentError = CONST_GET(rb_mKernel, "ArgumentError");
+  // Top Level Module that all the classes live under
   mOracle = rb_define_module_under(mDO, "Oracle");
-  eOracleError = rb_define_class("OracleError", rb_eStandardError);
+
+  eArgumentError = CONST_GET(rb_mKernel, "ArgumentError");
+  eSQLError = CONST_GET(mDO, "SQLError");
+  eConnectionError = CONST_GET(mDO, "ConnectionError");
+  eDataError = CONST_GET(mDO, "DataError");
+  // eOracleError = rb_define_class("OracleError", rb_eStandardError);
 
   cConnection = ORACLE_CLASS("Connection", cDO_Connection);
   rb_define_method(cConnection, "initialize", cConnection_initialize, 1);

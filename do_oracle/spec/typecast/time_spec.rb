@@ -70,7 +70,7 @@ describe 'DataObjects::Oracle session time zone' do
 
   describe "set with connection string option" do
 
-    before(:each) do
+    before do
       @connection = DataObjects::Connection.new(CONFIG.uri+"?time_zone=CET")
     end
 
