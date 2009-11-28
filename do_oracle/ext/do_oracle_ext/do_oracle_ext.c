@@ -394,13 +394,19 @@ static VALUE typecast(VALUE r_value, const VALUE type) {
 
   // TODO: where are tests for this mapping?
   } else if (type == rb_cObject) {
-    return rb_marshal_load(r_value);
+    if (rb_obj_class(r_value) == cOCI8_CLOB)
+      return rb_marshal_load(rb_funcall(r_value, ID_READ, 0));
+    else
+      return rb_marshal_load(r_value);
 
   } else if (type == rb_cNilClass) {
     return Qnil;
 
   } else {
-    return r_value;
+    if (rb_obj_class(r_value) == cOCI8_CLOB)
+      return rb_funcall(r_value, ID_READ, 0);
+    else
+      return r_value;
   }
 
 }
