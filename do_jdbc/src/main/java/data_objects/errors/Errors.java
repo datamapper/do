@@ -134,4 +134,10 @@ public final class Errors {
         return new RaiseException(runtime, errorClass, message, true);
     }
 
+    /**
+     * Private constructor
+     */
+    private Errors() {
+    }
+
 }
