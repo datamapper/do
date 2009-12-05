@@ -1,6 +1,7 @@
 require 'pathname'
 require 'rubygems'
 require 'rake'
+require 'rake/clean'
 
 ROOT = Pathname(__FILE__).dirname.expand_path
 
@@ -10,30 +11,34 @@ JRUBY   = RUBY_PLATFORM =~ /java/
 WINDOWS = Gem.win_platform? || (JRUBY && ENV_JAVA['os.name'] =~ /windows/i)
 SUDO    = WINDOWS ? '' : ('sudo' unless ENV['SUDOLESS'])
 
-AUTHOR = ""
-EMAIL  = ""
-GEM_NAME = "do_jdbc-sqlserver"
-GEM_VERSION = DataObjects::Jdbc::SqlServer::VERSION
-GEM_DEPENDENCIES = []
-GEM_CLEAN = ['pkg', "**/.*.sw?", "*.gem", "*.gemspec", ".config", "**/.DS_Store"]
-GEM_EXTRAS = { :platform => 'java', :has_rdoc => false }
+CLEAN.include(%w[ pkg/ *.gem *.gemspec .config ])
 
-PROJECT_NAME = "dorb"
-PROJECT_URL  = "http://rubyforge.org/projects/dorb"
-PROJECT_DESCRIPTION = PROJECT_SUMMARY = "JDBC Driver for Sql Server, packaged as a Gem"
+warn "SQL Server JDBC (jTDS) Driver is only for use with JRuby" unless RUBY_PLATFORM =~ /java/
 
-JAVA_DRIVER = true
+begin
+  require 'jeweler'
 
-if (tasks_dir = ROOT.parent.parent + 'tasks').directory?
-  require tasks_dir + 'hoe'
-  require tasks_dir + 'gemspec_jruby'
-end
+  Jeweler::Tasks.new do |gem|
+    gem.name        = 'data_objects'
+    gem.version     = DataObjects::Jdbc::SqlServer::VERSION
+    gem.summary     = 'SQL Server JDBC (jTDS) Driver'
+    gem.description = 'JDBC Driver for SQL Server (jTDS), packaged as a Gem'
+    gem.platform    = 'java'
 
-warn "#{GEM_NAME} is only for use with JRuby" unless RUBY_PLATFORM =~ /java/
+    gem.rubyforge_project = 'dorb'
 
-task :default => [ :install ]
+    gem.authors     = ['alin_sinpalean', 'bheineman', 'ickzon']
+    gem.email       = ''
+    gem.homepage    = 'http://jtds.sourceforge.net/'
+  end
 
-desc "Install #{GEM_NAME} #{GEM_VERSION}"
-task :install =>  [ :package ] do
-  sh %{jruby -S gem install --local pkg/#{GEM_NAME}-#{GEM_VERSION}}, :verbose => false
+  Jeweler::RubyforgeTasks.new do |rubyforge|
+    rubyforge.doc_task = 'yardoc'
+  end
+  Jeweler::GemcutterTasks.new
+
+  task :default => [ :install ]
+
+rescue LoadError
+  puts 'Jeweler (or a dependency) not available. Install it with: gem install jeweler'
 end
