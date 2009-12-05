@@ -1,6 +1,21 @@
-if (tasks_dir = ROOT.parent + 'tasks').directory?
-  require tasks_dir + 'ext_helper_java'
-  setup_java_extension("#{$gemspec.name}_internal", $gemspec, :source_dir => 'src/main/java', :add_buildr_task => false)
-end
+begin
+  gem('rake-compiler')
+  require 'rake/javaextensiontask'
 
-task :compile => ["compile:jruby"]
+  Rake::JavaExtensionTask.new('do_jdbc_internal', $spec) do |ext|
+    ext.ext_dir = 'src/main/java'
+    #ext.classpath = '../do_jdbc/lib/do_jdbc_internal.jar'
+    ext.java_compiling do |gem_spec|
+      gem_spec.post_install_message = <<EOF
+==========================================================================
+
+  DataObjects JDBC Support Library:
+    You've installed the JDBC Support Library for JRuby (Java platform)
+
+==========================================================================
+EOF
+    end
+  end
+rescue LoadError
+  warn "To compile, install rake-compiler (gem install rake-compiler)"
+end

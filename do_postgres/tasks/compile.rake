@@ -1,8 +1,9 @@
 begin
   gem('rake-compiler')
   require 'rake/extensiontask'
+  require 'rake/javaextensiontask'
 
-  Rake::ExtensionTask.new('do_postgres_ext', GEM_SPEC) do |ext|
+  Rake::ExtensionTask.new('do_postgres_ext', $gemspec) do |ext|
 
     postgres_lib = File.expand_path(File.join(File.dirname(__FILE__), '..', 'vendor', 'pgsql'))
 
@@ -22,14 +23,23 @@ begin
     end
 
   end
-rescue LoadError
-  warn "To cross-compile, install rake-compiler (gem install rake-compiler)"
 
-  if (tasks_dir = ROOT.parent + 'tasks').directory?
-    require tasks_dir + 'ext_helper'
-    require tasks_dir + 'ext_helper_java'
+  Rake::JavaExtensionTask.new('do_postgres_ext', $gemspec) do |ext|
+    ext.ext_dir   = 'ext-java/src/main/java'
+    ext.classpath = '../do_jdbc/lib/do_jdbc_internal.jar'
+    ext.java_compiling do |gem|
+      gem.add_dependency 'jdbc-postgres', '>=8.2'
+      gem.add_dependency 'do_jdbc',       '0.10.1'
+      gem.post_install_message = <<EOF
+==========================================================================
 
-    setup_c_extension("#{GEM_SPEC.name}_ext", GEM_SPEC)
-    setup_java_extension("#{GEM_SPEC.name}_ext", GEM_SPEC)
+  DataObjects PostgreSQL Driver:
+    You've installed the binary extension for JRuby (Java platform)
+
+==========================================================================
+EOF
+    end
   end
+rescue LoadError
+  warn "To compile, install rake-compiler (gem install rake-compiler)"
 end

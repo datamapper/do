@@ -15,4 +15,43 @@ BINARY_VERSION = '5.0.77'
 
 CLEAN.include(%w[ {tmp,pkg}/ **/*.{o,so,bundle,jar,log,a,gem,dSYM,obj,pdb,exp,DS_Store,rbc,db} ext/do_postgres_ext/Makefile ext-java/target ])
 
-FileList['tasks/**/*.rake'].each { |task| import task }
+begin
+  require 'jeweler'
+
+  task :build => :gemspec
+
+  jeweler = Jeweler::Tasks.new do |gem|
+    gem.name        = 'do_postgres'
+    gem.version     = DataObjects::Postgres::VERSION
+    gem.summary     = 'DataObjects PostgreSQL Driver'
+    gem.description = 'Implements the DataObjects API for PostgreSQL'
+
+    gem.add_dependency 'addressable', '~>2.1'
+    gem.add_dependency 'data_objects', DataObjects::Postgres::VERSION
+
+    # rake-compiler should generate gemspecs for other platforms (e.g. 'java')
+    # and modify dependencies and extensions appropriately
+    gem.platform    = Gem::Platform::RUBY
+    gem.extensions << 'ext/do_postgres_ext/extconf.rb'
+    gem.files = Dir['lib/**/*.rb', 'spec/**/*.rb', 'tasks/**/*.rake', 'ext/**/*.{rb,c,h}',
+                  'LICENSE', 'Rakefile', '*.{markdown,rdoc,txt,yml}']
+
+    gem.add_development_dependency 'bacon', '~>1.1'
+
+    gem.has_rdoc = false
+    gem.rubyforge_project = 'dorb'
+    gem.authors     = [ 'Dirkjan Bussink' ]
+    gem.email       = 'd.bussink@gmail.com'
+  end
+
+  $gemspec = jeweler.gemspec
+
+  Jeweler::RubyforgeTasks.new do |rubyforge|
+    rubyforge.doc_task = 'yardoc'
+  end
+  Jeweler::GemcutterTasks.new
+
+  FileList['tasks/**/*.rake'].each { |task| import task }
+rescue LoadError
+  puts 'Jeweler (or a dependency) not available. Install it with: gem install jeweler'
+end

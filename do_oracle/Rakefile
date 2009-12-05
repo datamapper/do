@@ -15,4 +15,45 @@ BINARY_VERSION = '10.2.0.4.0'
 
 CLEAN.include(%w[ {tmp,pkg}/ **/*.{o,so,bundle,jar,log,a,gem,dSYM,obj,pdb,exp,DS_Store,rbc,db} ext/do_oracle_ext/Makefile ext-java/target ])
 
-FileList['tasks/**/*.rake'].each { |task| import task }
+begin
+  require 'jeweler'
+
+  task :build => :gemspec
+
+  jeweler = Jeweler::Tasks.new do |gem|
+    gem.name        = 'do_oracle'
+    gem.version     = DataObjects::Oracle::VERSION
+    gem.summary     = 'DataObjects Oracle Driver'
+    gem.description = 'Implements the DataObjects API for Oracle'
+
+    gem.add_dependency "addressable", "~>2.1"
+    gem.add_dependency "data_objects", DataObjects::Oracle::VERSION
+
+    # rake-compiler should generate gemspecs for other platforms (e.g. 'java')
+    # and modify dependencies and extensions appropriately
+    gem.add_dependency "ruby-oci8", "~>2.0"
+    gem.platform    = Gem::Platform::RUBY
+    gem.extensions << 'ext/do_oracle_ext/extconf.rb'
+    gem.files = Dir['lib/**/*.rb', 'spec/**/*.rb', 'tasks/**/*.rake', 'ext/**/*.{rb,c,h}',
+                  'LICENSE', 'Rakefile', '*.{markdown,rdoc,txt,yml}']
+
+    gem.add_development_dependency 'bacon', '~>1.1'
+
+
+    gem.has_rdoc = false
+    gem.rubyforge_project = 'dorb'
+    gem.authors     = [ 'Raimonds Simanovskis' ]
+    gem.email       = 'raimonds.simanovskis@gmail.com'
+  end
+
+  $gemspec = jeweler.gemspec
+
+  Jeweler::RubyforgeTasks.new do |rubyforge|
+    rubyforge.doc_task = 'yardoc'
+  end
+  Jeweler::GemcutterTasks.new
+
+  FileList['tasks/**/*.rake'].each { |task| import task }
+rescue LoadError
+  puts 'Jeweler (or a dependency) not available. Install it with: gem install jeweler'
+end
