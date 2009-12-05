@@ -1,9 +1,11 @@
 require 'pathname'
 require 'rubygems'
 require 'rake'
-require 'lib/do_jdbc/sqlserver_version'
 
-ROOT    = Pathname(__FILE__).dirname.expand_path
+ROOT = Pathname(__FILE__).dirname.expand_path
+
+require ROOT + 'lib/do_jdbc/sqlserver_version'
+
 JRUBY   = RUBY_PLATFORM =~ /java/
 WINDOWS = Gem.win_platform? || (JRUBY && ENV_JAVA['os.name'] =~ /windows/i)
 SUDO    = WINDOWS ? '' : ('sudo' unless ENV['SUDOLESS'])

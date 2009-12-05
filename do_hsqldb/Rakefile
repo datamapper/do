@@ -1,17 +1,16 @@
+require 'pathname'
 require 'rubygems'
 require 'rake'
 require 'rake/clean'
 
-require 'pathname'
-require 'lib/do_hsqldb/version'
+ROOT = Pathname(__FILE__).dirname.expand_path
 
-ROOT     = Pathname(__FILE__).dirname.expand_path
+require ROOT + 'lib/do_hsqldb/version'
+
 JRUBY    = RUBY_PLATFORM =~ /java/
 IRONRUBY = defined?(RUBY_ENGINE) && RUBY_ENGINE == 'ironruby'
 WINDOWS  = Gem.win_platform? || (JRUBY && ENV_JAVA['os.name'] =~ /windows/i)
 SUDO     = WINDOWS ? '' : ('sudo' unless ENV['SUDOLESS'])
-
-Dir['tasks/*.rake'].sort.each { |f| import f }
 
 CLEAN.include(%w[ {tmp,pkg}/ **/*.{o,so,bundle,jar,log,a,gem,dSYM,obj,pdb,exp,DS_Store,rbc,db} ext-java/target ])
 
@@ -50,6 +49,7 @@ begin
   end
   Jeweler::GemcutterTasks.new
 
+  FileList['tasks/**/*.rake'].each { |task| import task }
 rescue LoadError
   puts 'Jeweler (or a dependency) not available. Install it with: gem install jeweler'
 end

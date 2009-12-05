@@ -1,17 +1,18 @@
+require 'pathname'
 require 'rubygems'
 require 'rake'
 require 'rake/clean'
 
-require 'pathname'
-require 'lib/do_mysql/version'
+ROOT = Pathname(__FILE__).dirname.expand_path
 
-ROOT     = Pathname(__FILE__).dirname.expand_path
+require ROOT + 'lib/do_mysql/version'
+
 JRUBY    = RUBY_PLATFORM =~ /java/
 IRONRUBY = defined?(RUBY_ENGINE) && RUBY_ENGINE == 'ironruby'
 WINDOWS  = Gem.win_platform? || (JRUBY && ENV_JAVA['os.name'] =~ /windows/i)
 SUDO     = WINDOWS ? '' : ('sudo' unless ENV['SUDOLESS'])
 BINARY_VERSION = '5.0.85'
 
-Dir['tasks/*.rake'].sort.each { |f| import f }
-
 CLEAN.include(%w[ {tmp,pkg}/ **/*.{o,so,bundle,jar,log,a,gem,dSYM,obj,pdb,exp,DS_Store,rbc,db} ext/do_mysql_ext/Makefile ext-java/target ])
+
+FileList['tasks/**/*.rake'].each { |task| import task }
