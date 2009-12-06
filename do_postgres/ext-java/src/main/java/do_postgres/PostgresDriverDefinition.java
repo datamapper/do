@@ -79,11 +79,27 @@ public class PostgresDriverDefinition extends AbstractDriverDefinition {
         case STRING:
             jdbcType = ps.getParameterMetaData().getParameterType(idx);
             switch (jdbcType) {
+            //  TODO
+            //  May be added in the future for optimization (String parameter -> String column)
+            //  in case we will have many 'cases' here
+            //  case Types.VARCHAR:
+            //  ps.setString(idx, arg.toString());
+            //  break;
             case Types.INTEGER:
                 // conversion for '.execute_reader("2")'
                 ps.setInt(idx, Integer.valueOf(arg.toString()));
                 break;
+            case Types.FLOAT:
+                // conversion for '.execute_reader("2.1")'
+                ps.setFloat(idx, Float.valueOf(arg.toString()));
+                break;
+            case Types.DOUBLE:
+                // conversion for '.execute_reader("2.1")'
+                ps.setDouble(idx, Double.valueOf(arg.toString()));
+                break;
             default:
+                // String parameter -> {String, other type} column
+                // XXX Please look at line #82
                 ps.setString(idx, arg.toString());
             }
             break;
