@@ -21,8 +21,6 @@ end
 begin
   require 'jeweler'
 
-  task :build => [ :gemspec, 'lib/do_jdbc_internal.jar' ]
-
   Jeweler::Tasks.new do |gem|
     gem.name        = 'do_jdbc'
     gem.version     = DataObjects::Jdbc::VERSION
@@ -41,6 +39,9 @@ begin
     gem.authors     = [ 'Alex Coles' ]
     gem.email       = 'alex@alexcolesportfolio.com'
   end
+
+  Rake::Task['build'].clear_actions if Rake::Task.task_defined?('build')
+  task :build => [ :java, :gem ]
 
   Jeweler::RubyforgeTasks.new do |rubyforge|
     rubyforge.doc_task = 'yardoc'
