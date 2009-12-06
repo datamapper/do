@@ -10,11 +10,12 @@ Gem::Specification.new do |s|
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Alex Coles"]
-  s.date = %q{2009-11-23}
+  s.date = %q{2009-12-06}
   s.description = %q{Implements the DataObjects API for H2}
   s.email = %q{alex@alexcolesportfolio.com}
   s.extra_rdoc_files = [
-    "README.markdown"
+    "README.markdown",
+     "TODO"
   ]
   s.files = [
     "HISTORY.markdown",
@@ -44,7 +45,7 @@ Gem::Specification.new do |s|
      "spec/typecast/range_spec.rb",
      "spec/typecast/string_spec.rb",
      "spec/typecast/time_spec.rb",
-     "tasks/native.rake",
+     "tasks/compile.rake",
      "tasks/spec.rake"
   ]
   s.has_rdoc = false

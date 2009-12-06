@@ -10,7 +10,7 @@ Gem::Specification.new do |s|
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Alex Coles"]
-  s.date = %q{2009-11-23}
+  s.date = %q{2009-12-06}
   s.description = %q{Provides JDBC support for usage in DO drivers for JRuby}
   s.email = %q{alex@alexcolesportfolio.com}
   s.extra_rdoc_files = [
@@ -24,8 +24,7 @@ Gem::Specification.new do |s|
      "lib/do_jdbc.rb",
      "lib/do_jdbc/spec/connection_spec.rb",
      "lib/do_jdbc/version.rb",
-     "lib/do_jdbc_internal.jar",
-     "tasks/native.rake",
+     "tasks/compile.rake",
      "tasks/spec.rake"
   ]
   s.has_rdoc = false
