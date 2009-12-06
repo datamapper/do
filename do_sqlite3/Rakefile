@@ -20,7 +20,7 @@ begin
 
   task :build => :gemspec
 
-  jeweler = Jeweler::Tasks.new do |gem|
+  Jeweler::Tasks.new do |gem|
     gem.name        = 'do_sqlite3'
     gem.version     = DataObjects::Sqlite3::VERSION
     gem.summary     = 'DataObjects Sqlite3 Driver'
@@ -39,14 +39,11 @@ begin
 
     gem.add_development_dependency 'bacon', '~>1.1'
 
-
     gem.has_rdoc = false
     gem.rubyforge_project = 'dorb'
     gem.authors     = [ 'Dirkjan Bussink' ]
     gem.email       = 'd.bussink@gmail.com'
   end
-
-  $gemspec = jeweler.gemspec
 
   Jeweler::RubyforgeTasks.new do |rubyforge|
     rubyforge.doc_task = 'yardoc'

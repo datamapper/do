@@ -1,11 +1,16 @@
-tasks_dir = ROOT.parent + 'tasks'
-
 begin
   gem('rake-compiler')
   require 'rake/extensiontask'
   require 'rake/javaextensiontask'
 
-  Rake::ExtensionTask.new('do_mysql_ext', $gemspec) do |ext|
+  # Hack to avoid "allocator undefined for Proc" issue when unpacking Gems:
+  # gemspec provided by Jeweler uses Rake::FileList for files, test_files and
+  # extra_rdoc_files, and procs cannot be marshalled.
+  def gemspec
+    @clean_gemspec ||= eval("#{Rake.application.jeweler.gemspec.to_ruby}") # $SAFE = 3\n
+  end
+
+  Rake::ExtensionTask.new('do_mysql_ext', gemspec) do |ext|
 
     mysql_lib = File.expand_path(File.join(File.dirname(__FILE__), '..', 'vendor', "mysql-#{BINARY_VERSION}-win32"))
 
@@ -22,7 +27,7 @@ begin
 
   end
 
-  Rake::JavaExtensionTask.new('do_mysql_ext', $gemspec) do |ext|
+  Rake::JavaExtensionTask.new('do_mysql_ext', gemspec) do |ext|
     ext.ext_dir   = 'ext-java/src/main/java'
     ext.classpath = '../do_jdbc/lib/do_jdbc_internal.jar'
     ext.java_compiling do |gem|
@@ -43,21 +48,4 @@ EOF
   end
 rescue LoadError
   warn "To compile, install rake-compiler (gem install rake-compiler)"
-end
-
-# Stolen from http://github.com/karottenreibe/joker/blob/master/tasks/c_extensions.rake:
-# 
-# Workaround for rake-compiler, which YAML-dump-loads the gemspec, which leads
-# to errors since Procs can't be loaded.
-Rake::Task.tasks.each do |task_name|
-    case task_name.to_s
-    when /^native|java/
-        task_name.prerequisites.unshift("fix_rake_compiler_gemspec_dump")
-    end
-end
-
-task :fix_rake_compiler_gemspec_dump do
-    %w{files extra_rdoc_files test_files}.each do |accessor|
-        $gemspec.send(accessor).instance_eval { @exclude_procs = Array.new }
-    end
 end

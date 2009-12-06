@@ -23,7 +23,7 @@ begin
 
   task :build => [ :gemspec, 'lib/do_jdbc_internal.jar' ]
 
-  jeweler = Jeweler::Tasks.new do |gem|
+  Jeweler::Tasks.new do |gem|
     gem.name        = 'do_jdbc'
     gem.version     = DataObjects::Jdbc::VERSION
     gem.summary     = 'DataObjects JDBC support library'
@@ -37,14 +37,11 @@ begin
 
     gem.add_development_dependency 'bacon', '~>1.1'
 
-
     gem.has_rdoc = false
     gem.rubyforge_project = 'dorb'
     gem.authors     = [ 'Alex Coles' ]
     gem.email       = 'alex@alexcolesportfolio.com'
   end
-
-  $gemspec = jeweler.gemspec
 
   Jeweler::RubyforgeTasks.new do |rubyforge|
     rubyforge.doc_task = 'yardoc'
