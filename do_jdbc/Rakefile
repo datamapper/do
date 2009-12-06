@@ -32,7 +32,6 @@ begin
     gem.files = FileList["lib/**/*.rb", "spec/**/*.rb", "tasks/**/*.rake",
                         "MIT-LICENSE", "Rakefile", "*.{markdown,rdoc,txt,yml}", "lib/*.jar"]
 
-    gem.add_dependency "addressable", "~>2.1"
     gem.add_dependency "data_objects", DataObjects::Jdbc::VERSION
 
     gem.add_development_dependency 'bacon', '~>1.1'

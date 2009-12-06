@@ -28,7 +28,6 @@ begin
     gem.files = FileList["lib/**/*.rb", "spec/**/*.rb", "tasks/**/*.rake",
                         "LICENSE", "Rakefile", "*.{markdown,rdoc,txt,yml}", "lib/*.jar"]
 
-    gem.add_dependency "addressable", "~>2.1"
     gem.add_dependency "data_objects", DataObjects::H2::VERSION
     gem.add_dependency "jdbc-h2", "~>1.1.107"
     gem.add_dependency "do_jdbc", DataObjects::H2::VERSION

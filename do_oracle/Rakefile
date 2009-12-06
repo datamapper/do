@@ -26,7 +26,6 @@ begin
     gem.summary     = 'DataObjects Oracle Driver'
     gem.description = 'Implements the DataObjects API for Oracle'
 
-    gem.add_dependency "addressable", "~>2.1"
     gem.add_dependency "data_objects", DataObjects::Oracle::VERSION
 
     # rake-compiler should generate gemspecs for other platforms (e.g. 'java')
@@ -38,7 +37,6 @@ begin
                   'LICENSE', 'Rakefile', '*.{markdown,rdoc,txt,yml}']
 
     gem.add_development_dependency 'bacon', '~>1.1'
-
 
     gem.has_rdoc = false
     gem.rubyforge_project = 'dorb'

@@ -28,7 +28,6 @@ begin
     gem.files = FileList["lib/**/*.rb", "spec/**/*.rb", "tasks/**/*.rake",
                         "LICENSE", "Rakefile", "*.{markdown,rdoc,txt,yml}", "lib/*.jar"]
 
-    gem.add_dependency "addressable", "~>2.1"
     gem.add_dependency "data_objects", DataObjects::SqlServer::VERSION
     gem.add_dependency "do-jdbc_sqlserver", "~>1.1.107"
     gem.add_dependency "do_jdbc", DataObjects::SqlServer::VERSION

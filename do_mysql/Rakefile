@@ -26,7 +26,6 @@ begin
     gem.summary     = 'DataObjects MySQL Driver'
     gem.description = 'Implements the DataObjects API for MySQL'
 
-    gem.add_dependency 'addressable', '~>2.1'
     gem.add_dependency 'data_objects', DataObjects::Mysql::VERSION
 
     # rake-compiler should generate gemspecs for other platforms (e.g. 'java')

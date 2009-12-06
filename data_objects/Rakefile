@@ -26,12 +26,10 @@ begin
     gem.files = FileList["lib/**/*.rb", "spec/**/*.rb", "tasks/**/*.rake",
                         "LICENSE", "Rakefile", "*.{markdown,rdoc,txt,yml}"]
 
-    gem.add_dependency "addressable", "~>2.1"
+    gem.add_dependency 'addressable', '~>2.1'
 
     gem.add_development_dependency 'bacon', '~>1.1'
     gem.add_development_dependency 'mocha', '~>0.9'
-
-
 
     gem.rubyforge_project = 'dorb'
 
