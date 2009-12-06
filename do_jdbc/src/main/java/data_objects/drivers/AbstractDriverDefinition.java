@@ -758,7 +758,7 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
             return runtime.getNil();
         }
 
-        int zoneOffset = stamp.getZone().getOffset(stamp.getMillis()) / 3600000;
+        int zoneOffset = stamp.getZone().getOffset(stamp.getMillis()) / 1000;
 
         RubyClass klazz = runtime.fastGetClass("DateTime");
 
@@ -766,7 +766,7 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
                 runtime.getCurrentContext(),
                 "new",
                 new IRubyObject[] { runtime.newFixnum(zoneOffset),
-                        runtime.newFixnum(24) });
+                        runtime.newFixnum(86400) });
 
         return klazz.callMethod(runtime.getCurrentContext(), "civil",
                 new IRubyObject[] { runtime.newFixnum(stamp.getYear()),
