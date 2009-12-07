@@ -23,6 +23,15 @@ begin
 EOF
     end
   end
+
+  # do_hsqldb is only available for JRuby: the normal behaviour of rake-compiler
+  # is to only chain 'compile:PLATFORM' tasks to 'compile' where PLATFORM is the
+  # platform of the current interpreter (i.e. 'compile:java' to 'compile' only
+  # if running on JRuby). However, we always want to compile for Java, even if
+  # running from MRI.
+  task 'compile:do_hsqldb_ext' => ['compile:do_hsqldb_ext:java']
+  task 'compile' => ['compile:java']
+
 rescue LoadError
   warn "To compile, install rake-compiler (gem install rake-compiler)"
 end
