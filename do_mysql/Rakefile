@@ -19,8 +19,6 @@ begin
   gem 'jeweler', '~> 1.4'
   require 'jeweler'
 
-  task :build => :gemspec
-
   Jeweler::Tasks.new do |gem|
     gem.name        = 'do_mysql'
     gem.version     = DataObjects::Mysql::VERSION
