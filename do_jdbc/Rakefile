@@ -28,12 +28,13 @@ begin
     gem.summary     = 'DataObjects JDBC support library'
     gem.description = 'Provides JDBC support for usage in DO drivers for JRuby'
     gem.platform    = 'java'
-    gem.files = FileList["lib/**/*.rb", "spec/**/*.rb", "tasks/**/*.rake",
-                        "MIT-LICENSE", "Rakefile", "*.{markdown,rdoc,txt,yml}", "lib/*.jar"]
+    gem.files       = FileList['lib/**/*.rb', 'tasks/**/*.rake', 'LICENSE',
+                                'Rakefile', '*.{markdown,rdoc,txt,yml}',
+                                'lib/*.jar']
+    gem.extra_rdoc_files = FileList['README*', 'ChangeLog*', 'MIT-LICENSE']
 
-    gem.add_dependency "data_objects", DataObjects::Jdbc::VERSION
+    gem.add_dependency 'data_objects', DataObjects::Jdbc::VERSION
 
-    gem.add_development_dependency 'bacon',         '~>1.1'
     gem.add_development_dependency 'rake-compiler', '~>0.7'
 
     gem.has_rdoc = false

@@ -24,12 +24,14 @@ begin
     gem.summary     = 'DataObjects H2 Driver'
     gem.description = 'Implements the DataObjects API for H2'
     gem.platform    = 'java'
-    gem.files = FileList["lib/**/*.rb", "spec/**/*.rb", "tasks/**/*.rake",
-                        "LICENSE", "Rakefile", "*.{markdown,rdoc,txt,yml}", "lib/*.jar"]
+    gem.files       = FileList['lib/**/*.rb', 'spec/**/*.rb', 'tasks/**/*.rake',
+                               'LICENSE', 'Rakefile', '*.{markdown,rdoc,txt,yml}',
+                               'lib/*.jar']
+    gem.extra_rdoc_files = FileList['README*', 'ChangeLog*', 'LICENSE']
 
-    gem.add_dependency "data_objects", DataObjects::H2::VERSION
-    gem.add_dependency "jdbc-h2", "~>1.1.107"
-    gem.add_dependency "do_jdbc", DataObjects::H2::VERSION
+    gem.add_dependency 'data_objects', DataObjects::H2::VERSION
+    gem.add_dependency 'do_jdbc',      DataObjects::H2::VERSION
+    gem.add_dependency 'jdbc-h2',      '~>1.1.107'
 
     gem.add_development_dependency 'bacon',         '~>1.1'
     gem.add_development_dependency 'rake-compiler', '~>0.7'

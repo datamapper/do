@@ -24,14 +24,17 @@ begin
     gem.version     = DataObjects::Mysql::VERSION
     gem.summary     = 'DataObjects MySQL Driver'
     gem.description = 'Implements the DataObjects API for MySQL'
-
-    gem.add_dependency 'data_objects', DataObjects::Mysql::VERSION
+    gem.platform    = Gem::Platform::RUBY
+    gem.files       = Dir['lib/**/*.rb', 'spec/**/*.rb', 'tasks/**/*.rake',
+                          'ext/**/*.{rb,c,h}', 'LICENSE', 'Rakefile',
+                          '*.{markdown,rdoc,txt,yml}']
+    gem.extra_rdoc_files = FileList['README*', 'ChangeLog*', 'LICENSE']
 
     # rake-compiler should generate gemspecs for other platforms (e.g. 'java')
     # and modify dependencies and extensions appropriately
     gem.extensions << 'ext/do_mysql_ext/extconf.rb'
-    gem.files = Dir['lib/**/*.rb', 'spec/**/*.rb', 'tasks/**/*.rake', 'ext/**/*.{rb,c,h}',
-                  'LICENSE', 'Rakefile', '*.{markdown,rdoc,txt,yml}']
+
+    gem.add_dependency 'data_objects', DataObjects::Mysql::VERSION
 
     gem.add_development_dependency 'bacon',         '~>1.1'
     gem.add_development_dependency 'rake-compiler', '~>0.7'

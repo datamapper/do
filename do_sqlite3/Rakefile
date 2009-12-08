@@ -24,16 +24,17 @@ begin
     gem.version     = DataObjects::Sqlite3::VERSION
     gem.summary     = 'DataObjects Sqlite3 Driver'
     gem.description = 'Implements the DataObjects API for Sqlite3'
-
-    gem.add_dependency "data_objects", DataObjects::Sqlite3::VERSION
+    gem.platform    = Gem::Platform::RUBY
+    gem.files       = FileList['lib/**/*.rb', 'spec/**/*.rb', 'tasks/**/*.rake',
+                               'ext/**/*.{rb,c,h}', 'LICENSE', 'Rakefile',
+                               '*.{markdown,rdoc,txt,yml}']
+    gem.extra_rdoc_files = FileList['README*', 'ChangeLog*', 'LICENSE']
 
     # rake-compiler should generate gemspecs for other platforms (e.g. 'java')
     # and modify dependencies and extensions appropriately
-    gem.platform    = Gem::Platform::RUBY
     gem.extensions << 'ext/do_sqlite3_ext/extconf.rb'
 
-    gem.files = FileList["lib/**/*.rb", "spec/**/*.rb", "tasks/**/*.rake", "ext/**/*.{rb,c,h}",
-                        "LICENSE", "Rakefile", "*.{markdown,rdoc,txt,yml}"]
+    gem.add_dependency 'data_objects', DataObjects::Sqlite3::VERSION
 
     gem.add_development_dependency 'bacon',         '~>1.1'
     gem.add_development_dependency 'rake-compiler', '~>0.7'

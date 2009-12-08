@@ -24,16 +24,18 @@ begin
     gem.version     = DataObjects::Oracle::VERSION
     gem.summary     = 'DataObjects Oracle Driver'
     gem.description = 'Implements the DataObjects API for Oracle'
-
-    gem.add_dependency "data_objects", DataObjects::Oracle::VERSION
+    gem.platform    = Gem::Platform::RUBY
+    gem.files       = Dir['lib/**/*.rb', 'spec/**/*.rb', 'tasks/**/*.rake',
+                          'ext/**/*.{rb,c,h}', 'LICENSE', 'Rakefile',
+                          '*.{markdown,rdoc,txt,yml}']
+    gem.extra_rdoc_files = FileList['README*', 'ChangeLog*', 'LICENSE']
 
     # rake-compiler should generate gemspecs for other platforms (e.g. 'java')
     # and modify dependencies and extensions appropriately
-    gem.add_dependency "ruby-oci8", "~>2.0"
-    gem.platform    = Gem::Platform::RUBY
     gem.extensions << 'ext/do_oracle_ext/extconf.rb'
-    gem.files = Dir['lib/**/*.rb', 'spec/**/*.rb', 'tasks/**/*.rake', 'ext/**/*.{rb,c,h}',
-                  'LICENSE', 'Rakefile', '*.{markdown,rdoc,txt,yml}']
+
+    gem.add_dependency 'data_objects', DataObjects::Oracle::VERSION
+    gem.add_dependency 'ruby-oci8',    '~>2.0'
 
     gem.add_development_dependency 'bacon',         '~>1.1'
     gem.add_development_dependency 'rake-compiler', '~>0.7'

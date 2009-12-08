@@ -24,17 +24,20 @@ begin
     gem.summary     = 'DataObjects SQL Server Driver'
     gem.description = 'Implements the DataObjects API for Microsoft SQL Server'
     gem.platform    = 'java'
-    gem.files = FileList["lib/**/*.rb", "spec/**/*.rb", "tasks/**/*.rake",
-                        "LICENSE", "Rakefile", "*.{markdown,rdoc,txt,yml}", "lib/*.jar"]
+    gem.files       = FileList['lib/**/*.rb', 'spec/**/*.rb', 'tasks/**/*.rake',
+                               'LICENSE', 'Rakefile', '*.{markdown,rdoc,txt,yml}',
+                               'lib/*.jar']
+    gem.extra_rdoc_files = FileList['README*', 'ChangeLog*', 'LICENSE']
 
-    gem.add_dependency "data_objects", DataObjects::SqlServer::VERSION
-    gem.add_dependency "do-jdbc_sqlserver", "~>1.1.107"
-    gem.add_dependency "do_jdbc", DataObjects::SqlServer::VERSION
+    gem.add_dependency 'data_objects',      DataObjects::SqlServer::VERSION
+    gem.add_dependency 'do_jdbc',           DataObjects::SqlServer::VERSION
+    gem.add_dependency 'do-jdbc_sqlserver', '~>1.1.107'
 
     gem.add_development_dependency 'bacon',         '~>1.1'
     gem.add_development_dependency 'rake-compiler', '~>0.7'
 
-    gem.has_rdoc = false
+    gem.has_rdoc    = false
+
     gem.rubyforge_project = 'dorb'
     gem.authors     = [ 'Alex Coles' ]
     gem.email       = 'alex@alexcolesportfolio.com'

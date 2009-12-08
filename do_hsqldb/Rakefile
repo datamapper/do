@@ -24,12 +24,14 @@ begin
     gem.summary     = 'DataObjects Hsqldb Driver'
     gem.description = 'Implements the DataObjects API for Hsqldb'
     gem.platform    = 'java'
-    gem.files = FileList["lib/**/*.rb", "spec/**/*.rb", "tasks/**/*.rake",
-                        "LICENSE", "Rakefile", "*.{markdown,rdoc,txt,yml}", "lib/*.jar"]
+    gem.files       = FileList['lib/**/*.rb', 'spec/**/*.rb', 'tasks/**/*.rake',
+                               'LICENSE', 'Rakefile', '*.{markdown,rdoc,txt,yml}',
+                               'lib/*.jar']
+    gem.extra_rdoc_files = FileList['README*', 'ChangeLog*', 'LICENSE']
 
-    gem.add_dependency "data_objects", DataObjects::Hsqldb::VERSION
-    gem.add_dependency "jdbc-hsqldb", "~>1.8.0"
-    gem.add_dependency "do_jdbc", DataObjects::Hsqldb::VERSION
+    gem.add_dependency 'data_objects', DataObjects::Hsqldb::VERSION
+    gem.add_dependency 'do_jdbc',      DataObjects::Hsqldb::VERSION
+    gem.add_dependency 'jdbc-hsqldb',  '~>1.8.0'
 
     gem.add_development_dependency 'bacon',         '~>1.1'
     gem.add_development_dependency 'rake-compiler', '~>0.7'
