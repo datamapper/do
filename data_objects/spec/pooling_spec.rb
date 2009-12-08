@@ -1,15 +1,6 @@
 require File.expand_path(File.join(File.dirname(__FILE__), 'spec_helper'))
 require 'timeout'
 
-module DataObjects::Pooling
-  class << self
-    remove_method :scavenger_interval if instance_methods(false).any? { |m| m.to_sym == :scavenger_interval }
-    def scavenger_interval
-      0.5
-    end
-  end
-end
-
 describe "DataObjects::Pooling" do
   before do
 
@@ -83,24 +74,6 @@ describe "DataObjects::Pooling" do
     end
   end
 
-  it "should track the initialized pools" do
-    bob = Person.new('Bob') # Ensure the pool is "primed"
-    bob.name.should == 'Bob'
-    bob.instance_variable_get(:@__pool).should.not.be.nil
-    Person.__pools.size.should == 1
-    bob.release
-    Person.__pools.size.should == 1
-
-    DataObjects::Pooling::pools.should.not.be.empty
-
-    sleep(1.2)
-
-    # NOTE: This assertion is commented out, as our MockConnection objects are
-    #       currently in the pool.
-    # DataObjects::Pooling::pools.should be_empty
-    bob.name.should == nil
-  end
-
   it "should maintain a size of 1" do
     bob = Person.new('Bob')
     fred = Person.new('Fred')
@@ -117,6 +90,24 @@ describe "DataObjects::Pooling" do
     Person.__pools.each do |args, pool|
       pool.size.should == 1
     end
+  end
+
+  it "should track the initialized pools" do
+    bob = Person.new('Bob') # Ensure the pool is "primed"
+    bob.name.should == 'Bob'
+    bob.instance_variable_get(:@__pool).should.not.be.nil
+    Person.__pools.size.should == 1
+    bob.release
+    Person.__pools.size.should == 1
+
+    DataObjects::Pooling::pools.should.not.be.empty
+
+    sleep(1.2)
+
+    # NOTE: This assertion is commented out, as our MockConnection objects are
+    #       currently in the pool.
+    DataObjects::Pooling::pools.should.be.empty
+    bob.name.should == nil
   end
 
   it "should allow you to overwrite Class#new" do

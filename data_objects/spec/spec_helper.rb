@@ -12,6 +12,15 @@ lib_path = File.expand_path("#{dir}/../lib")
 $LOAD_PATH.unshift lib_path unless $LOAD_PATH.include?(lib_path)
 require 'data_objects'
 
+module DataObjects::Pooling
+  class << self
+    remove_method :scavenger_interval if instance_methods(false).any? { |m| m.to_sym == :scavenger_interval }
+    def scavenger_interval
+      0.5
+    end
+  end
+end
+
 # see http://gnufied.org/2008/06/12/making-ruby-bacon-play-with-mocha/
 class Bacon::Context
   include Mocha::API
