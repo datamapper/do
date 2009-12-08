@@ -15,6 +15,7 @@ SUDO     = WINDOWS ? '' : ('sudo' unless ENV['SUDOLESS'])
 CLEAN.include(%w[ {tmp,pkg}/ **/*.{o,so,bundle,jar,log,a,gem,dSYM,obj,pdb,exp,DS_Store,rbc,db} ext-java/target ])
 
 begin
+  gem 'jeweler', '~> 1.4'
   require 'jeweler'
 
   Jeweler::Tasks.new do |gem|
@@ -30,7 +31,8 @@ begin
     gem.add_dependency "jdbc-hsqldb", "~>1.8.0"
     gem.add_dependency "do_jdbc", DataObjects::Hsqldb::VERSION
 
-    gem.add_development_dependency 'bacon', '~>1.1'
+    gem.add_development_dependency 'bacon',         '~>1.1'
+    gem.add_development_dependency 'rake-compiler', '~>0.7'
 
     gem.has_rdoc = false
     gem.rubyforge_project = 'dorb'

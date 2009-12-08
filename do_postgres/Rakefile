@@ -16,6 +16,7 @@ BINARY_VERSION = '5.0.77'
 CLEAN.include(%w[ {tmp,pkg}/ **/*.{o,so,bundle,jar,log,a,gem,dSYM,obj,pdb,exp,DS_Store,rbc,db} ext/do_postgres_ext/Makefile ext-java/target ])
 
 begin
+  gem 'jeweler', '~> 1.4'
   require 'jeweler'
 
   task :build => :gemspec
@@ -35,7 +36,8 @@ begin
     gem.files = Dir['lib/**/*.rb', 'spec/**/*.rb', 'tasks/**/*.rake', 'ext/**/*.{rb,c,h}',
                   'LICENSE', 'Rakefile', '*.{markdown,rdoc,txt,yml}']
 
-    gem.add_development_dependency 'bacon', '~>1.1'
+    gem.add_development_dependency 'bacon',         '~>1.1'
+    gem.add_development_dependency 'rake-compiler', '~>0.7'
 
     gem.has_rdoc = false
     gem.rubyforge_project = 'dorb'
