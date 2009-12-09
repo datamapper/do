@@ -64,8 +64,8 @@ Gem::Specification.new do |s|
      "spec/connection_spec.rb",
      "spec/do_mock.rb",
      "spec/do_mock2.rb",
-     "spec/lib/pending_helpers.rb",
      "spec/lib/immediate_red_green_output.rb",
+     "spec/lib/pending_helpers.rb",
      "spec/lib/ssl_helpers.rb",
      "spec/pooling_spec.rb",
      "spec/reader_spec.rb",
@@ -92,16 +92,16 @@ Gem::Specification.new do |s|
     if Gem::Version.new(Gem::RubyGemsVersion) >= Gem::Version.new('1.2.0') then
       s.add_runtime_dependency(%q<addressable>, ["~> 2.1"])
       s.add_development_dependency(%q<bacon>, ["~> 1.1"])
-      s.add_development_dependency(%q<mocha>, ["~> 0.9"])
+      s.add_development_dependency(%q<facon>, ["~> 1.4.1"])
     else
       s.add_dependency(%q<addressable>, ["~> 2.1"])
       s.add_dependency(%q<bacon>, ["~> 1.1"])
-      s.add_dependency(%q<mocha>, ["~> 0.9"])
+      s.add_dependency(%q<facon>, ["~> 1.4.1"])
     end
   else
     s.add_dependency(%q<addressable>, ["~> 2.1"])
     s.add_dependency(%q<bacon>, ["~> 1.1"])
-    s.add_dependency(%q<mocha>, ["~> 0.9"])
+    s.add_dependency(%q<facon>, ["~> 1.4.1"])
   end
 end
 
