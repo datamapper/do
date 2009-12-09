@@ -4,7 +4,7 @@ describe DataObjects::Transaction do
 
   before do
     @connection = mock("connection")
-    DataObjects::Connection.should.receive(:new).with("mock://mock/mock").once.and_return(@connection)
+    DataObjects::Connection.expects(:new).with("mock://mock/mock").once.returns(@connection)
     @transaction = DataObjects::Transaction.new("mock://mock/mock")
   end
 
@@ -20,14 +20,14 @@ describe DataObjects::Transaction do
       @transaction.id.should.not == nil
     end
     it "should provide a unique id" do
-      DataObjects::Connection.should.receive(:new).with("mock://mock/mock2").once.and_return(@connection)
+      DataObjects::Connection.expects(:new).with("mock://mock/mock2").once.returns(@connection)
       @transaction.id.should.not == DataObjects::Transaction.new("mock://mock/mock2").id
     end
   end
 
   describe "#close" do
     it "should close its connection" do
-      @connection.should.receive(:close).once
+      @connection.expects(:close).once
       lambda { @transaction.close }.should.not.raise
     end
   end

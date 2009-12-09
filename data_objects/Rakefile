@@ -30,7 +30,7 @@ begin
     gem.add_dependency 'addressable', '~>2.1'
 
     gem.add_development_dependency 'bacon', '~>1.1'
-    gem.add_development_dependency 'facon', '~>1.4.1'
+    gem.add_development_dependency 'mocha', '~>0.9'
 
     gem.rubyforge_project = 'dorb'
 
