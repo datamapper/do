@@ -36,6 +36,7 @@ DataObjects::Postgres.logger = DataObjects::Logger.new(log_path, :debug)
 
 at_exit { DataObjects.logger.flush }
 
+Bacon.extend Bacon::ImmediateRedGreenOutput
 Bacon.summary_on_exit
 
 CONFIG = OpenStruct.new

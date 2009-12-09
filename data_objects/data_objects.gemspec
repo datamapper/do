@@ -65,7 +65,7 @@ Gem::Specification.new do |s|
      "spec/do_mock.rb",
      "spec/do_mock2.rb",
      "spec/lib/pending_helpers.rb",
-     "spec/lib/rspec_immediate_feedback_formatter.rb",
+     "spec/lib/immediate_red_green_output.rb",
      "spec/lib/ssl_helpers.rb",
      "spec/pooling_spec.rb",
      "spec/reader_spec.rb",

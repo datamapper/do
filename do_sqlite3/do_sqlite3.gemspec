@@ -31,7 +31,7 @@ Gem::Specification.new do |s|
      "lib/do_sqlite3/version.rb",
      "spec/command_spec.rb",
      "spec/connection_spec.rb",
-     "spec/lib/rspec_immediate_feedback_formatter.rb",
+     "spec/lib/immediate_red_green_output.rb",
      "spec/reader_spec.rb",
      "spec/result_spec.rb",
      "spec/spec_helper.rb",

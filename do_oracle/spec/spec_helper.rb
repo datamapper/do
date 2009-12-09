@@ -36,6 +36,7 @@ DataObjects::Oracle.logger = DataObjects::Logger.new(log_path, :debug)
 
 at_exit { DataObjects.logger.flush }
 
+Bacon.extend Bacon::ImmediateRedGreenOutput
 Bacon.summary_on_exit
 
 # Set default time zone in MRI if not set in environment
