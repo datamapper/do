@@ -10,15 +10,16 @@ Gem::Specification.new do |s|
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Alex Coles"]
-  s.date = %q{2009-12-08}
+  s.date = %q{2009-12-09}
   s.description = %q{Implements the DataObjects API for Hsqldb}
   s.email = %q{alex@alexcolesportfolio.com}
   s.extra_rdoc_files = [
-    "LICENSE",
+    "ChangeLog.markdown",
+     "LICENSE",
      "README.markdown"
   ]
   s.files = [
-    "HISTORY.markdown",
+    "ChangeLog.markdown",
      "LICENSE",
      "README.markdown",
      "Rakefile",

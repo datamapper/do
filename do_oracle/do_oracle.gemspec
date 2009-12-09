@@ -9,16 +9,18 @@ Gem::Specification.new do |s|
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Raimonds Simanovskis"]
-  s.date = %q{2009-12-08}
+  s.date = %q{2009-12-09}
   s.description = %q{Implements the DataObjects API for Oracle}
   s.email = %q{raimonds.simanovskis@gmail.com}
   s.extensions = ["ext/do_oracle_ext/extconf.rb"]
   s.extra_rdoc_files = [
-    "LICENSE",
+    "ChangeLog.markdown",
+     "INSTALL.markdown",
+     "LICENSE",
      "README.markdown"
   ]
   s.files = [
-    "HISTORY.markdown",
+    "ChangeLog.markdown",
      "INSTALL.markdown",
      "LICENSE",
      "README.markdown",

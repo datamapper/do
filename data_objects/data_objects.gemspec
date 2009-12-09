@@ -9,14 +9,14 @@ Gem::Specification.new do |s|
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Dirkjan Bussink"]
-  s.date = %q{2009-11-23}
+  s.date = %q{2009-12-09}
   s.description = %q{Provide a standard and simplified API for communicating with RDBMS from Ruby}
   s.email = %q{d.bussink@gmail.com}
   s.extra_rdoc_files = [
     "README.markdown"
   ]
   s.files = [
-    "HISTORY.markdown",
+    "ChangeLog.markdown",
      "LICENSE",
      "README.markdown",
      "Rakefile",

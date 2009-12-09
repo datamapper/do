@@ -28,7 +28,8 @@ begin
     gem.files       = Dir['lib/**/*.rb', 'spec/**/*.rb', 'tasks/**/*.rake',
                           'ext/**/*.{rb,c,h}', 'LICENSE', 'Rakefile',
                           '*.{markdown,rdoc,txt,yml}']
-    gem.extra_rdoc_files = FileList['README*', 'ChangeLog*', 'LICENSE']
+    gem.extra_rdoc_files = FileList['README*', 'ChangeLog*', 'INSTALL.markdown',
+                                    'LICENSE']
 
     # rake-compiler should generate gemspecs for other platforms (e.g. 'java')
     # and modify dependencies and extensions appropriately

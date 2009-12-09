@@ -10,22 +10,23 @@ Gem::Specification.new do |s|
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Alex Coles"]
-  s.date = %q{2009-12-08}
+  s.date = %q{2009-12-09}
   s.description = %q{Implements the DataObjects API for Microsoft SQL Server}
   s.email = %q{alex@alexcolesportfolio.com}
   s.extra_rdoc_files = [
-    "LICENSE",
+    "ChangeLog.markdown",
+     "INSTALL.markdown",
+     "LICENSE",
      "README.markdown"
   ]
   s.files = [
     "CONNECTING.markdown",
+     "ChangeLog.markdown",
      "FAQS.markdown",
-     "HISTORY.markdown",
      "INSTALL.markdown",
      "LICENSE",
      "README.markdown",
      "Rakefile",
-     "TROUBLESHOOTING.markdown",
      "lib/dbd_odbc_patch.rb",
      "lib/do_sqlserver.rb",
      "lib/do_sqlserver/transaction.rb",

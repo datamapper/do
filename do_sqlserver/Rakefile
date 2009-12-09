@@ -27,7 +27,8 @@ begin
     gem.files       = FileList['lib/**/*.rb', 'spec/**/*.rb', 'tasks/**/*.rake',
                                'LICENSE', 'Rakefile', '*.{markdown,rdoc,txt,yml}',
                                'lib/*.jar']
-    gem.extra_rdoc_files = FileList['README*', 'ChangeLog*', 'LICENSE']
+    gem.extra_rdoc_files = FileList['README*', 'ChangeLog*', 'INSTALL.markdown',
+                                    'FAQ.markdown', 'LICENSE']
 
     gem.add_dependency 'data_objects',      DataObjects::SqlServer::VERSION
     gem.add_dependency 'do_jdbc',           DataObjects::SqlServer::VERSION

@@ -31,7 +31,7 @@ begin
     gem.files       = FileList['lib/**/*.rb', 'tasks/**/*.rake', 'LICENSE',
                                 'Rakefile', '*.{markdown,rdoc,txt,yml}',
                                 'lib/*.jar']
-    gem.extra_rdoc_files = FileList['README*', 'ChangeLog*', 'MIT-LICENSE']
+    gem.extra_rdoc_files = FileList['README*', 'ChangeLog*', 'LICENSE']
 
     gem.add_dependency 'data_objects', DataObjects::Jdbc::VERSION
 
