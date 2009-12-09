@@ -28,6 +28,11 @@ begin
     ext.debug     = ENV.has_key?('DO_JAVA_DEBUG') && ENV['DO_JAVA_DEBUG']
     ext.classpath = '../do_jdbc/lib/do_jdbc_internal.jar'
     ext.java_compiling do |gem|
+
+      # Hack: Unfortunately there is no way to remove a dependency in the
+      #       Gem::Specification API.
+      gem.dependencies.delete_if { |d| d.name == 'ruby-oci8'}
+
       gem.add_dependency "do_jdbc", '0.10.1'
       gem.post_install_message = <<EOF
 ==========================================================================
