@@ -79,12 +79,12 @@ shared 'supporting String' do
 
   end
 
-  class StringWithExtraPowers < String; end
+  class ::StringWithExtraPowers < String; end
 
   describe 'writing a kind of (subclass of) String' do
 
     before do
-      @reader = @connection.create_command("SELECT id FROM widgets WHERE id = ?").execute_reader(StringWithExtraPowers.new("2"))
+      @reader = @connection.create_command("SELECT id FROM widgets WHERE id = ?").execute_reader(::StringWithExtraPowers.new("2"))
       @reader.next!
       @values = @reader.values
     end
