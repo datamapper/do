@@ -45,6 +45,15 @@ begin
     gem.email       = 'd.bussink@gmail.com'
   end
 
+  if JRUBY
+    Rake::Task['build'].clear_actions   if Rake::Task.task_defined?('build')
+    Rake::Task['install'].clear_actions if Rake::Task.task_defined?('install')
+    task :build => [ :java, :gem ]
+    task :install do
+      sh "#{Config::CONFIG['RUBY_INSTALL_NAME']} -S gem install pkg/do_mysql-#{DataObjects::Mysql::VERSION}-java.gem"
+    end
+  end
+
   Jeweler::RubyforgeTasks.new do |rubyforge|
     rubyforge.doc_task = 'yardoc'
   end
