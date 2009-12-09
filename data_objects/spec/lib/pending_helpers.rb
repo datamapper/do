@@ -1,11 +1,22 @@
 module DataObjects::Spec
-  module PendingHelpers
+  module Pending
+
+    def pending(message = '')
+      raise Bacon::Error.new(:pending, message)
+    end
+
     def pending_if(message, boolean)
       if boolean
-        should.flunk(message) { yield }
+        pending(message) { yield }
       else
         yield
       end
     end
+  end
+end
+
+module Bacon
+  class Context
+    include DataObjects::Spec::Pending
   end
 end

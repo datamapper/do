@@ -160,4 +160,3 @@ module DataObjectsSpecHelpers
 end
 
 include DataObjectsSpecHelpers
-include DataObjects::Spec::PendingHelpers

@@ -10,6 +10,8 @@ module Bacon
       error = yield
       if error.empty?
         example_passed
+      elsif error == 'PENDING'
+        example_pending
       else
         example_failed(error, description, Counter[:specifications])
       end
@@ -17,22 +19,23 @@ module Bacon
 
     def handle_summary
       puts
-      counter = Counter.values_at(:specifications, :requirements, :failed, :errors)
-      message = ("%d tests, %d assertions, %d failures, %d errors" % counter)
-      color   = (counter[2].to_i != 0 || counter[3].to_i != 0 ? :red : :green)
+      puts ErrorLog
+      counter = Counter.values_at(:specifications, :requirements, :failed, :errors, :pending)
+      message = ("%d tests, %d assertions, %d failures, %d errors, %d pending" % counter)
+      color   = (counter[2].to_i != 0 || counter[3].to_i != 0 ? :red : (counter[4].to_i != 0 ? :yellow : :green))
       puts self.send(color, message)
     end
 
     private
 
     def example_failed(error, description, counter)
-     if @current_group
+      if @current_group
         puts
         puts @current_group
         @current_group = nil  # only print the group name once
       end
 
-      if error == "FAILED"
+      if error == 'FAILED'
         puts red("- #{description} (FAILED - #{counter})")
         puts ErrorLog if Backtraces # dump stacktrace immediately
       else
@@ -42,6 +45,10 @@ module Bacon
 
     def example_passed
       print green('.')
+    end
+
+    def example_pending
+      print yellow('*')
     end
 
     def red(s)    "\e[31m#{s}\e[0m"; end
