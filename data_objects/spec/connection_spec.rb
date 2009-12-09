@@ -33,7 +33,7 @@ describe DataObjects::Connection do
       c.should.be.kind_of(DataObjects::Pooling)
     end
 
-    it "should return the Connection specefied by the scheme without pooling" do
+    it "should return the Connection specified by the scheme without pooling" do
       c = DataObjects::Connection.new(Addressable::URI.parse('java://jdbc/database?scheme=mock2'))
       c.should.not.be.kind_of(DataObjects::Pooling)
     end
