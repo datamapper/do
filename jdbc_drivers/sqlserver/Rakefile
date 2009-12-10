@@ -19,7 +19,7 @@ begin
   require 'jeweler'
 
   Jeweler::Tasks.new do |gem|
-    gem.name        = 'data_objects'
+    gem.name        = 'do-jdbc_sqlserver'
     gem.version     = DataObjects::Jdbc::SqlServer::VERSION
     gem.summary     = 'SQL Server JDBC (jTDS) Driver'
     gem.description = 'JDBC Driver for SQL Server (jTDS), packaged as a Gem'
