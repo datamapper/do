@@ -15,6 +15,7 @@ import org.jruby.runtime.builtin.IRubyObject;
 
 import data_objects.RubyType;
 import data_objects.drivers.AbstractDriverDefinition;
+import static data_objects.util.DynamicProxyUtil.*;
 
 public class HsqldbDriverDefinition extends AbstractDriverDefinition {
 
@@ -67,7 +68,7 @@ public class HsqldbDriverDefinition extends AbstractDriverDefinition {
     @Override
     public ResultSet getGeneratedKeys(Connection connection) {
         try {
-            return connection.prepareStatement("CALL IDENTITY()").executeQuery();
+            return proxyRS(connection.prepareStatement("CALL IDENTITY()").executeQuery());
         } catch (SQLException ex) {
             return null;
         }

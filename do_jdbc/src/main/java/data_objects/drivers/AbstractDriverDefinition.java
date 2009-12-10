@@ -39,6 +39,7 @@ import org.jruby.javasupport.JavaEmbedUtils;
 import org.jruby.runtime.builtin.IRubyObject;
 import org.jruby.runtime.marshal.UnmarshalStream;
 import org.jruby.util.ByteList;
+import static data_objects.util.DynamicProxyUtil.*;
 
 import data_objects.RubyType;
 
@@ -135,7 +136,7 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
      * @throws SQLException
      */
     public Connection getConnection(String uri, Properties properties) throws SQLException{
-        return driver.connect(uri, properties);
+        return proxyCON(driver.connect(uri, properties));
     }
 
     /**
@@ -334,7 +335,7 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
             }
             return prepareRubyDateTimeFromSqlTimestamp(runtime, sqlTimestampToDateTime(dt));
         case TIME:
-            switch (rs.getMetaData().getColumnType(col)) {
+            switch (proxyRSMD(rs.getMetaData()).getColumnType(col)) {
             case Types.TIME:
                 java.sql.Time tm = rs.getTime(col);
                 if (tm == null) {
