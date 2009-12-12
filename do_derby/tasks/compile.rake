@@ -1,5 +1,5 @@
 begin
-  gem('rake-compiler')
+  gem 'rake-compiler', '~>0.7'
   require 'rake/javaextensiontask'
 
   # Hack to avoid "allocator undefined for Proc" issue when unpacking Gems:
