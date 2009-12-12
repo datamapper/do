@@ -32,9 +32,6 @@ begin
     gem.homepage    = 'http://jtds.sourceforge.net/'
   end
 
-  Jeweler::RubyforgeTasks.new do |rubyforge|
-    rubyforge.doc_task = 'yardoc'
-  end
   Jeweler::GemcutterTasks.new
 
   task :default => [ :install ]

@@ -56,9 +56,6 @@ begin
     end
   end
 
-  Jeweler::RubyforgeTasks.new do |rubyforge|
-    rubyforge.doc_task = 'yardoc'
-  end
   Jeweler::GemcutterTasks.new
 
   FileList['tasks/**/*.rake'].each { |task| import task }
