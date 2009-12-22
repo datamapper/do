@@ -1,5 +1,7 @@
+package do_derby;
+
+import data_objects.drivers.AbstractDataObjectsExtService;
 import data_objects.drivers.DriverDefinition;
-import do_derby.DerbyDriverDefinition;
 
 public class DoDerbyExtService extends AbstractDataObjectsExtService {
 

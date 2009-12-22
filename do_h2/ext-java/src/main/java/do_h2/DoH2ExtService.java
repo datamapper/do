@@ -1,5 +1,7 @@
+package do_h2;
+
+import data_objects.drivers.AbstractDataObjectsExtService;
 import data_objects.drivers.DriverDefinition;
-import do_h2.H2DriverDefinition;
 
 public class DoH2ExtService extends AbstractDataObjectsExtService {
 

@@ -12,7 +12,7 @@ end
 require 'bigdecimal'
 require 'date'
 require 'base64'
-require 'do_sqlserver_ext' if RUBY_PLATFORM =~ /java/
+require 'do_sqlserver/do_sqlserver_ext' if RUBY_PLATFORM =~ /java/
 require 'do_sqlserver/version'
 # JDBC driver has transactions implementation in Java
 require 'do_sqlserver/transaction' if RUBY_PLATFORM !~ /java/

@@ -18,7 +18,12 @@ if RUBY_PLATFORM =~ /java/
   java_import driver
 end
 
-require 'do_sqlite3_ext'
+if RUBY_PLATFORM == /java/
+  require 'do_sqlite3/do_sqlite3_ext'
+else
+  # FIXME: Will be changed for MRI
+  require 'do_sqlite3_ext'
+end
 require 'do_sqlite3/version'
 require 'do_sqlite3/transaction' if RUBY_PLATFORM !~ /java/
 

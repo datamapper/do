@@ -1,5 +1,7 @@
+package do_oracle;
+
+import data_objects.drivers.AbstractDataObjectsExtService;
 import data_objects.drivers.DriverDefinition;
-import do_oracle.OracleDriverDefinition;
 
 public class DoOracleExtService extends AbstractDataObjectsExtService {
 

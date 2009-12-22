@@ -1,5 +1,5 @@
 begin
-  gem('rake-compiler')
+  gem 'rake-compiler', '~>0.7'
   require 'rake/javaextensiontask'
 
   # Hack to avoid "allocator undefined for Proc" issue when unpacking Gems:
@@ -11,6 +11,7 @@ begin
 
   Rake::JavaExtensionTask.new('do_hsqldb_ext', gemspec) do |ext|
     ext.ext_dir   = 'ext-java/src/main/java'
+    ext.lib_dir   = 'lib/do_hsqldb'
     ext.debug     = ENV.has_key?('DO_JAVA_DEBUG') && ENV['DO_JAVA_DEBUG']
     ext.classpath = '../do_jdbc/lib/do_jdbc_internal.jar'
     ext.java_compiling do |gem_spec|

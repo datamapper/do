@@ -1,5 +1,5 @@
 begin
-  gem('rake-compiler')
+  gem 'rake-compiler', '~>0.7'
   require 'rake/clean'
   require 'rake/extensioncompiler'
 
