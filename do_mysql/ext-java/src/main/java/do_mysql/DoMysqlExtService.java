@@ -1,5 +1,7 @@
+package do_mysql;
+
+import data_objects.drivers.AbstractDataObjectsExtService;
 import data_objects.drivers.DriverDefinition;
-import do_mysql.MySqlDriverDefinition;
 
 public class DoMysqlExtService extends AbstractDataObjectsExtService {
 

@@ -1,5 +1,7 @@
+package do_postgres;
+
+import data_objects.drivers.AbstractDataObjectsExtService;
 import data_objects.drivers.DriverDefinition;
-import do_postgres.PostgresDriverDefinition;
 
 public class DoPostgresExtService extends AbstractDataObjectsExtService {
 

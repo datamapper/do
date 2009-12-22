@@ -7,7 +7,12 @@ else # MRI and Ruby 1.9
   require 'oci8'
 end
 
-require 'do_oracle_ext'
+if RUBY_PLATFORM == /java/
+  require 'do_oracle/do_oracle_ext'
+else
+  # FIXME: Will be changed for MRI
+  require 'do_oracle_ext'
+end
 require File.expand_path(File.join(File.dirname(__FILE__), 'do_oracle', 'version'))
 
 if RUBY_PLATFORM =~ /java/

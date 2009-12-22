@@ -11,7 +11,7 @@ if RUBY_PLATFORM =~ /java/
     require 'jdbc/derby'      # the JDBC driver, packaged as a gem
   end
 
-  require 'do_derby_ext'    # the Java extension for this DO driver
+  require 'do_derby/do_derby_ext'    # the Java extension for this DO driver
 
   # Another way of loading the JDBC Class. This seems to be more reliable
   # than Class.forName() within the data_objects.Connection Java class,

@@ -11,6 +11,7 @@ begin
 
   Rake::JavaExtensionTask.new('do_derby_ext', gemspec) do |ext|
     ext.ext_dir   = 'ext-java/src/main/java'
+    ext.lib_dir   = 'lib/do_derby'
     ext.debug     = ENV.has_key?('DO_JAVA_DEBUG') && ENV['DO_JAVA_DEBUG']
     ext.classpath = '../do_jdbc/lib/do_jdbc_internal.jar'
     ext.java_compiling do |gem_spec|

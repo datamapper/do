@@ -1,5 +1,7 @@
+package do_hsqldb;
+
+import data_objects.drivers.AbstractDataObjectsExtService;
 import data_objects.drivers.DriverDefinition;
-import do_hsqldb.HsqldbDriverDefinition;
 
 public class DoHsqldbExtService extends AbstractDataObjectsExtService {
 

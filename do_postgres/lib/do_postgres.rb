@@ -17,7 +17,12 @@ if RUBY_PLATFORM =~ /java/
 
 end
 
-require 'do_postgres_ext'
+if RUBY_PLATFORM == /java/
+  require 'do_postgres/do_postgres_ext'
+else
+  # FIXME: Will be changed for MRI
+  require 'do_postgres_ext'
+end
 require 'do_postgres/version'
 require 'do_postgres/transaction' if RUBY_PLATFORM !~ /java/
 require 'do_postgres/encoding'

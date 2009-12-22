@@ -1,6 +1,7 @@
+package do_sqlite3;
 
+import data_objects.drivers.AbstractDataObjectsExtService;
 import data_objects.drivers.DriverDefinition;
-import do_sqlite3.Sqlite3DriverDefinition;
 
 public class DoSqlite3ExtService extends AbstractDataObjectsExtService {
 
