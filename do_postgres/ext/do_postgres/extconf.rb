@@ -35,7 +35,7 @@ if have_build_env
     $CFLAGS << ' -DRUBY_LESS_THAN_186'
   end
 
-  create_makefile("do_postgres_ext")
+  create_makefile("do_postgres/do_postgres")
 else
   puts 'Could not find PostgreSQL build environment (libraries & headers): Makefile not created'
   exit(1)

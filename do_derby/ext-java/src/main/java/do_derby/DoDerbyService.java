@@ -1,9 +1,9 @@
 package do_derby;
 
-import data_objects.drivers.AbstractDataObjectsExtService;
+import data_objects.drivers.AbstractDataObjectsService;
 import data_objects.drivers.DriverDefinition;
 
-public class DoDerbyExtService extends AbstractDataObjectsExtService {
+public class DoDerbyService extends AbstractDataObjectsService {
 
     private final static DriverDefinition driver = new DerbyDriverDefinition();
 

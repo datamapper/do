@@ -10,9 +10,15 @@ begin
     @clean_gemspec ||= eval("#{Rake.application.jeweler.gemspec.to_ruby}") # $SAFE = 3\n
   end
 
-  Rake::ExtensionTask.new('do_postgres_ext', gemspec) do |ext|
+  Rake::ExtensionTask.new('do_postgres', gemspec) do |ext|
 
     postgres_lib = File.expand_path(File.join(File.dirname(__FILE__), '..', 'vendor', 'pgsql'))
+
+    ext.lib_dir = "lib/#{gemspec.name}"
+
+    ext.cross_compiling do |gemspec|
+      gemspec.post_install_message = "You're installing the binary version of #{gemspec.name}. It was built using PostgreSQL version #{BINARY_VERSION}. Is recommended to use the exact same version to avoid potential issues."
+	end
 
     # automatically add build options to avoid need of manual input
     if RUBY_PLATFORM =~ /mswin|mingw/ then
@@ -31,10 +37,10 @@ begin
 
   end
 
-  Rake::JavaExtensionTask.new('do_postgres_ext', gemspec) do |ext|
+  Rake::JavaExtensionTask.new('do_postgres', gemspec) do |ext|
     ext.ext_dir   = 'ext-java/src/main/java'
-    ext.lib_dir   = 'lib/do_postgres'
-    ext.debug     = ENV.has_key?('DO_JAVA_DEBUG') && ENV['DO_JAVA_DEBUG']
+    ext.lib_dir   = "lib/#{gemspec.name}"
+	ext.debug     = ENV.has_key?('DO_JAVA_DEBUG') && ENV['DO_JAVA_DEBUG']
     ext.classpath = '../do_jdbc/lib/do_jdbc_internal.jar'
     ext.java_compiling do |gem|
       gem.add_dependency 'jdbc-postgres', '>=8.2'

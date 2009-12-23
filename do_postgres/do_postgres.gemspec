@@ -9,10 +9,10 @@ Gem::Specification.new do |s|
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Dirkjan Bussink"]
-  s.date = %q{2009-12-09}
+  s.date = %q{2009-12-23}
   s.description = %q{Implements the DataObjects API for PostgreSQL}
   s.email = %q{d.bussink@gmail.com}
-  s.extensions = ["ext/do_postgres_ext/extconf.rb"]
+  s.extensions = ["ext/do_postgres/extconf.rb"]
   s.extra_rdoc_files = [
     "ChangeLog.markdown",
      "LICENSE",
@@ -23,10 +23,10 @@ Gem::Specification.new do |s|
      "LICENSE",
      "README.markdown",
      "Rakefile",
-     "ext/do_postgres_ext/do_postgres_ext.c",
-     "ext/do_postgres_ext/error.h",
-     "ext/do_postgres_ext/extconf.rb",
-     "ext/do_postgres_ext/pg_config.h",
+     "ext/do_postgres/do_postgres.c",
+     "ext/do_postgres/error.h",
+     "ext/do_postgres/extconf.rb",
+     "ext/do_postgres/pg_config.h",
      "lib/do_postgres.rb",
      "lib/do_postgres/encoding.rb",
      "lib/do_postgres/transaction.rb",

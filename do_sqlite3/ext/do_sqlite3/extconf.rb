@@ -3,9 +3,6 @@ ENV["RC_ARCHS"] = "" if RUBY_PLATFORM =~ /darwin/
 # Loads mkmf which is used to make makefiles for Ruby extensions
 require 'mkmf'
 
-# Give it a name
-extension_name = 'do_sqlite3_ext'
-
 # Use some default search paths
 dir_config("sqlite3", ["/usr/local", "/opt/local", "/usr"])
 
@@ -22,5 +19,5 @@ if have_header( "sqlite3.h" ) && have_library( "sqlite3", "sqlite3_open" )
   have_func("sqlite3_prepare_v2")
   have_func("sqlite3_open_v2")
 
-  create_makefile(extension_name)
+  create_makefile('do_sqlite3/do_sqlite3')
 end

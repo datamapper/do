@@ -16,11 +16,11 @@ import org.jruby.runtime.load.BasicLibraryService;
 import static data_objects.DataObjects.DATA_OBJECTS_MODULE_NAME;
 
 /**
- * AbstractDataObjectsExtService
+ * AbstractDataObjectsService
  *
  * @author alexbcoles
  */
-public abstract class AbstractDataObjectsExtService implements BasicLibraryService {
+public abstract class AbstractDataObjectsService implements BasicLibraryService {
 
     /**
      *

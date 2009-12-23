@@ -19,12 +19,17 @@ if RUBY_PLATFORM =~ /java/
 
 end
 
-if RUBY_PLATFORM == /java/
-  require 'do_mysql/do_mysql_ext'
-else
-  # FIXME: Will be changed for MRI
-  require 'do_mysql_ext'
+begin
+  require 'do_mysql/do_mysql'
+rescue LoadError
+  if RUBY_PLATFORM =~ /mingw|mswin/
+    RUBY_VERSION =~ /(\d+.\d+)/
+    require "do_mysql/#{$1}/do_mysql"
+  else
+    raise
+  end
 end
+
 require 'do_mysql/version'
 require 'do_mysql/transaction' if RUBY_PLATFORM !~ /java/
 require 'do_mysql/encoding'

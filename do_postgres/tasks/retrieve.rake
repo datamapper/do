@@ -29,14 +29,10 @@ begin
   end
 
   def copy(from, to)
-    if WINDOWS
-      from.gsub!(/\//, '\\')
-      to.gsub!(/\//, '\\')
-    end
-    sh "#{WINDOWS ? 'copy' : 'cp'} #{from} #{to}"
+    FileUtils.cp(from, to)
   end
 
-  version = '8.3.7'
+  version = BINARY_VERSION
   file "vendor/postgresql-#{version}-1-binaries-no-installer.zip" => ['vendor'] do |t|
     url = "http://wwwmaster.postgresql.org/redir/107/h/binary/v#{version}/win32/#{File.basename(t.name)}"
     when_writing "downloading #{t.name}" do

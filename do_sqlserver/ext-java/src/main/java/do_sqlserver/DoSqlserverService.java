@@ -1,12 +1,12 @@
 package do_sqlserver;
 
-import data_objects.drivers.AbstractDataObjectsExtService;
+import data_objects.drivers.AbstractDataObjectsService;
 import data_objects.drivers.DriverDefinition;
 
-// this class must be named DoSqlserverExtService (and not DoSqlServerExtService)
+// this class must be named DoSqlserverService (and not DoSqlServerService)
 // for the extension to be loaded correctly (alternatively, we could add an
 // underscore to the extension JAR name).
-public class DoSqlserverExtService extends AbstractDataObjectsExtService {
+public class DoSqlserverService extends AbstractDataObjectsService {
 
     private final static DriverDefinition driver = new SqlServerDriverDefinition();
 

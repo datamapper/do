@@ -1,9 +1,9 @@
 package do_mysql;
 
-import data_objects.drivers.AbstractDataObjectsExtService;
+import data_objects.drivers.AbstractDataObjectsService;
 import data_objects.drivers.DriverDefinition;
 
-public class DoMysqlExtService extends AbstractDataObjectsExtService {
+public class DoMysqlService extends AbstractDataObjectsService {
 
     private final static DriverDefinition driver = new MySqlDriverDefinition();
 

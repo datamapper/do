@@ -64,4 +64,4 @@ if RUBY_VERSION < '1.8.6'
   $CFLAGS << ' -DRUBY_LESS_THAN_186'
 end
 
-create_makefile('do_mysql_ext')
+create_makefile('do_mysql/do_mysql')

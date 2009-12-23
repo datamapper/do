@@ -10,7 +10,7 @@ if RUBY_PLATFORM =~ /java/
   rescue
     require 'jdbc/hsqldb'     # the JDBC driver, packaged as a gem
   end
-  require 'do_hsqldb/do_hsqldb_ext'   # the Java extension for this DO driver
+  require 'do_hsqldb/do_hsqldb'   # the Java extension for this DO driver
 
   # Another way of loading the JDBC Class. This seems to be more reliable
   # than Class.forName() within the data_objects.Connection Java class,

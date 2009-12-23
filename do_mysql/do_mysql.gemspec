@@ -9,10 +9,10 @@ Gem::Specification.new do |s|
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Dirkjan Bussink"]
-  s.date = %q{2009-12-09}
+  s.date = %q{2009-12-23}
   s.description = %q{Implements the DataObjects API for MySQL}
   s.email = %q{d.bussink@gmail.com}
-  s.extensions = ["ext/do_mysql_ext/extconf.rb"]
+  s.extensions = ["ext/do_mysql/extconf.rb"]
   s.extra_rdoc_files = [
     "ChangeLog.markdown",
      "LICENSE",
@@ -23,9 +23,9 @@ Gem::Specification.new do |s|
      "LICENSE",
      "README.markdown",
      "Rakefile",
-     "ext/do_mysql_ext/do_mysql_ext.c",
-     "ext/do_mysql_ext/error.h",
-     "ext/do_mysql_ext/extconf.rb",
+     "ext/do_mysql/do_mysql.c",
+     "ext/do_mysql/error.h",
+     "ext/do_mysql/extconf.rb",
      "lib/do_mysql.rb",
      "lib/do_mysql/encoding.rb",
      "lib/do_mysql/transaction.rb",
