@@ -787,7 +787,7 @@ static VALUE cReader_field_count(VALUE self) {
 }
 
 
-void Init_do_oracle_ext() {
+void Init_do_oracle() {
   // rb_require("oci8");
   rb_require("date");
   rb_require("bigdecimal");

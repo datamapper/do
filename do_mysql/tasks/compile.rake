@@ -10,8 +10,8 @@ begin
     @clean_gemspec ||= eval("#{Rake.application.jeweler.gemspec.to_ruby}") # $SAFE = 3\n
   end
 
-  Rake::ExtensionTask.new('do_mysql_ext', gemspec) do |ext|
-
+  Rake::ExtensionTask.new('do_mysql', gemspec) do |ext|
+    ext.lib_dir = "lib/#{gemspec.name}"
     mysql_lib = File.expand_path(File.join(File.dirname(__FILE__), '..', 'vendor', "mysql-#{BINARY_VERSION}-win32"))
 
     # automatically add build options to avoid need of manual input
@@ -27,7 +27,8 @@ begin
 
   end
 
-  Rake::JavaExtensionTask.new('do_mysql_ext', gemspec) do |ext|
+  Rake::JavaExtensionTask.new('do_mysql', gemspec) do |ext|
+    ext.lib_dir = "lib/#{gemspec.name}"
     ext.ext_dir   = 'ext-java/src/main/java'
     ext.lib_dir   = 'lib/do_mysql'
     ext.debug     = ENV.has_key?('DO_JAVA_DEBUG') && ENV['DO_JAVA_DEBUG']

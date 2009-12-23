@@ -15,6 +15,10 @@
 /* On Windows this stuff is also defined by Postgres, but we don't
    want to use Postgres' version actually */
 #undef fsync
+#undef ftruncate
+#undef fseeko
+#undef ftello
+#undef stat
 #undef vsnprintf
 #undef snprintf
 #undef sprintf
@@ -999,7 +1003,7 @@ static VALUE cReader_field_count(VALUE self) {
   return rb_iv_get(self, "@field_count");
 }
 
-void Init_do_postgres_ext() {
+void Init_do_postgres() {
   rb_require("date");
   rb_require("bigdecimal");
 

@@ -3,11 +3,12 @@
 #include <math.h>
 #include <ctype.h>
 #include <time.h>
+
 #include <mysql.h>
 #include <errmsg.h>
 #include <mysqld_error.h>
-#include "error.h"
 
+#include "error.h"
 #define RUBY_CLASS(name) rb_const_get(rb_cObject, rb_intern(name))
 #define DRIVER_CLASS(klass, parent) (rb_define_class_under(mDOMysql, klass, parent))
 #define CONST_GET(scope, constant) (rb_funcall(scope, ID_CONST_GET, 1, rb_str_new2(constant)))
@@ -425,10 +426,10 @@ static char * get_uri_option(VALUE query_hash, char * key) {
   return value;
 }
 
-static void assert_file_exists(char * file, char * message) {
+static void assert_file_exists(char * file, const char * message) {
   if (file == NULL) { return; }
   if (rb_funcall(rb_cFile, rb_intern("exist?"), 1, rb_str_new2(file)) == Qfalse) {
-    rb_raise(eArgumentError, message);
+    rb_raise(eArgumentError, "%s", message);
   }
 }
 
@@ -990,7 +991,7 @@ static VALUE cReader_field_count(VALUE self) {
   return rb_iv_get(self, "@field_count");
 }
 
-void Init_do_mysql_ext() {
+void Init_do_mysql() {
   rb_require("bigdecimal");
   rb_require("date");
 

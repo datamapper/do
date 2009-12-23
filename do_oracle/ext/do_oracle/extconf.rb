@@ -29,7 +29,7 @@ if have_build_env
     $CFLAGS << ' -DRUBY_LESS_THAN_186'
   end
 
-  create_makefile("do_oracle_ext")
+  create_makefile("do_oracle/do_oracle")
 else
   puts 'Could not find Oracle build environment (libraries & headers): Makefile not created'
   exit(1)

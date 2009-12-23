@@ -13,7 +13,7 @@ WINDOWS  = Gem.win_platform? || (JRUBY && ENV_JAVA['os.name'] =~ /windows/i)
 SUDO     = WINDOWS ? '' : ('sudo' unless ENV['SUDOLESS'])
 BINARY_VERSION = '10.2.0.4.0'
 
-CLEAN.include(%w[ {tmp,pkg}/ **/*.{o,so,bundle,jar,log,a,gem,dSYM,obj,pdb,exp,DS_Store,rbc,db} ext/do_oracle_ext/Makefile ext-java/target ])
+CLEAN.include(%w[ {tmp,pkg}/ **/*.{o,so,bundle,jar,log,a,gem,dSYM,obj,pdb,exp,DS_Store,rbc,db} ext/do_oracle/Makefile ext-java/target ])
 
 begin
   gem 'jeweler', '~> 1.4'
@@ -33,7 +33,7 @@ begin
 
     # rake-compiler should generate gemspecs for other platforms (e.g. 'java')
     # and modify dependencies and extensions appropriately
-    gem.extensions << 'ext/do_oracle_ext/extconf.rb'
+    gem.extensions << 'ext/do_oracle/extconf.rb'
 
     gem.add_dependency 'data_objects', DataObjects::Oracle::VERSION
     gem.add_dependency 'ruby-oci8',    '~>2.0'

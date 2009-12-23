@@ -11,9 +11,9 @@ JRUBY    = RUBY_PLATFORM =~ /java/
 IRONRUBY = defined?(RUBY_ENGINE) && RUBY_ENGINE == 'ironruby'
 WINDOWS  = Gem.win_platform? || (JRUBY && ENV_JAVA['os.name'] =~ /windows/i)
 SUDO     = WINDOWS ? '' : ('sudo' unless ENV['SUDOLESS'])
-BINARY_VERSION = '3_6_13'
+BINARY_VERSION = '3_6_21'
 
-CLEAN.include(%w[ {tmp,pkg}/ **/*.{o,so,bundle,jar,log,a,gem,dSYM,obj,pdb,exp,DS_Store,rbc,db} ext/do_sqlite3_ext/Makefile ext-java/target ])
+CLEAN.include(%w[ {tmp,pkg}/ **/*.{o,so,bundle,jar,log,a,gem,dSYM,obj,pdb,exp,DS_Store,rbc,db} ext/do_sqlite3/Makefile ext-java/target ])
 
 begin
   gem 'jeweler', '~> 1.4'
@@ -32,7 +32,7 @@ begin
 
     # rake-compiler should generate gemspecs for other platforms (e.g. 'java')
     # and modify dependencies and extensions appropriately
-    gem.extensions << 'ext/do_sqlite3_ext/extconf.rb'
+    gem.extensions << 'ext/do_sqlite3/extconf.rb'
 
     gem.add_dependency 'data_objects', DataObjects::Sqlite3::VERSION
 

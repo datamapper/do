@@ -12,7 +12,7 @@ if RUBY_PLATFORM =~ /java/
     require 'jdbc/h2'     # the JDBC driver, packaged as a gem
    end
 
-  require 'do_h2/do_h2_ext'   # the Java extension for this DO driver
+  require 'do_h2/do_h2'   # the Java extension for this DO driver
 
   # Another way of loading the JDBC Class. This seems to be more reliable
   # than Class.forName() within the data_objects.Connection Java class,

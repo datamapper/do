@@ -720,7 +720,7 @@ static VALUE cReader_field_count(VALUE self) {
   return rb_iv_get(self, "@field_count");
 }
 
-void Init_do_sqlite3_ext() {
+void Init_do_sqlite3() {
   rb_require("bigdecimal");
   rb_require("date");
 

@@ -10,9 +10,11 @@ begin
     @clean_gemspec ||= eval("#{Rake.application.jeweler.gemspec.to_ruby}") # $SAFE = 3\n
   end
 
-  Rake::ExtensionTask.new('do_sqlite3_ext', gemspec) do |ext|
+  Rake::ExtensionTask.new('do_sqlite3', gemspec) do |ext|
 
     sqlite3_lib = File.expand_path(File.join(File.dirname(__FILE__), '..', 'vendor', 'sqlite3'))
+
+    ext.lib_dir = "lib/#{gemspec.name}"
 
     ext.cross_compile = true
     ext.cross_platform = ['x86-mingw32', 'x86-mswin32-60']
@@ -25,9 +27,9 @@ begin
 
   end
 
-  Rake::JavaExtensionTask.new('do_sqlite3_ext', gemspec) do |ext|
+  Rake::JavaExtensionTask.new('do_sqlite3', gemspec) do |ext|
     ext.ext_dir   = 'ext-java/src/main/java'
-    ext.lib_dir   = 'lib/do_sqlite3'
+    ext.lib_dir = "lib/#{gemspec.name}"
     ext.debug     = ENV.has_key?('DO_JAVA_DEBUG') && ENV['DO_JAVA_DEBUG']
     ext.classpath = '../do_jdbc/lib/do_jdbc_internal.jar'
     ext.java_compiling do |gem|

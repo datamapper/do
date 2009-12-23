@@ -7,13 +7,18 @@ else # MRI and Ruby 1.9
   require 'oci8'
 end
 
-if RUBY_PLATFORM == /java/
-  require 'do_oracle/do_oracle_ext'
-else
-  # FIXME: Will be changed for MRI
-  require 'do_oracle_ext'
+begin
+  require 'do_oracle/do_oracle'
+rescue LoadError
+  if RUBY_PLATFORM =~ /mingw|mswin/ then
+    RUBY_VERSION =~ /(\d+.\d+)/
+    require "do_oracle/#{$1}/do_oracle"
+  else
+    raise
+  end
 end
-require File.expand_path(File.join(File.dirname(__FILE__), 'do_oracle', 'version'))
+
+require 'do_oracle/version'
 
 if RUBY_PLATFORM =~ /java/
   # Oracle JDBC driver (ojdbc14.jar or ojdbc5.jar) file should be in JRUBY_HOME/lib or should be in Java class path

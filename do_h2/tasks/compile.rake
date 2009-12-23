@@ -9,7 +9,7 @@ begin
     @clean_gemspec ||= eval("#{Rake.application.jeweler.gemspec.to_ruby}") # $SAFE = 3\n
   end
 
-  Rake::JavaExtensionTask.new('do_h2_ext', gemspec) do |ext|
+  Rake::JavaExtensionTask.new('do_h2', gemspec) do |ext|
     ext.ext_dir   = 'ext-java/src/main/java'
     ext.lib_dir   = 'lib/do_h2'
     ext.debug     = ENV.has_key?('DO_JAVA_DEBUG') && ENV['DO_JAVA_DEBUG']
@@ -31,7 +31,7 @@ EOF
   # the platform of the current interpreter (i.e. 'compile:java' to 'compile'
   # only if running on JRuby). However, we always want to compile for Java,
   # even if running from MRI.
-  task 'compile:do_h2_ext' => ['compile:do_h2_ext:java']
+  task 'compile:do_h2' => ['compile:do_h2:java']
   task 'compile' => ['compile:java']
 
 rescue LoadError

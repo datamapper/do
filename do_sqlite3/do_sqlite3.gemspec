@@ -9,10 +9,10 @@ Gem::Specification.new do |s|
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Dirkjan Bussink"]
-  s.date = %q{2009-12-09}
+  s.date = %q{2009-12-23}
   s.description = %q{Implements the DataObjects API for Sqlite3}
   s.email = %q{d.bussink@gmail.com}
-  s.extensions = ["ext/do_sqlite3_ext/extconf.rb"]
+  s.extensions = ["ext/do_sqlite3/extconf.rb"]
   s.extra_rdoc_files = [
     "ChangeLog.markdown",
      "LICENSE",
@@ -23,9 +23,9 @@ Gem::Specification.new do |s|
      "LICENSE",
      "README.markdown",
      "Rakefile",
-     "ext/do_sqlite3_ext/do_sqlite3_ext.c",
-     "ext/do_sqlite3_ext/error.h",
-     "ext/do_sqlite3_ext/extconf.rb",
+     "ext/do_sqlite3/do_sqlite3.c",
+     "ext/do_sqlite3/error.h",
+     "ext/do_sqlite3/extconf.rb",
      "lib/do_sqlite3.rb",
      "lib/do_sqlite3/transaction.rb",
      "lib/do_sqlite3/version.rb",
