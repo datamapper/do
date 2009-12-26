@@ -9,7 +9,7 @@ Gem::Specification.new do |s|
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Dirkjan Bussink"]
-  s.date = %q{2009-12-26}
+  s.date = %q{2009-12-27}
   s.description = %q{Implements the DataObjects API for Sqlite3}
   s.email = %q{d.bussink@gmail.com}
   s.extensions = ["ext/do_sqlite3/extconf.rb"]
@@ -62,10 +62,10 @@ Gem::Specification.new do |s|
   s.test_files = [
     "spec/command_spec.rb",
      "spec/connection_spec.rb",
-     "spec/lib/immediate_red_green_output.rb",
      "spec/reader_spec.rb",
      "spec/result_spec.rb",
      "spec/spec_helper.rb",
+     "spec/lib/immediate_red_green_output.rb",
      "spec/typecast/array_spec.rb",
      "spec/typecast/bigdecimal_spec.rb",
      "spec/typecast/boolean_spec.rb",

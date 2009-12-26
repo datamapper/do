@@ -490,11 +490,10 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
         case REGEXP:
             ps.setString(idx, ((RubyRegexp) arg).source().toString());
             break;
-        // default case handling is simplified
-        // TODO: if something is not working because of that then should be added to specs
+        case OTHER:
         default:
             int jdbcType = ps.getParameterMetaData().getParameterType(idx);
-            ps.setObject(idx, arg.toString(), jdbcType);
+            ps.setObject(idx, arg.asJavaString(), jdbcType);
         }
     }
 
