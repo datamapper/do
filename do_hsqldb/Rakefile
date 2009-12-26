@@ -28,6 +28,7 @@ begin
                                'LICENSE', 'Rakefile', '*.{markdown,rdoc,txt,yml}',
                                'lib/*.jar']
     gem.extra_rdoc_files = FileList['README*', 'ChangeLog*', 'LICENSE']
+    gem.test_files  = FileList['spec/**/*.rb']
 
     gem.add_dependency 'data_objects', DataObjects::Hsqldb::VERSION
     gem.add_dependency 'do_jdbc',      DataObjects::Hsqldb::VERSION
