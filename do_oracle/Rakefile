@@ -30,6 +30,7 @@ begin
                           '*.{markdown,rdoc,txt,yml}']
     gem.extra_rdoc_files = FileList['README*', 'ChangeLog*', 'INSTALL.markdown',
                                     'LICENSE']
+    gem.test_files  = FileList['spec/**/*.rb']
 
     # rake-compiler should generate gemspecs for other platforms (e.g. 'java')
     # and modify dependencies and extensions appropriately

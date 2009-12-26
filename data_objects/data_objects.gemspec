@@ -9,7 +9,7 @@ Gem::Specification.new do |s|
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Dirkjan Bussink"]
-  s.date = %q{2009-12-20}
+  s.date = %q{2009-12-26}
   s.description = %q{Provide a standard and simplified API for communicating with RDBMS from Ruby}
   s.email = %q{d.bussink@gmail.com}
   s.extra_rdoc_files = [
@@ -84,6 +84,21 @@ Gem::Specification.new do |s|
   s.rubyforge_project = %q{dorb}
   s.rubygems_version = %q{1.3.5}
   s.summary = %q{DataObjects basic API and shared driver specifications}
+  s.test_files = [
+    "spec/command_spec.rb",
+     "spec/connection_spec.rb",
+     "spec/do_mock.rb",
+     "spec/do_mock2.rb",
+     "spec/lib/immediate_red_green_output.rb",
+     "spec/lib/pending_helpers.rb",
+     "spec/lib/ssl_helpers.rb",
+     "spec/pooling_spec.rb",
+     "spec/reader_spec.rb",
+     "spec/result_spec.rb",
+     "spec/spec_helper.rb",
+     "spec/transaction_spec.rb",
+     "spec/uri_spec.rb"
+  ]
 
   if s.respond_to? :specification_version then
     current_version = Gem::Specification::CURRENT_SPECIFICATION_VERSION

@@ -24,8 +24,9 @@ begin
     gem.summary     = 'DataObjects basic API and shared driver specifications'
     gem.description = 'Provide a standard and simplified API for communicating with RDBMS from Ruby'
     gem.platform    = Gem::Platform::RUBY
-    gem.files = FileList["lib/**/*.rb", "spec/**/*.rb", "tasks/**/*.rake",
+    gem.files       = FileList["lib/**/*.rb", "spec/**/*.rb", "tasks/**/*.rake",
                         "LICENSE", "Rakefile", "*.{markdown,rdoc,txt,yml}"]
+    gem.test_files  = FileList['spec/**/*.rb']
 
     gem.add_dependency 'addressable', '~>2.1'
 
