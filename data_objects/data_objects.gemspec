@@ -53,6 +53,7 @@ Gem::Specification.new do |s|
      "lib/data_objects/spec/typecast/integer_spec.rb",
      "lib/data_objects/spec/typecast/ipaddr_spec.rb",
      "lib/data_objects/spec/typecast/nil_spec.rb",
+     "lib/data_objects/spec/typecast/other_spec.rb",
      "lib/data_objects/spec/typecast/range_spec.rb",
      "lib/data_objects/spec/typecast/string_spec.rb",
      "lib/data_objects/spec/typecast/time_spec.rb",

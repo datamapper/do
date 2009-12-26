@@ -30,7 +30,8 @@ public enum RubyType {
     BIG_DECIMAL("BigDecimal"),
     BYTE_ARRAY ("Extlib::ByteArray"),      // Extlib::ByteArray < String
     REGEXP     ("Regexp"),
-    NIL        ("NilClass");
+    NIL        ("NilClass"),
+    OTHER      ("#OTHER#");
 
     private final String rubyName;
 
@@ -57,11 +58,7 @@ public enum RubyType {
     }
 
     public static RubyType inferRubyType(IRubyObject arg) {
-        RubyType t = getRubyType(arg.getType());
-        if (t == null) {
-            throw arg.getRuntime().newArgumentError("Invalid type inferred: " + arg.toString());
-        }
-        return t;
+        return getRubyType(arg.getType());
     }
 
     public static RubyType getRubyType(RubyClass rubyClass) {
@@ -69,7 +66,7 @@ public enum RubyType {
         if(result == null){
             rubyClass = rubyClass.getSuperClass();
             if(rubyClass.getName().equals("Object")){
-                return null;
+                return OTHER;
             }
             else {
                 return getRubyType(rubyClass);
