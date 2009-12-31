@@ -2,42 +2,27 @@ $TESTING=true
 JRUBY = RUBY_PLATFORM =~ /java/
 
 require 'rubygems'
-require 'bacon'
-
 require 'date'
 require 'ostruct'
-require 'pathname'
 require 'fileutils'
 
-dir = File.dirname(__FILE__)
-lib_path = File.expand_path("#{dir}/../lib")
-$LOAD_PATH.unshift lib_path unless $LOAD_PATH.include?(lib_path)
-# put data_objects from repository in the load path
-# DO NOT USE installed gem of data_objects!
-do_lib_path = File.expand_path("#{dir}/../../data_objects/lib")
-$LOAD_PATH.unshift do_lib_path unless $LOAD_PATH.include?(do_lib_path)
+driver_lib = File.expand_path('../../lib', __FILE__)
+$LOAD_PATH.unshift(driver_lib) unless $LOAD_PATH.include?(driver_lib)
 
-if JRUBY
-  jdbc_lib_path = File.expand_path(File.join(File.dirname(__FILE__), '..', '..', 'do_jdbc', 'lib'))
-  $LOAD_PATH.unshift jdbc_lib_path unless $LOAD_PATH.include?(jdbc_lib_path)
-  require 'do_jdbc'
+# Prepend data_objects/do_jdbc in the repository to the load path.
+# DO NOT USE installed gems, except when running the specs from gem.
+repo_root = File.expand_path('../../..', __FILE__)
+(['data_objects'] << ('do_jdbc' if JRUBY)).compact.each do |lib|
+  lib_path = "#{repo_root}/#{lib}/lib"
+  $LOAD_PATH.unshift(lib_path) if File.directory?(lib_path) && !$LOAD_PATH.include?(lib_path)
 end
 
 require 'data_objects'
-
-DATAOBJECTS_SPEC_ROOT = Pathname(__FILE__).dirname.parent.parent + 'data_objects' + 'spec'
-Pathname.glob((DATAOBJECTS_SPEC_ROOT + 'lib/**/*.rb').to_s).each { |f| require f }
+require 'data_objects/spec/bacon'
 require 'do_oracle'
 
-log_path = File.expand_path(File.join(File.dirname(__FILE__), '..', 'log', 'do.log'))
-FileUtils.mkdir_p(File.dirname(log_path))
-
-DataObjects::Oracle.logger = DataObjects::Logger.new(log_path, :debug)
-
+DataObjects::Oracle.logger = DataObjects::Logger.new(STDOUT, :off)
 at_exit { DataObjects.logger.flush }
-
-Bacon.extend Bacon::ImmediateRedGreenOutput
-Bacon.summary_on_exit
 
 # Set default time zone in MRI if not set in environment
 # as otherwise wrong time zone is set for database connection

@@ -9,7 +9,7 @@ Gem::Specification.new do |s|
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Dirkjan Bussink"]
-  s.date = %q{2009-12-26}
+  s.date = %q{2009-12-31}
   s.description = %q{Provide a standard and simplified API for communicating with RDBMS from Ruby}
   s.email = %q{d.bussink@gmail.com}
   s.extra_rdoc_files = [
@@ -36,9 +36,13 @@ Gem::Specification.new do |s|
      "lib/data_objects/quoting.rb",
      "lib/data_objects/reader.rb",
      "lib/data_objects/result.rb",
+     "lib/data_objects/spec/bacon.rb",
      "lib/data_objects/spec/command_spec.rb",
      "lib/data_objects/spec/connection_spec.rb",
      "lib/data_objects/spec/encoding_spec.rb",
+     "lib/data_objects/spec/helpers/immediate_red_green_output.rb",
+     "lib/data_objects/spec/helpers/pending.rb",
+     "lib/data_objects/spec/helpers/ssl.rb",
      "lib/data_objects/spec/quoting_spec.rb",
      "lib/data_objects/spec/reader_spec.rb",
      "lib/data_objects/spec/result_spec.rb",
@@ -65,9 +69,6 @@ Gem::Specification.new do |s|
      "spec/connection_spec.rb",
      "spec/do_mock.rb",
      "spec/do_mock2.rb",
-     "spec/lib/immediate_red_green_output.rb",
-     "spec/lib/pending_helpers.rb",
-     "spec/lib/ssl_helpers.rb",
      "spec/pooling_spec.rb",
      "spec/reader_spec.rb",
      "spec/result_spec.rb",
@@ -90,9 +91,6 @@ Gem::Specification.new do |s|
      "spec/connection_spec.rb",
      "spec/do_mock.rb",
      "spec/do_mock2.rb",
-     "spec/lib/immediate_red_green_output.rb",
-     "spec/lib/pending_helpers.rb",
-     "spec/lib/ssl_helpers.rb",
      "spec/pooling_spec.rb",
      "spec/reader_spec.rb",
      "spec/result_spec.rb",
