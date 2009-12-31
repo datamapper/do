@@ -10,7 +10,7 @@ Gem::Specification.new do |s|
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Alex Coles"]
-  s.date = %q{2009-12-26}
+  s.date = %q{2009-12-31}
   s.description = %q{Implements the DataObjects API for H2}
   s.email = %q{alex@alexcolesportfolio.com}
   s.extra_rdoc_files = [
@@ -28,7 +28,6 @@ Gem::Specification.new do |s|
      "spec/command_spec.rb",
      "spec/connection_spec.rb",
      "spec/encoding_spec.rb",
-     "spec/lib/immediate_red_green_output.rb",
      "spec/reader_spec.rb",
      "spec/result_spec.rb",
      "spec/spec_helper.rb",
@@ -42,6 +41,7 @@ Gem::Specification.new do |s|
      "spec/typecast/float_spec.rb",
      "spec/typecast/integer_spec.rb",
      "spec/typecast/nil_spec.rb",
+     "spec/typecast/other_spec.rb",
      "spec/typecast/range_spec.rb",
      "spec/typecast/string_spec.rb",
      "spec/typecast/time_spec.rb",
@@ -58,7 +58,6 @@ Gem::Specification.new do |s|
     "spec/command_spec.rb",
      "spec/connection_spec.rb",
      "spec/encoding_spec.rb",
-     "spec/lib/immediate_red_green_output.rb",
      "spec/reader_spec.rb",
      "spec/result_spec.rb",
      "spec/spec_helper.rb",
@@ -72,6 +71,7 @@ Gem::Specification.new do |s|
      "spec/typecast/float_spec.rb",
      "spec/typecast/integer_spec.rb",
      "spec/typecast/nil_spec.rb",
+     "spec/typecast/other_spec.rb",
      "spec/typecast/range_spec.rb",
      "spec/typecast/string_spec.rb",
      "spec/typecast/time_spec.rb"
