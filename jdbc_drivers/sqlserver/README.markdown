@@ -1,4 +1,4 @@
-= Sql Server JDBC Driver
+# Sql Server JDBC Driver
 
 This is a Sql Server JDBC driver packaged as gem for convenient installation in JRuby.
 
@@ -11,7 +11,7 @@ If you want to load this driver directly:
 
 to make the driver accessible to JDBC and DataObjects code running in JRuby.
 
-== Copyright and Licensing
+## Copyright and Licensing
 
 This gem bundles the jtds JDBC Driver, http://jtds.sourceforge.net/
 
