@@ -15,6 +15,10 @@ def default_mysql_config_path
   mysql_config_paths.compact.first
 end
 
+def mysql_config(type)
+  IO.popen("#{default_mysql_config_path} --#{type}").readline.chomp rescue nil
+end
+
 def default_prefix
   if mc = default_mysql_config_path
     File.dirname(File.dirname(mc))
@@ -33,13 +37,13 @@ if RUBY_PLATFORM =~ /mswin|mingw/
   have_func('mysql_query', 'mysql.h') || exit(1)
   have_func('mysql_ssl_set', 'mysql.h')
 elsif mc = with_config('mysql-config', default_mysql_config_path)
-  mc = default_mysql_config_path if mc == true
-  cflags = `#{mc} --cflags`.chomp
-  exit 1 if $? != 0
-  libs = `#{mc} --libs`.chomp
-  exit 1 if $? != 0
-  $CPPFLAGS += ' ' + cflags
-  $libs = libs + " " + $libs
+  includes = mysql_config('include').split(/\s+/).map do |dir|
+    dir.gsub(/^-I/, "")
+  end.uniq
+  libs     = mysql_config('libs').split(/\s+/).select {|lib| lib =~ /^-L/}.map do |dir|
+    dir.gsub(/^-L/, "")
+  end.uniq
+  dir_config('mysql', includes, libs)
 else
   inc, lib = dir_config('mysql', default_prefix)
   libs = ['m', 'z', 'socket', 'nsl']
