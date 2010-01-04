@@ -4,6 +4,7 @@
 #include <time.h>
 #include <locale.h>
 #include <sqlite3.h>
+#include "compat.h"
 #include "error.h"
 
 #ifdef HAVE_RUBY_ENCODING_H
@@ -46,20 +47,6 @@
 #define RUBY_CLASS(name) rb_const_get(rb_cObject, rb_intern(name))
 #define CONST_GET(scope, constant) (rb_funcall(scope, ID_CONST_GET, 1, rb_str_new2(constant)))
 #define SQLITE3_CLASS(klass, parent) (rb_define_class_under(mSqlite3, klass, parent))
-
-#define TRUE_CLASS CONST_GET(rb_mKernel, "TrueClass")
-
-#ifndef RSTRING_PTR
-#define RSTRING_PTR(s) (RSTRING(s)->ptr)
-#endif
-
-#ifndef RSTRING_LEN
-#define RSTRING_LEN(s) (RSTRING(s)->len)
-#endif
-
-#ifndef RARRAY_LEN
-#define RARRAY_LEN(a) RARRAY(a)->len
-#endif
 
 #ifdef _WIN32
 #define do_int64 signed __int64
@@ -137,8 +124,8 @@ static void data_objects_debug(VALUE string, struct timeval* start) {
   struct timeval stop;
   char *message;
 
-  char *query = RSTRING_PTR(string);
-  int length  = RSTRING_LEN(string);
+  char *query = rb_str_ptr_readonly(string);
+  int length  = rb_str_len(string);
   char total_time[32];
   do_int64 duration = 0;
 
@@ -441,9 +428,9 @@ static VALUE cConnection_initialize(VALUE self, VALUE uri) {
   path = rb_funcall(uri, ID_PATH, 0);
 
 #ifdef HAVE_SQLITE3_OPEN_V2
-  ret = sqlite3_open_v2(StringValuePtr(path), &db, flags_from_uri(uri), 0);
+  ret = sqlite3_open_v2(rb_str_ptr_readonly(path), &db, flags_from_uri(uri), 0);
 #else
-  ret = sqlite3_open(StringValuePtr(path), &db);
+  ret = sqlite3_open(rb_str_ptr_readonly(path), &db);
 #endif
 
   if ( ret != SQLITE_OK ) {
@@ -519,7 +506,7 @@ static VALUE cConnection_quote_boolean(VALUE self, VALUE value) {
 }
 
 static VALUE cConnection_quote_string(VALUE self, VALUE string) {
-  const char *source = StringValuePtr(string);
+  const char *source = rb_str_ptr_readonly(string);
   char *escaped_with_quotes;
   VALUE result;
 
@@ -563,17 +550,22 @@ static VALUE cCommand_execute_non_query(int argc, VALUE *argv, VALUE self) {
   int status;
   int affected_rows;
   int insert_id;
-  VALUE conn_obj;
+  VALUE connection, sqlite3_connection;
   VALUE query;
   struct timeval start;
 
   query = build_query_from_args(self, argc, argv);
 
-  conn_obj = rb_iv_get(self, "@connection");
-  Data_Get_Struct(rb_iv_get(conn_obj, "@connection"), sqlite3, db);
+  connection = rb_iv_get(self, "@connection");
+  sqlite3_connection = rb_iv_get(connection, "@connection");
+  if (Qnil == sqlite3_connection) {
+    rb_raise(eConnectionError, "This connection has already been closed.");
+  }
+
+  Data_Get_Struct(sqlite3_connection, sqlite3, db);
 
   gettimeofday(&start, NULL);
-  status = sqlite3_exec(db, StringValuePtr(query), 0, 0, &error_message);
+  status = sqlite3_exec(db, rb_str_ptr_readonly(query), 0, 0, &error_message);
 
   if ( status != SQLITE_OK ) {
     raise_error(self, db, query);
@@ -593,18 +585,23 @@ static VALUE cCommand_execute_reader(int argc, VALUE *argv, VALUE self) {
   int field_count;
   int i;
   VALUE reader;
-  VALUE conn_obj;
+  VALUE connection, sqlite3_connection;
   VALUE query;
   VALUE field_names, field_types;
   struct timeval start;
 
-  conn_obj = rb_iv_get(self, "@connection");
-  Data_Get_Struct(rb_iv_get(conn_obj, "@connection"), sqlite3, db);
+  connection = rb_iv_get(self, "@connection");
+  sqlite3_connection = rb_iv_get(connection, "@connection");
+  if (Qnil == sqlite3_connection) {
+    rb_raise(eConnectionError, "This connection has already been closed.");
+  }
+
+  Data_Get_Struct(sqlite3_connection, sqlite3, db);
 
   query = build_query_from_args(self, argc, argv);
 
   gettimeofday(&start, NULL);
-  status = sqlite3_prepare_v2(db, StringValuePtr(query), -1, &sqlite3_reader, 0);
+  status = sqlite3_prepare_v2(db, rb_str_ptr_readonly(query), -1, &sqlite3_reader, 0);
   data_objects_debug(query, &start);
 
   if ( status != SQLITE_OK ) {
@@ -616,7 +613,7 @@ static VALUE cCommand_execute_reader(int argc, VALUE *argv, VALUE self) {
 
   rb_iv_set(reader, "@reader", Data_Wrap_Struct(rb_cObject, 0, 0, sqlite3_reader));
   rb_iv_set(reader, "@field_count", INT2NUM(field_count));
-  rb_iv_set(reader, "@connection", conn_obj);
+  rb_iv_set(reader, "@connection", connection);
 
   field_names = rb_ary_new();
   field_types = rb_iv_get(self, "@field_types");

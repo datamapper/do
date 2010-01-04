@@ -36,6 +36,7 @@
 #include <ctype.h>
 #include <time.h>
 #include "error.h"
+#include "compat.h"
 
 #define ID_CONST_GET rb_intern("const_get")
 #define ID_PATH rb_intern("path")
@@ -44,20 +45,6 @@
 
 #define CONST_GET(scope, constant) (rb_funcall(scope, ID_CONST_GET, 1, rb_str_new2(constant)))
 #define POSTGRES_CLASS(klass, parent) (rb_define_class_under(mPostgres, klass, parent))
-#define DEBUG(value) data_objects_debug(value)
-#define RUBY_CLASS(name) rb_const_get(rb_cObject, rb_intern(name))
-
-#ifndef RSTRING_PTR
-#define RSTRING_PTR(s) (RSTRING(s)->ptr)
-#endif
-
-#ifndef RSTRING_LEN
-#define RSTRING_LEN(s) (RSTRING(s)->len)
-#endif
-
-#ifndef RARRAY_LEN
-#define RARRAY_LEN(a) RARRAY(a)->len
-#endif
 
 #ifdef HAVE_RUBY_ENCODING_H
 #include <ruby/encoding.h>
@@ -126,8 +113,8 @@ static void data_objects_debug(VALUE string, struct timeval* start) {
   struct timeval stop;
   char *message;
 
-  char *query = RSTRING_PTR(string);
-  int length  = RSTRING_LEN(string);
+  const char *query = rb_str_ptr_readonly(string);
+  int length  = rb_str_len(string);
   char total_time[32];
   do_int64 duration = 0;
 
@@ -146,9 +133,9 @@ static void data_objects_debug(VALUE string, struct timeval* start) {
   }
 }
 
-static char * get_uri_option(VALUE query_hash, char * key) {
+static const char * get_uri_option(VALUE query_hash, const char * key) {
   VALUE query_value;
-  char * value = NULL;
+  const char * value = NULL;
 
   if(!rb_obj_is_kind_of(query_hash, rb_cHash)) { return NULL; }
 
@@ -502,8 +489,8 @@ static VALUE build_query_from_args(VALUE klass, int count, VALUE *args[]) {
 static VALUE cConnection_quote_string(VALUE self, VALUE string) {
   PGconn *db = DATA_PTR(rb_iv_get(self, "@connection"));
 
-  const char *source = RSTRING_PTR(string);
-  int source_len     = RSTRING_LEN(string);
+  const char *source = rb_str_ptr_readonly(string);
+  int source_len     = rb_str_len(string);
 
   char *escaped;
   int quoted_length = 0;
@@ -528,8 +515,8 @@ static VALUE cConnection_quote_string(VALUE self, VALUE string) {
 static VALUE cConnection_quote_byte_array(VALUE self, VALUE string) {
   PGconn *db = DATA_PTR(rb_iv_get(self, "@connection"));
 
-  const unsigned char *source = (unsigned char*) RSTRING_PTR(string);
-  size_t source_len     = RSTRING_LEN(string);
+  const unsigned char *source = (unsigned char*) rb_str_ptr_readonly(string);
+  size_t source_len     = rb_str_len(string);
 
   unsigned char *escaped;
   unsigned char *escaped_quotes;
@@ -707,7 +694,7 @@ static void full_connect(VALUE self, PGconn *db) {
   char *host = NULL, *user = NULL, *password = NULL, *path;
   char *database = "", *port = "5432";
   VALUE encoding = Qnil;
-  char *search_path = NULL;
+  const char *search_path = NULL;
   char *search_path_query = NULL;
   char *backslash_off = "SET backslash_quote = off";
   char *standard_strings_on = "SET standard_conforming_strings = on";
@@ -796,16 +783,16 @@ static void full_connect(VALUE self, PGconn *db) {
 #ifdef HAVE_PQSETCLIENTENCODING
   VALUE pg_encoding = rb_hash_aref(CONST_GET(mEncoding, "MAP"), encoding);
   if(pg_encoding != Qnil) {
-    if(PQsetClientEncoding(db, RSTRING_PTR(pg_encoding))) {
-      rb_raise(eConnectionError, "Couldn't set encoding: %s", RSTRING_PTR(encoding));
+    if(PQsetClientEncoding(db, rb_str_ptr_readonly(pg_encoding))) {
+      rb_raise(eConnectionError, "Couldn't set encoding: %s", rb_str_ptr_readonly(encoding));
     } else {
 #ifdef HAVE_RUBY_ENCODING_H
-      rb_iv_set(self, "@encoding_id", INT2FIX(rb_enc_find_index(RSTRING_PTR(encoding))));
+      rb_iv_set(self, "@encoding_id", INT2FIX(rb_enc_find_index(rb_str_ptr_readonly(encoding))));
 #endif
       rb_iv_set(self, "@pg_encoding", pg_encoding);
     }
   } else {
-    rb_warn("Encoding %s is not a known Ruby encoding for PostgreSQL\n", RSTRING_PTR(encoding));
+    rb_warn("Encoding %s is not a known Ruby encoding for PostgreSQL\n", rb_str_ptr_readonly(encoding));
     rb_iv_set(self, "@encoding", rb_str_new2("UTF-8"));
 #ifdef HAVE_RUBY_ENCODING_H
     rb_iv_set(self, "@encoding_id", INT2FIX(rb_enc_find_index("UTF-8")));
