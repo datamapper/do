@@ -8,23 +8,12 @@
 #include <errmsg.h>
 #include <mysqld_error.h>
 
+#include "compat.h"
 #include "error.h"
 #define RUBY_CLASS(name) rb_const_get(rb_cObject, rb_intern(name))
 #define DRIVER_CLASS(klass, parent) (rb_define_class_under(mDOMysql, klass, parent))
 #define CONST_GET(scope, constant) (rb_funcall(scope, ID_CONST_GET, 1, rb_str_new2(constant)))
 #define CHECK_AND_RAISE(mysql_result_value, query) if (0 != mysql_result_value) { raise_error(self, db, query); }
-
-#ifndef RSTRING_PTR
-#define RSTRING_PTR(s) (RSTRING(s)->ptr)
-#endif
-
-#ifndef RSTRING_LEN
-#define RSTRING_LEN(s) (RSTRING(s)->len)
-#endif
-
-#ifndef RARRAY_LEN
-#define RARRAY_LEN(a) RARRAY(a)->len
-#endif
 
 #ifdef _WIN32
 #define cCommand_execute cCommand_execute_sync
@@ -365,8 +354,8 @@ static void data_objects_debug(VALUE string, struct timeval* start) {
   struct timeval stop;
   char *message;
 
-  char *query = RSTRING_PTR(string);
-  int length  = RSTRING_LEN(string);
+  char *query = rb_str_ptr_readonly(string);
+  int length  = rb_str_len(string);
   char total_time[32];
   do_int64 duration = 0;
 
@@ -439,8 +428,8 @@ static void full_connect(VALUE self, MYSQL *db);
 static MYSQL_RES* cCommand_execute_sync(VALUE self, MYSQL* db, VALUE query) {
   int retval;
   struct timeval start;
-  char* str = RSTRING_PTR(query);
-  int len   = RSTRING_LEN(query);
+  char* str = rb_str_ptr_readonly(query);
+  int len   = rb_str_len(query);
 
   if(mysql_ping(db) && mysql_errno(db) == CR_SERVER_GONE_ERROR) {
     // Ok, we do one more try here by doing a full connect
@@ -461,8 +450,8 @@ static MYSQL_RES* cCommand_execute_async(VALUE self, MYSQL* db, VALUE query) {
   int retval;
   fd_set rset;
   struct timeval start;
-  char* str = RSTRING_PTR(query);
-  int len   = RSTRING_LEN(query);
+  char* str = rb_str_ptr_readonly(query);
+  int len   = rb_str_len(query);
 
   if((retval = mysql_ping(db)) && mysql_errno(db) == CR_SERVER_GONE_ERROR) {
     VALUE connection = rb_iv_get(self, "@connection");
@@ -610,17 +599,17 @@ static void full_connect(VALUE self, MYSQL* db) {
 
   VALUE my_encoding = rb_hash_aref(CONST_GET(mEncoding, "MAP"), encoding);
   if(my_encoding != Qnil) {
-    encoding_error = mysql_set_character_set(db, RSTRING_PTR(my_encoding));
+    encoding_error = mysql_set_character_set(db, rb_str_ptr_readonly(my_encoding));
     if (0 != encoding_error) {
       raise_error(self, db, Qnil);
     } else {
 #ifdef HAVE_RUBY_ENCODING_H
-      rb_iv_set(self, "@encoding_id", INT2FIX(rb_enc_find_index(RSTRING_PTR(encoding))));
+      rb_iv_set(self, "@encoding_id", INT2FIX(rb_enc_find_index(rb_str_ptr_readonly(encoding))));
 #endif
       rb_iv_set(self, "@my_encoding", my_encoding);
     }
   } else {
-    rb_warn("Encoding %s is not a known Ruby encoding for MySQL\n", RSTRING_PTR(encoding));
+    rb_warn("Encoding %s is not a known Ruby encoding for MySQL\n", rb_str_ptr_readonly(encoding));
     rb_iv_set(self, "@encoding", rb_str_new2("UTF-8"));
 #ifdef HAVE_RUBY_ENCODING_H
     rb_iv_set(self, "@encoding_id", INT2FIX(rb_enc_find_index("UTF-8")));
@@ -773,8 +762,8 @@ VALUE cConnection_quote_date(VALUE self, VALUE value) {
 
 static VALUE cConnection_quote_string(VALUE self, VALUE string) {
   MYSQL *db = DATA_PTR(rb_iv_get(self, "@connection"));
-  const char *source = RSTRING_PTR(string);
-  int source_len     = RSTRING_LEN(string);
+  const char *source = rb_str_ptr_readonly(string);
+  int source_len     = rb_str_len(string);
   char *escaped;
   VALUE result;
 

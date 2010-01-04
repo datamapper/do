@@ -1,7 +1,6 @@
 require 'pathname'
 require 'rubygems'
 require 'rake'
-require 'spec/rake/spectask'
 require 'rake/rdoctask'
 
 ROOT     = Pathname(__FILE__).dirname.expand_path

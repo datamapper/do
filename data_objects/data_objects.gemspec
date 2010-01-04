@@ -107,15 +107,18 @@ Gem::Specification.new do |s|
       s.add_runtime_dependency(%q<addressable>, ["~> 2.1"])
       s.add_development_dependency(%q<bacon>, ["~> 1.1"])
       s.add_development_dependency(%q<mocha>, ["~> 0.9"])
+      s.add_development_dependency(%q<yard>, ["~> 0.5"])
     else
       s.add_dependency(%q<addressable>, ["~> 2.1"])
       s.add_dependency(%q<bacon>, ["~> 1.1"])
       s.add_dependency(%q<mocha>, ["~> 0.9"])
+      s.add_dependency(%q<yard>, ["~> 0.5"])
     end
   else
     s.add_dependency(%q<addressable>, ["~> 2.1"])
     s.add_dependency(%q<bacon>, ["~> 1.1"])
     s.add_dependency(%q<mocha>, ["~> 0.9"])
+    s.add_dependency(%q<yard>, ["~> 0.5"])
   end
 end
 
