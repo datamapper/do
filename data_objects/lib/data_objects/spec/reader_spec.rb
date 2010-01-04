@@ -18,10 +18,14 @@ shared 'a Reader' do
 
   describe 'fields' do
 
+    def array_case_insensitively_equal_to(arr)
+      lambda { |obj| obj.map { |f| f.downcase } == arr }
+    end
+
     it 'should return the correct fields in the reader' do
       # we downcase the field names as some drivers such as do_derby, do_h2,
-      # do_hsqldb return the field names as uppercase
-      @reader.fields.map{ |f| f.downcase }.should == ['code', 'name']
+      # do_hsqldb, do_oracle return the field names as uppercase
+      @reader.fields.should.be array_case_insensitively_equal_to(['code', 'name'])
     end
 
   end
