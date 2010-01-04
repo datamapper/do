@@ -23,12 +23,10 @@ dir_config('pgsql-server', config_value('includedir-server'), config_value('libd
 dir_config('pgsql-client', config_value('includedir'), config_value('libdir'))
 dir_config('pgsql-win32') if RUBY_PLATFORM =~ /mswin|mingw/
 
-required_libraries = []
 desired_functions = %w(PQsetClientEncoding pg_encoding_to_char PQfreemem)
 compat_functions = %w(PQescapeString PQexecParams)
 
 if have_build_env
-  required_libraries.each(&method(:have_library))
   desired_functions.each(&method(:have_func))
   $CFLAGS << ' -Wall ' unless RUBY_PLATFORM =~ /mswin/
   if RUBY_VERSION < '1.8.6'
