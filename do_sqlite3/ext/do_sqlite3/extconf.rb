@@ -3,6 +3,9 @@ ENV["RC_ARCHS"] = "" if RUBY_PLATFORM =~ /darwin/
 # Loads mkmf which is used to make makefiles for Ruby extensions
 require 'mkmf'
 
+# Allow for custom compiler to be specified.
+RbConfig::MAKEFILE_CONFIG['CC'] = ENV['CC'] if ENV['CC']
+
 # Use some default search paths
 dir_config("sqlite3", ["/usr/local", "/opt/local", "/usr"])
 

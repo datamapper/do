@@ -114,7 +114,7 @@ static void data_objects_debug(VALUE string, struct timeval* start) {
   char *message;
 
   const char *query = rb_str_ptr_readonly(string);
-  int length  = rb_str_len(string);
+  size_t length     = rb_str_len(string);
   char total_time[32];
   do_int64 duration = 0;
 
@@ -169,7 +169,7 @@ static int jd_from_date(int year, int month, int day) {
   }
   a = year / 100;
   b = 2 - a + (a / 4);
-  return floor(365.25 * (year + 4716)) + floor(30.6001 * (month + 1)) + day + b - 1524;
+  return (int) (floor(365.25 * (year + 4716)) + floor(30.6001 * (month + 1)) + day + b - 1524);
 }
 
 static VALUE parse_date(const char *date) {
@@ -259,8 +259,8 @@ static VALUE parse_date_time(const char *date) {
     if ( is_dst > 0 )
       gmt_offset -= is_dst;
 
-    hour_offset = -(gmt_offset / 3600);
-    minute_offset = -(gmt_offset % 3600 / 60);
+    hour_offset = -((int)gmt_offset / 3600);
+    minute_offset = -((int)gmt_offset % 3600 / 60);
 
   } else {
     // Something went terribly wrong
@@ -306,7 +306,7 @@ static VALUE parse_time(const char *date) {
     // right padding usec with 0. e.g. '012' will become 12000 microsecond, since Time#local use microsecond
     sscanf(date, "%4d-%2d-%2d %2d:%2d:%2d.%s", &year, &month, &day, &hour, &min, &sec, subsec);
     usec   = atoi(subsec);
-    usec  *= pow(10, (6 - strlen(subsec)));
+    usec  *= (int) pow(10, (6 - strlen(subsec)));
   } else {
     tokens = sscanf(date, "%4d-%2d-%2d %2d:%2d:%2d", &year, &month, &day, &hour, &min, &sec);
     if (tokens == 3) {
@@ -490,10 +490,10 @@ static VALUE cConnection_quote_string(VALUE self, VALUE string) {
   PGconn *db = DATA_PTR(rb_iv_get(self, "@connection"));
 
   const char *source = rb_str_ptr_readonly(string);
-  int source_len     = rb_str_len(string);
+  size_t source_len  = rb_str_len(string);
 
   char *escaped;
-  int quoted_length = 0;
+  size_t quoted_length = 0;
   VALUE result;
 
   // Allocate space for the escaped version of 'string'
@@ -603,7 +603,7 @@ static PGresult* cCommand_execute_async(VALUE self, PGconn *db, VALUE query) {
     }
 
     if(!retval) {
-      rb_raise(eConnectionError, PQerrorMessage(db));
+      rb_raise(eConnectionError, "%s", PQerrorMessage(db));
     }
   }
 
@@ -625,7 +625,7 @@ static PGresult* cCommand_execute_async(VALUE self, PGconn *db, VALUE query) {
       }
 
       if (PQconsumeInput(db) == 0) {
-          rb_raise(eConnectionError, PQerrorMessage(db));
+          rb_raise(eConnectionError, "%s", PQerrorMessage(db));
       }
 
       if (PQisBusy(db) == 0) {
@@ -691,14 +691,14 @@ static void full_connect(VALUE self, PGconn *db) {
 
   PGresult *result = NULL;
   VALUE r_host, r_user, r_password, r_path, r_port, r_query, r_options;
-  char *host = NULL, *user = NULL, *password = NULL, *path;
-  char *database = "", *port = "5432";
+  char *host = NULL, *user = NULL, *password = NULL, *path = NULL, *database = NULL;
+  const char *port = "5432";
   VALUE encoding = Qnil;
   const char *search_path = NULL;
   char *search_path_query = NULL;
-  char *backslash_off = "SET backslash_quote = off";
-  char *standard_strings_on = "SET standard_conforming_strings = on";
-  char *warning_messages = "SET client_min_messages = warning";
+  const char *backslash_off = "SET backslash_quote = off";
+  const char *standard_strings_on = "SET standard_conforming_strings = on";
+  const char *warning_messages = "SET client_min_messages = warning";
 
   if((r_host = rb_iv_get(self, "@host")) != Qnil) {
     host     = StringValuePtr(r_host);
@@ -740,7 +740,7 @@ static void full_connect(VALUE self, PGconn *db) {
   );
 
   if ( PQstatus(db) == CONNECTION_BAD ) {
-    rb_raise(eConnectionError, PQerrorMessage(db));
+    rb_raise(eConnectionError, "%s", PQerrorMessage(db));
   }
 
   if (search_path != NULL) {
@@ -750,32 +750,32 @@ static void full_connect(VALUE self, PGconn *db) {
     result = cCommand_execute(self, db, r_query);
 
     if (PQresultStatus(result) != PGRES_COMMAND_OK) {
-      free(search_path_query);
+      free((void *)search_path_query);
       raise_error(self, result, r_query);
     }
 
-    free(search_path_query);
+    free((void *)search_path_query);
   }
 
   r_options = rb_str_new2(backslash_off);
   result = cCommand_execute(self, db, r_options);
 
   if (PQresultStatus(result) != PGRES_COMMAND_OK) {
-    rb_warn(PQresultErrorMessage(result));
+    rb_warn("%s", PQresultErrorMessage(result));
   }
 
   r_options = rb_str_new2(standard_strings_on);
   result = cCommand_execute(self, db, r_options);
 
   if (PQresultStatus(result) != PGRES_COMMAND_OK) {
-    rb_warn(PQresultErrorMessage(result));
+    rb_warn("%s", PQresultErrorMessage(result));
   }
 
   r_options = rb_str_new2(warning_messages);
   result = cCommand_execute(self, db, r_options);
 
   if (PQresultStatus(result) != PGRES_COMMAND_OK) {
-    rb_warn(PQresultErrorMessage(result));
+    rb_warn("%s", PQresultErrorMessage(result));
   }
 
   encoding = rb_iv_get(self, "@encoding");

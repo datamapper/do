@@ -48,8 +48,8 @@ begin
       cd "vendor" do
         sh "unzip #{full_file} pgsql/bin/** pgsql/include/** pgsql/lib/**"
       end
-      copy "ext/do_postgres_ext/pg_config.h", "vendor/pgsql/include/pg_config.h"
-      copy "ext/do_postgres_ext/pg_config.h", "vendor/pgsql/include/server/pg_config.h"
+      copy "ext/do_postgres/pg_config.h", "vendor/pgsql/include/pg_config.h"
+      copy "ext/do_postgres/pg_config.h", "vendor/pgsql/include/server/pg_config.h"
 
       # update file timestamp to avoid Rake perform this extraction again.
       touch t.name

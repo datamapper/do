@@ -4,19 +4,6 @@ DataObjects TODO
 This is a semistructured document describing what the future plans
 are for DataObjects. The list is ordered somewhat by priority.
 
-Reader should be Enumerable
----------------------------
-
-Make reader implement the Enumerable interface for a more Ruby'ish feel.
-This also should provide a Reader#to_a to create a big Array of data. We need
-to add shared specs that show this behavior.
-
-Use Rubinius' compat.h
-----------------------
-This makes DataObjects a lot friendlier to Rubinius and doesn't have any impact
-on MRI. DataObjects is already using strings properly, so adding this should
-be very easy.
-
 Use native parameter binding
 ----------------------------
 

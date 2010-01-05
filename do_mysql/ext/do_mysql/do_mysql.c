@@ -156,7 +156,7 @@ static int jd_from_date(int year, int month, int day) {
   }
   a = year / 100;
   b = 2 - a + (a / 4);
-  return floor(365.25 * (year + 4716)) + floor(30.6001 * (month + 1)) + day + b - 1524;
+  return (int) (floor(365.25 * (year + 4716)) + floor(30.6001 * (month + 1)) + day + b - 1524);
 }
 
 static VALUE seconds_to_offset(long seconds_offset) {
@@ -223,7 +223,7 @@ static VALUE parse_date_time(const char *date) {
   do_int64 num, den;
 
 
-  long int gmt_offset;
+  time_t gmt_offset;
   int is_dst;
 
   time_t rawtime;
@@ -275,8 +275,8 @@ static VALUE parse_date_time(const char *date) {
     if ( is_dst > 0 )
       gmt_offset -= is_dst;
 
-    hour_offset = -(gmt_offset / 3600);
-    minute_offset = -(gmt_offset % 3600 / 60);
+    hour_offset = -((int)gmt_offset / 3600);
+    minute_offset = -((int)gmt_offset % 3600 / 60);
 
   } else {
     // Something went terribly wrong
@@ -354,8 +354,8 @@ static void data_objects_debug(VALUE string, struct timeval* start) {
   struct timeval stop;
   char *message;
 
-  char *query = rb_str_ptr_readonly(string);
-  int length  = rb_str_len(string);
+  const char *query = rb_str_ptr_readonly(string);
+  size_t length     = rb_str_len(string);
   char total_time[32];
   do_int64 duration = 0;
 
@@ -400,7 +400,7 @@ static void raise_error(VALUE self, MYSQL *db, VALUE query) {
   rb_exc_raise(exception);
 }
 
-static char * get_uri_option(VALUE query_hash, char * key) {
+static char * get_uri_option(VALUE query_hash, const char * key) {
   VALUE query_value;
   char * value = NULL;
 
@@ -428,8 +428,8 @@ static void full_connect(VALUE self, MYSQL *db);
 static MYSQL_RES* cCommand_execute_sync(VALUE self, MYSQL* db, VALUE query) {
   int retval;
   struct timeval start;
-  char* str = rb_str_ptr_readonly(query);
-  int len   = rb_str_len(query);
+  const char* str = rb_str_ptr_readonly(query);
+  int len         = rb_str_len(query);
 
   if(mysql_ping(db) && mysql_errno(db) == CR_SERVER_GONE_ERROR) {
     // Ok, we do one more try here by doing a full connect
@@ -450,8 +450,8 @@ static MYSQL_RES* cCommand_execute_async(VALUE self, MYSQL* db, VALUE query) {
   int retval;
   fd_set rset;
   struct timeval start;
-  char* str = rb_str_ptr_readonly(query);
-  int len   = rb_str_len(query);
+  const char* str = rb_str_ptr_readonly(query);
+  size_t len      = rb_str_len(query);
 
   if((retval = mysql_ping(db)) && mysql_errno(db) == CR_SERVER_GONE_ERROR) {
     VALUE connection = rb_iv_get(self, "@connection");
@@ -497,8 +497,8 @@ static void full_connect(VALUE self, MYSQL* db) {
   // Check to see if we're on the db machine.  If so, try to use the socket
   VALUE r_host, r_user, r_password, r_path, r_query, r_port;
 
-  char *host = "localhost", *user = "root", *password = NULL, *path;
-  char *database = "", *socket = NULL;
+  const char *host = "localhost", *user = "root"; 
+  char *database = NULL, *socket = NULL, *password = NULL, *path = NULL;
   VALUE encoding = Qnil;
 
   MYSQL *result;
@@ -763,11 +763,11 @@ VALUE cConnection_quote_date(VALUE self, VALUE value) {
 static VALUE cConnection_quote_string(VALUE self, VALUE string) {
   MYSQL *db = DATA_PTR(rb_iv_get(self, "@connection"));
   const char *source = rb_str_ptr_readonly(string);
-  int source_len     = rb_str_len(string);
+  size_t source_len  = rb_str_len(string);
   char *escaped;
   VALUE result;
 
-  int quoted_length = 0;
+  size_t quoted_length = 0;
 
   // Allocate space for the escaped version of 'string'.  Use + 3 allocate space for null term.
   // and the leading and trailing single-quotes.
@@ -818,7 +818,7 @@ static VALUE cCommand_execute_non_query(int argc, VALUE *argv, VALUE self) {
   affected_rows = mysql_affected_rows(db);
   mysql_free_result(response);
 
-  if (-1 == affected_rows)
+  if ((my_ulonglong)-1 == affected_rows)
     return Qnil;
 
   return rb_funcall(cResult, ID_NEW, 3, self, INT2NUM(affected_rows), INT2NUM(mysql_insert_id(db)));
@@ -829,7 +829,7 @@ static VALUE cCommand_execute_reader(int argc, VALUE *argv, VALUE self) {
   VALUE field_names, field_types;
 
   unsigned int field_count;
-  int i;
+  unsigned int i;
 
   char guess_default_field_types = 0;
   VALUE connection = rb_iv_get(self, "@connection");
@@ -925,7 +925,7 @@ static VALUE cReader_next(VALUE self) {
   MYSQL_ROW result;
   unsigned long *lengths;
 
-  int i;
+  unsigned int i;
 
   if (Qnil == reader_container) {
     return Qfalse;

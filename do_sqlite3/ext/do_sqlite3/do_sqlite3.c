@@ -117,15 +117,15 @@ static int jd_from_date(int year, int month, int day) {
   }
   a = year / 100;
   b = 2 - a + (a / 4);
-  return floor(365.25 * (year + 4716)) + floor(30.6001 * (month + 1)) + day + b - 1524;
+  return (int) (floor(365.25 * (year + 4716)) + floor(30.6001 * (month + 1)) + day + b - 1524);
 }
 
 static void data_objects_debug(VALUE string, struct timeval* start) {
   struct timeval stop;
   char *message;
 
-  char *query = rb_str_ptr_readonly(string);
-  int length  = rb_str_len(string);
+  const char *query = rb_str_ptr_readonly(string);
+  size_t length     = rb_str_len(string);
   char total_time[32];
   do_int64 duration = 0;
 
@@ -261,8 +261,8 @@ static VALUE parse_date_time(char *date) {
     if ( is_dst > 0 )
       gmt_offset -= is_dst;
 
-    hour_offset = -(gmt_offset / 3600);
-    minute_offset = -(gmt_offset % 3600 / 60);
+    hour_offset = -((int)gmt_offset / 3600);
+    minute_offset = -((int)gmt_offset % 3600 / 60);
 
   } else {
     // Something went terribly wrong
@@ -549,7 +549,7 @@ static VALUE cCommand_execute_non_query(int argc, VALUE *argv, VALUE self) {
   char *error_message;
   int status;
   int affected_rows;
-  int insert_id;
+  do_int64 insert_id;
   VALUE connection, sqlite3_connection;
   VALUE query;
   struct timeval start;
@@ -657,7 +657,7 @@ static VALUE cReader_next(VALUE self) {
   int field_count;
   int result;
   int i;
-  int ft_length;
+  size_t ft_length;
   VALUE arr = rb_ary_new();
   VALUE field_types;
   VALUE field_type;

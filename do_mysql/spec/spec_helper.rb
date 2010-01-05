@@ -5,6 +5,7 @@ require 'rubygems'
 require 'date'
 require 'ostruct'
 require 'fileutils'
+require 'win32console' if RUBY_PLATFORM =~ /mingw|mswin/
 
 driver_lib = File.expand_path('../../lib', __FILE__)
 $LOAD_PATH.unshift(driver_lib) unless $LOAD_PATH.include?(driver_lib)
