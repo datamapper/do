@@ -51,7 +51,9 @@ shared 'a Connection' do
       end
 
       it 'should raise an error on creating a command' do
-        lambda { @closed_connection.create_command("INSERT INTO non_existent_table (tester) VALUES (1)").execute_non_query }.should.raise(DataObjects::Error) # FIXME (JRuby): DataObjects::ConnectionError
+        should.raise(DataObjects::ConnectionError) {
+          @closed_connection.create_command("INSERT INTO non_existent_table (tester) VALUES (1)").execute_non_query
+        }
       end
     end
 

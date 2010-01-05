@@ -127,7 +127,7 @@ describe "DataObjects::Pooling" do
       bob = Person.new('Bob')
       t1.join
       bob.release
-    end.should.not.raise
+    end.should.not.raise(DataObjects::Pooling::InvalidResourceError)
   end
 
   it "should allow you to flush a pool" do

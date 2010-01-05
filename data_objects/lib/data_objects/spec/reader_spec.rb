@@ -31,7 +31,7 @@ shared 'a Reader' do
     describe 'when the reader is uninitialized' do
 
       it 'should raise an error' do
-        lambda { @reader.values }.should.raise(DataObjects::Error) # DataObjects::DataError
+        should.raise(DataObjects::DataError) { @reader.values }
       end
 
     end
@@ -67,7 +67,7 @@ shared 'a Reader' do
       end
 
       it 'should raise an error again' do
-        lambda { @reader.values }.should.raise(DataObjects::Error) # DataObjects::DataError
+        should.raise(DataObjects::DataError) { @reader.values }
       end
     end
 
