@@ -5,6 +5,7 @@ require 'rubygems'
 require 'date'
 require 'ostruct'
 require 'fileutils'
+require 'win32console' if RUBY_PLATFORM =~ /mingw|mswin/
 
 driver_lib = File.expand_path('../../lib', __FILE__)
 $LOAD_PATH.unshift(driver_lib) unless $LOAD_PATH.include?(driver_lib)
@@ -26,7 +27,7 @@ at_exit { DataObjects.logger.flush }
 
 CONFIG = OpenStruct.new
 CONFIG.scheme   = 'sqlite3'
-CONFIG.database = ENV['DO_SQLITE3_DATABASE'] || "#{File.expand_path(File.dirname(__FILE__))}/test.db"
+CONFIG.database = ENV['DO_SQLITE3_DATABASE'] || "memory:"
 
 CONFIG.uri = ENV["DO_SQLITE3_SPEC_URI"] || "#{CONFIG.scheme}://#{CONFIG.database}"
 CONFIG.jdbc_driver = 'org.sqlite.JDBC'

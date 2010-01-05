@@ -18,7 +18,7 @@ begin
 
     ext.cross_compiling do |gemspec|
       gemspec.post_install_message = "You're installing the binary version of #{gemspec.name}. It was built using PostgreSQL version #{BINARY_VERSION}. Is recommended to use the exact same version to avoid potential issues."
-	end
+    end
 
     # automatically add build options to avoid need of manual input
     if RUBY_PLATFORM =~ /mswin|mingw/ then
@@ -33,6 +33,39 @@ begin
       ext.cross_config_options << "--with-pgsql-client-include=#{postgres_lib}/include"
       ext.cross_config_options << "--with-pgsql-win32-include=#{postgres_lib}/include/server/port/win32"
       ext.cross_config_options << "--with-pgsql-client-lib=#{postgres_lib}/lib"
+
+      ext.cross_compiling do |gemspec|
+        gemspec.post_install_message = <<-POST_INSTALL_MESSAGE
+
+  ======================================================================================================
+
+    You've installed the binary version of #{gemspec.name}.
+    It was built using PostgreSQL version #{BINARY_VERSION}.
+    It's recommended to use the exact same version to avoid potential issues.
+
+    At the time of building this gem, the necessary DLL files where available
+    in the following download:
+
+    http://wwwmaster.postgresql.org/redir/107/h/binary/v#{BINARY_VERSION}/win32/postgresql-#{BINARY_VERSION}-1-binaries-no-installer.zip
+
+    You can put the following files available in this package in your Ruby bin
+    directory, for example C:\\Ruby\\bin
+
+    - lib\\libpq.dll
+    - bin\\ssleay32.dll
+    - bin\\libeay32.dll
+    - bin\\libintl-8.dll
+    - bin\\libiconv-2.dll
+    - bin\\krb5_32.dll
+    - bin\\comerr32.dll
+    - bin\\k5sprt32.dll
+    - bin\\gssapi32.dll
+
+  ======================================================================================================
+
+    POST_INSTALL_MESSAGE
+      end
+
     end
 
   end

@@ -3,6 +3,7 @@ require 'data_objects'
 require 'data_objects/spec/bacon'
 require 'mocha/api'
 require 'mocha/object'
+require 'win32console' if RUBY_PLATFORM =~ /mingw|mswin/
 
 module DataObjects::Pooling
   class << self

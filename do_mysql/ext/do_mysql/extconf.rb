@@ -2,6 +2,9 @@ ENV["RC_ARCHS"] = "" if RUBY_PLATFORM =~ /darwin/
 
 require 'mkmf'
 
+# Allow for custom compiler to be specified.
+RbConfig::MAKEFILE_CONFIG['CC'] = ENV['CC'] if ENV['CC']
+
 # All instances of mysql_config on PATH ...
 def mysql_config_paths
   ENV['PATH'].split(File::PATH_SEPARATOR).collect do |path|
