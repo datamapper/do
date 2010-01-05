@@ -27,15 +27,17 @@ shared 'a Command' do
       end
 
       it 'should raise an error on an invalid query' do
-        lambda { @invalid_command.execute_non_query }.should.raise(DataObjects::Error) # FIXME JRuby: DataObjects::SQLError
+        should.raise(DataObjects::SQLError) { @invalid_command.execute_non_query }
       end
 
       it 'should raise an error with too few binding parameters' do
-        lambda { @command.execute_non_query("Too", "Many") }.should.raise(ArgumentError, "Binding mismatch: 2 for 1")
+        lambda { @command.execute_non_query("Too", "Many") }.should.raise(ArgumentError).
+          message.should.match(/Binding mismatch: 2 for 1/)
       end
 
       it 'should raise an error with too many binding parameters' do
-        lambda { @command.execute_non_query }.should.raise(ArgumentError, "Binding mismatch: 0 for 1")
+        lambda { @command.execute_non_query }.should.raise(ArgumentError).
+          message.should.match(/Binding mismatch: 0 for 1/)
       end
 
     end
@@ -43,7 +45,7 @@ shared 'a Command' do
     describe 'with a valid statement' do
 
       it 'should not raise an error with an explicit nil as parameter' do
-        lambda { @command.execute_non_query(nil) }.should.not.raise
+        should.not.raise(ArgumentError) { @command.execute_non_query(nil) }
       end
 
     end
@@ -55,7 +57,7 @@ shared 'a Command' do
       end
 
       it 'should not raise an error' do
-        lambda { @command_with_quotes.execute_non_query }.should.not.raise
+        should.not.raise(ArgumentError) { @command_with_quotes.execute_non_query }
       end
 
     end
@@ -73,16 +75,18 @@ shared 'a Command' do
       end
 
       it 'should raise an error on an invalid query' do
-        # FIXME JRuby (and MRI): Should this be an argument errror or DataObjects::SQLError?
-        lambda { @invalid_reader.execute_reader }.should.raise(ArgumentError, DataObjects::Error)
+        # FIXME JRuby (and MRI): Should this be an ArgumentError or DataObjects::SQLError?
+        should.raise(ArgumentError, DataObjects::SQLError) { @invalid_reader.execute_reader }
       end
 
       it 'should raise an error with too few binding parameters' do
-        lambda { @reader.execute_reader("Too", "Many") }.should.raise(ArgumentError, "Binding mismatch: 2 for 1")
+        lambda { @reader.execute_reader("Too", "Many") }.should.raise(ArgumentError).
+          message.should.match(/Binding mismatch: 2 for 1/)
       end
 
       it 'should raise an error with too many binding parameters' do
-        lambda { @reader.execute_reader }.should.raise(ArgumentError, "Binding mismatch: 0 for 1")
+        lambda { @reader.execute_reader }.should.raise(ArgumentError).
+          message.should.match(/Binding mismatch: 0 for 1/)
       end
 
     end
@@ -90,7 +94,7 @@ shared 'a Command' do
     describe 'with a valid reader' do
 
       it 'should not raise an error with an explicit nil as parameter' do
-        lambda { @reader.execute_reader(nil) }.should.not.raise
+        should.not.raise(ArgumentError) { @reader.execute_reader(nil) }
       end
 
     end
@@ -102,7 +106,7 @@ shared 'a Command' do
       end
 
       it 'should not raise an error' do
-        lambda { @reader_with_quotes.execute_reader(nil) }.should.not.raise
+        should.not.raise(ArgumentError) { @reader_with_quotes.execute_reader(nil) }
       end
 
     end
@@ -121,7 +125,7 @@ shared 'a Command' do
       end
 
       it 'should raise an error when types are set' do
-        lambda { @command.execute_non_query }.should.raise(ArgumentError)
+        should.raise(ArgumentError) { @command.execute_non_query }
       end
 
     end
@@ -130,12 +134,14 @@ shared 'a Command' do
 
       it 'should raise an error with too few types' do
         @reader.set_types(String)
-        lambda { @reader.execute_reader("One parameter") }.should.raise(ArgumentError, "Field-count mismatch. Expected 1 fields, but the query yielded 2")
+        lambda { @reader.execute_reader("One parameter") }.should.raise(ArgumentError).
+          message.should.match(/Field-count mismatch. Expected 1 fields, but the query yielded 2/)
       end
 
       it 'should raise an error with too many types' do
         @reader.set_types(String, String, BigDecimal)
-        lambda { @reader.execute_reader("One parameter") }.should.raise(ArgumentError, "Field-count mismatch. Expected 3 fields, but the query yielded 2")
+        lambda { @reader.execute_reader("One parameter") }.should.raise(ArgumentError).
+          message.should.match(/Field-count mismatch. Expected 3 fields, but the query yielded 2/)
       end
 
     end
@@ -144,26 +150,26 @@ shared 'a Command' do
 
       it 'should not raise an error with correct number of types' do
         @reader.set_types(String, String)
-        lambda { @result = @reader.execute_reader('Buy this product now!') }.should.not.raise
-        lambda { @result.next! }.should.not.raise
-        lambda { @result.values }.should.not.raise
+        should.not.raise(ArgumentError) { @result = @reader.execute_reader('Buy this product now!') }
+        should.not.raise(DataObjects::SQLError) { @result.next! }
+        should.not.raise(DataObjects::DataError) { @result.values }
         @result.close
       end
 
       it 'should also support old style array argument types' do
         @reader.set_types([String, String])
-        lambda { @result = @reader.execute_reader('Buy this product now!') }.should.not.raise
-        lambda { @result.next! }.should.not.raise
-        lambda { @result.values }.should.not.raise
+        should.not.raise(ArgumentError) { @result = @reader.execute_reader('Buy this product now!') }
+        should.not.raise(DataObjects::DataError) { @result.next! }
+        should.not.raise(DataObjects::DataError) { @result.values }
         @result.close
       end
 
       it 'should allow subtype types' do
         class MyString < String; end
         @reader.set_types(MyString, String)
-        lambda { @result = @reader.execute_reader('Buy this product now!') }.should.not.raise
-        lambda { @result.next! }.should.not.raise
-        lambda { @result.values }.should.not.raise
+        should.not.raise(ArgumentError) { @result = @reader.execute_reader('Buy this product now!') }
+        should.not.raise(DataObjects::DataError) { @result.next! }
+        should.not.raise(DataObjects::DataError) { @result.values }
         @result.close
       end
     end

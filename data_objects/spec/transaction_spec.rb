@@ -28,13 +28,13 @@ describe DataObjects::Transaction do
   describe "#close" do
     it "should close its connection" do
       @connection.expects(:close).once
-      lambda { @transaction.close }.should.not.raise
+      should.not.raise(DataObjects::TransactionError) { @transaction.close }
     end
   end
 
   [:prepare, :commit_prepared, :rollback_prepared].each do |meth|
     it "should raise NotImplementedError on #{meth}" do
-      lambda do @transaction.send(meth) end.should.raise(NotImplementedError)
+      should.raise(NotImplementedError) { @transaction.send(meth) }
     end
   end
 
