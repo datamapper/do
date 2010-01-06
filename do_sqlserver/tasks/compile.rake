@@ -14,16 +14,6 @@ begin
     ext.lib_dir   = 'lib/do_sqlserver'
     ext.debug     = ENV.has_key?('DO_JAVA_DEBUG') && ENV['DO_JAVA_DEBUG']
     ext.classpath = '../do_jdbc/lib/do_jdbc_internal.jar'
-    ext.java_compiling do |gem_spec|
-      gem_spec.post_install_message = <<EOF
-==========================================================================
-
-  DataObjects SQL Server Driver:
-    You've installed the binary extension for JRuby (Java platform)
-
-==========================================================================
-EOF
-    end
   end
 
   # do_sqlserver is only available for JRuby: the normal behaviour of

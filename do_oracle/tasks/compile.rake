@@ -35,16 +35,6 @@ begin
       gem.dependencies.delete_if { |d| d.name == 'ruby-oci8'}
 
       gem.add_dependency "do_jdbc", '0.10.1'
-      gem.post_install_message = <<EOF
-==========================================================================
-
-  DataObjects Oracle Driver:
-    You've installed the binary extension for JRuby (Java platform)
-
-==========================================================================
-EOF
-      #gem.files = Dir['lib/**/*.rb', 'spec/**/*.rb', 'tasks/**/*.rake',
-      #              'LICENSE', 'Rakefile', '*.{markdown,rdoc,txt,yml}', 'lib/*.jar']
     end
   end
 rescue LoadError
