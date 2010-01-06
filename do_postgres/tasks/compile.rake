@@ -16,10 +16,6 @@ begin
 
     ext.lib_dir = "lib/#{gemspec.name}"
 
-    ext.cross_compiling do |gemspec|
-      gemspec.post_install_message = "You're installing the binary version of #{gemspec.name}. It was built using PostgreSQL version #{BINARY_VERSION}. Is recommended to use the exact same version to avoid potential issues."
-    end
-
     # automatically add build options to avoid need of manual input
     if RUBY_PLATFORM =~ /mswin|mingw/ then
       ext.config_options << "--with-pgsql-server-include=#{postgres_lib}/include/server"
