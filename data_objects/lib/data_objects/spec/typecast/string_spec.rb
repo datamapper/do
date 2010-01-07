@@ -87,6 +87,11 @@ shared 'supporting String' do
      'Пётр Алексе́евич Рома́нов',
      '歐陽龍'].each do |name|
 
+       before do
+         # SQL Server Unicode String Literals
+         @n = 'N' if defined?(DataObjects::SqlServer::Connection) && @connection.kind_of?(DataObjects::SqlServer::Connection)
+       end
+
       it 'should write a multibyte String' do
         @command = @connection.create_command('INSERT INTO users (name) VALUES(?)')
         should.not.raise(DataObjects::DataError) { @command.execute_non_query(name) }
@@ -101,12 +106,12 @@ shared 'supporting String' do
       end
 
       it 'should write a multibyte String (without query parameters)' do
-        @command = @connection.create_command("INSERT INTO users (name) VALUES(\'#{name}\')")
+        @command = @connection.create_command("INSERT INTO users (name) VALUES(#{@n}\'#{name}\')")
         should.not.raise(DataObjects::DataError) { @command.execute_non_query }
       end
 
       it 'should read back the multibyte String (without query parameters)' do
-        @command = @connection.create_command("SELECT name FROM users WHERE name = \'#{name}\'")
+        @command = @connection.create_command("SELECT name FROM users WHERE name = #{@n}\'#{name}\'")
         @reader = @command.execute_reader
         @reader.next!
         @reader.values.first.should == name

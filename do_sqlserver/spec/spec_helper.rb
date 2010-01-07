@@ -56,7 +56,7 @@ module DataObjectsSpecHelpers
     conn.create_command(<<-EOF).execute_non_query
       CREATE TABLE "users" (
         "id" int NOT NULL IDENTITY,
-        "name" varchar(200) default 'Billy' NULL,
+        "name" nvarchar(200) default 'Billy' NULL,
         "fired_at" timestamp,
         PRIMARY KEY ("id")
       );
