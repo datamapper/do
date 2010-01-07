@@ -16,4 +16,5 @@ describe DataObjects::Sqlite3::Connection do
 
   behaves_like 'a Connection'
   behaves_like 'a Connection via JDNI' if JRUBY
+  # FIXME: behaves_like 'a Connection with JDBC URL support' if JRUBY
 end

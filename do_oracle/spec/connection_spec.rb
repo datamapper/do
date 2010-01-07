@@ -16,5 +16,6 @@ describe DataObjects::Oracle::Connection do
 
   behaves_like 'a Connection'
   behaves_like 'a Connection with authentication support'
+  # FIXME: behaves_like 'a Connection with JDBC URL support' if JRUBY
   behaves_like 'a Connection via JDNI' if JRUBY
 end

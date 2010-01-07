@@ -92,17 +92,11 @@ shared 'a Connection' do
       test_connection(DataObjects::Connection.new(uri)).should == 1
     end
 
-    it 'should work with non jdbc URIs' do
+    it 'should work with non-JDBC URLs' do
       conn = DataObjects::Connection.new("#{CONFIG.uri.sub(/jdbc:/, '')}")
       test_connection(conn).should == 1
     end
 
-    if JRUBY
-      it 'should work with jdbc URIs' do
-        conn = DataObjects::Connection.new(CONFIG.jdbc_uri || "jdbc:#{CONFIG.uri.sub(/jdbc:/, '')}")
-        test_connection(conn).should == 1
-      end
-    end
   end
 end
 
@@ -147,6 +141,21 @@ shared 'a Connection with authentication support' do
   end
 
 end
+
+shared 'a Connection with JDBC URL support' do
+
+  def test_connection(conn)
+    reader = conn.create_command(CONFIG.testsql || "SELECT 1").execute_reader
+    reader.next!
+    reader.values[0]
+  end
+
+  it 'should work with JDBC URLs' do
+    conn = DataObjects::Connection.new(CONFIG.jdbc_uri || "jdbc:#{CONFIG.uri.sub(/jdbc:/, '')}")
+    test_connection(conn).should == 1
+  end
+
+end if JRUBY
 
 shared 'a Connection with SSL support' do
 

@@ -16,6 +16,7 @@ describe DataObjects::Postgres::Connection do
 
   behaves_like 'a Connection'
   behaves_like 'a Connection with authentication support'
+  # FIXME: behaves_like 'a Connection with JDBC URL support' if JRUBY
 
   describe 'byte array quoting' do
     it 'should properly escape non-printable ASCII characters' do
