@@ -242,8 +242,9 @@ public class Command extends DORubyObject {
 
         // execute the query
         try {
-            String sqlText = prepareSqlTextForPs(api.getInstanceVariable(this,
-                    "@text").asJavaString(), args);
+            String doSqlText = api.convertToRubyString(
+                    api.getInstanceVariable(this, "@text")).getUnicodeValue();
+            String sqlText = prepareSqlTextForPs(doSqlText, args);
 
             sqlStatement = conn.prepareStatement(
                            sqlText,

@@ -465,7 +465,7 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
             ps.setBoolean(idx, arg.toString().equals("true"));
             break;
         case STRING:
-            ps.setString(idx, arg.toString());
+            ps.setString(idx, arg.asString().getUnicodeValue());
             break;
         case CLASS:
             ps.setString(idx, arg.toString());

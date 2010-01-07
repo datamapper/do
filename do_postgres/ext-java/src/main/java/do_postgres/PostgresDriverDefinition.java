@@ -84,7 +84,7 @@ public class PostgresDriverDefinition extends AbstractDriverDefinition {
                 ps.setInt(idx, Integer.valueOf(arg.toString()));
                 break;
             default:
-                ps.setString(idx, arg.toString());
+                ps.setString(idx, arg.asString().getUnicodeValue());
             }
             break;
         case BYTE_ARRAY:

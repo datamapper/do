@@ -1,3 +1,5 @@
+# encoding: utf-8
+
 shared 'supporting String' do
 
   setup_test_environment
@@ -77,6 +79,41 @@ shared 'supporting String' do
       @values.first.should.satisfy { |val| val == 1 or val == 2 }
     end
 
+  end
+
+  describe 'writing and reading a multibyte String' do
+
+    ['Aslak Hellesøy',
+     'Пётр Алексе́евич Рома́нов',
+     '歐陽龍'].each do |name|
+
+      it 'should write a multibyte String' do
+        @command = @connection.create_command('INSERT INTO users (name) VALUES(?)')
+        should.not.raise(DataObjects::DataError) { @command.execute_non_query(name) }
+      end
+
+      it 'should read back the multibyte String' do
+        @command = @connection.create_command('SELECT name FROM users WHERE name = ?')
+        @reader = @command.execute_reader(name)
+        @reader.next!
+        @reader.values.first.should == name
+        @reader.close
+      end
+
+      it 'should write a multibyte String (without query parameters)' do
+        @command = @connection.create_command("INSERT INTO users (name) VALUES(\'#{name}\')")
+        should.not.raise(DataObjects::DataError) { @command.execute_non_query }
+      end
+
+      it 'should read back the multibyte String (without query parameters)' do
+        @command = @connection.create_command("SELECT name FROM users WHERE name = \'#{name}\'")
+        @reader = @command.execute_reader
+        @reader.next!
+        @reader.values.first.should == name
+        @reader.close
+      end
+
+    end
   end
 
   class ::StringWithExtraPowers < String; end
