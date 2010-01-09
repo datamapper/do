@@ -12,9 +12,10 @@ SUDO     = WINDOWS ? '' : ('sudo' unless ENV['SUDOLESS'])
 # RCov is run by default, except on the JRuby and IronRuby platforms, or if NO_RCOV env is true
 RUN_RCOV = JRUBY || IRONRUBY ? false : (ENV.has_key?('NO_RCOV') ? ENV['NO_RCOV'] != 'true' : true)
 
+jruby_projects = %w[do_jdbc do_derby do_h2 do_hsqldb]
 projects = %w[data_objects]
-projects += %w[do_jdbc do_derby do_h2 do_hsqldb] if JRUBY
-projects += %w[do_mysql do_postgres do_sqlite3]
+projects += %w[do_mysql do_postgres do_sqlite3 do_sqlserver do_oracle]
+projects += jruby_projects if JRUBY
 
 def rake(cmd)
   ruby "-S rake #{cmd}", :verbose => false
@@ -22,17 +23,17 @@ end
 
 desc 'Release all do gems'
 task :release do
-  projects.each do |dir|
-    Dir.chdir(dir){ rake "release VERSION=#{ENV["VERSION"]}" }
+  (projects + jruby_projects).uniq.each do |dir|
+    Dir.chdir(dir){ rake "release_all" }
   end
 end
 
 tasks = {
-  :spec    => 'Run the specification',
-  :install => 'Install the do gems',
-  :package => 'Package the do gems',
-  :clean   => 'clean temporary files',
-  :clobber => 'clobber temporary files',
+  :spec      => 'Run the specification',
+  :install   => 'Install the do gems',
+  :build_all => 'Package the do gems',
+  :clean     => 'clean temporary files',
+  :clobber   => 'clobber temporary files',
 }
 
 tasks.each do |name, description|
