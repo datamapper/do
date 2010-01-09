@@ -4,7 +4,7 @@
 * Switch to Jeweler for Gem building tasks (this change may be temporary).
 * Switch to using Bacon for running specs: This should make specs friendlier to
   new Ruby implementations that are not yet 100% MRI-compatible, and in turn,
-  prepared the road for our own IronRuby and MacRuby support.
+  pave the road for our own IronRuby and MacRuby support.
 * Make DataObjects::Reader Enumerable.
 
 ## 0.10.0 2009-09-15
