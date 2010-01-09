@@ -10,7 +10,7 @@ desc 'Release all gems (native, binaries for JRuby and Windows)'
 task :release_all => :build_all do
   Dir["pkg/do_postgres-#{DataObjects::Postgres::VERSION}*.gem"].each do |gem_path|
     command = "gem push #{gem_path}"
-    output.puts "Executing #{command.inspect}:"
+    puts "Executing #{command.inspect}:"
     sh command
   end
 end
