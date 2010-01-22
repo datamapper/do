@@ -533,6 +533,52 @@ static VALUE cConnection_character_set(VALUE self) {
   return rb_iv_get(self, "@encoding");
 }
 
+static VALUE cConnection_enable_load_extension(VALUE self, VALUE value) {
+  VALUE connection;
+  int status;
+  sqlite3 *db;
+
+  connection = rb_iv_get(self, "@connection");
+
+  if (Qnil == connection)
+    return Qfalse;
+
+  db = DATA_PTR(connection);
+
+  if (NULL == db)
+    return Qfalse;
+
+  status = sqlite3_enable_load_extension(db, value == Qtrue ? 1 : 0);
+  if ( status != SQLITE_OK ) {
+    rb_raise(eConnectionError, "Error enabling load extension.");
+  }
+  return Qtrue;
+}
+
+static VALUE cConnection_load_extension(VALUE self, VALUE string) {
+  VALUE connection;
+  sqlite3 *db;
+  const char *extension_name  = rb_str_ptr_readonly(string);
+  char* errmsg;
+  int status;
+
+  connection = rb_iv_get(self, "@connection");
+
+  if (Qnil == connection)
+    return Qfalse;
+
+  db = DATA_PTR(connection);
+
+  if (NULL == db)
+    return Qfalse;
+
+  status = sqlite3_load_extension(db, extension_name, 0, &errmsg);
+  if ( status != SQLITE_OK ) {
+    rb_raise(eConnectionError, "%s", errmsg);
+  }
+  return Qtrue;
+}
+
 static VALUE build_query_from_args(VALUE klass, int count, VALUE *args) {
   VALUE query = rb_iv_get(klass, "@text");
   int i;
@@ -764,6 +810,8 @@ void Init_do_sqlite3() {
   rb_define_method(cConnection, "quote_string", cConnection_quote_string, 1);
   rb_define_method(cConnection, "quote_byte_array", cConnection_quote_byte_array, 1);
   rb_define_method(cConnection, "character_set", cConnection_character_set, 0);
+  rb_define_method(cConnection, "enable_load_extension", cConnection_enable_load_extension, 1);
+  rb_define_method(cConnection, "load_extension", cConnection_load_extension, 1);
 
   cCommand = SQLITE3_CLASS("Command", cDO_Command);
   rb_define_method(cCommand, "set_types", cCommand_set_types, -1);
