@@ -69,19 +69,11 @@ begin
   Rake::JavaExtensionTask.new('do_postgres', gemspec) do |ext|
     ext.ext_dir   = 'ext-java/src/main/java'
     ext.lib_dir   = "lib/#{gemspec.name}"
-	ext.debug     = ENV.has_key?('DO_JAVA_DEBUG') && ENV['DO_JAVA_DEBUG']
+    ext.debug     = ENV.has_key?('DO_JAVA_DEBUG') && ENV['DO_JAVA_DEBUG']
     ext.classpath = '../do_jdbc/lib/do_jdbc_internal.jar'
     ext.java_compiling do |gem|
       gem.add_dependency 'jdbc-postgres', '>=8.2'
-      gem.add_dependency 'do_jdbc',       '0.10.1'
-      gem.post_install_message = <<EOF
-==========================================================================
-
-  DataObjects PostgreSQL Driver:
-    You've installed the binary extension for JRuby (Java platform)
-
-==========================================================================
-EOF
+      gem.add_dependency 'do_jdbc',       '0.10.2'
     end
   end
 rescue LoadError

@@ -27,9 +27,9 @@ at_exit { DataObjects.logger.flush }
 
 CONFIG = OpenStruct.new
 CONFIG.scheme   = 'sqlite3'
-CONFIG.database = ENV['DO_SQLITE3_DATABASE'] || "memory:"
+CONFIG.database = ENV['DO_SQLITE3_DATABASE'] || ":memory:"
 
-CONFIG.uri = ENV["DO_SQLITE3_SPEC_URI"] || "#{CONFIG.scheme}://#{CONFIG.database}"
+CONFIG.uri = ENV["DO_SQLITE3_SPEC_URI"] || "#{CONFIG.scheme}:#{CONFIG.database}"
 CONFIG.jdbc_driver = 'org.sqlite.JDBC'
 CONFIG.jdbc_uri = CONFIG.uri.sub(/sqlite3/,"jdbc:sqlite")
 

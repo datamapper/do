@@ -51,25 +51,13 @@ begin
   end
 
   Rake::JavaExtensionTask.new('do_mysql', gemspec) do |ext|
-    ext.lib_dir = "lib/#{gemspec.name}"
+    ext.lib_dir   = "lib/#{gemspec.name}"
     ext.ext_dir   = 'ext-java/src/main/java'
-    ext.lib_dir   = 'lib/do_mysql'
     ext.debug     = ENV.has_key?('DO_JAVA_DEBUG') && ENV['DO_JAVA_DEBUG']
     ext.classpath = '../do_jdbc/lib/do_jdbc_internal.jar'
     ext.java_compiling do |gem|
       gem.add_dependency 'jdbc-mysql', '>=5.0.4'
-      gem.add_dependency 'do_jdbc',    '0.10.1'
-      gem.post_install_message = <<EOF
-==========================================================================
-
-  DataObjects MySQL Driver:
-    You've installed the binary extension for JRuby (Java platform)
-
-==========================================================================
-EOF
-      # components, files and paths
-      # gem.files = Dir['lib/**/*.rb', 'spec/**/*.rb', 'tasks/**/*.rake',
-      #              'LICENSE', 'Rakefile', '*.{markdown,rdoc,txt,yml}', 'lib/*.jar']
+      gem.add_dependency 'do_jdbc',    '0.10.2'
     end
   end
 rescue LoadError

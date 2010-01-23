@@ -1,11 +1,23 @@
+## 0.10.1 (unreleased, in git)
+
+Initial release as part of mainline DataObjects project.
+
+* Switch to Jeweler for Gem building tasks (this change may be temporary).
+* Switch to using Bacon for running specs: This should make specs friendlier to
+  new Ruby implementations that are not yet 100% MRI-compatible, and in turn,
+  pave the road for our own IronRuby and MacRuby support.
+* Switch to the newly added rake-compiler `JavaExtensionTask` for compiling
+  JRuby extensions, instead of our (broken) home-grown solution.
+
+* Known Issues:
+  * Writing Extlib::ByteArray is not currently supported.
+
 ## 0.10.0 2009-09-15
 
-Initial release as part of mainline DO project.
+(NOT RELEASED)
 
 * Improvements
   * JRuby Support (using *do_jdbc*)
-* Known Issues:
-  * Writing Extlib::ByteArray is not currently supported.
 
 ## 0.0.1 2009-05-11
 

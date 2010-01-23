@@ -1,26 +1,50 @@
-do_jdbc 'Doppio'
-================
+# do_jdbc 'Doppio'
 
-*Native JDBC Support for DataObjects*
+* <http://dataobjects.info>
+
+## Description
+
+Native JDBC Support for DataObjects.
+
+## Features/Problems
 
 do_jdbc is a gem wrapper for the common library that uses JDBC to support DO
 drivers running on the JRuby implementation.
 
-Testing and Installation
-------------------------
+## Synopsis
 
-Please see <http://datamapper.org/doku.php?id=jruby:contribute> for the current
-details on building do_jdbc from source and running specs against JDBC variant
-drivers.
+This is a support library and should not be used directly.
 
-Licensing and Copyright
------------------------
+## Requirements
 
-This code is licensed under the under an **MIT License**. Please see
-MIT-LICENSE.
+ * JRuby 1.3.1 + (1.4+ recommended)
+ * `data_objects` gem
 
-Copyright (c) 2008-2009 Alexander Coles, Ikonoklastik Productions
+## Install
 
+To install the gem:
 
-* Contact the developer directly:
-   - <alex@alexcolesportfolio.com> | myabc on #datamapper, #merb IRC
+    jruby -S gem install do_jdbc
+
+Normally, you would not install do_jdbc directly. Instead it should be installed
+when installing DO drivers on JRuby, thanks to RubyGems dependency resolution.
+
+To compile and install from source:
+
+ * Install the Java Development Kit (provided if you are on a recent version of
+   Mac OS X) from <http://java.sun.com>
+ * Install a recent version of JRuby. Ensure `jruby` is in your `PATH` and/or
+   you have configured the `JRUBY_HOME` environment variable to point to your
+   JRuby installation.
+ * Install `data_objects` with `jruby -S rake install`.
+ * Install this driver with `jruby -S rake install`.
+
+## Developers
+
+See the DataObjects wiki for more comprehensive information:
+<http://wiki.github.com/datamapper/do/jruby>.
+
+## License
+
+This code is licensed under an **MIT (X11) License**. Please see the
+accompanying `LICENSE` file.

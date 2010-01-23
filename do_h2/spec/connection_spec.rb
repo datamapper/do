@@ -16,5 +16,6 @@ describe DataObjects::H2::Connection do
 
   behaves_like 'a Connection'
   #behaves_like 'a Connection with authentication support'
-  behaves_like 'a Connection via JDNI' if JRUBY
+  behaves_like 'a Connection with JDBC URL support'
+  behaves_like 'a Connection via JDNI'
 end

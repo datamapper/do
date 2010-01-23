@@ -11,16 +11,6 @@ begin
 
   Rake::JavaExtensionTask.new('do_jdbc_internal', gemspec) do |ext|
     ext.ext_dir = 'src/main/java'
-    ext.java_compiling do |gem_spec|
-      gem_spec.post_install_message = <<EOF
-==========================================================================
-
-  DataObjects JDBC Support Library:
-    You've installed the JDBC Support Library for JRuby (Java platform)
-
-==========================================================================
-EOF
-    end
   end
 
   # do_jdbc is only available for JRuby: the normal behaviour of rake-compiler
