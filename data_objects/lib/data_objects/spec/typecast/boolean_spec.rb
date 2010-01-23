@@ -55,7 +55,7 @@ shared 'supporting Boolean' do
       end
 
       it 'should return the correct result' do
-       @values.first.should be_true
+       @values.first.should.be.true
       end
 
     end
