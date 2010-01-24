@@ -1,6 +1,8 @@
-## 0.10.1.1 (unreleased, in git)
+## 0.10.2 (unreleased, in git)
 
-*
+## 0.10.1.1 2010-01-24
+
+* JRuby-only: Fix for handling boolean results with a TRUE value.
 
 ## 0.10.1 2010-01-08
 
