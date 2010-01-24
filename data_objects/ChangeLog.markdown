@@ -1,4 +1,6 @@
-## 0.10.1 (unreleased, in git)
+## 0.10.2 (unreleased, in git)
+
+## 0.10.1 2010-01-08
 
 * Removal of Extlib dependency: Pooling and Utilities code moved to DataObjects.
 * Switch to Jeweler for Gem building tasks (this change may be temporary).

@@ -1,4 +1,10 @@
-## 0.10.1 (unreleased, in git)
+## 0.10.2 (unreleased, in git)
+
+## 0.10.1.1 2010-01-24
+
+* JRuby-only: Fix for handling boolean results with a TRUE value.
+
+## 0.10.1 2010-01-08
 
 * Support for Ruby 1.8 and 1.9 on Windows.
 * Switch to Jeweler for Gem building tasks (this change may be temporary).

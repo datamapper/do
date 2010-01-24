@@ -1,4 +1,6 @@
-## 0.10.1 (unreleased, in git)
+## 0.10.2 (unreleased, in git)
+
+## 0.10.1 2010-01-08
 
 * Switch to Jeweler for Gem building tasks (this change may be temporary).
 * Switch to the newly added rake-compiler `JavaExtensionTask` for compiling
