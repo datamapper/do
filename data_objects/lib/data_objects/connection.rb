@@ -116,6 +116,11 @@ module DataObjects
       concrete_command.new(self, text)
     end
 
+    def extension
+      extension_class = DataObjects::const_get(self.class.name.split('::')[-2]).const_get('Extension')
+      extension_class.new(self)
+    end
+
     private
     def concrete_command
       @concrete_command || begin

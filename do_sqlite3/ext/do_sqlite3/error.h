@@ -1,3 +1,6 @@
+#ifndef DO_SQLITE3_ERROR_H
+#define DO_SQLITE3_ERROR_H
+
 static struct errcodes {
   int  error_no;
   const char *error_name;
@@ -104,3 +107,5 @@ static struct errcodes {
 #endif
   {0, NULL, NULL}
 };
+
+#endif
