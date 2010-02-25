@@ -7,6 +7,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Types;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 import org.jruby.RubyBoolean;
 import org.jruby.RubyString;
@@ -116,6 +117,47 @@ public class PostgresDriverDefinition extends AbstractDriverDefinition {
     public void afterConnectionCallback(IRubyObject doConn,
             Connection conn, Map<String, String> query) throws SQLException {
         checkStandardConformingStrings(doConn, conn);
+        setSearchPath(conn, query);
+    }
+
+    private final static Pattern validValue = Pattern.compile("^[a-zA-Z][a-zA-Z0-9-]*(,[a-zA-Z][a-zA-Z0-9-]*)*$");
+
+    /**
+     * Escape the given value to be used in a SET command.
+     * Right now the method only checks if the given value
+     * contains only the following characters: a-zA-Z0-9,-
+     *
+     * @param value Value to escape
+     * @return Escaped value which can be safely used in a
+     *         SET command.
+     */
+    private String escapeValue(String value) throws SQLException {
+        if (!validValue.matcher(value).matches())
+            throw new SQLException("Invalid query parameter value: " + value);
+        return value;
+    }
+
+    /**
+     * Sets the search_path for the given connection based on
+     * the search_path query parameter.
+     *
+     * @param conn Connection to set search_path for.
+     * @param query Map containing all query parameters.
+     */
+    private void setSearchPath(Connection conn, Map<String, String> query) throws SQLException {
+        final String search_path = "search_path";
+        if (query == null || !query.containsKey(search_path))
+            return;
+
+        PreparedStatement st = null;
+        try {
+            st = conn.prepareStatement("SET search_path = " + escapeValue(query.get(search_path)));
+            st.executeUpdate();
+        } catch (SQLException e) {
+            // Ignore.
+        } finally {
+            JDBCUtil.close(st);
+        }
     }
 
     /**
