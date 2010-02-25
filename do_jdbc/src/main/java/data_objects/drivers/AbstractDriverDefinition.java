@@ -439,7 +439,7 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
             IRubyObject arg, int idx) throws SQLException {
         switch (RubyType.inferRubyType(arg)) {
         case FIXNUM:
-            ps.setInt(idx, Integer.parseInt(arg.toString()));
+            ps.setLong(idx, Long.parseLong(arg.toString()));
             break;
         case BIGNUM:
             BigInteger big = ((RubyBignum) arg).getValue();
