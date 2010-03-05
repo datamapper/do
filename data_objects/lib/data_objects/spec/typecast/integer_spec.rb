@@ -79,4 +79,23 @@ shared 'supporting Integer' do
 
   end
 
+  describe 'writing a big Integer' do
+
+    before do
+      @connection.create_command("UPDATE widgets SET number_sold = ? WHERE id = 10").execute_non_query(2147483648) # bigger than Integer.MAX in java !!
+      @reader = @connection.create_command("SELECT number_sold FROM widgets WHERE id = ?").execute_reader(10)
+      @reader.next!
+      @values = @reader.values
+    end
+
+    after do
+      @reader.close
+    end
+
+    it 'should return the correct entry' do
+      @values.first.should == 2147483648
+    end
+
+  end
+
 end
