@@ -621,8 +621,14 @@ static void full_connect(VALUE self, MYSQL* db) {
   cCommand_execute(self, db, rb_str_new2("SET sql_auto_is_null = 0"));
   // removed NO_AUTO_VALUE_ON_ZERO because of MySQL bug http://bugs.mysql.com/bug.php?id=42270
   // added NO_BACKSLASH_ESCAPES so that backslashes should not be escaped as in other databases
-  cCommand_execute(self, db, rb_str_new2("SET SESSION sql_mode = 'ANSI,NO_BACKSLASH_ESCAPES,NO_DIR_IN_CREATE,NO_ENGINE_SUBSTITUTION,NO_UNSIGNED_SUBTRACTION,TRADITIONAL'"));
-
+   
+  //4.x versions do not support certain session parameters  
+  if(mysql_get_server_version(db) < 50000 ){
+    cCommand_execute(self, db, rb_str_new2("SET SESSION sql_mode = 'ANSI,NO_DIR_IN_CREATE,NO_UNSIGNED_SUBTRACTION'"));
+  }else{
+    cCommand_execute(self, db, rb_str_new2("SET SESSION sql_mode = 'ANSI,NO_BACKSLASH_ESCAPES,NO_DIR_IN_CREATE,NO_ENGINE_SUBSTITUTION,NO_UNSIGNED_SUBTRACTION,TRADITIONAL'"));
+  }
+ 
   rb_iv_set(self, "@connection", Data_Wrap_Struct(rb_cObject, 0, 0, db));
 }
 
