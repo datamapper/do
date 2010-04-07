@@ -12,5 +12,5 @@ describe DataObjects::SqlServer::Result do
 end
 
 describe DataObjects::SqlServer::Result do
-  behaves_like 'a Result which returns inserted keys'
+  behaves_like 'a Result which returns inserted key with sequences'
 end

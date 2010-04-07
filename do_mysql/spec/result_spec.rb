@@ -12,5 +12,6 @@ describe DataObjects::Mysql::Result do
 end
 
 describe DataObjects::Mysql::Result do
-  behaves_like 'a Result which returns inserted keys'
+  behaves_like 'a Result which returns inserted key with sequences'
+  behaves_like 'a Result which returns nil without sequences'
 end
