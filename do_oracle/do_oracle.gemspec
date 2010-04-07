@@ -9,7 +9,7 @@ Gem::Specification.new do |s|
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Raimonds Simanovskis"]
-  s.date = %q{2010-01-09}
+  s.date = %q{2010-04-07}
   s.description = %q{Implements the DataObjects API for Oracle}
   s.email = %q{raimonds.simanovskis@gmail.com}
   s.extensions = ["ext/do_oracle/extconf.rb"]

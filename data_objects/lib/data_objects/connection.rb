@@ -7,6 +7,8 @@ module DataObjects
   # An abstract connection to a DataObjects resource. The physical connection may be broken and re-established from time to time.
   class Connection
 
+    include Logging
+
     # Make a connection to the database using the DataObjects::URI given.
     # Note that the physical connection may be delayed until the first command is issued, so success here doesn't necessarily mean you can connect.
     def self.new(uri_s)
@@ -117,11 +119,15 @@ module DataObjects
     end
 
     def extension
-      extension_class = DataObjects::const_get(self.class.name.split('::')[-2]).const_get('Extension')
-      extension_class.new(self)
+      driver_namespace.const_get('Extension').new(self)
     end
 
     private
+
+    def driver_namespace
+      DataObjects::const_get(self.class.name.split('::')[-2])
+    end
+
     def concrete_command
       @concrete_command || begin
 

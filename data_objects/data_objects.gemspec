@@ -9,7 +9,7 @@ Gem::Specification.new do |s|
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Dirkjan Bussink"]
-  s.date = %q{2010-01-09}
+  s.date = %q{2010-03-31}
   s.description = %q{Provide a standard and simplified API for communicating with RDBMS from Ruby}
   s.email = %q{d.bussink@gmail.com}
   s.extra_rdoc_files = [
@@ -31,6 +31,7 @@ Gem::Specification.new do |s|
      "lib/data_objects/error/sql_error.rb",
      "lib/data_objects/error/syntax_error.rb",
      "lib/data_objects/error/transaction_error.rb",
+     "lib/data_objects/extension.rb",
      "lib/data_objects/logger.rb",
      "lib/data_objects/pooling.rb",
      "lib/data_objects/quoting.rb",
@@ -85,7 +86,7 @@ Gem::Specification.new do |s|
   s.rdoc_options = ["--charset=UTF-8"]
   s.require_paths = ["lib"]
   s.rubyforge_project = %q{dorb}
-  s.rubygems_version = %q{1.3.5}
+  s.rubygems_version = %q{1.3.6}
   s.summary = %q{DataObjects basic API and shared driver specifications}
   s.test_files = [
     "spec/command_spec.rb",

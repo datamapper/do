@@ -42,6 +42,7 @@
 #define ID_PATH rb_intern("path")
 #define ID_NEW rb_intern("new")
 #define ID_ESCAPE rb_intern("escape_sql")
+#define ID_LOG rb_intern("log")
 
 #define CONST_GET(scope, constant) (rb_funcall(scope, ID_CONST_GET, 1, rb_str_new2(constant)))
 #define POSTGRES_CLASS(klass, parent) (rb_define_class_under(mPostgres, klass, parent))
@@ -93,6 +94,8 @@ static VALUE cDO_Connection;
 static VALUE cDO_Command;
 static VALUE cDO_Result;
 static VALUE cDO_Reader;
+static VALUE cDO_Logger;
+static VALUE cDO_Logger_Message;
 
 static VALUE rb_cDate;
 static VALUE rb_cDateTime;
@@ -109,28 +112,16 @@ static VALUE eArgumentError;
 static VALUE eConnectionError;
 static VALUE eDataError;
 
-static void data_objects_debug(VALUE string, struct timeval* start) {
+static void data_objects_debug(VALUE connection, VALUE string, struct timeval* start) {
   struct timeval stop;
-  char *message;
+  VALUE message;
 
-  const char *query = rb_str_ptr_readonly(string);
-  size_t length     = rb_str_len(string);
-  char total_time[32];
-  do_int64 duration = 0;
+  gettimeofday(&stop, NULL);
+  do_int64 duration = (stop.tv_sec - start->tv_sec) * 1000000 + stop.tv_usec - start->tv_usec;
 
-  VALUE logger = rb_funcall(mPostgres, ID_LOGGER, 0);
-  int log_level = NUM2INT(rb_funcall(logger, ID_LEVEL, 0));
+  message = rb_funcall(cDO_Logger_Message, ID_NEW, 3, string, rb_time_new(start->tv_sec, start->tv_usec), INT2NUM(duration));
 
-  if (0 == log_level) {
-    gettimeofday(&stop, NULL);
-
-    duration = (stop.tv_sec - start->tv_sec) * 1000000 + stop.tv_usec - start->tv_usec;
-
-    snprintf(total_time, 32, "%.6f", duration / 1000000.0);
-    message = (char *)calloc(length + strlen(total_time) + 4, sizeof(char));
-    snprintf(message, length + strlen(total_time) + 4, "(%s) %s", total_time, query);
-    rb_funcall(logger, ID_DEBUG, 1, rb_str_new(message, length + strlen(total_time) + 3));
-  }
+  rb_funcall(connection, ID_LOG, 1, message);
 }
 
 static const char * get_uri_option(VALUE query_hash, const char * key) {
@@ -541,10 +532,11 @@ static VALUE cConnection_quote_byte_array(VALUE self, VALUE string) {
 static void full_connect(VALUE self, PGconn *db);
 
 #ifdef _WIN32
-static PGresult* cCommand_execute_sync(VALUE self, PGconn *db, VALUE query) {
+static PGresult* cCommand_execute_sync(VALUE self, VALUE connection, PGconn *db, VALUE query) {
   PGresult *response;
   struct timeval start;
   char* str = StringValuePtr(query);
+  VALUE connection = rb_iv_get(self, "@connection");
 
   while ((response = PQgetResult(db)) != NULL) {
     PQclear(response);
@@ -554,15 +546,12 @@ static PGresult* cCommand_execute_sync(VALUE self, PGconn *db, VALUE query) {
 
   response = PQexec(db, str);
 
-  data_objects_debug(query, &start);
-
   if (response == NULL) {
     if(PQstatus(db) != CONNECTION_OK) {
       PQreset(db);
       if (PQstatus(db) == CONNECTION_OK) {
         response = PQexec(db, str);
       } else {
-        VALUE connection = rb_iv_get(self, "@connection");
         full_connect(connection, db);
         response = PQexec(db, str);
       }
@@ -573,10 +562,12 @@ static PGresult* cCommand_execute_sync(VALUE self, PGconn *db, VALUE query) {
     }
   }
 
+  data_objects_debug(connection, query, &start);
+
   return response;
 }
 #else
-static PGresult* cCommand_execute_async(VALUE self, PGconn *db, VALUE query) {
+static PGresult* cCommand_execute_async(VALUE self, VALUE connection, PGconn *db, VALUE query) {
   int socket_fd;
   int retval;
   fd_set rset;
@@ -588,6 +579,8 @@ static PGresult* cCommand_execute_async(VALUE self, PGconn *db, VALUE query) {
     PQclear(response);
   }
 
+  gettimeofday(&start, NULL);
+
   retval = PQsendQuery(db, str);
 
   if (!retval) {
@@ -596,7 +589,6 @@ static PGresult* cCommand_execute_async(VALUE self, PGconn *db, VALUE query) {
       if (PQstatus(db) == CONNECTION_OK) {
         retval = PQsendQuery(db, str);
       } else {
-        VALUE connection = rb_iv_get(self, "@connection");
         full_connect(connection, db);
         retval = PQsendQuery(db, str);
       }
@@ -607,10 +599,7 @@ static PGresult* cCommand_execute_async(VALUE self, PGconn *db, VALUE query) {
     }
   }
 
-  gettimeofday(&start, NULL);
   socket_fd = PQsocket(db);
-
-  data_objects_debug(query, &start);
 
   for(;;) {
       FD_ZERO(&rset);
@@ -632,6 +621,8 @@ static PGresult* cCommand_execute_async(VALUE self, PGconn *db, VALUE query) {
           break;
       }
   }
+
+  data_objects_debug(connection, query, &start);
 
   return PQgetResult(db);
 }
@@ -747,7 +738,7 @@ static void full_connect(VALUE self, PGconn *db) {
     search_path_query = (char *)calloc(256, sizeof(char));
     snprintf(search_path_query, 256, "set search_path to %s;", search_path);
     r_query = rb_str_new2(search_path_query);
-    result = cCommand_execute(self, db, r_query);
+    result = cCommand_execute(Qnil, self, db, r_query);
 
     if (PQresultStatus(result) != PGRES_COMMAND_OK) {
       free((void *)search_path_query);
@@ -758,21 +749,21 @@ static void full_connect(VALUE self, PGconn *db) {
   }
 
   r_options = rb_str_new2(backslash_off);
-  result = cCommand_execute(self, db, r_options);
+  result = cCommand_execute(Qnil, self, db, r_options);
 
   if (PQresultStatus(result) != PGRES_COMMAND_OK) {
     rb_warn("%s", PQresultErrorMessage(result));
   }
 
   r_options = rb_str_new2(standard_strings_on);
-  result = cCommand_execute(self, db, r_options);
+  result = cCommand_execute(Qnil, self, db, r_options);
 
   if (PQresultStatus(result) != PGRES_COMMAND_OK) {
     rb_warn("%s", PQresultErrorMessage(result));
   }
 
   r_options = rb_str_new2(warning_messages);
-  result = cCommand_execute(self, db, r_options);
+  result = cCommand_execute(Qnil, self, db, r_options);
 
   if (PQresultStatus(result) != PGRES_COMMAND_OK) {
     rb_warn("%s", PQresultErrorMessage(result));
@@ -823,7 +814,7 @@ static VALUE cCommand_execute_non_query(int argc, VALUE *argv[], VALUE self) {
 
   VALUE query = build_query_from_args(self, argc, argv);
 
-  response = cCommand_execute(self, db, query);
+  response = cCommand_execute(self, connection, db, query);
 
   status = PQresultStatus(response);
 
@@ -863,7 +854,7 @@ static VALUE cCommand_execute_reader(int argc, VALUE *argv[], VALUE self) {
 
   query = build_query_from_args(self, argc, argv);
 
-  response = cCommand_execute(self, db, query);
+  response = cCommand_execute(self, connection, db, query);
 
   if ( PQresultStatus(response) != PGRES_TUPLES_OK ) {
     raise_error(self, response, query);
@@ -1023,6 +1014,8 @@ void Init_do_postgres() {
   cDO_Command = CONST_GET(mDO, "Command");
   cDO_Result = CONST_GET(mDO, "Result");
   cDO_Reader = CONST_GET(mDO, "Reader");
+  cDO_Logger = CONST_GET(mDO, "Logger");
+  cDO_Logger_Message = CONST_GET(cDO_Logger, "Message");
 
   eArgumentError = CONST_GET(rb_mKernel, "ArgumentError");
   mPostgres = rb_define_module_under(mDO, "Postgres");

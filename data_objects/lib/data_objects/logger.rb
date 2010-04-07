@@ -2,6 +2,18 @@ require "time" # httpdate
 
 module DataObjects
 
+  module Logging
+
+    def log(message)
+      logger = driver_namespace.logger
+      if logger.level <= DataObjects::Logger::LEVELS[:debug]
+        message = "(%.6f) %s" % [message.duration / 1000000.0, message.query]
+        logger.debug message
+      end
+    end
+
+  end
+
   class << self
     # The global logger for DataObjects
     attr_accessor :logger
@@ -50,6 +62,8 @@ module DataObjects
     attr_reader   :buffer
     # The name of the log file
     attr_reader   :log
+
+    Message = Struct.new(:query, :start, :duration)
 
     #
     # Ruby (standard) logger levels:
