@@ -810,6 +810,7 @@ static VALUE cCommand_execute_non_query(int argc, VALUE *argv, VALUE self) {
   MYSQL_RES *response = 0;
 
   my_ulonglong affected_rows;
+  my_ulonglong insert_id;
   VALUE connection = rb_iv_get(self, "@connection");
   VALUE mysql_connection = rb_iv_get(connection, "@connection");
   if (Qnil == mysql_connection) {
@@ -822,12 +823,14 @@ static VALUE cCommand_execute_non_query(int argc, VALUE *argv, VALUE self) {
   response = cCommand_execute(self, db, query);
 
   affected_rows = mysql_affected_rows(db);
+  insert_id     = mysql_insert_id(db);
   mysql_free_result(response);
 
-  if ((my_ulonglong)-1 == affected_rows)
+  if ((my_ulonglong)-1 == affected_rows) {
     return Qnil;
+  }
 
-  return rb_funcall(cResult, ID_NEW, 3, self, INT2NUM(affected_rows), INT2NUM(mysql_insert_id(db)));
+  return rb_funcall(cResult, ID_NEW, 3, self, INT2NUM(affected_rows), insert_id == 0 ? Qnil : INT2NUM(insert_id));
 }
 
 static VALUE cCommand_execute_reader(int argc, VALUE *argv, VALUE self) {
