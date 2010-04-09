@@ -1,12 +1,17 @@
 package data_objects.drivers;
 
 import java.net.URI;
+import java.sql.PreparedStatement;
 import java.util.LinkedList;
 import java.util.Map;
 
 import junit.framework.TestCase;
 
+import org.jmock.Mockery;
+import org.jmock.Expectations;
+
 import org.jruby.Ruby;
+import org.jruby.RubyFixnum;
 import org.jruby.RubyHash;
 import org.jruby.RubyObjectAdapter;
 import org.jruby.RubyRuntimeAdapter;
@@ -29,8 +34,15 @@ public class AbstractDriverDefinitionTestCase extends TestCase {
         }
     }
 
+    private Mockery context;
+    private Ruby runtime;
+
+    public void setUp() {
+        context = new Mockery();
+        runtime = JavaEmbedUtils.initialize(new LinkedList());
+    }
+
     protected IRubyObject getConnectionUri(String uri) {
-        final Ruby runtime = JavaEmbedUtils.initialize(new LinkedList());
         final RubyRuntimeAdapter evaler = JavaEmbedUtils.newRuntimeAdapter();
         final IRubyObject result = evaler.eval(runtime, "require 'rubygems'\nrequire 'data_objects'\nDataObjects::URI.parse('" + uri + "')");
         assertEquals("DataObjects::URI", result.getType().getName());
@@ -56,5 +68,19 @@ public class AbstractDriverDefinitionTestCase extends TestCase {
         final IRubyObject result_connection_uri = getConnectionUri(driver.parseConnectionURI(connection_uri).toString());
 
         assertEquals(getQueryParameter(connection_uri), getQueryParameter(result_connection_uri));
+    }
+
+    public void testSetPreparedStatementParam() throws Exception {
+        final PreparedStatement ps = context.mock(PreparedStatement.class);
+        final Long num = Long.MAX_VALUE;
+        final int idx = 0;
+        final RubyFixnum fixnum = RubyFixnum.newFixnum(runtime, num);
+
+        final AbstractDriverDefinition driver = new MyAbstractDriverDefinition();
+
+        context.checking(new Expectations() {{
+            allowing(ps).setLong(idx, num);
+        }});
+        driver.setPreparedStatementParam(ps, fixnum, idx);
     }
 }
