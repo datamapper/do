@@ -127,11 +127,17 @@ static VALUE infer_ruby_type(MYSQL_FIELD *field) {
     case MYSQL_TYPE_DATE:
     case MYSQL_TYPE_NEWDATE:
       return rb_cDate;
+    case MYSQL_TYPE_STRING:
+    case MYSQL_TYPE_VAR_STRING:
     case MYSQL_TYPE_TINY_BLOB:
     case MYSQL_TYPE_MEDIUM_BLOB:
     case MYSQL_TYPE_LONG_BLOB:
     case MYSQL_TYPE_BLOB:
-      return rb_cByteArray;
+      if(field->charsetnr == 63) {
+        return rb_cByteArray;
+      } else {
+        return rb_cString;
+      }
     default:
       return rb_cString;
   }
