@@ -62,7 +62,7 @@ shared 'returning correctly encoded strings for the default encoding' do
 
       describe 'reading a String' do
         before do
-          @reader = @connection.create_command("SELECT name FROM widgets WHERE ad_description = ?").execute_reader('Buy this product now!')
+          @reader = @connection.create_command("SELECT name, whitepaper_text FROM widgets WHERE ad_description = ?").execute_reader('Buy this product now!')
           @reader.next!
           @values = @reader.values
         end
@@ -74,6 +74,8 @@ shared 'returning correctly encoded strings for the default encoding' do
         it 'should return UTF-8 encoded String' do
           @values.first.should.be.kind_of(String)
           @values.first.encoding.name.should == 'UTF-8'
+          @values.last.should.be.kind_of(String)
+          @values.last.encoding.name.should == 'UTF-8'
         end
       end
 
