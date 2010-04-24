@@ -12,7 +12,7 @@ Gem::Specification.new do |s|
   s.authors = ["Alex Coles"]
   s.date = %q{2010-01-09}
   s.description = %q{Implements the DataObjects API for Microsoft SQL Server}
-  s.email = %q{alex@alexcolesportfolio.com}
+  s.email = %q{alex@alexbcoles.com}
   s.extra_rdoc_files = [
     "ChangeLog.markdown",
      "FAQS.markdown",
