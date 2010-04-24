@@ -71,9 +71,8 @@ module DataObjectsSpecHelpers
 
     conn.create_command(<<-EOF).execute_non_query
       CREATE TABLE `invoices` (
-        `id` int(11) NOT NULL auto_increment,
         `invoice_number` varchar(50) NOT NULL,
-        PRIMARY KEY  (`id`)
+        PRIMARY KEY  (`invoice_number`)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
     EOF
 

@@ -15,5 +15,5 @@ describe DataObjects::Sqlite3::Result do
 end
 
 describe DataObjects::Sqlite3::Result do
-  behaves_like 'a Result which returns inserted keys'
+  behaves_like 'a Result which returns inserted key with sequences'
 end

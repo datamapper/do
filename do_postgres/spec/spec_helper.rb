@@ -70,9 +70,8 @@ module DataObjectsSpecHelpers
 
     conn.create_command(<<-EOF).execute_non_query
       CREATE TABLE "invoices" (
-        "id" SERIAL,
         "invoice_number" varchar(50) NOT NULL,
-        PRIMARY KEY  ("id")
+        PRIMARY KEY  ("invoice_number")
       );
     EOF
 

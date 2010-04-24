@@ -23,7 +23,7 @@ shared 'a Result' do
 
 end
 
-shared 'a Result which returns inserted keys' do
+shared 'a Result which returns inserted key with sequences' do
 
   before do
     setup_test_environment
@@ -45,6 +45,33 @@ shared 'a Result which returns inserted keys' do
     it 'should return the insert_id' do
       # This is actually the 2nd record inserted
       @result.insert_id.should == 2
+    end
+
+  end
+
+end
+
+shared 'a Result which returns nil without sequences' do
+
+  before do
+    setup_test_environment
+    @connection = DataObjects::Connection.new(CONFIG.uri)
+    command = @connection.create_command("INSERT INTO invoices (invoice_number) VALUES (?)")
+    # execute the command twice and expose the second result
+    @result = command.execute_non_query("monkey")
+  end
+
+  after do
+    @connection.close
+  end
+
+  it 'should respond to #affected_rows' do @result.should.respond_to(:affected_rows) end
+
+  describe 'insert_id' do
+
+    it 'should return the insert_id' do
+      # This is actually the 2nd record inserted
+      @result.insert_id.should.be.nil
     end
 
   end

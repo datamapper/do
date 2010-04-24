@@ -5,10 +5,12 @@ shared 'a Reader' do
   before do
     @connection = DataObjects::Connection.new(CONFIG.uri)
     @reader     = @connection.create_command("SELECT code, name FROM widgets WHERE ad_description = ? order by id").execute_reader('Buy this product now!')
+    @reader2    = @connection.create_command("SELECT code FROM widgets WHERE ad_description = ? order by id").execute_reader('Buy this product now!')
   end
 
   after do
     @reader.close
+    @reader2.close
     @connection.close
   end
 
@@ -153,7 +155,7 @@ shared 'a Reader' do
 
   describe 'each' do
 
-    it 'should yield each row to the block' do
+    it 'should yield each row to the block for multiple columns' do
       rows_yielded = 0
       @reader.each do |row|
         row.should.respond_to(:[])
@@ -163,6 +165,22 @@ shared 'a Reader' do
         # the field names need to be case insensitive as some drivers such as
         # do_derby, do_h2, do_hsqldb return the field names as uppercase
         (row['name'] || row['NAME']).should.be.kind_of(String)
+        (row['code'] || row['CODE']).should.be.kind_of(String)
+
+        rows_yielded += 1
+      end
+      rows_yielded.should == 15
+    end
+
+    it 'should yield each row to the block for a single column' do
+      rows_yielded = 0
+      @reader2.each do |row|
+        row.should.respond_to(:[])
+
+        row.size.should == 1
+
+        # the field names need to be case insensitive as some drivers such as
+        # do_derby, do_h2, do_hsqldb return the field names as uppercase
         (row['code'] || row['CODE']).should.be.kind_of(String)
 
         rows_yielded += 1

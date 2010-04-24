@@ -38,6 +38,7 @@ static ID ID_NEW_DATE;
 static ID ID_LOGGER;
 static ID ID_DEBUG;
 static ID ID_LEVEL;
+static ID ID_LOG;
 static ID ID_TO_S;
 static ID ID_RATIONAL;
 
@@ -91,6 +92,8 @@ static VALUE cDO_Connection;
 static VALUE cDO_Command;
 static VALUE cDO_Result;
 static VALUE cDO_Reader;
+static VALUE cDO_Logger;
+static VALUE cDO_Logger_Message;
 
 static VALUE rb_cDate;
 static VALUE rb_cDateTime;
@@ -113,30 +116,18 @@ static VALUE eSQLError;
 static VALUE eConnectionError;
 static VALUE eDataError;
 
-static void data_objects_debug(VALUE string, struct timeval* start) {
+static void data_objects_debug(VALUE connection, VALUE string, struct timeval* start) {
   struct timeval stop;
-  char *message;
+  VALUE message;
 
-  char *query = RSTRING_PTR(string);
-  int length  = RSTRING_LEN(string);
-  char total_time[32];
-  do_int64 duration = 0;
+  gettimeofday(&stop, NULL);
+  do_int64 duration = (stop.tv_sec - start->tv_sec) * 1000000 + stop.tv_usec - start->tv_usec;
 
-  VALUE logger = rb_funcall(mOracle, ID_LOGGER, 0);
-  int log_level = NUM2INT(rb_funcall(logger, ID_LEVEL, 0));
+  message = rb_funcall(cDO_Logger_Message, ID_NEW, 3, string, rb_time_new(start->tv_sec, start->tv_usec), INT2NUM(duration));
 
-  if (0 == log_level) {
-    gettimeofday(&stop, NULL);
-
-    duration = (stop.tv_sec - start->tv_sec) * 1000000 + stop.tv_usec - start->tv_usec;
-
-    snprintf(total_time, 32, "%.6f", duration / 1000000.0);
-    message = (char *)calloc(length + strlen(total_time) + 4, sizeof(char));
-    snprintf(message, length + strlen(total_time) + 4, "(%s) %s", total_time, query);
-    rb_funcall(logger, ID_DEBUG, 1, rb_str_new(message, length + strlen(total_time) + 3));
-    free(message);
-  }
+  rb_funcall(connection, ID_LOG, 1, message);
 }
+
 
 static char * get_uri_option(VALUE query_hash, char * key) {
   VALUE query_value;
@@ -557,7 +548,7 @@ static VALUE cCommand_execute_ensure(cCommand_execute_try_t *arg) {
   if (SYM2ID(arg->statement_type) != ID_SELECT_STMT)
     rb_funcall(arg->cursor, ID_CLOSE, 0);
   // Log SQL and execution time
-  data_objects_debug(arg->sql, &(arg->start));
+  data_objects_debug(arg->oci8_conn, arg->sql, &(arg->start));
   return Qnil;
 }
 
@@ -808,6 +799,7 @@ void Init_do_oracle() {
   ID_LOGGER = rb_intern("logger");
   ID_DEBUG = rb_intern("debug");
   ID_LEVEL = rb_intern("level");
+  ID_LOG = rb_intern("log");
   ID_TO_S = rb_intern("to_s");
   ID_RATIONAL = rb_intern("Rational");
 
@@ -871,6 +863,8 @@ void Init_do_oracle() {
   cDO_Command = CONST_GET(mDO, "Command");
   cDO_Result = CONST_GET(mDO, "Result");
   cDO_Reader = CONST_GET(mDO, "Reader");
+  cDO_Logger = CONST_GET(mDO, "Logger");
+  cDO_Logger_Message = CONST_GET(cDO_Logger, "Message");
 
   // Top Level Module that all the classes live under
   mOracle = rb_define_module_under(mDO, "Oracle");

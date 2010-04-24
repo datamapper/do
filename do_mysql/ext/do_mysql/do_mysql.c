@@ -69,6 +69,7 @@ static ID ID_STRFTIME;
 static ID ID_LOGGER;
 static ID ID_DEBUG;
 static ID ID_LEVEL;
+static ID ID_LOG;
 
 // Reference to Extlib module
 static VALUE mExtlib;
@@ -81,6 +82,8 @@ static VALUE cDO_Connection;
 static VALUE cDO_Command;
 static VALUE cDO_Result;
 static VALUE cDO_Reader;
+static VALUE cDO_Logger;
+static VALUE cDO_Logger_Message;
 
 // References to Ruby classes that we'll need
 static VALUE rb_cDate;
@@ -124,11 +127,17 @@ static VALUE infer_ruby_type(MYSQL_FIELD *field) {
     case MYSQL_TYPE_DATE:
     case MYSQL_TYPE_NEWDATE:
       return rb_cDate;
+    case MYSQL_TYPE_STRING:
+    case MYSQL_TYPE_VAR_STRING:
     case MYSQL_TYPE_TINY_BLOB:
     case MYSQL_TYPE_MEDIUM_BLOB:
     case MYSQL_TYPE_LONG_BLOB:
     case MYSQL_TYPE_BLOB:
-      return rb_cByteArray;
+      if(field->charsetnr == 63) {
+        return rb_cByteArray;
+      } else {
+        return rb_cString;
+      }
     default:
       return rb_cString;
   }
@@ -350,28 +359,16 @@ static VALUE typecast(const char *value, long length, const VALUE type, int enco
 
 }
 
-static void data_objects_debug(VALUE string, struct timeval* start) {
+static void data_objects_debug(VALUE connection, VALUE string, struct timeval* start) {
   struct timeval stop;
-  char *message;
+  VALUE message;
 
-  const char *query = rb_str_ptr_readonly(string);
-  size_t length     = rb_str_len(string);
-  char total_time[32];
-  do_int64 duration = 0;
+  gettimeofday(&stop, NULL);
+  do_int64 duration = (stop.tv_sec - start->tv_sec) * 1000000 + stop.tv_usec - start->tv_usec;
 
-  VALUE logger = rb_funcall(mDOMysql, ID_LOGGER, 0);
-  int log_level = NUM2INT(rb_funcall(logger, ID_LEVEL, 0));
+  message = rb_funcall(cDO_Logger_Message, ID_NEW, 3, string, rb_time_new(start->tv_sec, start->tv_usec), INT2NUM(duration));
 
-  if (0 == log_level) {
-    gettimeofday(&stop, NULL);
-
-    duration = (stop.tv_sec - start->tv_sec) * 1000000 + stop.tv_usec - start->tv_usec;
-
-    snprintf(total_time, 32, "%.6f", duration / 1000000.0);
-    message = (char *)calloc(length + strlen(total_time) + 4, sizeof(char));
-    snprintf(message, length + strlen(total_time) + 4, "(%s) %s", total_time, query);
-    rb_funcall(logger, ID_DEBUG, 1, rb_str_new(message, length + strlen(total_time) + 3));
-  }
+  rb_funcall(connection, ID_LOG, 1, message);
 }
 
 static void raise_error(VALUE self, MYSQL *db, VALUE query) {
@@ -425,7 +422,7 @@ static void assert_file_exists(char * file, const char * message) {
 static void full_connect(VALUE self, MYSQL *db);
 
 #ifdef _WIN32
-static MYSQL_RES* cCommand_execute_sync(VALUE self, MYSQL* db, VALUE query) {
+static MYSQL_RES* cCommand_execute_sync(VALUE self, VALUE connection, MYSQL* db, VALUE query) {
   int retval;
   struct timeval start;
   const char* str = rb_str_ptr_readonly(query);
@@ -438,14 +435,14 @@ static MYSQL_RES* cCommand_execute_sync(VALUE self, MYSQL* db, VALUE query) {
   }
   gettimeofday(&start, NULL);
   retval = mysql_real_query(db, str, len);
-  data_objects_debug(query, &start);
+  data_objects_debug(connection, query, &start);
 
   CHECK_AND_RAISE(retval, query);
 
   return mysql_store_result(db);
 }
 #else
-static MYSQL_RES* cCommand_execute_async(VALUE self, MYSQL* db, VALUE query) {
+static MYSQL_RES* cCommand_execute_async(VALUE self, VALUE connection, MYSQL* db, VALUE query) {
   int socket_fd;
   int retval;
   fd_set rset;
@@ -454,17 +451,15 @@ static MYSQL_RES* cCommand_execute_async(VALUE self, MYSQL* db, VALUE query) {
   size_t len      = rb_str_len(query);
 
   if((retval = mysql_ping(db)) && mysql_errno(db) == CR_SERVER_GONE_ERROR) {
-    VALUE connection = rb_iv_get(self, "@connection");
     full_connect(connection, db);
   }
+  gettimeofday(&start, NULL);
+
   retval = mysql_send_query(db, str, len);
 
   CHECK_AND_RAISE(retval, query);
-  gettimeofday(&start, NULL);
 
   socket_fd = db->net.fd;
-
-  data_objects_debug(query, &start);
 
   for(;;) {
     FD_ZERO(&rset);
@@ -487,6 +482,7 @@ static MYSQL_RES* cCommand_execute_async(VALUE self, MYSQL* db, VALUE query) {
 
   retval = mysql_read_query_result(db);
   CHECK_AND_RAISE(retval, query);
+  data_objects_debug(connection, query, &start);
 
   return mysql_store_result(db);
 }
@@ -618,11 +614,17 @@ static void full_connect(VALUE self, MYSQL* db) {
   }
 
   // Disable sql_auto_is_null
-  cCommand_execute(self, db, rb_str_new2("SET sql_auto_is_null = 0"));
+  cCommand_execute(Qnil, self, db, rb_str_new2("SET sql_auto_is_null = 0"));
   // removed NO_AUTO_VALUE_ON_ZERO because of MySQL bug http://bugs.mysql.com/bug.php?id=42270
   // added NO_BACKSLASH_ESCAPES so that backslashes should not be escaped as in other databases
-  cCommand_execute(self, db, rb_str_new2("SET SESSION sql_mode = 'ANSI,NO_BACKSLASH_ESCAPES,NO_DIR_IN_CREATE,NO_ENGINE_SUBSTITUTION,NO_UNSIGNED_SUBTRACTION,TRADITIONAL'"));
-
+   
+  //4.x versions do not support certain session parameters  
+  if(mysql_get_server_version(db) < 50000 ){
+    cCommand_execute(Qnil, self, db, rb_str_new2("SET SESSION sql_mode = 'ANSI,NO_DIR_IN_CREATE,NO_UNSIGNED_SUBTRACTION'"));
+  }else{
+    cCommand_execute(Qnil, self, db, rb_str_new2("SET SESSION sql_mode = 'ANSI,NO_BACKSLASH_ESCAPES,NO_DIR_IN_CREATE,NO_ENGINE_SUBSTITUTION,NO_UNSIGNED_SUBTRACTION,TRADITIONAL'"));
+  }
+ 
   rb_iv_set(self, "@connection", Data_Wrap_Struct(rb_cObject, 0, 0, db));
 }
 
@@ -804,6 +806,7 @@ static VALUE cCommand_execute_non_query(int argc, VALUE *argv, VALUE self) {
   MYSQL_RES *response = 0;
 
   my_ulonglong affected_rows;
+  my_ulonglong insert_id;
   VALUE connection = rb_iv_get(self, "@connection");
   VALUE mysql_connection = rb_iv_get(connection, "@connection");
   if (Qnil == mysql_connection) {
@@ -813,15 +816,17 @@ static VALUE cCommand_execute_non_query(int argc, VALUE *argv, VALUE self) {
   MYSQL *db = DATA_PTR(mysql_connection);
   query = build_query_from_args(self, argc, argv);
 
-  response = cCommand_execute(self, db, query);
+  response = cCommand_execute(self, connection, db, query);
 
   affected_rows = mysql_affected_rows(db);
+  insert_id     = mysql_insert_id(db);
   mysql_free_result(response);
 
-  if ((my_ulonglong)-1 == affected_rows)
+  if ((my_ulonglong)-1 == affected_rows) {
     return Qnil;
+  }
 
-  return rb_funcall(cResult, ID_NEW, 3, self, INT2NUM(affected_rows), INT2NUM(mysql_insert_id(db)));
+  return rb_funcall(cResult, ID_NEW, 3, self, INT2NUM(affected_rows), insert_id == 0 ? Qnil : INT2NUM(insert_id));
 }
 
 static VALUE cCommand_execute_reader(int argc, VALUE *argv, VALUE self) {
@@ -845,7 +850,7 @@ static VALUE cCommand_execute_reader(int argc, VALUE *argv, VALUE self) {
 
   query = build_query_from_args(self, argc, argv);
 
-  response = cCommand_execute(self, db, query);
+  response = cCommand_execute(self, connection, db, query);
 
   if (!response) {
     return Qnil;
@@ -1004,6 +1009,7 @@ void Init_do_mysql() {
   ID_LOGGER = rb_intern("logger");
   ID_DEBUG = rb_intern("debug");
   ID_LEVEL = rb_intern("level");
+  ID_LOG = rb_intern("log");
 
   // Store references to a few helpful clases that aren't in Ruby Core
   rb_cDate = RUBY_CLASS("Date");
@@ -1021,6 +1027,8 @@ void Init_do_mysql() {
   cDO_Command = CONST_GET(mDO, "Command");
   cDO_Result = CONST_GET(mDO, "Result");
   cDO_Reader = CONST_GET(mDO, "Reader");
+  cDO_Logger = CONST_GET(mDO, "Logger");
+  cDO_Logger_Message = CONST_GET(cDO_Logger, "Message");
 
   // Top Level Module that all the classes live under
   mDOMysql = rb_define_module_under(mDO, "Mysql");

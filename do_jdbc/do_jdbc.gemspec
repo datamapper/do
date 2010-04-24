@@ -12,7 +12,7 @@ Gem::Specification.new do |s|
   s.authors = ["Alex Coles"]
   s.date = %q{2009-12-23}
   s.description = %q{Provides JDBC support for usage in DO drivers for JRuby}
-  s.email = %q{alex@alexcolesportfolio.com}
+  s.email = %q{alex@alexbcoles.com}
   s.extra_rdoc_files = [
     "ChangeLog.markdown",
      "LICENSE",

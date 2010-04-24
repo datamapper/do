@@ -1,85 +1,26 @@
-#include <ruby.h>
-#include <string.h>
-#include <math.h>
-#include <time.h>
-#include <locale.h>
-#include <sqlite3.h>
-#include "compat.h"
+#include "do_sqlite3.h"
 #include "error.h"
-
-#ifdef HAVE_RUBY_ENCODING_H
-#include <ruby/encoding.h>
-
-#define DO_STR_NEW2(str, encoding) \
-  ({ \
-    VALUE _string = rb_str_new2((const char *)str); \
-    if(encoding != -1) { \
-      rb_enc_associate_index(_string, encoding); \
-    } \
-    _string; \
-  })
-
-#define DO_STR_NEW(str, len, encoding) \
-  ({ \
-    VALUE _string = rb_str_new((const char *)str, (long)len); \
-    if(encoding != -1) { \
-      rb_enc_associate_index(_string, encoding); \
-    } \
-    _string; \
-  })
-
-#else
-
-#define DO_STR_NEW2(str, encoding) \
-  rb_str_new2((const char *)str)
-
-#define DO_STR_NEW(str, len, encoding) \
-  rb_str_new((const char *)str, (long)len)
-#endif
-
-
-#define ID_CONST_GET rb_intern("const_get")
-#define ID_PATH rb_intern("path")
-#define ID_NEW rb_intern("new")
-#define ID_ESCAPE rb_intern("escape_sql")
-#define ID_QUERY rb_intern("query")
-
-#define RUBY_CLASS(name) rb_const_get(rb_cObject, rb_intern(name))
-#define CONST_GET(scope, constant) (rb_funcall(scope, ID_CONST_GET, 1, rb_str_new2(constant)))
-#define SQLITE3_CLASS(klass, parent) (rb_define_class_under(mSqlite3, klass, parent))
-
-#ifdef _WIN32
-#define do_int64 signed __int64
-#else
-#define do_int64 signed long long int
-#endif
-
-#ifndef HAVE_SQLITE3_PREPARE_V2
-#define sqlite3_prepare_v2 sqlite3_prepare
-#endif
-
 // To store rb_intern values
+
 static ID ID_NEW_DATE;
 static ID ID_RATIONAL;
 static ID ID_LOGGER;
 static ID ID_DEBUG;
 static ID ID_LEVEL;
+static ID ID_LOG;
 
 static VALUE mExtlib;
-
 static VALUE mDO;
+static VALUE mSqlite3;
+
 static VALUE cDO_Quoting;
 static VALUE cDO_Connection;
 static VALUE cDO_Command;
 static VALUE cDO_Result;
 static VALUE cDO_Reader;
+static VALUE cDO_Logger;
+static VALUE cDO_Logger_Message;
 
-static VALUE rb_cDate;
-static VALUE rb_cDateTime;
-static VALUE rb_cBigDecimal;
-static VALUE rb_cByteArray;
-
-static VALUE mSqlite3;
 static VALUE cConnection;
 static VALUE cCommand;
 static VALUE cResult;
@@ -88,6 +29,11 @@ static VALUE cReader;
 static VALUE eArgumentError;
 static VALUE eConnectionError;
 static VALUE eDataError;
+
+static VALUE rb_cDate;
+static VALUE rb_cDateTime;
+static VALUE rb_cBigDecimal;
+static VALUE rb_cByteArray;
 
 static VALUE OPEN_FLAG_READONLY;
 static VALUE OPEN_FLAG_READWRITE;
@@ -120,28 +66,16 @@ static int jd_from_date(int year, int month, int day) {
   return (int) (floor(365.25 * (year + 4716)) + floor(30.6001 * (month + 1)) + day + b - 1524);
 }
 
-static void data_objects_debug(VALUE string, struct timeval* start) {
+static void data_objects_debug(VALUE connection, VALUE string, struct timeval* start) {
   struct timeval stop;
-  char *message;
+  VALUE message;
 
-  const char *query = rb_str_ptr_readonly(string);
-  size_t length     = rb_str_len(string);
-  char total_time[32];
-  do_int64 duration = 0;
+  gettimeofday(&stop, NULL);
+  do_int64 duration = (stop.tv_sec - start->tv_sec) * 1000000 + stop.tv_usec - start->tv_usec;
 
-  VALUE logger = rb_funcall(mSqlite3, ID_LOGGER, 0);
-  int log_level = NUM2INT(rb_funcall(logger, ID_LEVEL, 0));
+  message = rb_funcall(cDO_Logger_Message, ID_NEW, 3, string, rb_time_new(start->tv_sec, start->tv_usec), INT2NUM(duration));
 
-  if (0 == log_level) {
-    gettimeofday(&stop, NULL);
-
-    duration = (stop.tv_sec - start->tv_sec) * 1000000 + stop.tv_usec - start->tv_usec;
-
-    snprintf(total_time, 32, "%.6f", duration / 1000000.0);
-    message = (char *)calloc(length + strlen(total_time) + 4, sizeof(char));
-    snprintf(message, length + strlen(total_time) + 4, "(%s) %s", total_time, query);
-    rb_funcall(logger, ID_DEBUG, 1, rb_str_new(message, length + strlen(total_time) + 3));
-  }
+  rb_funcall(connection, ID_LOG, 1, message);
 }
 
 static void raise_error(VALUE self, sqlite3 *result, VALUE query) {
@@ -616,7 +550,7 @@ static VALUE cCommand_execute_non_query(int argc, VALUE *argv, VALUE self) {
   if ( status != SQLITE_OK ) {
     raise_error(self, db, query);
   }
-  data_objects_debug(query, &start);
+  data_objects_debug(connection, query, &start);
 
   affected_rows = sqlite3_changes(db);
   insert_id = sqlite3_last_insert_rowid(db);
@@ -648,7 +582,7 @@ static VALUE cCommand_execute_reader(int argc, VALUE *argv, VALUE self) {
 
   gettimeofday(&start, NULL);
   status = sqlite3_prepare_v2(db, rb_str_ptr_readonly(query), -1, &sqlite3_reader, 0);
-  data_objects_debug(query, &start);
+  data_objects_debug(connection, query, &start);
 
   if ( status != SQLITE_OK ) {
     raise_error(self, db, query);
@@ -783,6 +717,7 @@ void Init_do_sqlite3() {
   ID_LOGGER = rb_intern("logger");
   ID_DEBUG = rb_intern("debug");
   ID_LEVEL = rb_intern("level");
+  ID_LOG = rb_intern("log");
 
   // Get references to the Extlib module
   mExtlib = CONST_GET(rb_mKernel, "Extlib");
@@ -795,6 +730,8 @@ void Init_do_sqlite3() {
   cDO_Command = CONST_GET(mDO, "Command");
   cDO_Result = CONST_GET(mDO, "Result");
   cDO_Reader = CONST_GET(mDO, "Reader");
+  cDO_Logger = CONST_GET(mDO, "Logger");
+  cDO_Logger_Message = CONST_GET(cDO_Logger, "Message");
 
   // Initialize the DataObjects::Sqlite3 module, and define its classes
   mSqlite3 = rb_define_module_under(mDO, "Sqlite3");
@@ -838,4 +775,5 @@ void Init_do_sqlite3() {
   OPEN_FLAG_FULL_MUTEX = rb_str_new2("full_mutex");
   rb_global_variable(&OPEN_FLAG_FULL_MUTEX);
 
+  Init_do_sqlite3_extension();
 }
