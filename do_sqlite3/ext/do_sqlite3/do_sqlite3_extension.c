@@ -1,5 +1,6 @@
 #include "do_sqlite3.h"
 
+static VALUE ID_CONST_GET;
 static VALUE mDO;
 static VALUE mSqlite3;
 static VALUE eConnectionError;
@@ -67,10 +68,11 @@ static VALUE cExtension_load_extension(VALUE self, VALUE path) {
 }
 
 void Init_do_sqlite3_extension() {
+  ID_CONST_GET = rb_intern("const_get");
   mDO = CONST_GET(rb_mKernel, "DataObjects");
   cDO_Extension = CONST_GET(mDO, "Extension");
   mSqlite3 = rb_define_module_under(mDO, "Sqlite3");
-  cExtension = SQLITE3_CLASS("Extension", cDO_Extension);
+  cExtension = DRIVER_CLASS("Extension", cDO_Extension);
   rb_define_method(cExtension, "load_extension", cExtension_load_extension, 1);
   rb_define_method(cExtension, "enable_load_extension", cExtension_enable_load_extension, 1);
 }

@@ -2,17 +2,16 @@
 #include "error.h"
 // To store rb_intern values
 
+static ID ID_NEW;
 static ID ID_NEW_DATE;
+static ID ID_CONST_GET;
 static ID ID_RATIONAL;
-static ID ID_LOGGER;
-static ID ID_DEBUG;
-static ID ID_LEVEL;
+static ID ID_ESCAPE;
 static ID ID_LOG;
 
 static VALUE mExtlib;
-static VALUE mDO;
-static VALUE mSqlite3;
 
+static VALUE mDO;
 static VALUE cDO_Quoting;
 static VALUE cDO_Connection;
 static VALUE cDO_Command;
@@ -21,19 +20,18 @@ static VALUE cDO_Reader;
 static VALUE cDO_Logger;
 static VALUE cDO_Logger_Message;
 
-static VALUE cConnection;
-static VALUE cCommand;
-static VALUE cResult;
-static VALUE cReader;
-
-static VALUE eArgumentError;
-static VALUE eConnectionError;
-static VALUE eDataError;
-
 static VALUE rb_cDate;
 static VALUE rb_cDateTime;
 static VALUE rb_cBigDecimal;
 static VALUE rb_cByteArray;
+
+static VALUE mSqlite3;
+static VALUE cConnection;
+static VALUE cCommand;
+static VALUE cResult;
+static VALUE cReader;
+static VALUE eConnectionError;
+static VALUE eDataError;
 
 static VALUE OPEN_FLAG_READONLY;
 static VALUE OPEN_FLAG_READWRITE;
@@ -319,7 +317,7 @@ static VALUE typecast(sqlite3_stmt *stmt, int i, VALUE type, int encoding) {
 #define FLAG_PRESENT(query_values, flag) !NIL_P(rb_hash_aref(query_values, flag))
 
 static int flags_from_uri(VALUE uri) {
-  VALUE query_values = rb_funcall(uri, ID_QUERY, 0);
+  VALUE query_values = rb_funcall(uri, rb_intern("query"), 0);
 
   int flags = 0;
 
@@ -359,7 +357,7 @@ static VALUE cConnection_initialize(VALUE self, VALUE uri) {
   VALUE path;
   sqlite3 *db;
 
-  path = rb_funcall(uri, ID_PATH, 0);
+  path = rb_funcall(uri, rb_intern("path"), 0);
 
 #ifdef HAVE_SQLITE3_OPEN_V2
   ret = sqlite3_open_v2(rb_str_ptr_readonly(path), &db, flags_from_uri(uri), 0);
@@ -422,11 +420,11 @@ static VALUE cCommand_set_types(int argc, VALUE *argv, VALUE self) {
         if(TYPE(sub_entry) == T_CLASS) {
           rb_ary_push(type_strings, sub_entry);
         } else {
-          rb_raise(eArgumentError, "Invalid type given");
+          rb_raise(rb_eArgError, "Invalid type given");
         }
       }
     } else {
-      rb_raise(eArgumentError, "Invalid type given");
+      rb_raise(rb_eArgError, "Invalid type given");
     }
   }
 
@@ -558,7 +556,7 @@ static VALUE cCommand_execute_reader(int argc, VALUE *argv, VALUE self) {
     // Whoops...  wrong number of types passed to set_types.  Close the reader and raise
     // and error
     rb_funcall(reader, rb_intern("close"), 0);
-    rb_raise(eArgumentError, "Field-count mismatch. Expected %ld fields, but the query yielded %d", RARRAY_LEN(field_types), field_count);
+    rb_raise(rb_eArgError, "Field-count mismatch. Expected %ld fields, but the query yielded %d", RARRAY_LEN(field_types), field_count);
   }
 
   for ( i = 0; i < field_count; i++ ) {
@@ -654,13 +652,14 @@ static VALUE cReader_field_count(VALUE self) {
 void Init_do_sqlite3() {
   rb_require("bigdecimal");
   rb_require("date");
+  rb_require("data_objects");
+
+  ID_CONST_GET = rb_intern("const_get");
 
   // Get references classes needed for Date/Time parsing
-  rb_cDate = RUBY_CLASS("Date");
-  rb_cDateTime = RUBY_CLASS( "DateTime");
-  rb_cBigDecimal = RUBY_CLASS("BigDecimal");
-
-  rb_funcall(rb_mKernel, rb_intern("require"), 1, rb_str_new2("data_objects"));
+  rb_cDate = CONST_GET(rb_mKernel, "Date");
+  rb_cDateTime = CONST_GET(rb_mKernel, "DateTime");
+  rb_cBigDecimal = CONST_GET(rb_mKernel, "BigDecimal");
 
 #ifdef RUBY_LESS_THAN_186
   ID_NEW_DATE = rb_intern("new0");
@@ -668,9 +667,8 @@ void Init_do_sqlite3() {
   ID_NEW_DATE = rb_intern("new!");
 #endif
   ID_RATIONAL = rb_intern("Rational");
-  ID_LOGGER = rb_intern("logger");
-  ID_DEBUG = rb_intern("debug");
-  ID_LEVEL = rb_intern("level");
+  ID_NEW = rb_intern("new");
+  ID_ESCAPE = rb_intern("escape_sql");
   ID_LOG = rb_intern("log");
 
   // Get references to the Extlib module
@@ -690,11 +688,10 @@ void Init_do_sqlite3() {
   // Initialize the DataObjects::Sqlite3 module, and define its classes
   mSqlite3 = rb_define_module_under(mDO, "Sqlite3");
 
-  eArgumentError = CONST_GET(rb_mKernel, "ArgumentError");
   eConnectionError = CONST_GET(mDO, "ConnectionError");
   eDataError = CONST_GET(mDO, "DataError");
 
-  cConnection = SQLITE3_CLASS("Connection", cDO_Connection);
+  cConnection = DRIVER_CLASS("Connection", cDO_Connection);
   rb_define_method(cConnection, "initialize", cConnection_initialize, 1);
   rb_define_method(cConnection, "dispose", cConnection_dispose, 0);
   rb_define_method(cConnection, "quote_boolean", cConnection_quote_boolean, 1);
@@ -702,19 +699,40 @@ void Init_do_sqlite3() {
   rb_define_method(cConnection, "quote_byte_array", cConnection_quote_byte_array, 1);
   rb_define_method(cConnection, "character_set", cConnection_character_set, 0);
 
-  cCommand = SQLITE3_CLASS("Command", cDO_Command);
+  cCommand = DRIVER_CLASS("Command", cDO_Command);
   rb_define_method(cCommand, "set_types", cCommand_set_types, -1);
   rb_define_method(cCommand, "execute_non_query", cCommand_execute_non_query, -1);
   rb_define_method(cCommand, "execute_reader", cCommand_execute_reader, -1);
 
-  cResult = SQLITE3_CLASS("Result", cDO_Result);
+  cResult = DRIVER_CLASS("Result", cDO_Result);
 
-  cReader = SQLITE3_CLASS("Reader", cDO_Reader);
+  cReader = DRIVER_CLASS("Reader", cDO_Reader);
   rb_define_method(cReader, "close", cReader_close, 0);
   rb_define_method(cReader, "next!", cReader_next, 0);
   rb_define_method(cReader, "values", cReader_values, 0);
   rb_define_method(cReader, "fields", cReader_fields, 0);
   rb_define_method(cReader, "field_count", cReader_field_count, 0);
+
+  rb_global_variable(&ID_NEW_DATE);
+  rb_global_variable(&ID_RATIONAL);
+  rb_global_variable(&ID_CONST_GET);
+  rb_global_variable(&ID_ESCAPE);
+  rb_global_variable(&ID_LOG);
+  rb_global_variable(&ID_NEW);
+
+  rb_global_variable(&rb_cDate);
+  rb_global_variable(&rb_cDateTime);
+  rb_global_variable(&rb_cBigDecimal);
+  rb_global_variable(&rb_cByteArray);
+
+  rb_global_variable(&mDO);
+  rb_global_variable(&cDO_Logger_Message);
+
+  rb_global_variable(&cResult);
+  rb_global_variable(&cReader);
+
+  rb_global_variable(&eConnectionError);
+  rb_global_variable(&eDataError);
 
   OPEN_FLAG_READONLY = rb_str_new2("read_only");
   rb_global_variable(&OPEN_FLAG_READONLY);

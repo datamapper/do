@@ -39,16 +39,8 @@
   rb_str_new((const char *)str, (long)len)
 #endif
 
-
-#define ID_CONST_GET rb_intern("const_get")
-#define ID_PATH rb_intern("path")
-#define ID_NEW rb_intern("new")
-#define ID_ESCAPE rb_intern("escape_sql")
-#define ID_QUERY rb_intern("query")
-
-#define RUBY_CLASS(name) rb_const_get(rb_cObject, rb_intern(name))
 #define CONST_GET(scope, constant) (rb_funcall(scope, ID_CONST_GET, 1, rb_str_new2(constant)))
-#define SQLITE3_CLASS(klass, parent) (rb_define_class_under(mSqlite3, klass, parent))
+#define DRIVER_CLASS(klass, parent) (rb_define_class_under(mSqlite3, klass, parent))
 
 #ifdef _WIN32
 #define do_int64 signed __int64
@@ -59,6 +51,8 @@
 #ifndef HAVE_SQLITE3_PREPARE_V2
 #define sqlite3_prepare_v2 sqlite3_prepare
 #endif
+
+static ID ID_CONST_GET;
 
 void Init_do_sqlite3_extension();
 
