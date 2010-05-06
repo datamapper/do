@@ -26,30 +26,36 @@
 #ifdef HAVE_RUBY_ENCODING_H
 #include <ruby/encoding.h>
 
-#define DO_STR_NEW2(str, encoding) \
+#define DO_STR_NEW2(str, encoding, internal_encoding) \
   ({ \
     VALUE _string = rb_str_new2((const char *)str); \
     if(encoding != -1) { \
       rb_enc_associate_index(_string, encoding); \
     } \
+    if(internal_encoding) { \
+      _string = rb_str_export_to_enc(_string, internal_encoding); \
+    } \
     _string; \
   })
 
-#define DO_STR_NEW(str, len, encoding) \
+#define DO_STR_NEW(str, len, encoding, internal_encoding) \
   ({ \
     VALUE _string = rb_str_new((const char *)str, (long)len); \
     if(encoding != -1) { \
       rb_enc_associate_index(_string, encoding); \
+    } \
+    if(internal_encoding) { \
+      _string = rb_str_export_to_enc(_string, internal_encoding); \
     } \
     _string; \
   })
 
 #else
 
-#define DO_STR_NEW2(str, encoding) \
+#define DO_STR_NEW2(str, encoding, internal_encoding) \
   rb_str_new2((const char *)str)
 
-#define DO_STR_NEW(str, len, encoding) \
+#define DO_STR_NEW(str, len, encoding, internal_encoding) \
   rb_str_new((const char *)str, (long)len)
 #endif
 
@@ -320,10 +326,16 @@ static VALUE typecast(const char *value, long length, const VALUE type, int enco
     return Qnil;
   }
 
+#ifdef HAVE_RUBY_ENCODING_H
+  rb_encoding * internal_encoding = rb_default_internal_encoding();
+#else
+  void * internal_encoding = NULL;
+#endif
+
   if (type == rb_cInteger) {
     return rb_cstr2inum(value, 10);
   } else if (type == rb_cString) {
-    return DO_STR_NEW(value, length, encoding);
+    return DO_STR_NEW(value, length, encoding, internal_encoding);
   } else if (type == rb_cFloat) {
     return rb_float_new(rb_cstr_to_dbl(value, Qfalse));
   } else if (type == rb_cBigDecimal) {
@@ -345,7 +357,7 @@ static VALUE typecast(const char *value, long length, const VALUE type, int enco
   } else if (type == rb_cNilClass) {
     return Qnil;
   } else {
-    return DO_STR_NEW(value, length, encoding);
+    return DO_STR_NEW(value, length, encoding, internal_encoding);
   }
 
 }
@@ -772,7 +784,9 @@ static VALUE cConnection_quote_string(VALUE self, VALUE string) {
 
   // Wrap the escaped string in single-quotes, this is DO's convention
   escaped[0] = escaped[quoted_length + 1] = '\'';
-  result = DO_STR_NEW(escaped, quoted_length + 2, FIX2INT(rb_iv_get(self, "@encoding_id")));
+  // We don't want to use the internal encoding, because this needs
+  // to go into the database in the connection encoding
+  result = DO_STR_NEW(escaped, quoted_length + 2, FIX2INT(rb_iv_get(self, "@encoding_id")), NULL);
 
   free(escaped);
   return result;

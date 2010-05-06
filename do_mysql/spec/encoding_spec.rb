@@ -5,5 +5,6 @@ require 'data_objects/spec/encoding_spec'
 
 describe DataObjects::Mysql::Connection do
   behaves_like 'a driver supporting different encodings'
-  behaves_like 'returning correctly encoded strings for the default encoding'
+  behaves_like 'returning correctly encoded strings for the default database encoding'
+  behaves_like 'returning correctly encoded strings for the default internal encoding'
 end

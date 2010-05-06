@@ -15,6 +15,7 @@ describe DataObjects::Postgres::Connection do
     #   can be overridden -- but for now, we won't support doing this.
     #
     behaves_like 'a driver supporting different encodings'
-    behaves_like 'returning correctly encoded strings for the default encoding'
+    behaves_like 'returning correctly encoded strings for the default database encoding'
+    behaves_like 'returning correctly encoded strings for the default internal encoding'
   end
 end

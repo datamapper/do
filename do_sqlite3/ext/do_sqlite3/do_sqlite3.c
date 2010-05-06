@@ -262,6 +262,12 @@ static VALUE typecast(sqlite3_stmt *stmt, int i, VALUE type, int encoding) {
     return ruby_value;
   }
 
+#ifdef HAVE_RUBY_ENCODING_H
+  rb_encoding * internal_encoding = rb_default_internal_encoding();
+#else
+  void * internal_encoding = NULL;
+#endif
+
   if(type == Qnil) {
     switch(original_type) {
       case SQLITE_INTEGER: {
@@ -286,7 +292,7 @@ static VALUE typecast(sqlite3_stmt *stmt, int i, VALUE type, int encoding) {
   if (type == rb_cInteger) {
     return LL2NUM(sqlite3_column_int64(stmt, i));
   } else if (type == rb_cString) {
-    return DO_STR_NEW((char*)sqlite3_column_text(stmt, i), length, encoding);
+    return DO_STR_NEW((char*)sqlite3_column_text(stmt, i), length, encoding, internal_encoding);
   } else if (type == rb_cFloat) {
     return rb_float_new(sqlite3_column_double(stmt, i));
   } else if (type == rb_cBigDecimal) {
@@ -308,7 +314,7 @@ static VALUE typecast(sqlite3_stmt *stmt, int i, VALUE type, int encoding) {
   } else if (type == rb_cNilClass) {
     return Qnil;
   } else {
-    return DO_STR_NEW((char*)sqlite3_column_text(stmt, i), length, encoding);
+    return DO_STR_NEW((char*)sqlite3_column_text(stmt, i), length, encoding, internal_encoding);
   }
 }
 
