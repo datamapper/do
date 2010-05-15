@@ -309,8 +309,6 @@ static VALUE typecast(sqlite3_stmt *stmt, int i, VALUE type, int encoding) {
     return rb_funcall(rb_cByteArray, ID_NEW, 1, rb_str_new((char*)sqlite3_column_blob(stmt, i), length));
   } else if (type == rb_cClass) {
     return rb_funcall(mDO, rb_intern("full_const_get"), 1, rb_str_new((char*)sqlite3_column_text(stmt, i), length));
-  } else if (type == rb_cObject) {
-    return rb_marshal_load(rb_str_new((char*)sqlite3_column_text(stmt, i), length));
   } else if (type == rb_cNilClass) {
     return Qnil;
   } else {

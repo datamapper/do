@@ -352,8 +352,6 @@ static VALUE typecast(const char *value, long length, const VALUE type, int enco
     return rb_funcall(rb_cByteArray, ID_NEW, 1, rb_str_new(value, length));
   } else if (type == rb_cClass) {
     return rb_funcall(mDO, rb_intern("full_const_get"), 1, rb_str_new(value, length));
-  } else if (type == rb_cObject) {
-    return rb_marshal_load(rb_str_new(value, length));
   } else if (type == rb_cNilClass) {
     return Qnil;
   } else {
