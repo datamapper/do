@@ -9,7 +9,7 @@ Gem::Specification.new do |s|
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Dirkjan Bussink"]
-  s.date = %q{2010-04-07}
+  s.date = %q{2010-05-19}
   s.description = %q{Implements the DataObjects API for MySQL}
   s.email = %q{d.bussink@gmail.com}
   s.extensions = ["ext/do_mysql/extconf.rb"]
@@ -61,7 +61,7 @@ Gem::Specification.new do |s|
   s.rdoc_options = ["--charset=UTF-8"]
   s.require_paths = ["lib"]
   s.rubyforge_project = %q{dorb}
-  s.rubygems_version = %q{1.3.5}
+  s.rubygems_version = %q{1.3.6}
   s.summary = %q{DataObjects MySQL Driver}
   s.test_files = [
     "spec/command_spec.rb",

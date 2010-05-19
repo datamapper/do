@@ -1,4 +1,9 @@
-## 0.10.2 (unreleased, in git)
+## 0.10.2 2010-05-19
+* Make sure Text is returned in the proper encoding
+* Make Encoding.default_internal aware
+* Fix insert_id if no incrementing key is used
+* Rework logging for making callbacks possible
+* Remove handling Object types directly
 
 ## 0.10.1 2010-01-08
 

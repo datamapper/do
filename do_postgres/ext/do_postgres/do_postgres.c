@@ -538,7 +538,6 @@ static PGresult* cCommand_execute_sync(VALUE self, VALUE connection, PGconn *db,
   PGresult *response;
   struct timeval start;
   char* str = StringValuePtr(query);
-  VALUE connection = rb_iv_get(self, "@connection");
 
   while ((response = PQgetResult(db)) != NULL) {
     PQclear(response);
