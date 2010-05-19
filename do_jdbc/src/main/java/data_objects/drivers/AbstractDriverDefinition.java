@@ -393,27 +393,6 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
             class_name_str.setTaint(true);
             return API.callMethod(runtime.fastGetModule("DataObjects"), "full_const_get",
                     class_name_str);
-        case OBJECT:
-            InputStream asciiStream = rs.getAsciiStream(col);
-            IRubyObject obj = runtime.getNil();
-            UnmarshalStream ums = null;
-            try {
-                ums = new UnmarshalStream(runtime, asciiStream,
-                        RubyProc.NEVER);
-                obj = ums.unmarshalObject();
-            } catch (IOException ioe) {
-                // TODO: log this
-            }finally {
-                if(ums != null){
-                    try{
-                        ums.close();
-                    }catch (Exception ex){
-                        //TODO log this
-                    }
-                }
-            }
-
-            return obj;
         case NIL:
             return runtime.getNil();
         case STRING:
