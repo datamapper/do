@@ -1,5 +1,5 @@
 ## 0.10.2 2010-05-19
-* No changes
+* Remove Object handling
 
 ## 0.10.1 2010-01-08
 
