@@ -577,7 +577,9 @@ static VALUE cConnection_initialize(VALUE self, VALUE uri) {
   }
   
   r_path = rb_funcall(uri, rb_intern("path"), 0);
-  path = StringValuePtr(r_path);
+  if ( Qnil != r_path ) {
+    path = StringValuePtr(r_path);
+  }
 
   // If just host name is specified then use it as TNS names alias
   if ((r_host != Qnil && RSTRING_LEN(r_host) > 0) &&
@@ -585,7 +587,7 @@ static VALUE cConnection_initialize(VALUE self, VALUE uri) {
       (r_path == Qnil || RSTRING_LEN(r_path) == 0)) {
     connect_string = host;
   // If database name is specified in path (in format "/database")
-  } else if (strlen(path) > 1) {
+  } else if (path != NULL && strlen(path) > 1) {
     connect_string_length = strlen(host) + strlen(port) + strlen(path) + 4;
     connect_string = (char *)calloc(connect_string_length, sizeof(char));
     snprintf(connect_string, connect_string_length, "//%s:%s%s", host, port, path);
