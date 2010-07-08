@@ -10,7 +10,7 @@ Gem::Specification.new do |s|
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Alex Coles"]
-  s.date = %q{2009-12-23}
+  s.date = %q{2010-07-09}
   s.description = %q{Provides JDBC support for usage in DO drivers for JRuby}
   s.email = %q{alex@alexbcoles.com}
   s.extra_rdoc_files = [
@@ -26,13 +26,13 @@ Gem::Specification.new do |s|
      "lib/do_jdbc.rb",
      "lib/do_jdbc/version.rb",
      "lib/do_jdbc_internal.jar",
-     "tasks/compile.rake"
+     "tasks/compile.rake",
+     "tasks/release.rake"
   ]
-  s.has_rdoc = false
   s.rdoc_options = ["--charset=UTF-8"]
   s.require_paths = ["lib"]
   s.rubyforge_project = %q{dorb}
-  s.rubygems_version = %q{1.3.5}
+  s.rubygems_version = %q{1.3.6}
   s.summary = %q{DataObjects JDBC support library}
 
   if s.respond_to? :specification_version then
