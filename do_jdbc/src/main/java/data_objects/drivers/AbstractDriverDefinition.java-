@@ -34,7 +34,6 @@ import org.jruby.RubyFloat;
 import org.jruby.RubyHash;
 import org.jruby.RubyNumeric;
 import org.jruby.RubyObjectAdapter;
-import org.jruby.RubyProc;
 import org.jruby.RubyRegexp;
 import org.jruby.RubyString;
 import org.jruby.RubyTime;
@@ -56,8 +55,8 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
     protected static final RubyObjectAdapter API = JavaEmbedUtils
             .newObjectAdapter();
 
-    private final static DateTimeFormatter TIMESTAMP_FORMAT = DateTimeFormat.forPattern("yyyy-MM-dd' 'HH:mm:ssZ");
     protected final static DateTimeFormatter DATE_TIME_FORMAT = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
+    private final static DateTimeFormatter TIMESTAMP_FORMAT = DateTimeFormat.forPattern("yyyy-MM-dd' 'HH:mm:ssZ");
     private final static BigInteger LONG_MAX = BigInteger.valueOf(Long.MAX_VALUE);
     private final static BigInteger LONG_MIN = BigInteger.valueOf(Long.MIN_VALUE);
     private final static long MRI_FIXNUM_MAX = (1L<<32) - 1;
@@ -402,11 +401,10 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
             IRubyObject obj = runtime.getNil();
             UnmarshalStream ums = null;
             try {
-                // does not compile with  jruby <1.5
-                ums = new UnmarshalStream(runtime, asciiStream,
-                        RubyProc.NEVER, false);
-                obj = ums.unmarshalObject();
-            } catch (IOException ioe) {
+		// ums = new UnmarshalStream(runtime, asciiStream,
+                //        RubyProc.NEVER);
+                //obj = ums.unmarshalObject();
+		// } catch (IOException ioe) {
                 // TODO: log this
             }finally {
                 if(ums != null){
@@ -442,6 +440,7 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
      */
     public void setPreparedStatementParam(PreparedStatement ps,
             IRubyObject arg, int idx) throws SQLException {
+	System.out.println("ps " + statementToString(ps) + " " + idx + " " + arg.asJavaString() + " " + RubyType.inferRubyType(arg)); 
         switch (RubyType.inferRubyType(arg)) {
         case FIXNUM:
             ps.setLong(idx, Long.parseLong(arg.toString()));
@@ -490,6 +489,7 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
         case DATE_TIME:
             DateTime datetime = TIMESTAMP_FORMAT.parseDateTime(arg.toString().replace('T', ' '));
             ps.setTimestamp(idx, new Timestamp(datetime.getMillis()));
+	    System.out.println("write " + new Timestamp(datetime.getMillis()));
             break;
         case REGEXP:
             ps.setString(idx, ((RubyRegexp) arg).source().toString());
