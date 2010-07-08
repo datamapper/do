@@ -31,13 +31,11 @@ import org.jruby.RubyFloat;
 import org.jruby.RubyHash;
 import org.jruby.RubyNumeric;
 import org.jruby.RubyObjectAdapter;
-import org.jruby.RubyProc;
 import org.jruby.RubyRegexp;
 import org.jruby.RubyString;
 import org.jruby.RubyTime;
 import org.jruby.javasupport.JavaEmbedUtils;
 import org.jruby.runtime.builtin.IRubyObject;
-import org.jruby.runtime.marshal.UnmarshalStream;
 import org.jruby.util.ByteList;
 
 import data_objects.RubyType;
@@ -53,6 +51,7 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
     protected static final RubyObjectAdapter API = JavaEmbedUtils
             .newObjectAdapter();
 
+    private final static DateTimeFormatter TIMESTAMP_FORMAT = DateTimeFormat.forPattern("yyyy-MM-dd' 'HH:mm:ssZ");
     protected final static DateTimeFormatter DATE_TIME_FORMAT = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
     private final static BigInteger LONG_MAX = BigInteger.valueOf(Long.MAX_VALUE);
     private final static BigInteger LONG_MIN = BigInteger.valueOf(Long.MIN_VALUE);
@@ -462,9 +461,8 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
             ps.setTimestamp(idx, ts, dateTime.toGregorianCalendar());
             break;
         case DATE_TIME:
-            String datetime = arg.toString().replace('T', ' ');
-            ps.setTimestamp(idx, Timestamp.valueOf(datetime
-                    .replaceFirst("[-+]..:..$", "")));
+            DateTime datetime = TIMESTAMP_FORMAT.parseDateTime(arg.toString().replace('T', ' '));
+            ps.setTimestamp(idx, new Timestamp(datetime.getMillis()));
             break;
         case REGEXP:
             ps.setString(idx, ((RubyRegexp) arg).source().toString());
