@@ -450,6 +450,7 @@ static MYSQL_RES* cCommand_execute_async(VALUE self, VALUE connection, MYSQL* db
   struct timeval start;
   const char* str = rb_str_ptr_readonly(query);
   size_t len      = rb_str_len(query);
+  MYSQL_RES* result;
 
   if((retval = mysql_ping(db)) && mysql_errno(db) == CR_SERVER_GONE_ERROR) {
     full_connect(connection, db);
@@ -485,7 +486,12 @@ static MYSQL_RES* cCommand_execute_async(VALUE self, VALUE connection, MYSQL* db
   CHECK_AND_RAISE(retval, query);
   data_objects_debug(connection, query, &start);
 
-  return mysql_store_result(db);
+  result = mysql_store_result(db);
+
+  if (!result)
+    CHECK_AND_RAISE(mysql_errno(db), query);
+
+  return result;
 }
 #endif
 
