@@ -984,6 +984,7 @@ static VALUE cReader_field_count(VALUE self) {
 
 void Init_do_postgres() {
   rb_require("date");
+  rb_require("rational");
   rb_require("bigdecimal");
   rb_require("data_objects");
 

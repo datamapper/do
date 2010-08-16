@@ -996,6 +996,7 @@ static VALUE cReader_field_count(VALUE self) {
 
 void Init_do_mysql() {
   rb_require("bigdecimal");
+  rb_require("rational");
   rb_require("date");
   rb_require("data_objects");
 

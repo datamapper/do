@@ -656,6 +656,7 @@ static VALUE cReader_field_count(VALUE self) {
 void Init_do_sqlite3() {
   rb_require("bigdecimal");
   rb_require("date");
+  rb_require("rational");
   rb_require("data_objects");
 
   ID_CONST_GET = rb_intern("const_get");

@@ -782,7 +782,9 @@ static VALUE cReader_field_count(VALUE self) {
 void Init_do_oracle() {
   // rb_require("oci8");
   rb_require("date");
+  rb_require("rational");
   rb_require("bigdecimal");
+  rb_require("data_objects");
 
   // Get references classes needed for Date/Time parsing
   rb_cDate = CONST_GET(rb_mKernel, "Date");
