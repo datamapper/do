@@ -23,7 +23,7 @@ end
 
 desc 'Release all do gems'
 task :release do
-  (projects + jruby_projects).uniq.each do |dir|
+  (jruby_projects + projects).uniq.each do |dir|
     Dir.chdir(dir){ rake "release_all" }
   end
 end
@@ -39,7 +39,7 @@ tasks = {
 tasks.each do |name, description|
   desc description
   task name do
-    projects.each do |gem_name|
+    (jruby_projects + projects).each do |gem_name|
       Dir.chdir(gem_name){ rake name }
     end
   end

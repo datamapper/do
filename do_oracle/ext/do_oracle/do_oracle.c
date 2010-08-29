@@ -383,13 +383,6 @@ static VALUE typecast(VALUE r_value, const VALUE type) {
   } else if (type == rb_cClass) {
     return rb_funcall(mDO, ID_FULL_CONST_GET, 1, r_value);
 
-  // TODO: where are tests for this mapping?
-  } else if (type == rb_cObject) {
-    if (rb_obj_class(r_value) == cOCI8_CLOB)
-      return rb_marshal_load(rb_funcall(r_value, ID_READ, 0));
-    else
-      return rb_marshal_load(r_value);
-
   } else if (type == rb_cNilClass) {
     return Qnil;
 
@@ -402,8 +395,9 @@ static VALUE typecast(VALUE r_value, const VALUE type) {
 
 }
 
-static VALUE typecast_bind_value(VALUE oci8_conn, VALUE r_value) {
+static VALUE typecast_bind_value(VALUE connection, VALUE r_value) {
   VALUE r_class = rb_obj_class(r_value);
+  VALUE oci8_conn = rb_iv_get(connection, "@connection");
   // replace nil value with '' as otherwise OCI8 cannot get bind variable type
   // '' will be inserted as NULL by Oracle
   if (NIL_P(r_value))
@@ -474,7 +468,7 @@ static VALUE cCommand_set_types(int argc, VALUE *argv, VALUE self) {
 
 typedef struct {
   VALUE self;
-  VALUE oci8_conn;
+  VALUE connection;
   VALUE cursor;
   VALUE statement_type;
   VALUE args;
@@ -486,12 +480,16 @@ static VALUE cCommand_execute_try(cCommand_execute_try_t *arg);
 static VALUE cCommand_execute_ensure(cCommand_execute_try_t *arg);
 
 // called by Command#execute that is written in Ruby
-static VALUE cCommand_execute_internal(VALUE self, VALUE oci8_conn, VALUE sql, VALUE args) {
+static VALUE cCommand_execute_internal(VALUE self, VALUE connection, VALUE sql, VALUE args) {
   cCommand_execute_try_t arg;
   arg.self = self;
-  arg.oci8_conn = oci8_conn;
+  arg.connection = connection;
   arg.sql = sql;
   // store start time before SQL parsing
+  VALUE oci8_conn = rb_iv_get(connection, "@connection");
+  if (Qnil == oci8_conn) {
+    rb_raise(eConnectionError, "This connection has already been closed.");
+  }
   gettimeofday(&arg.start, NULL);
   arg.cursor = rb_funcall(oci8_conn, ID_PARSE, 1, sql);
   arg.statement_type = rb_funcall(arg.cursor, ID_TYPE, 0);
@@ -501,8 +499,8 @@ static VALUE cCommand_execute_internal(VALUE self, VALUE oci8_conn, VALUE sql, V
 }
 
 // wrapper for simple SQL calls without arguments
-static VALUE execute_sql(VALUE oci8_conn, VALUE sql) {
-  return cCommand_execute_internal(Qnil, oci8_conn, sql, Qnil);
+static VALUE execute_sql(VALUE connection, VALUE sql) {
+  return cCommand_execute_internal(Qnil, connection, sql, Qnil);
 }
 
 static VALUE cCommand_execute_try(cCommand_execute_try_t *arg) {
@@ -523,7 +521,7 @@ static VALUE cCommand_execute_try(cCommand_execute_try_t *arg) {
     VALUE r_orig_value, r_new_value;
     for (i = 0; i < RARRAY_LEN(arg->args); i++) {
       r_orig_value = rb_ary_entry(arg->args, i);
-      r_new_value = typecast_bind_value(arg->oci8_conn, r_orig_value);
+      r_new_value = typecast_bind_value(arg->connection, r_orig_value);
       if (r_orig_value != r_new_value)
         rb_ary_store(arg->args, i, r_new_value);
     }
@@ -548,7 +546,7 @@ static VALUE cCommand_execute_ensure(cCommand_execute_try_t *arg) {
   if (SYM2ID(arg->statement_type) != ID_SELECT_STMT)
     rb_funcall(arg->cursor, ID_CLOSE, 0);
   // Log SQL and execution time
-  data_objects_debug(arg->oci8_conn, arg->sql, &(arg->start));
+  data_objects_debug(arg->connection, arg->sql, &(arg->start));
   return Qnil;
 }
 
@@ -579,7 +577,9 @@ static VALUE cConnection_initialize(VALUE self, VALUE uri) {
   }
   
   r_path = rb_funcall(uri, rb_intern("path"), 0);
-  path = StringValuePtr(r_path);
+  if ( Qnil != r_path ) {
+    path = StringValuePtr(r_path);
+  }
 
   // If just host name is specified then use it as TNS names alias
   if ((r_host != Qnil && RSTRING_LEN(r_host) > 0) &&
@@ -587,7 +587,7 @@ static VALUE cConnection_initialize(VALUE self, VALUE uri) {
       (r_path == Qnil || RSTRING_LEN(r_path) == 0)) {
     connect_string = host;
   // If database name is specified in path (in format "/database")
-  } else if (strlen(path) > 1) {
+  } else if (path != NULL && strlen(path) > 1) {
     connect_string_length = strlen(host) + strlen(port) + strlen(path) + 4;
     connect_string = (char *)calloc(connect_string_length, sizeof(char));
     snprintf(connect_string, connect_string_length, "//%s:%s%s", host, port, path);
@@ -613,6 +613,10 @@ static VALUE cConnection_initialize(VALUE self, VALUE uri) {
   // Set session time zone
   // at first look for option in connection string
   time_zone = get_uri_option(r_query, "time_zone");
+
+  rb_iv_set(self, "@uri", uri);
+  rb_iv_set(self, "@connection", oci8_conn);
+
   // if no option specified then look in ENV['TZ']
   if (time_zone == NULL) {
     r_time_zone = rb_funcall(cConnection, rb_intern("ruby_time_zone"), 0);
@@ -621,15 +625,12 @@ static VALUE cConnection_initialize(VALUE self, VALUE uri) {
   }
   if (time_zone) {
     snprintf(set_time_zone_command, 80, "alter session set time_zone = '%s'", time_zone);
-    execute_sql(oci8_conn, RUBY_STRING(set_time_zone_command));
+    execute_sql(self, RUBY_STRING(set_time_zone_command));
   }
   
-  execute_sql(oci8_conn, RUBY_STRING("alter session set nls_date_format = 'YYYY-MM-DD HH24:MI:SS'"));
-  execute_sql(oci8_conn, RUBY_STRING("alter session set nls_timestamp_format = 'YYYY-MM-DD HH24:MI:SS.FF'"));
-  execute_sql(oci8_conn, RUBY_STRING("alter session set nls_timestamp_tz_format = 'YYYY-MM-DD HH24:MI:SS.FF TZH:TZM'"));
-
-  rb_iv_set(self, "@uri", uri);
-  rb_iv_set(self, "@connection", oci8_conn);
+  execute_sql(self, RUBY_STRING("alter session set nls_date_format = 'YYYY-MM-DD HH24:MI:SS'"));
+  execute_sql(self, RUBY_STRING("alter session set nls_timestamp_format = 'YYYY-MM-DD HH24:MI:SS.FF'"));
+  execute_sql(self, RUBY_STRING("alter session set nls_timestamp_tz_format = 'YYYY-MM-DD HH24:MI:SS.FF TZH:TZM'"));
 
   return Qtrue;
 }
@@ -781,7 +782,9 @@ static VALUE cReader_field_count(VALUE self) {
 void Init_do_oracle() {
   // rb_require("oci8");
   rb_require("date");
+  rb_require("rational");
   rb_require("bigdecimal");
+  rb_require("data_objects");
 
   // Get references classes needed for Date/Time parsing
   rb_cDate = CONST_GET(rb_mKernel, "Date");

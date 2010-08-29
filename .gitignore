@@ -33,3 +33,5 @@ bin/**
 *.iml
 .project
 *.swp
+gem_make.out
+*.gem

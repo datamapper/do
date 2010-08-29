@@ -26,7 +26,8 @@ import data_objects.drivers.AbstractDriverDefinition;
 
 public class Sqlite3DriverDefinition extends AbstractDriverDefinition {
 
-    private final static DateTimeFormatter TIMESTAMP_FORMAT = DateTimeFormat.forPattern("yyyy-MM-dd'T'HH:mm:ssZ");
+    private final static DateTimeFormatter TIMESTAMP_ZONE_FORMAT = DateTimeFormat.forPattern("yyyy-MM-dd'T'HH:mm:ssZ");
+    private final static DateTimeFormatter TIMESTAMP_FORMAT = DateTimeFormat.forPattern("yyyy-MM-dd'T'HH:mm:ss");
     private final static DateTimeFormatter DATE_FORMAT = ISODateTimeFormat.date();// yyyy-MM-dd
 
     public final static String URI_SCHEME = "sqlite3";
@@ -56,9 +57,21 @@ public class Sqlite3DriverDefinition extends AbstractDriverDefinition {
      * @return
      */
     public static DateTime toTimestamp(String stamp) {
-        DateTimeFormatter formatter = stamp.contains("T") ? TIMESTAMP_FORMAT : DATE_FORMAT;// "yyyy-MM-dd'T'HH:mm:ssZ"
-                                                                                           // :
-                                                                                           // "yyyy-MM-dd");
+        DateTimeFormatter formatter;
+        // just allow string with T or without, allow strings with zone part or without
+        if (stamp.contains("T") || stamp.trim().contains(" ")) {
+            stamp = stamp.trim().replace(" ", "T");
+            if (stamp.matches(".*[-+]..:..$")) {
+                formatter = TIMESTAMP_ZONE_FORMAT;// "yyyy-MM-dd HH:mm:ssZ"
+            }
+            else {
+                formatter = TIMESTAMP_FORMAT;// "yyyy-MM-dd HH:mm:ssZ"
+            }
+        }
+        else {
+            formatter = DATE_FORMAT; // "yyyy-MM-dd"
+        }
+
         return formatter.parseDateTime(stamp);
     }
 

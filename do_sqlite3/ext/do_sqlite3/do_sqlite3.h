@@ -12,43 +12,41 @@
 #ifdef HAVE_RUBY_ENCODING_H
 #include <ruby/encoding.h>
 
-#define DO_STR_NEW2(str, encoding) \
+#define DO_STR_NEW2(str, encoding, internal_encoding) \
   ({ \
     VALUE _string = rb_str_new2((const char *)str); \
     if(encoding != -1) { \
       rb_enc_associate_index(_string, encoding); \
     } \
+    if(internal_encoding) { \
+      _string = rb_str_export_to_enc(_string, internal_encoding); \
+    } \
     _string; \
   })
 
-#define DO_STR_NEW(str, len, encoding) \
+#define DO_STR_NEW(str, len, encoding, internal_encoding) \
   ({ \
     VALUE _string = rb_str_new((const char *)str, (long)len); \
     if(encoding != -1) { \
       rb_enc_associate_index(_string, encoding); \
+    } \
+    if(internal_encoding) { \
+      _string = rb_str_export_to_enc(_string, internal_encoding); \
     } \
     _string; \
   })
 
 #else
 
-#define DO_STR_NEW2(str, encoding) \
+#define DO_STR_NEW2(str, encoding, internal_encoding) \
   rb_str_new2((const char *)str)
 
-#define DO_STR_NEW(str, len, encoding) \
+#define DO_STR_NEW(str, len, encoding, internal_encoding) \
   rb_str_new((const char *)str, (long)len)
 #endif
 
-
-#define ID_CONST_GET rb_intern("const_get")
-#define ID_PATH rb_intern("path")
-#define ID_NEW rb_intern("new")
-#define ID_ESCAPE rb_intern("escape_sql")
-#define ID_QUERY rb_intern("query")
-
-#define RUBY_CLASS(name) rb_const_get(rb_cObject, rb_intern(name))
 #define CONST_GET(scope, constant) (rb_funcall(scope, ID_CONST_GET, 1, rb_str_new2(constant)))
-#define SQLITE3_CLASS(klass, parent) (rb_define_class_under(mSqlite3, klass, parent))
+#define DRIVER_CLASS(klass, parent) (rb_define_class_under(mSqlite3, klass, parent))
 
 #ifdef _WIN32
 #define do_int64 signed __int64
@@ -59,6 +57,8 @@
 #ifndef HAVE_SQLITE3_PREPARE_V2
 #define sqlite3_prepare_v2 sqlite3_prepare
 #endif
+
+static ID ID_CONST_GET;
 
 void Init_do_sqlite3_extension();
 

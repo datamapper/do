@@ -5,11 +5,11 @@
 
 Gem::Specification.new do |s|
   s.name = %q{data_objects}
-  s.version = "0.10.2"
+  s.version = "0.10.3"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Dirkjan Bussink"]
-  s.date = %q{2010-03-31}
+  s.date = %q{2010-08-09}
   s.description = %q{Provide a standard and simplified API for communicating with RDBMS from Ruby}
   s.email = %q{d.bussink@gmail.com}
   s.extra_rdoc_files = [
@@ -41,6 +41,7 @@ Gem::Specification.new do |s|
      "lib/data_objects/spec/command_spec.rb",
      "lib/data_objects/spec/connection_spec.rb",
      "lib/data_objects/spec/encoding_spec.rb",
+     "lib/data_objects/spec/error/sql_error_spec.rb",
      "lib/data_objects/spec/helpers/immediate_red_green_output.rb",
      "lib/data_objects/spec/helpers/pending.rb",
      "lib/data_objects/spec/helpers/ssl.rb",
@@ -86,7 +87,7 @@ Gem::Specification.new do |s|
   s.rdoc_options = ["--charset=UTF-8"]
   s.require_paths = ["lib"]
   s.rubyforge_project = %q{dorb}
-  s.rubygems_version = %q{1.3.6}
+  s.rubygems_version = %q{1.3.7}
   s.summary = %q{DataObjects basic API and shared driver specifications}
   s.test_files = [
     "spec/command_spec.rb",
@@ -105,7 +106,7 @@ Gem::Specification.new do |s|
     current_version = Gem::Specification::CURRENT_SPECIFICATION_VERSION
     s.specification_version = 3
 
-    if Gem::Version.new(Gem::RubyGemsVersion) >= Gem::Version.new('1.2.0') then
+    if Gem::Version.new(Gem::VERSION) >= Gem::Version.new('1.2.0') then
       s.add_runtime_dependency(%q<addressable>, ["~> 2.1"])
       s.add_development_dependency(%q<bacon>, ["~> 1.1"])
       s.add_development_dependency(%q<mocha>, ["~> 0.9"])

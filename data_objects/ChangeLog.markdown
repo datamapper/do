@@ -1,4 +1,6 @@
-## 0.10.2 (unreleased, in git)
+## 0.10.2 2010-05-19
+* Support for Encoding.default_internal
+* Rework logging to adding a callback is possible
 
 ## 0.10.1 2010-01-08
 

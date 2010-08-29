@@ -34,13 +34,11 @@ import org.jruby.RubyFloat;
 import org.jruby.RubyHash;
 import org.jruby.RubyNumeric;
 import org.jruby.RubyObjectAdapter;
-import org.jruby.RubyProc;
 import org.jruby.RubyRegexp;
 import org.jruby.RubyString;
 import org.jruby.RubyTime;
 import org.jruby.javasupport.JavaEmbedUtils;
 import org.jruby.runtime.builtin.IRubyObject;
-import org.jruby.runtime.marshal.UnmarshalStream;
 import org.jruby.util.ByteList;
 
 import data_objects.RubyType;
@@ -397,28 +395,6 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
             class_name_str.setTaint(true);
             return API.callMethod(runtime.fastGetModule("DataObjects"), "full_const_get",
                     class_name_str);
-        case OBJECT:
-            InputStream asciiStream = rs.getAsciiStream(col);
-            IRubyObject obj = runtime.getNil();
-            UnmarshalStream ums = null;
-            try {
-                // does not compile with  jruby <1.5
-                ums = new UnmarshalStream(runtime, asciiStream,
-                        RubyProc.NEVER, false);
-                obj = ums.unmarshalObject();
-            } catch (IOException ioe) {
-                // TODO: log this
-            }finally {
-                if(ums != null){
-                    try{
-                        ums.close();
-                    }catch (Exception ex){
-                        //TODO log this
-                    }
-                }
-            }
-
-            return obj;
         case NIL:
             return runtime.getNil();
         case STRING:

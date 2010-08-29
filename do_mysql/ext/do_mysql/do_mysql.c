@@ -10,9 +10,9 @@
 
 #include "compat.h"
 #include "error.h"
-#define RUBY_CLASS(name) rb_const_get(rb_cObject, rb_intern(name))
-#define DRIVER_CLASS(klass, parent) (rb_define_class_under(mDOMysql, klass, parent))
+
 #define CONST_GET(scope, constant) (rb_funcall(scope, ID_CONST_GET, 1, rb_str_new2(constant)))
+#define DRIVER_CLASS(klass, parent) (rb_define_class_under(mMysql, klass, parent))
 #define CHECK_AND_RAISE(mysql_result_value, query) if (0 != mysql_result_value) { raise_error(self, db, query); }
 
 #ifdef _WIN32
@@ -26,49 +26,47 @@
 #ifdef HAVE_RUBY_ENCODING_H
 #include <ruby/encoding.h>
 
-#define DO_STR_NEW2(str, encoding) \
+#define DO_STR_NEW2(str, encoding, internal_encoding) \
   ({ \
     VALUE _string = rb_str_new2((const char *)str); \
     if(encoding != -1) { \
       rb_enc_associate_index(_string, encoding); \
     } \
+    if(internal_encoding) { \
+      _string = rb_str_export_to_enc(_string, internal_encoding); \
+    } \
     _string; \
   })
 
-#define DO_STR_NEW(str, len, encoding) \
+#define DO_STR_NEW(str, len, encoding, internal_encoding) \
   ({ \
     VALUE _string = rb_str_new((const char *)str, (long)len); \
     if(encoding != -1) { \
       rb_enc_associate_index(_string, encoding); \
+    } \
+    if(internal_encoding) { \
+      _string = rb_str_export_to_enc(_string, internal_encoding); \
     } \
     _string; \
   })
 
 #else
 
-#define DO_STR_NEW2(str, encoding) \
+#define DO_STR_NEW2(str, encoding, internal_encoding) \
   rb_str_new2((const char *)str)
 
-#define DO_STR_NEW(str, len, encoding) \
+#define DO_STR_NEW(str, len, encoding, internal_encoding) \
   rb_str_new((const char *)str, (long)len)
 #endif
 
 
 // To store rb_intern values
-static ID ID_TO_I;
-static ID ID_TO_F;
-static ID ID_TO_S;
-static ID ID_TO_TIME;
 static ID ID_NEW;
 static ID ID_NEW_DATE;
 static ID ID_CONST_GET;
 static ID ID_RATIONAL;
-static ID ID_UTC;
-static ID ID_ESCAPE_SQL;
+static ID ID_ESCAPE;
 static ID ID_STRFTIME;
-static ID ID_LOGGER;
-static ID ID_DEBUG;
-static ID ID_LEVEL;
 static ID ID_LOG;
 
 // Reference to Extlib module
@@ -92,12 +90,11 @@ static VALUE rb_cBigDecimal;
 static VALUE rb_cByteArray;
 
 // Classes that we'll build in Init
-static VALUE mDOMysql;
+static VALUE mMysql;
 static VALUE cConnection;
 static VALUE cCommand;
 static VALUE cResult;
 static VALUE cReader;
-static VALUE eArgumentError;
 static VALUE eConnectionError;
 static VALUE eDataError;
 
@@ -329,10 +326,16 @@ static VALUE typecast(const char *value, long length, const VALUE type, int enco
     return Qnil;
   }
 
+#ifdef HAVE_RUBY_ENCODING_H
+  rb_encoding * internal_encoding = rb_default_internal_encoding();
+#else
+  void * internal_encoding = NULL;
+#endif
+
   if (type == rb_cInteger) {
     return rb_cstr2inum(value, 10);
   } else if (type == rb_cString) {
-    return DO_STR_NEW(value, length, encoding);
+    return DO_STR_NEW(value, length, encoding, internal_encoding);
   } else if (type == rb_cFloat) {
     return rb_float_new(rb_cstr_to_dbl(value, Qfalse));
   } else if (type == rb_cBigDecimal) {
@@ -349,12 +352,10 @@ static VALUE typecast(const char *value, long length, const VALUE type, int enco
     return rb_funcall(rb_cByteArray, ID_NEW, 1, rb_str_new(value, length));
   } else if (type == rb_cClass) {
     return rb_funcall(mDO, rb_intern("full_const_get"), 1, rb_str_new(value, length));
-  } else if (type == rb_cObject) {
-    return rb_marshal_load(rb_str_new(value, length));
   } else if (type == rb_cNilClass) {
     return Qnil;
   } else {
-    return DO_STR_NEW(value, length, encoding);
+    return DO_STR_NEW(value, length, encoding, internal_encoding);
   }
 
 }
@@ -415,7 +416,7 @@ static char * get_uri_option(VALUE query_hash, const char * key) {
 static void assert_file_exists(char * file, const char * message) {
   if (file == NULL) { return; }
   if (rb_funcall(rb_cFile, rb_intern("exist?"), 1, rb_str_new2(file)) == Qfalse) {
-    rb_raise(eArgumentError, "%s", message);
+    rb_raise(rb_eArgError, "%s", message);
   }
 }
 
@@ -449,6 +450,7 @@ static MYSQL_RES* cCommand_execute_async(VALUE self, VALUE connection, MYSQL* db
   struct timeval start;
   const char* str = rb_str_ptr_readonly(query);
   size_t len      = rb_str_len(query);
+  MYSQL_RES* result;
 
   if((retval = mysql_ping(db)) && mysql_errno(db) == CR_SERVER_GONE_ERROR) {
     full_connect(connection, db);
@@ -484,7 +486,12 @@ static MYSQL_RES* cCommand_execute_async(VALUE self, VALUE connection, MYSQL* db
   CHECK_AND_RAISE(retval, query);
   data_objects_debug(connection, query, &start);
 
-  return mysql_store_result(db);
+  result = mysql_store_result(db);
+
+  if (!result)
+    CHECK_AND_RAISE(mysql_errno(db), query);
+
+  return result;
 }
 #endif
 
@@ -557,7 +564,7 @@ static void full_connect(VALUE self, MYSQL* db) {
 
       mysql_ssl_set(db, ssl_client_key, ssl_client_cert, ssl_ca_cert, ssl_ca_path, ssl_cipher);
     } else if(r_ssl != Qnil) {
-      rb_raise(eArgumentError, "ssl must be passed a hash");
+      rb_raise(rb_eArgError, "ssl must be passed a hash");
     }
   }
 #endif
@@ -734,11 +741,11 @@ static VALUE cCommand_set_types(int argc, VALUE *argv, VALUE self) {
         if(TYPE(sub_entry) == T_CLASS) {
           rb_ary_push(type_strings, sub_entry);
         } else {
-          rb_raise(eArgumentError, "Invalid type given");
+          rb_raise(rb_eArgError, "Invalid type given");
         }
       }
     } else {
-      rb_raise(eArgumentError, "Invalid type given");
+      rb_raise(rb_eArgError, "Invalid type given");
     }
   }
 
@@ -781,7 +788,9 @@ static VALUE cConnection_quote_string(VALUE self, VALUE string) {
 
   // Wrap the escaped string in single-quotes, this is DO's convention
   escaped[0] = escaped[quoted_length + 1] = '\'';
-  result = DO_STR_NEW(escaped, quoted_length + 2, FIX2INT(rb_iv_get(self, "@encoding_id")));
+  // We don't want to use the internal encoding, because this needs
+  // to go into the database in the connection encoding
+  result = DO_STR_NEW(escaped, quoted_length + 2, FIX2INT(rb_iv_get(self, "@encoding_id")), NULL);
 
   free(escaped);
   return result;
@@ -795,7 +804,7 @@ static VALUE build_query_from_args(VALUE klass, int count, VALUE *args) {
   for ( i = 0; i < count; i++) {
     rb_ary_push(array, (VALUE)args[i]);
   }
-  query = rb_funcall(klass, ID_ESCAPE_SQL, 1, array);
+  query = rb_funcall(klass, ID_ESCAPE, 1, array);
 
   return query;
 }
@@ -874,7 +883,7 @@ static VALUE cCommand_execute_reader(int argc, VALUE *argv, VALUE self) {
     // Whoops...  wrong number of types passed to set_types.  Close the reader and raise
     // and error
     rb_funcall(reader, rb_intern("close"), 0);
-    rb_raise(eArgumentError, "Field-count mismatch. Expected %ld fields, but the query yielded %d", RARRAY_LEN(field_types), field_count);
+    rb_raise(rb_eArgError, "Field-count mismatch. Expected %ld fields, but the query yielded %d", RARRAY_LEN(field_types), field_count);
   }
 
   for(i = 0; i < field_count; i++) {
@@ -987,14 +996,17 @@ static VALUE cReader_field_count(VALUE self) {
 
 void Init_do_mysql() {
   rb_require("bigdecimal");
+  rb_require("rational");
   rb_require("date");
+  rb_require("data_objects");
 
-  rb_funcall(rb_mKernel, rb_intern("require"), 1, rb_str_new2("data_objects"));
+  ID_CONST_GET = rb_intern("const_get");
 
-  ID_TO_I = rb_intern("to_i");
-  ID_TO_F = rb_intern("to_f");
-  ID_TO_S = rb_intern("to_s");
-  ID_TO_TIME = rb_intern("to_time");
+  // Get references classes needed for Date/Time parsing
+  rb_cDate = CONST_GET(rb_mKernel, "Date");
+  rb_cDateTime = CONST_GET(rb_mKernel, "DateTime");
+  rb_cBigDecimal = CONST_GET(rb_mKernel, "BigDecimal");
+
   ID_NEW = rb_intern("new");
 #ifdef RUBY_LESS_THAN_186
   ID_NEW_DATE = rb_intern("new0");
@@ -1003,18 +1015,9 @@ void Init_do_mysql() {
 #endif
   ID_CONST_GET = rb_intern("const_get");
   ID_RATIONAL = rb_intern("Rational");
-  ID_UTC = rb_intern("utc");
-  ID_ESCAPE_SQL = rb_intern("escape_sql");
+  ID_ESCAPE = rb_intern("escape_sql");
   ID_STRFTIME = rb_intern("strftime");
-  ID_LOGGER = rb_intern("logger");
-  ID_DEBUG = rb_intern("debug");
-  ID_LEVEL = rb_intern("level");
   ID_LOG = rb_intern("log");
-
-  // Store references to a few helpful clases that aren't in Ruby Core
-  rb_cDate = RUBY_CLASS("Date");
-  rb_cDateTime = RUBY_CLASS("DateTime");
-  rb_cBigDecimal = RUBY_CLASS("BigDecimal");
 
   // Get references to the Extlib module
   mExtlib = CONST_GET(rb_mKernel, "Extlib");
@@ -1031,12 +1034,10 @@ void Init_do_mysql() {
   cDO_Logger_Message = CONST_GET(cDO_Logger, "Message");
 
   // Top Level Module that all the classes live under
-  mDOMysql = rb_define_module_under(mDO, "Mysql");
-
-  eArgumentError = CONST_GET(rb_mKernel, "ArgumentError");
+  mMysql = rb_define_module_under(mDO, "Mysql");
   eConnectionError = CONST_GET(mDO, "ConnectionError");
   eDataError = CONST_GET(mDO, "DataError");
-  mEncoding = rb_define_module_under(mDOMysql, "Encoding");
+  mEncoding = rb_define_module_under(mMysql, "Encoding");
 
   cConnection = DRIVER_CLASS("Connection", cDO_Connection);
   rb_define_method(cConnection, "initialize", cConnection_initialize, 1);
@@ -1065,9 +1066,30 @@ void Init_do_mysql() {
   rb_define_method(cReader, "fields", cReader_fields, 0);
   rb_define_method(cReader, "field_count", cReader_field_count, 0);
 
+  rb_global_variable(&ID_NEW_DATE);
+  rb_global_variable(&ID_RATIONAL);
+  rb_global_variable(&ID_CONST_GET);
+  rb_global_variable(&ID_ESCAPE);
+  rb_global_variable(&ID_LOG);
+  rb_global_variable(&ID_NEW);
+
+  rb_global_variable(&rb_cDate);
+  rb_global_variable(&rb_cDateTime);
+  rb_global_variable(&rb_cBigDecimal);
+  rb_global_variable(&rb_cByteArray);
+
+  rb_global_variable(&mDO);
+  rb_global_variable(&cDO_Logger_Message);
+
+  rb_global_variable(&cResult);
+  rb_global_variable(&cReader);
+
+  rb_global_variable(&eConnectionError);
+  rb_global_variable(&eDataError);
+
   struct errcodes *errs;
 
   for (errs = errors; errs->error_name; errs++) {
-    rb_const_set(mDOMysql, rb_intern(errs->error_name), INT2NUM(errs->error_no));
+    rb_const_set(mMysql, rb_intern(errs->error_name), INT2NUM(errs->error_no));
   }
 }

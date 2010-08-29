@@ -38,53 +38,52 @@
 #include "error.h"
 #include "compat.h"
 
-#define ID_CONST_GET rb_intern("const_get")
-#define ID_PATH rb_intern("path")
-#define ID_NEW rb_intern("new")
-#define ID_ESCAPE rb_intern("escape_sql")
-#define ID_LOG rb_intern("log")
-
 #define CONST_GET(scope, constant) (rb_funcall(scope, ID_CONST_GET, 1, rb_str_new2(constant)))
-#define POSTGRES_CLASS(klass, parent) (rb_define_class_under(mPostgres, klass, parent))
+#define DRIVER_CLASS(klass, parent) (rb_define_class_under(mPostgres, klass, parent))
 
 #ifdef HAVE_RUBY_ENCODING_H
 #include <ruby/encoding.h>
 
-#define DO_STR_NEW2(str, encoding) \
+#define DO_STR_NEW2(str, encoding, internal_encoding) \
   ({ \
     VALUE _string = rb_str_new2((const char *)str); \
     if(encoding != -1) { \
       rb_enc_associate_index(_string, encoding); \
     } \
+    if(internal_encoding) { \
+      _string = rb_str_export_to_enc(_string, internal_encoding); \
+    } \
     _string; \
   })
 
-#define DO_STR_NEW(str, len, encoding) \
+#define DO_STR_NEW(str, len, encoding, internal_encoding) \
   ({ \
     VALUE _string = rb_str_new((const char *)str, (long)len); \
     if(encoding != -1) { \
       rb_enc_associate_index(_string, encoding); \
+    } \
+    if(internal_encoding) { \
+      _string = rb_str_export_to_enc(_string, internal_encoding); \
     } \
     _string; \
   })
 
 #else
 
-#define DO_STR_NEW2(str, doc) \
+#define DO_STR_NEW2(str, encoding, internal_encoding) \
   rb_str_new2((const char *)str)
 
-#define DO_STR_NEW(str, len, doc) \
+#define DO_STR_NEW(str, len, encoding, internal_encoding) \
   rb_str_new((const char *)str, (long)len)
 #endif
 
-
 // To store rb_intern values
 static ID ID_NEW_DATE;
-static ID ID_LOGGER;
-static ID ID_DEBUG;
-static ID ID_LEVEL;
-static ID ID_TO_S;
 static ID ID_RATIONAL;
+static ID ID_CONST_GET;
+static ID ID_NEW;
+static ID ID_ESCAPE;
+static ID ID_LOG;
 
 static VALUE mExtlib;
 static VALUE mDO;
@@ -108,7 +107,6 @@ static VALUE cCommand;
 static VALUE cResult;
 static VALUE cReader;
 
-static VALUE eArgumentError;
 static VALUE eConnectionError;
 static VALUE eDataError;
 
@@ -343,10 +341,16 @@ static VALUE infer_ruby_type(Oid type) {
 
 static VALUE typecast(const char *value, long length, const VALUE type, int encoding) {
 
+#ifdef HAVE_RUBY_ENCODING_H
+  rb_encoding * internal_encoding = rb_default_internal_encoding();
+#else
+  void * internal_encoding = NULL;
+#endif
+
   if (type == rb_cInteger) {
     return rb_cstr2inum(value, 10);
   } else if (type == rb_cString) {
-    return DO_STR_NEW(value, length, encoding);
+    return DO_STR_NEW(value, length, encoding, internal_encoding);
   } else if (type == rb_cFloat) {
     return rb_float_new(rb_cstr_to_dbl(value, Qfalse));
   } else if (type == rb_cBigDecimal) {
@@ -367,12 +371,10 @@ static VALUE typecast(const char *value, long length, const VALUE type, int enco
     return byte_array;
   } else if (type == rb_cClass) {
     return rb_funcall(mDO, rb_intern("full_const_get"), 1, rb_str_new(value, length));
-  } else if (type == rb_cObject) {
-    return rb_marshal_load(rb_str_new(value, length));
   } else if (type == rb_cNilClass) {
     return Qnil;
   } else {
-    return DO_STR_NEW(value, length, encoding);
+    return DO_STR_NEW(value, length, encoding, internal_encoding);
   }
 
 }
@@ -451,11 +453,11 @@ static VALUE cCommand_set_types(int argc, VALUE *argv, VALUE self) {
         if(TYPE(sub_entry) == T_CLASS) {
           rb_ary_push(type_strings, sub_entry);
         } else {
-          rb_raise(eArgumentError, "Invalid type given");
+          rb_raise(rb_eArgError, "Invalid type given");
         }
       }
     } else {
-      rb_raise(eArgumentError, "Invalid type given");
+      rb_raise(rb_eArgError, "Invalid type given");
     }
   }
 
@@ -497,7 +499,7 @@ static VALUE cConnection_quote_string(VALUE self, VALUE string) {
   // Wrap the escaped string in single-quotes, this is DO's convention
   escaped[quoted_length + 1] = escaped[0] = '\'';
 
-  result = DO_STR_NEW(escaped, quoted_length + 2, FIX2INT(rb_iv_get(self, "@encoding_id")));
+  result = DO_STR_NEW(escaped, quoted_length + 2, FIX2INT(rb_iv_get(self, "@encoding_id")), NULL);
 
   free(escaped);
   return result;
@@ -536,7 +538,6 @@ static PGresult* cCommand_execute_sync(VALUE self, VALUE connection, PGconn *db,
   PGresult *response;
   struct timeval start;
   char* str = StringValuePtr(query);
-  VALUE connection = rb_iv_get(self, "@connection");
 
   while ((response = PQgetResult(db)) != NULL) {
     PQclear(response);
@@ -878,7 +879,7 @@ static VALUE cCommand_execute_reader(int argc, VALUE *argv[], VALUE self) {
     // Whoops...  wrong number of types passed to set_types.  Close the reader and raise
     // and error
     rb_funcall(reader, rb_intern("close"), 0);
-    rb_raise(eArgumentError, "Field-count mismatch. Expected %ld fields, but the query yielded %d", RARRAY_LEN(field_types), field_count);
+    rb_raise(rb_eArgError, "Field-count mismatch. Expected %ld fields, but the query yielded %d", RARRAY_LEN(field_types), field_count);
   }
 
   for ( i = 0; i < field_count; i++ ) {
@@ -983,25 +984,26 @@ static VALUE cReader_field_count(VALUE self) {
 
 void Init_do_postgres() {
   rb_require("date");
+  rb_require("rational");
   rb_require("bigdecimal");
+  rb_require("data_objects");
+
+  ID_CONST_GET = rb_intern("const_get");
 
   // Get references classes needed for Date/Time parsing
   rb_cDate = CONST_GET(rb_mKernel, "Date");
   rb_cDateTime = CONST_GET(rb_mKernel, "DateTime");
   rb_cBigDecimal = CONST_GET(rb_mKernel, "BigDecimal");
 
-  rb_funcall(rb_mKernel, rb_intern("require"), 1, rb_str_new2("data_objects"));
-
 #ifdef RUBY_LESS_THAN_186
   ID_NEW_DATE = rb_intern("new0");
 #else
   ID_NEW_DATE = rb_intern("new!");
 #endif
-  ID_LOGGER = rb_intern("logger");
-  ID_DEBUG = rb_intern("debug");
-  ID_LEVEL = rb_intern("level");
-  ID_TO_S = rb_intern("to_s");
   ID_RATIONAL = rb_intern("Rational");
+  ID_NEW = rb_intern("new");
+  ID_ESCAPE = rb_intern("escape_sql");
+  ID_LOG = rb_intern("log");
 
   // Get references to the Extlib module
   mExtlib = CONST_GET(rb_mKernel, "Extlib");
@@ -1017,32 +1019,52 @@ void Init_do_postgres() {
   cDO_Logger = CONST_GET(mDO, "Logger");
   cDO_Logger_Message = CONST_GET(cDO_Logger, "Message");
 
-  eArgumentError = CONST_GET(rb_mKernel, "ArgumentError");
   mPostgres = rb_define_module_under(mDO, "Postgres");
   eConnectionError = CONST_GET(mDO, "ConnectionError");
   eDataError = CONST_GET(mDO, "DataError");
   mEncoding = rb_define_module_under(mPostgres, "Encoding");
 
-  cConnection = POSTGRES_CLASS("Connection", cDO_Connection);
+  cConnection = DRIVER_CLASS("Connection", cDO_Connection);
   rb_define_method(cConnection, "initialize", cConnection_initialize, 1);
   rb_define_method(cConnection, "dispose", cConnection_dispose, 0);
   rb_define_method(cConnection, "character_set", cConnection_character_set , 0);
   rb_define_method(cConnection, "quote_string", cConnection_quote_string, 1);
   rb_define_method(cConnection, "quote_byte_array", cConnection_quote_byte_array, 1);
 
-  cCommand = POSTGRES_CLASS("Command", cDO_Command);
+  cCommand = DRIVER_CLASS("Command", cDO_Command);
   rb_define_method(cCommand, "set_types", cCommand_set_types, -1);
   rb_define_method(cCommand, "execute_non_query", cCommand_execute_non_query, -1);
   rb_define_method(cCommand, "execute_reader", cCommand_execute_reader, -1);
 
-  cResult = POSTGRES_CLASS("Result", cDO_Result);
+  cResult = DRIVER_CLASS("Result", cDO_Result);
 
-  cReader = POSTGRES_CLASS("Reader", cDO_Reader);
+  cReader = DRIVER_CLASS("Reader", cDO_Reader);
   rb_define_method(cReader, "close", cReader_close, 0);
   rb_define_method(cReader, "next!", cReader_next, 0);
   rb_define_method(cReader, "values", cReader_values, 0);
   rb_define_method(cReader, "fields", cReader_fields, 0);
   rb_define_method(cReader, "field_count", cReader_field_count, 0);
+
+  rb_global_variable(&ID_NEW_DATE);
+  rb_global_variable(&ID_RATIONAL);
+  rb_global_variable(&ID_CONST_GET);
+  rb_global_variable(&ID_ESCAPE);
+  rb_global_variable(&ID_LOG);
+  rb_global_variable(&ID_NEW);
+
+  rb_global_variable(&rb_cDate);
+  rb_global_variable(&rb_cDateTime);
+  rb_global_variable(&rb_cBigDecimal);
+  rb_global_variable(&rb_cByteArray);
+
+  rb_global_variable(&mDO);
+  rb_global_variable(&cDO_Logger_Message);
+
+  rb_global_variable(&cResult);
+  rb_global_variable(&cReader);
+
+  rb_global_variable(&eConnectionError);
+  rb_global_variable(&eDataError);
 
   struct errcodes *errs;
 

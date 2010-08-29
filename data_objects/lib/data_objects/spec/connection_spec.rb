@@ -85,7 +85,7 @@ shared 'a Connection' do
               @user,
               @password,
               @host,
-              @port.to_i,
+              @port && @port.to_i,
               @database,
               nil, nil
             )

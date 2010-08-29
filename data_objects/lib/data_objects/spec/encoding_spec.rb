@@ -8,7 +8,6 @@ shared 'a driver supporting different encodings' do
     @connection.close
   end
 
-
   it 'should respond to #character_set' do @connection.should.respond_to(:character_set) end
 
   describe 'character_set' do
@@ -44,20 +43,21 @@ shared 'a driver supporting different encodings' do
   end
 end
 
-shared 'returning correctly encoded strings for the default encoding' do
-
-
-  setup_test_environment
-
-  before do
-    @connection = DataObjects::Connection.new(CONFIG.uri)
-  end
-
-  after do
-    @connection.close
-  end
+shared 'returning correctly encoded strings for the default database encoding' do
 
   if defined?(::Encoding)
+
+    setup_test_environment
+
+    before do
+      @connection.close if @connection
+      @connection = DataObjects::Connection.new(CONFIG.uri)
+    end
+
+    after do
+      @connection.close
+    end
+
     describe 'with encoded string support' do
 
       describe 'reading a String' do
@@ -76,6 +76,68 @@ shared 'returning correctly encoded strings for the default encoding' do
           @values.first.encoding.name.should == 'UTF-8'
           @values.last.should.be.kind_of(String)
           @values.last.encoding.name.should == 'UTF-8'
+        end
+      end
+
+      describe 'reading a ByteArray' do
+        before do
+          @command = @connection.create_command("SELECT ad_image FROM widgets WHERE ad_description = ?")
+          @command.set_types(Extlib::ByteArray)
+          @reader = @command.execute_reader('Buy this product now!')
+          @reader.next!
+          @values = @reader.values
+        end
+
+        after do
+          @reader.close
+        end
+
+        it 'should return ASCII-8BIT encoded ByteArray' do
+          @values.first.should.be.kind_of(::Extlib::ByteArray)
+          @values.first.encoding.name.should == 'ASCII-8BIT'
+        end
+      end
+    end
+  end
+
+end
+
+shared 'returning correctly encoded strings for the default internal encoding' do
+
+  if defined?(::Encoding)
+
+    setup_test_environment
+
+    before do
+      @connection.close if @connection
+      @encoding_before = Encoding.default_internal
+      Encoding.default_internal = 'ISO-8859-1'
+      @connection = DataObjects::Connection.new(CONFIG.uri)
+    end
+
+    after do
+      @connection.close
+      Encoding.default_internal = @encoding_before
+    end
+
+    describe 'with encoded string support' do
+
+      describe 'reading a String' do
+        before do
+          @reader = @connection.create_command("SELECT name, whitepaper_text FROM widgets WHERE ad_description = ?").execute_reader('Buy this product now!')
+          @reader.next!
+          @values = @reader.values
+        end
+
+        after do
+          @reader.close
+        end
+
+        it 'should return UTF-8 encoded String' do
+          @values.first.should.be.kind_of(String)
+          @values.first.encoding.name.should == 'ISO-8859-1'
+          @values.last.should.be.kind_of(String)
+          @values.last.encoding.name.should == 'ISO-8859-1'
         end
       end
 

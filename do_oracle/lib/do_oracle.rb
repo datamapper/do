@@ -41,11 +41,8 @@ if RUBY_PLATFORM !~ /java/
         private
 
         def execute(*args)
-          oci8_conn = @connection.instance_variable_get("@connection")
-          raise ConnectionError, "This connection has already been closed." unless oci8_conn
-
           sql, bind_variables = replace_argument_placeholders(@text, args)
-          execute_internal(oci8_conn, sql, bind_variables)
+          execute_internal(@connection, sql, bind_variables)
         rescue OCIError => e
           raise SQLError.new(e.message, e.code, nil, e.sql, @connection.to_s)
         end

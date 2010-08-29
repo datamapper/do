@@ -35,9 +35,9 @@ end
 if RUBY_PLATFORM =~ /mswin|mingw/
   dir_config('mysql')
   have_header 'my_global.h'
-  have_header 'mysql.h' || exit(1)
-  have_library 'libmysql' || exit(1)
-  have_func('mysql_query', 'mysql.h') || exit(1)
+  have_header 'mysql.h'
+  have_library 'libmysql'
+  have_func('mysql_query', 'mysql.h')
   have_func('mysql_ssl_set', 'mysql.h')
 elsif mc = with_config('mysql-config', default_mysql_config_path)
   includes = mysql_config('include').split(/\s+/).map do |dir|
@@ -46,7 +46,15 @@ elsif mc = with_config('mysql-config', default_mysql_config_path)
   libs     = mysql_config('libs').split(/\s+/).select {|lib| lib =~ /^-L/}.map do |dir|
     dir.gsub(/^-L/, "")
   end.uniq
+
+  linked     = mysql_config('libs').split(/\s+/).select {|lib| lib =~ /^-l/}.map do |dir|
+    dir.gsub(/^-l/, "")
+  end.uniq
+
   dir_config('mysql', includes, libs)
+  linked.each do |link|
+    have_library link
+  end
 else
   inc, lib = dir_config('mysql', default_prefix)
   libs = ['m', 'z', 'socket', 'nsl']
@@ -60,8 +68,7 @@ end
 
 unless RUBY_PLATFORM =~ /mswin|mingw/
   have_header 'mysql.h'
-  have_library 'mysqlclient' || exit(1)
-  have_func 'mysql_query' || exit(1)
+  have_func 'mysql_query'
   have_func 'mysql_ssl_set'
 end
 
