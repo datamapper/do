@@ -64,7 +64,7 @@ section contains ideas for these plugins.
 
 Inflection API
 --------------
-Inflection is something quite a few projects use, ActiveRecord directly for it's models,
+Inflection is something quite a few projects use, ActiveRecord directly for its models,
 but also DataMapper uses it for migrations. It would be really nice if DataObjects could
 also provide an abstraction for this, so the information is accessible for every RDBMS
 in a unified way.
