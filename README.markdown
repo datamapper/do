@@ -48,7 +48,7 @@ At present the following drivers are available:
 
 There is experimental support for [Rubinius][rubinius].
 
-At present, PostgreSQL, MySQL and SQLite drivers are available. More drivers are
+More drivers are
 currently under development. If you feel like living on the edge, install and
 test drivers directly from this repository.
 
