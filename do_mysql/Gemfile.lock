@@ -19,6 +19,7 @@ GEM
     bacon (1.1.0)
     gemcutter (0.6.1)
     git (1.2.5)
+    jdbc-mysql (5.0.4)
     jeweler (1.4.0)
       gemcutter (>= 0.1.0)
       git (>= 1.2.5)
@@ -37,8 +38,9 @@ PLATFORMS
 DEPENDENCIES
   bacon (~> 1.1)
   data_objects (= 0.10.3)
-  do_jdbc
+  do_jdbc (= 0.10.3)
   do_mysql!
+  jdbc-mysql (>= 5.0.4)
   jeweler (~> 1.4)
   rake (~> 0.8.7)
   rake-compiler (= 0.7.0)
