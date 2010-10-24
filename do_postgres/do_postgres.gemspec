@@ -9,7 +9,7 @@ Gem::Specification.new do |s|
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Dirkjan Bussink"]
-  s.date = %q{2010-07-15}
+  s.date = %q{2010-10-24}
   s.description = %q{Implements the DataObjects API for PostgreSQL}
   s.email = %q{d.bussink@gmail.com}
   s.extensions = ["ext/do_postgres/extconf.rb"]
@@ -95,16 +95,16 @@ Gem::Specification.new do |s|
     if Gem::Version.new(Gem::VERSION) >= Gem::Version.new('1.2.0') then
       s.add_runtime_dependency(%q<data_objects>, ["= 0.10.3"])
       s.add_development_dependency(%q<bacon>, ["~> 1.1"])
-      s.add_development_dependency(%q<rake-compiler>, ["~> 0.7"])
+      s.add_development_dependency(%q<rake-compiler>, ["= 0.7.0"])
     else
       s.add_dependency(%q<data_objects>, ["= 0.10.3"])
       s.add_dependency(%q<bacon>, ["~> 1.1"])
-      s.add_dependency(%q<rake-compiler>, ["~> 0.7"])
+      s.add_dependency(%q<rake-compiler>, ["= 0.7.0"])
     end
   else
     s.add_dependency(%q<data_objects>, ["= 0.10.3"])
     s.add_dependency(%q<bacon>, ["~> 1.1"])
-    s.add_dependency(%q<rake-compiler>, ["~> 0.7"])
+    s.add_dependency(%q<rake-compiler>, ["= 0.7.0"])
   end
 end
 

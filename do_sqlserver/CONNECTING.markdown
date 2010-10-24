@@ -4,8 +4,8 @@ CONNECTING
 Various notes (needs to be cleaned-up).
 
 See:
- * http://blogs.msdn.com/sqlexpress/archive/2004/07/23/192044.aspx
- * http://blogs.msdn.com/bethmassi/archive/2008/09/17/enabling-remote-sql-express-2008-network-connections-on-vista.aspx
+ * <http://blogs.msdn.com/sqlexpress/archive/2004/07/23/192044.aspx>
+ * <http://blogs.msdn.com/b/bethmassi/archive/2008/09/17/enabling-remote-sql-express-2008-network-connections-on-vista.aspx>
 
 
 Example Setup
@@ -22,8 +22,7 @@ Example Setup
 * New database name: do_test
 
 See:
-http://social.msdn.microsoft.com/Forums/en-US/Vsexpressinstall/thread/aaf2f68c-4a40-44c8-b7ee-b2f5d94e23c3
-
+<http://social.msdn.microsoft.com/Forums/en-US/Vsexpressinstall/thread/aaf2f68c-4a40-44c8-b7ee-b2f5d94e23c3>
 
 ---
 

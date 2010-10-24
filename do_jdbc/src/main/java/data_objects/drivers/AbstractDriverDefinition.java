@@ -32,6 +32,7 @@ import org.jruby.RubyClass;
 import org.jruby.RubyFixnum;
 import org.jruby.RubyFloat;
 import org.jruby.RubyHash;
+import org.jruby.RubyInteger;
 import org.jruby.RubyNumeric;
 import org.jruby.RubyObjectAdapter;
 import org.jruby.RubyRegexp;
@@ -58,8 +59,6 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
     protected final static DateTimeFormatter DATE_TIME_FORMAT = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
     private final static BigInteger LONG_MAX = BigInteger.valueOf(Long.MAX_VALUE);
     private final static BigInteger LONG_MIN = BigInteger.valueOf(Long.MIN_VALUE);
-    private final static long MRI_FIXNUM_MAX = (1L<<32) - 1;
-    private final static long MRI_FIXNUM_MIN = -1 * MRI_FIXNUM_MAX - 1;
 
     private final String scheme;
     private final String jdbcScheme;
@@ -285,13 +284,6 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
                 if (rs.wasNull()) {
                     return runtime.getNil();
                 }
-                // return RubyNumeric.int2fix(runtime, lng);
-                //
-                // Currently problematic as JRUBY has different boundaries for
-                // Bignum/Fixnum: see http://jira.codehaus.org/browse/JRUBY-1587
-                if (lng >= MRI_FIXNUM_MAX || lng < MRI_FIXNUM_MIN) {
-                    return RubyBignum.newBignum(runtime, lng);
-                }
                 return RubyFixnum.newFixnum(runtime, lng);
             } catch (SQLException sqle) {
                 // if getLong failed then use getBigDecimal
@@ -303,7 +295,9 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
                 return RubyBignum.bignorm(runtime, bdi.toBigInteger());
             }
         case FLOAT:
-            // TODO: why getDouble is not used here?
+            // Ok, the JDBC api is tricky here. getDouble() will
+            // return 0 when the db value is NULL, that's why we use
+            // BigDecimal and go back to a double from there
             BigDecimal bdf = rs.getBigDecimal(col);
             if (bdf == null) {
                 return runtime.getNil();
@@ -420,7 +414,7 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
             IRubyObject arg, int idx) throws SQLException {
         switch (RubyType.inferRubyType(arg)) {
         case FIXNUM:
-            ps.setLong(idx, Long.parseLong(arg.toString()));
+            ps.setLong(idx, ((RubyInteger) arg).getLongValue());
             break;
         case BIGNUM:
             BigInteger big = ((RubyBignum) arg).getValue();
