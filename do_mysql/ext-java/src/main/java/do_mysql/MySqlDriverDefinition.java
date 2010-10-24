@@ -17,7 +17,7 @@ import java.util.regex.Pattern;
 
 import data_objects.RubyType;
 import data_objects.drivers.AbstractDriverDefinition;
-import static data_objects.util.DynamicProxyUtil.*; 
+import static data_objects.util.DynamicProxyUtil.*;
 
 public class MySqlDriverDefinition extends AbstractDriverDefinition {
 
