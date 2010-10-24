@@ -25,7 +25,7 @@ GEM
       rubyforge (>= 2.0.0)
     json_pure (1.4.6)
     rake (0.8.7)
-    rake-compiler (0.7.1)
+    rake-compiler (0.7.0)
       rake (>= 0.8.3, < 0.9)
     rubyforge (2.0.4)
       json_pure (>= 1.1.7)
@@ -41,4 +41,4 @@ DEPENDENCIES
   do_sqlite3!
   jeweler (~> 1.4)
   rake (~> 0.8.7)
-  rake-compiler (~> 0.7)
+  rake-compiler (= 0.7.0)
