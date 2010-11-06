@@ -15,15 +15,9 @@ shared 'supporting Boolean' do
     describe 'with manual typecasting' do
 
       before do
-        @command = @connection.create_command("SELECT flags FROM widgets WHERE ad_description = ?")
-        @command.set_types(TrueClass)
-        @reader = @command.execute_reader('Buy this product now!')
-        @reader.next!
-        @values = @reader.values
-      end
-
-      after do
-        @reader.close
+        @reader = @connection.query("SELECT flags FROM widgets WHERE ad_description = ?", 'Buy this product now!')
+        @reader.set_types(TrueClass)
+        @values = @reader.first
       end
 
       it 'should return the correctly typed result' do
@@ -39,15 +33,9 @@ shared 'supporting Boolean' do
     describe 'with manual typecasting a true value' do
 
       before do
-        @command = @connection.create_command("SELECT flags FROM widgets WHERE id = ?")
-        @command.set_types(TrueClass)
-        @reader = @command.execute_reader(2)
-        @reader.next!
-        @values = @reader.values
-      end
-
-      after do
-        @reader.close
+        @reader = @connection.query("SELECT flags FROM widgets WHERE id = ?", 2)
+        @reader.set_types(TrueClass)
+        @values = @reader.first
       end
 
       it 'should return the correctly typed result' do
@@ -63,15 +51,9 @@ shared 'supporting Boolean' do
     describe 'with manual typecasting a nil value' do
 
       before do
-        @command = @connection.create_command("SELECT flags FROM widgets WHERE id = ?")
-        @command.set_types(TrueClass)
-        @reader = @command.execute_reader(4)
-        @reader.next!
-        @values = @reader.values
-      end
-
-      after do
-        @reader.close
+        @reader = @connection.query("SELECT flags FROM widgets WHERE id = ?", 4)
+        @reader.set_types(TrueClass)
+        @values = @reader.first
       end
 
       it 'should return the correctly typed result' do
@@ -89,13 +71,8 @@ shared 'supporting Boolean' do
   describe 'writing an Boolean' do
 
     before do
-      @reader = @connection.create_command("SELECT id FROM widgets WHERE flags = ?").execute_reader(true)
-      @reader.next!
-      @values = @reader.values
-    end
-
-    after do
-      @reader.close
+      @reader = @connection.query("SELECT id FROM widgets WHERE flags = ?", true)
+      @values = @reader.first
     end
 
     it 'should return the correct entry' do
@@ -123,13 +100,8 @@ shared 'supporting Boolean autocasting' do
     describe 'with automatic typecasting' do
 
       before do
-        @reader = @connection.create_command("SELECT flags FROM widgets WHERE ad_description = ?").execute_reader('Buy this product now!')
-        @reader.next!
-        @values = @reader.values
-      end
-
-      after do
-        @reader.close
+        @reader = @connection.query("SELECT flags FROM widgets WHERE ad_description = ?", 'Buy this product now!')
+        @values = @reader.first
       end
 
       it 'should return the correctly typed result' do

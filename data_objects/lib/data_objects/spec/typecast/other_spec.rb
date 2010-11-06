@@ -25,15 +25,9 @@ shared 'supporting other (unknown) type' do
   describe 'writing an object of unknown type' do
 
     before do
-      @command = @connection.create_command("SELECT ad_description FROM widgets WHERE ad_description = ?")
-      @command.set_types(::CustomTextType)
-      @reader = @command.execute_reader('Buy this product now!')
-      @reader.next!
-      @values = @reader.values
-    end
-
-    after do
-      @reader.close
+      @reader = @connection.query("SELECT ad_description FROM widgets WHERE ad_description = ?", 'Buy this product now!')
+      @reader.set_types(::CustomTextType)
+      @values = @reader.first
     end
 
     it 'should return the correct entry' do

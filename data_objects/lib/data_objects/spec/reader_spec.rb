@@ -4,158 +4,65 @@ shared 'a Reader' do
 
   before do
     @connection = DataObjects::Connection.new(CONFIG.uri)
-    @reader     = @connection.create_command("SELECT code, name FROM widgets WHERE ad_description = ? order by id").execute_reader('Buy this product now!')
-    @reader2    = @connection.create_command("SELECT code FROM widgets WHERE ad_description = ? order by id").execute_reader('Buy this product now!')
+    @reader     = @connection.query("SELECT code, name FROM widgets WHERE ad_description = ? order by id", 'Buy this product now!')
+    @reader2    = @connection.query("SELECT code FROM widgets WHERE ad_description = ? order by id", 'Buy this product now!')
   end
 
   after do
-    @reader.close
-    @reader2.close
     @connection.close
   end
 
-  it 'should respond to #fields' do @reader.should.respond_to(:fields) end
+  it 'should respond to #columns' do @reader.should.respond_to(:columns) end
 
-  describe 'fields' do
+  describe 'columns' do
 
     def array_case_insensitively_equal_to(arr)
       lambda { |obj| obj.map { |f| f.downcase } == arr }
     end
 
     it 'should return the correct fields in the reader' do
-      # we downcase the field names as some drivers such as do_derby, do_h2,
       # do_hsqldb, do_oracle return the field names as uppercase
-      @reader.fields.should.be array_case_insensitively_equal_to(['code', 'name'])
+      @reader.columns.should.be array_case_insensitively_equal_to(['code', 'name'])
     end
 
   end
 
-  it 'should respond to #values' do @reader.should.respond_to(:values) end
+  it 'should respond to #column_count' do @reader.should.respond_to(:column_count) end
 
-  describe 'values' do
+  describe 'column_count' do
 
-    describe 'when the reader is uninitialized' do
-
-      it 'should raise an error' do
-        should.raise(DataObjects::DataError) { @reader.values }
-      end
-
-    end
-
-    describe 'when the reader is moved to the first result' do
-
-      before do
-        @reader.next!
-      end
-
-      it 'should return the correct first set of in the reader' do
-        @reader.values.should == ["W0000001", "Widget 1"]
-      end
-
-    end
-
-    describe 'when the reader is moved to the second result' do
-
-      before do
-        @reader.next!; @reader.next!
-      end
-
-      it 'should return the correct first set of in the reader' do
-        @reader.values.should == ["W0000002", "Widget 2"]
-      end
-
-    end
-
-    describe 'when the reader is moved to the end' do
-
-      before do
-        while @reader.next! ; end
-      end
-
-      it 'should raise an error again' do
-        should.raise(DataObjects::DataError) { @reader.values }
-      end
+    it 'should count the number of columns' do
+      @reader.column_count.should == 2
     end
 
   end
 
-  it 'should respond to #close' do @reader.should.respond_to(:close) end
+  it 'should respond to #types' do @reader.should.respond_to(:types) end
 
-  describe 'close' do
+  describe 'types' do
 
-    describe 'on an open reader' do
-
-      it 'should return true' do
-        @reader.close.should.be.true
-      end
-
+    def array_case_insensitively_equal_to(arr)
+      lambda { |obj| obj.map { |f| f.downcase } == arr }
     end
 
-    describe 'on an already closed reader' do
-
-      before do
-        @reader.close
-      end
-
-      it 'should return false' do
-        @reader.close.should.be.false
-      end
-
+    it 'should return the correct types in the reader' do
+      # do_hsqldb, do_oracle return the field names as uppercase
+      @reader.types.should.be == [String, String]
     end
 
   end
 
-  it 'should respond to #next!' do @reader.should.respond_to(:next!) end
+  it 'should respond to #row_count' do @reader.should.respond_to(:row_count) end
 
-  describe 'next!' do
+  describe 'row_count' do
 
-    describe 'successfully moving the cursor initially' do
-
-      it 'should return true' do
-        @reader.next!.should.be.true
-      end
-
-    end
-
-    describe 'moving the cursor' do
-
-      before do
-        @reader.next!
-      end
-
-      it 'should move the cursor to the next value' do
-        @reader.values.should == ["W0000001", "Widget 1"]
-        lambda { @reader.next! }.should.change { @reader.values }
-        @reader.values.should == ["W0000002", "Widget 2"]
-      end
-
-    end
-
-    describe 'arriving at the end of the reader' do
-
-      before do
-        while @reader.next!; end
-      end
-
-      it 'should return false when the end is reached' do
-        @reader.next!.should.be.false
-      end
-
+    it 'should count the number of rows' do
+      @reader.row_count.should == 15
     end
 
   end
 
-  it 'should respond to #field_count' do @reader.should.respond_to(:field_count) end
-
-  describe 'field_count' do
-
-    it 'should count the number of fields' do
-      @reader.field_count.should == 2
-    end
-
-  end
-
-  it 'should respond to #values' do @reader.should.respond_to(:values) end
+  it 'should respond to #each' do @reader.should.respond_to(:each) end
 
   describe 'each' do
 

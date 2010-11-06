@@ -8,6 +8,7 @@ module DataObjects
   class Connection
 
     include Logging
+    include Quoting
 
     # Make a connection to the database using the DataObjects::URI given.
     # Note that the physical connection may be delayed until the first command is issued, so success here doesn't necessarily mean you can connect.
@@ -77,7 +78,6 @@ module DataObjects
           instance
         end
 
-        include Quoting
       end
 
       if driver_module_name = target.name.split('::')[-2]
@@ -106,40 +106,29 @@ module DataObjects
     end
 
     def initialize(uri) #:nodoc:
-      raise NotImplementedError.new
+      raise NotImplementedError
     end
 
     def dispose #:nodoc:
-      raise NotImplementedError.new
+      raise NotImplementedError
     end
 
-    # Create a Command object of the right subclass using the given text
-    def create_command(text)
-      concrete_command.new(self, text)
+    # Run a query
+    def query(text, *parameters)
+      raise NotImplementedError
+    end
+
+    # Execute a statement
+    def execute(text, *parameters)
+      raise NotImplementedError
     end
 
     def extension
       driver_namespace.const_get('Extension').new(self)
     end
 
-    private
-
     def driver_namespace
       DataObjects::const_get(self.class.name.split('::')[-2])
-    end
-
-    def concrete_command
-      @concrete_command || begin
-
-        class << self
-          private
-          def concrete_command
-            @concrete_command
-          end
-        end
-
-        @concrete_command = DataObjects::const_get(self.class.name.split('::')[-2]).const_get('Command')
-      end
     end
 
   end

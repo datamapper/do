@@ -17,15 +17,9 @@ shared 'supporting DateTime' do
     describe 'with manual typecasting' do
 
       before do
-        @command = @connection.create_command("SELECT release_date FROM widgets WHERE ad_description = ?")
-        @command.set_types(DateTime)
-        @reader = @command.execute_reader('Buy this product now!')
-        @reader.next!
-        @values = @reader.values
-      end
-
-      after do
-        @reader.close
+        @reader = @connection.query("SELECT release_date FROM widgets WHERE ad_description = ?", 'Buy this product now!')
+        @reader.set_types(DateTime)
+        @values = @reader.first
       end
 
       it 'should return the correctly typed result' do
@@ -42,15 +36,9 @@ shared 'supporting DateTime' do
     describe 'with manual typecasting a nil value' do
 
       before do
-        @command = @connection.create_command("SELECT release_datetime FROM widgets WHERE id = ?")
-        @command.set_types(DateTime)
-        @reader = @command.execute_reader(8)
-        @reader.next!
-        @values = @reader.values
-      end
-
-      after do
-        @reader.close
+        @reader = @connection.query("SELECT release_datetime FROM widgets WHERE id = ?", 8)
+        @reader.set_types(DateTime)
+        @values = @reader.first
       end
 
       it 'should return a nil class' do
@@ -69,13 +57,8 @@ shared 'supporting DateTime' do
 
     before do
       local_offset = Rational(Time.local(2008, 2, 14).utc_offset, 86400)
-      @reader = @connection.create_command("SELECT id FROM widgets WHERE release_datetime = ? ORDER BY id").execute_reader(DateTime.civil(2008, 2, 14, 00, 31, 12, local_offset))
-      @reader.next!
-      @values = @reader.values
-    end
-
-    after do
-      @reader.close
+      @reader = @connection.query("SELECT id FROM widgets WHERE release_datetime = ? ORDER BY id", DateTime.civil(2008, 2, 14, 00, 31, 12, local_offset))
+      @values = @reader.first
     end
 
     it 'should return the correct entry' do
@@ -104,13 +87,8 @@ shared 'supporting DateTime autocasting' do
     describe 'with automatic typecasting' do
 
       before do
-        @reader = @connection.create_command("SELECT release_datetime FROM widgets WHERE ad_description = ?").execute_reader('Buy this product now!')
-        @reader.next!
-        @values = @reader.values
-      end
-
-      after do
-        @reader.close
+        @reader = @connection.query("SELECT release_datetime FROM widgets WHERE ad_description = ?", 'Buy this product now!')
+        @values = @reader.first
       end
 
       it 'should return the correctly typed result' do

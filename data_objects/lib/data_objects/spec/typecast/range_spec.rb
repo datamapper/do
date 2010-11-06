@@ -13,16 +13,12 @@ shared 'supporting Range' do
   describe 'passing a Range as a parameter in execute_reader' do
 
     before do
-      @reader = @connection.create_command("SELECT * FROM widgets WHERE id between ?").execute_reader(2..5)
-    end
-
-    after do
-      @reader.close
+      @reader = @connection.query("SELECT * FROM widgets WHERE id between ?", 2..5)
     end
 
     it 'should return correct number of rows' do
       counter  = 0
-      while(@reader.next!) do
+      @reader.each do |row|
         counter += 1
       end
       counter.should == 4

@@ -9,7 +9,7 @@ describe DataObjects::Connection do
     @connection.release
   end
 
-  %w{dispose create_command}.each do |meth|
+  %w{dispose query execute}.each do |meth|
     it "should respond to ##{meth}" do
       @connection.should.respond_to(meth.intern)
     end

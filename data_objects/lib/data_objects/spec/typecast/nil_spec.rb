@@ -15,15 +15,9 @@ shared 'supporting Nil' do
     describe 'with manual typecasting' do
 
       before do
-        @command = @connection.create_command("SELECT flags FROM widgets WHERE ad_description = ?")
-        @command.set_types(NilClass)
-        @reader = @command.execute_reader('Buy this product now!')
-        @reader.next!
-        @values = @reader.values
-      end
-
-      after do
-        @reader.close
+        @reader = @connection.query("SELECT flags FROM widgets WHERE ad_description = ?", 'Buy this product now!')
+        @reader.set_types(NilClass)
+        @values = @reader.first
       end
 
       it 'should return the correctly typed result' do
@@ -60,17 +54,14 @@ shared 'supporting writing an Nil' do
 
     describe 'as a parameter' do
 
-        before do
-          @reader = @connection.create_command("SELECT id FROM widgets WHERE ad_description IN (?) ORDER BY id").execute_reader(nil)
+      before do
+        @reader = @connection.query("SELECT id FROM widgets WHERE ad_description IN (?) ORDER BY id", nil)
+        @values = @reader.first
       end
 
-        after do
-          @reader.close
-        end
-
-        it 'should return the correct entry' do
-          @reader.next!.should.be.false
-        end
+      it 'should return the correct entry' do
+        @values.should.not.be.nil
+      end
 
     end
 
@@ -95,13 +86,8 @@ shared 'supporting Nil autocasting' do
     describe 'with automatic typecasting' do
 
       before do
-        @reader = @connection.create_command("SELECT ad_description FROM widgets WHERE id = ?").execute_reader(3)
-        @reader.next!
-        @values = @reader.values
-      end
-
-      after do
-        @reader.close
+        @reader = @connection.query("SELECT ad_description FROM widgets WHERE id = ?", 3)
+        @values = @reader.first
       end
 
       it 'should return the correctly typed result' do

@@ -15,15 +15,9 @@ shared 'supporting Date' do
     describe 'with manual typecasting' do
 
       before do
-        @command = @connection.create_command("SELECT release_datetime FROM widgets WHERE ad_description = ?")
-        @command.set_types(Date)
-        @reader = @command.execute_reader('Buy this product now!')
-        @reader.next!
-        @values = @reader.values
-      end
-
-      after do
-        @reader.close
+        @reader = @connection.query("SELECT release_datetime FROM widgets WHERE ad_description = ?", 'Buy this product now!')
+        @reader.set_types(Date)
+        @values = @reader.first
       end
 
       it 'should return the correctly typed result' do
@@ -39,15 +33,9 @@ shared 'supporting Date' do
     describe 'with manual typecasting a nil value' do
 
       before do
-        @command = @connection.create_command("SELECT release_date FROM widgets WHERE id = ?")
-        @command.set_types(Date)
-        @reader = @command.execute_reader(7)
-        @reader.next!
-        @values = @reader.values
-      end
-
-      after do
-        @reader.close
+        @reader = @connection.query("SELECT release_date FROM widgets WHERE id = ?", 7)
+        @reader.set_types(Date)
+        @values = @reader.first
       end
 
       it 'should return a nil class' do
@@ -65,13 +53,8 @@ shared 'supporting Date' do
   describe 'writing an Date' do
 
     before do
-      @reader = @connection.create_command("SELECT id FROM widgets WHERE release_date = ? ORDER BY id").execute_reader(Date.civil(2008, 2, 14))
-      @reader.next!
-      @values = @reader.values
-    end
-
-    after do
-      @reader.close
+      @reader = @connection.query("SELECT id FROM widgets WHERE release_date = ? ORDER BY id", Date.civil(2008, 2, 14))
+      @values = @reader.first
     end
 
     it 'should return the correct entry' do
@@ -100,13 +83,8 @@ shared 'supporting Date autocasting' do
     describe 'with automatic typecasting' do
 
       before do
-        @reader = @connection.create_command("SELECT release_date FROM widgets WHERE ad_description = ?").execute_reader('Buy this product now!')
-        @reader.next!
-        @values = @reader.values
-      end
-
-      after do
-        @reader.close
+        @reader = @connection.query("SELECT release_date FROM widgets WHERE ad_description = ?", 'Buy this product now!')
+        @values = @reader.first
       end
 
       it 'should return the correctly typed result' do

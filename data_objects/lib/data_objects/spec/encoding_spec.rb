@@ -62,39 +62,28 @@ shared 'returning correctly encoded strings for the default database encoding' d
 
       describe 'reading a String' do
         before do
-          @reader = @connection.create_command("SELECT name, whitepaper_text FROM widgets WHERE ad_description = ?").execute_reader('Buy this product now!')
-          @reader.next!
-          @values = @reader.values
-        end
-
-        after do
-          @reader.close
+          @reader = @connection.query("SELECT name, whitepaper_text FROM widgets WHERE ad_description = ?", 'Buy this product now!')
+          @values = @reader.first
         end
 
         it 'should return UTF-8 encoded String' do
-          @values.first.should.be.kind_of(String)
-          @values.first.encoding.name.should == 'UTF-8'
-          @values.last.should.be.kind_of(String)
-          @values.last.encoding.name.should == 'UTF-8'
+          @values[0].should.be.kind_of(String)
+          @values[0].encoding.name.should == 'UTF-8'
+          @values[1].should.be.kind_of(String)
+          @values[1].encoding.name.should == 'UTF-8'
         end
       end
 
       describe 'reading a ByteArray' do
         before do
-          @command = @connection.create_command("SELECT ad_image FROM widgets WHERE ad_description = ?")
-          @command.set_types(Extlib::ByteArray)
-          @reader = @command.execute_reader('Buy this product now!')
-          @reader.next!
-          @values = @reader.values
-        end
-
-        after do
-          @reader.close
+          @reader = @connection.query("SELECT ad_image FROM widgets WHERE ad_description = ?", 'Buy this product now!')
+          @reader.set_types(DataObjects::ByteArray)
+          @values = @reader.first
         end
 
         it 'should return ASCII-8BIT encoded ByteArray' do
-          @values.first.should.be.kind_of(::Extlib::ByteArray)
-          @values.first.encoding.name.should == 'ASCII-8BIT'
+          @values[0].should.be.kind_of(DataObjects::ByteArray)
+          @values[0].encoding.name.should == 'ASCII-8BIT'
         end
       end
     end
@@ -124,39 +113,28 @@ shared 'returning correctly encoded strings for the default internal encoding' d
 
       describe 'reading a String' do
         before do
-          @reader = @connection.create_command("SELECT name, whitepaper_text FROM widgets WHERE ad_description = ?").execute_reader('Buy this product now!')
-          @reader.next!
-          @values = @reader.values
-        end
-
-        after do
-          @reader.close
+          @reader = @connection.query("SELECT name, whitepaper_text FROM widgets WHERE ad_description = ?", 'Buy this product now!')
+          @values = @reader.first
         end
 
         it 'should return UTF-8 encoded String' do
-          @values.first.should.be.kind_of(String)
-          @values.first.encoding.name.should == 'ISO-8859-1'
-          @values.last.should.be.kind_of(String)
-          @values.last.encoding.name.should == 'ISO-8859-1'
+          @values[0].should.be.kind_of(String)
+          @values[0].encoding.name.should == 'ISO-8859-1'
+          @values[1].should.be.kind_of(String)
+          @values[1].encoding.name.should == 'ISO-8859-1'
         end
       end
 
       describe 'reading a ByteArray' do
         before do
-          @command = @connection.create_command("SELECT ad_image FROM widgets WHERE ad_description = ?")
-          @command.set_types(Extlib::ByteArray)
-          @reader = @command.execute_reader('Buy this product now!')
-          @reader.next!
-          @values = @reader.values
-        end
-
-        after do
-          @reader.close
+          @reader = @connection.query("SELECT ad_image FROM widgets WHERE ad_description = ?", 'Buy this product now!')
+          @reader.set_types(DataObjects::ByteArray)
+          @values = @reader.first
         end
 
         it 'should return ASCII-8BIT encoded ByteArray' do
-          @values.first.should.be.kind_of(::Extlib::ByteArray)
-          @values.first.encoding.name.should == 'ASCII-8BIT'
+          @values[0].should.be.kind_of(DataObjects::ByteArray)
+          @values[0].encoding.name.should == 'ASCII-8BIT'
         end
       end
     end

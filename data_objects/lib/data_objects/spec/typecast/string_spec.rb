@@ -17,13 +17,8 @@ shared 'supporting String' do
     describe 'with automatic typecasting' do
 
       before do
-        @reader = @connection.create_command("SELECT code FROM widgets WHERE ad_description = ?").execute_reader('Buy this product now!')
-        @reader.next!
-        @values = @reader.values
-      end
-
-      after do
-        @reader.close
+        @reader = @connection.query("SELECT code FROM widgets WHERE ad_description = ?", 'Buy this product now!')
+        @values = @reader.first
       end
 
       it 'should return the correctly typed result' do
@@ -39,15 +34,9 @@ shared 'supporting String' do
     describe 'with manual typecasting' do
 
       before do
-        @command = @connection.create_command("SELECT weight FROM widgets WHERE ad_description = ?")
-        @command.set_types(String)
-        @reader = @command.execute_reader('Buy this product now!')
-        @reader.next!
-        @values = @reader.values
-      end
-
-      after do
-        @reader.close
+        @reader = @connection.query("SELECT weight FROM widgets WHERE ad_description = ?", 'Buy this product now!')
+        @reader.set_types(String)
+        @values = @reader.first
       end
 
       it 'should return the correctly typed result' do
@@ -65,13 +54,8 @@ shared 'supporting String' do
   describe 'writing a String' do
 
     before do
-      @reader = @connection.create_command("SELECT id FROM widgets WHERE id = ?").execute_reader("2")
-      @reader.next!
-      @values = @reader.values
-    end
-
-    after do
-      @reader.close
+      @reader = @connection.query("SELECT id FROM widgets WHERE id = ?", "2")
+      @values = @reader.first
     end
 
     it 'should return the correct entry' do
@@ -93,29 +77,21 @@ shared 'supporting String' do
        end
 
       it 'should write a multibyte String' do
-        @command = @connection.create_command('INSERT INTO users (name) VALUES(?)')
-        should.not.raise(DataObjects::DataError) { @command.execute_non_query(name) }
+        should.not.raise(DataObjects::DataError) { @connection.execute('INSERT INTO users (name) VALUES(?)', name) }
       end
 
       it 'should read back the multibyte String' do
-        @command = @connection.create_command('SELECT name FROM users WHERE name = ?')
-        @reader = @command.execute_reader(name)
-        @reader.next!
-        @reader.values.first.should == name
-        @reader.close
+        @reader = @connection.query('SELECT name FROM users WHERE name = ?', name)
+        @reader.first.first.should == name
       end
 
       it 'should write a multibyte String (without query parameters)' do
-        @command = @connection.create_command("INSERT INTO users (name) VALUES(#{@n}\'#{name}\')")
-        should.not.raise(DataObjects::DataError) { @command.execute_non_query }
+        should.not.raise(DataObjects::DataError) { @connection.execute("INSERT INTO users (name) VALUES(#{@n}\'#{name}\')") }
       end
 
       it 'should read back the multibyte String (without query parameters)' do
-        @command = @connection.create_command("SELECT name FROM users WHERE name = #{@n}\'#{name}\'")
-        @reader = @command.execute_reader
-        @reader.next!
-        @reader.values.first.should == name
-        @reader.close
+        @reader = @connection.query("SELECT name FROM users WHERE name = #{@n}\'#{name}\'")
+        @reader.first.first.should == name
       end
 
     end
@@ -126,13 +102,8 @@ shared 'supporting String' do
   describe 'writing a kind of (subclass of) String' do
 
     before do
-      @reader = @connection.create_command("SELECT id FROM widgets WHERE id = ?").execute_reader(::StringWithExtraPowers.new("2"))
-      @reader.next!
-      @values = @reader.values
-    end
-
-    after do
-      @reader.close
+      @reader = @connection.query("SELECT id FROM widgets WHERE id = ?", ::StringWithExtraPowers.new("2"))
+      @values = @reader.first
     end
 
     it 'should return the correct entry' do

@@ -15,15 +15,9 @@ shared 'supporting Time' do
     describe 'with manual typecasting' do
 
       before do
-        @command = @connection.create_command("SELECT release_date FROM widgets WHERE ad_description = ?")
-        @command.set_types(Time)
-        @reader = @command.execute_reader('Buy this product now!')
-        @reader.next!
-        @values = @reader.values
-      end
-
-      after do
-        @reader.close
+        @reader = @connection.query("SELECT release_date FROM widgets WHERE ad_description = ?", 'Buy this product now!')
+        @reader.set_types(Time)
+        @values = @reader.first
       end
 
       it 'should return the correctly typed result' do
@@ -39,15 +33,9 @@ shared 'supporting Time' do
     describe 'with manual typecasting a nil value' do
 
       before do
-        @command = @connection.create_command("SELECT release_timestamp FROM widgets WHERE id = ?")
-        @command.set_types(Time)
-        @reader = @command.execute_reader(9)
-        @reader.next!
-        @values = @reader.values
-      end
-
-      after do
-        @reader.close
+        @reader = @connection.query("SELECT release_timestamp FROM widgets WHERE id = ?", 9)
+        @reader.set_types(Time)
+        @values = @reader.first
       end
 
       it 'should return a nil class' do
@@ -65,13 +53,8 @@ shared 'supporting Time' do
   describe 'writing an Time' do
 
     before do
-      @reader = @connection.create_command("SELECT id FROM widgets WHERE release_datetime = ? ORDER BY id").execute_reader(Time.local(2008, 2, 14, 00, 31, 12))
-      @reader.next!
-      @values = @reader.values
-    end
-
-    after do
-      @reader.close
+      @reader = @connection.query("SELECT id FROM widgets WHERE release_datetime = ? ORDER BY id", Time.local(2008, 2, 14, 00, 31, 12))
+      @values = @reader.first
     end
 
     it 'should return the correct entry' do

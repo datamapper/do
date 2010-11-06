@@ -23,10 +23,10 @@
 #undef snprintf
 #undef sprintf
 #undef printf
-#define cCommand_execute cCommand_execute_sync
+#define query_execute query_execute_sync
 #define do_int64 signed __int64
 #else
-#define cCommand_execute cCommand_execute_async
+#define query_execute query_execute_async
 #define do_int64 signed long long int
 #endif
 
@@ -77,6 +77,34 @@
   rb_str_new((const char *)str, (long)len)
 #endif
 
+// Ugly clutch :(
+#ifndef rb_hash_size
+#include <st.h>
+#define rb_hash_size(hash) (INT2FIX(RHASH_TBL(hash)->num_entries))
+#endif
+
+typedef struct {
+  VALUE* values;
+  VALUE columns;
+  VALUE types;
+  VALUE encoding_id;
+  VALUE column_hash;
+  int column_count;
+  int* lengths;
+  char* raw;
+} pg_row;
+
+typedef struct {
+  VALUE columns;
+  VALUE types;
+  VALUE query;
+  VALUE connection;
+  VALUE column_hash;
+  int column_count;
+  int row_count;
+  PGresult* result;
+} pg_reader;
+
 // To store rb_intern values
 static ID ID_NEW_DATE;
 static ID ID_RATIONAL;
@@ -85,14 +113,13 @@ static ID ID_NEW;
 static ID ID_ESCAPE;
 static ID ID_LOG;
 
-static VALUE mExtlib;
 static VALUE mDO;
 static VALUE mEncoding;
 static VALUE cDO_Quoting;
 static VALUE cDO_Connection;
-static VALUE cDO_Command;
 static VALUE cDO_Result;
 static VALUE cDO_Reader;
+static VALUE cDO_Row;
 static VALUE cDO_Logger;
 static VALUE cDO_Logger_Message;
 
@@ -103,9 +130,9 @@ static VALUE rb_cByteArray;
 
 static VALUE mPostgres;
 static VALUE cConnection;
-static VALUE cCommand;
 static VALUE cResult;
 static VALUE cReader;
+static VALUE cRow;
 
 static VALUE eConnectionError;
 static VALUE eDataError;
@@ -379,7 +406,7 @@ static VALUE typecast(const char *value, long length, const VALUE type, int enco
 
 }
 
-static void raise_error(VALUE self, PGresult *result, VALUE query) {
+static void raise_error(VALUE self, int status, PGresult *result, VALUE query) {
   VALUE exception;
   char *message;
   char *sqlstate;
@@ -387,8 +414,16 @@ static void raise_error(VALUE self, PGresult *result, VALUE query) {
 
   message  = PQresultErrorMessage(result);
   sqlstate = PQresultErrorField(result, PG_DIAG_SQLSTATE);
-  postgres_errno = MAKE_SQLSTATE(sqlstate[0], sqlstate[1], sqlstate[2], sqlstate[3], sqlstate[4]);
-  PQclear(result);
+  if(status == PGRES_EMPTY_QUERY) {
+    message = (char*)"Empty query";
+    postgres_errno = ERRCODE_SYNTAX_ERROR;
+    sqlstate = (char*) "";
+  } else if(sqlstate) {
+    postgres_errno = MAKE_SQLSTATE(sqlstate[0], sqlstate[1], sqlstate[2], sqlstate[3], sqlstate[4]);
+  } else {
+    sqlstate = (char*) "";
+    postgres_errno = -1;
+  }
 
   const char *exception_type = "SQLError";
 
@@ -433,11 +468,14 @@ static VALUE cConnection_dispose(VALUE self) {
   return Qtrue;
 }
 
-static VALUE cCommand_set_types(int argc, VALUE *argv, VALUE self) {
+static VALUE cReader_set_types(int argc, VALUE *argv, VALUE self) {
   VALUE type_strings = rb_ary_new();
   VALUE array = rb_ary_new();
 
   int i, j;
+
+  pg_reader * reader;
+  Data_Get_Struct(self, pg_reader, reader);
 
   for ( i = 0; i < argc; i++) {
     rb_ary_push(array, argv[i]);
@@ -461,20 +499,25 @@ static VALUE cCommand_set_types(int argc, VALUE *argv, VALUE self) {
     }
   }
 
-  rb_iv_set(self, "@field_types", type_strings);
+  reader->types = type_strings;
 
   return array;
 }
 
-static VALUE build_query_from_args(VALUE klass, int count, VALUE *args[]) {
-  VALUE query = rb_iv_get(klass, "@text");
+static VALUE build_query_from_args(VALUE klass, int count, VALUE args[]) {
+
+  if(count < 1) {
+    rb_raise(rb_eArgError, "No arguments given");
+  }
+
+  VALUE query = args[0];
 
   int i;
   VALUE array = rb_ary_new();
-  for ( i = 0; i < count; i++) {
-    rb_ary_push(array, (VALUE)args[i]);
+  for ( i = 1; i < count; i++) {
+    rb_ary_push(array, args[i]);
   }
-  query = rb_funcall(klass, ID_ESCAPE, 1, array);
+  query = rb_funcall(klass, ID_ESCAPE, 2, query, array);
 
   return query;
 }
@@ -534,7 +577,7 @@ static VALUE cConnection_quote_byte_array(VALUE self, VALUE string) {
 static void full_connect(VALUE self, PGconn *db);
 
 #ifdef _WIN32
-static PGresult* cCommand_execute_sync(VALUE self, VALUE connection, PGconn *db, VALUE query) {
+static PGresult* query_execute_sync(VALUE self, VALUE connection, PGconn *db, VALUE query) {
   PGresult *response;
   struct timeval start;
   char* str = StringValuePtr(query);
@@ -568,7 +611,7 @@ static PGresult* cCommand_execute_sync(VALUE self, VALUE connection, PGconn *db,
   return response;
 }
 #else
-static PGresult* cCommand_execute_async(VALUE self, VALUE connection, PGconn *db, VALUE query) {
+static PGresult* query_execute_async(VALUE connection, PGconn *db, VALUE query) {
   int socket_fd;
   int retval;
   fd_set rset;
@@ -686,6 +729,7 @@ static void full_connect(VALUE self, PGconn *db) {
   char *host = NULL, *user = NULL, *password = NULL, *path = NULL, *database = NULL;
   const char *port = "5432";
   VALUE encoding = Qnil;
+  int status;
   const char *search_path = NULL;
   char *search_path_query = NULL;
   const char *backslash_off = "SET backslash_quote = off";
@@ -739,32 +783,32 @@ static void full_connect(VALUE self, PGconn *db) {
     search_path_query = (char *)calloc(256, sizeof(char));
     snprintf(search_path_query, 256, "set search_path to %s;", search_path);
     r_query = rb_str_new2(search_path_query);
-    result = cCommand_execute(Qnil, self, db, r_query);
+    result = query_execute(self, db, r_query);
 
-    if (PQresultStatus(result) != PGRES_COMMAND_OK) {
+    if ((status = PQresultStatus(result)) != PGRES_COMMAND_OK) {
       free((void *)search_path_query);
-      raise_error(self, result, r_query);
+      raise_error(self, status, result, r_query);
     }
 
     free((void *)search_path_query);
   }
 
   r_options = rb_str_new2(backslash_off);
-  result = cCommand_execute(Qnil, self, db, r_options);
+  result = query_execute(self, db, r_options);
 
   if (PQresultStatus(result) != PGRES_COMMAND_OK) {
     rb_warn("%s", PQresultErrorMessage(result));
   }
 
   r_options = rb_str_new2(standard_strings_on);
-  result = cCommand_execute(Qnil, self, db, r_options);
+  result = query_execute(self, db, r_options);
 
   if (PQresultStatus(result) != PGRES_COMMAND_OK) {
     rb_warn("%s", PQresultErrorMessage(result));
   }
 
   r_options = rb_str_new2(warning_messages);
-  result = cCommand_execute(Qnil, self, db, r_options);
+  result = query_execute(self, db, r_options);
 
   if (PQresultStatus(result) != PGRES_COMMAND_OK) {
     rb_warn("%s", PQresultErrorMessage(result));
@@ -781,7 +825,6 @@ static void full_connect(VALUE self, PGconn *db) {
 #ifdef HAVE_RUBY_ENCODING_H
       rb_iv_set(self, "@encoding_id", INT2FIX(rb_enc_find_index(rb_str_ptr_readonly(encoding))));
 #endif
-      rb_iv_set(self, "@pg_encoding", pg_encoding);
     }
   } else {
     rb_warn("Encoding %s is not a known Ruby encoding for PostgreSQL\n", rb_str_ptr_readonly(encoding));
@@ -789,7 +832,6 @@ static void full_connect(VALUE self, PGconn *db) {
 #ifdef HAVE_RUBY_ENCODING_H
     rb_iv_set(self, "@encoding_id", INT2FIX(rb_enc_find_index("UTF-8")));
 #endif
-    rb_iv_set(self, "@pg_encoding", rb_str_new2("UTF8"));
   }
 #endif
   rb_iv_set(self, "@connection", Data_Wrap_Struct(rb_cObject, 0, 0, db));
@@ -799,9 +841,8 @@ static VALUE cConnection_character_set(VALUE self) {
   return rb_iv_get(self, "@encoding");
 }
 
-static VALUE cCommand_execute_non_query(int argc, VALUE *argv[], VALUE self) {
-  VALUE connection = rb_iv_get(self, "@connection");
-  VALUE postgres_connection = rb_iv_get(connection, "@connection");
+static VALUE cConnection_execute(int argc, VALUE argv[], VALUE self) {
+  VALUE postgres_connection = rb_iv_get(self, "@connection");
   if (Qnil == postgres_connection) {
     rb_raise(eConnectionError, "This connection has already been closed.");
   }
@@ -815,7 +856,7 @@ static VALUE cCommand_execute_non_query(int argc, VALUE *argv[], VALUE self) {
 
   VALUE query = build_query_from_args(self, argc, argv);
 
-  response = cCommand_execute(self, connection, db, query);
+  response = query_execute(self, db, query);
 
   status = PQresultStatus(response);
 
@@ -832,158 +873,302 @@ static VALUE cCommand_execute_non_query(int argc, VALUE *argv[], VALUE self) {
     affected_rows = INT2NUM(atoi(PQcmdTuples(response)));
   }
   else {
-    raise_error(self, response, query);
+    raise_error(self, status, response, query);
   }
 
   PQclear(response);
 
-  return rb_funcall(cResult, ID_NEW, 3, self, affected_rows, insert_id);
+  return rb_funcall(cResult, ID_NEW, 2, affected_rows, insert_id);
 }
 
-static VALUE cCommand_execute_reader(int argc, VALUE *argv[], VALUE self) {
-  VALUE reader, query;
-  VALUE field_names, field_types;
 
-  int i;
-  int field_count;
-  int infer_types = 0;
+static void cReader_mark(void * raw_reader) {
+  pg_reader* reader = (pg_reader*) raw_reader;
+  if(reader) {
+    rb_gc_mark(reader->connection);
+    rb_gc_mark(reader->query);
+    rb_gc_mark(reader->columns);
+    rb_gc_mark(reader->column_hash);
+    rb_gc_mark(reader->types);
+  }
+}
 
-  VALUE connection = rb_iv_get(self, "@connection");
-  VALUE postgres_connection = rb_iv_get(connection, "@connection");
+static void cReader_free(void * raw_reader) {
+  pg_reader* reader = (pg_reader*) raw_reader;
+  if(reader && reader->result) {
+    PQclear(reader->result);
+  }
+}
+
+static VALUE cConnection_query(int argc, VALUE argv[], VALUE self) {
+  pg_reader * raw_reader;
+  VALUE reader = Data_Make_Struct(cReader, pg_reader, cReader_mark, cReader_free, raw_reader);
+
+  VALUE query = build_query_from_args(self, argc, argv);
+
+  raw_reader->query = query;
+  raw_reader->connection = self;
+  raw_reader->columns = Qnil;
+  raw_reader->types = Qnil;
+  raw_reader->column_hash = rb_hash_new();
+  raw_reader->result = NULL;
+
+  return reader;
+}
+
+static void cRow_mark(void * raw_row) {
+  pg_row * row = (pg_row*) raw_row;
+  if(row) {
+    int i = 0;
+    for(; i < row->column_count; ++i) {
+      rb_gc_mark(row->values[i]);
+    }
+    rb_gc_mark(row->encoding_id);
+    rb_gc_mark(row->columns);
+    rb_gc_mark(row->column_hash);
+    rb_gc_mark(row->types);
+  }
+}
+
+static void cRow_free(void * raw_row) {
+  pg_row * row = (pg_row*) raw_row;
+  if(row) {
+    ruby_xfree(row->values);
+    ruby_xfree(row->lengths);
+    ruby_xfree(row->raw);
+    ruby_xfree(row);
+  }
+}
+
+static VALUE cRow_populate(pg_reader* reader, VALUE encoding_id, int position) {
+
+  pg_row * raw_row;
+  VALUE row = Data_Make_Struct(cRow, pg_row, cRow_mark, cRow_free, raw_row);
+
+  // Pointer used during storing raw data
+  char *p   = NULL;
+
+  raw_row->columns      = reader->columns;
+  raw_row->column_hash  = reader->column_hash;
+  raw_row->types        = reader->types;
+  raw_row->column_count = reader->column_count;
+  raw_row->encoding_id  = encoding_id;
+  // Pointers for initialized values
+  raw_row->values      = ruby_xmalloc(reader->column_count * sizeof(VALUE));
+  // Data lengths of each entry
+  raw_row->lengths     = ruby_xmalloc(reader->column_count * sizeof(int));
+
+  int raw_length     = 0;
+  int i              = 0;
+
+  for (; i < reader->column_count; i++ ) {
+    // Always return nil if the value returned from Postgres is null
+    if (!PQgetisnull(reader->result, position, i)) {
+      raw_row->values[i]      = 0;
+      // We make room here for the potential trailing NULL character
+      // PQgetlength reports the length without a trailing NULL
+      // character, even if PQgetvalue will add it.
+      raw_row->lengths[i]     = PQgetlength(reader->result, position, i) + 1;
+      raw_length             += raw_row->lengths[i];
+    } else {
+      raw_row->values[i]      = Qnil;
+      raw_row->lengths[i]     = 0;
+    }
+  }
+
+  raw_row->raw = ruby_xmalloc(raw_length + reader->column_count);
+  p = raw_row->raw;
+
+  for ( i = 0; i < reader->column_count; i++ ) {
+    if(!raw_row->values[i]) {
+      memcpy(p, PQgetvalue(reader->result, position, i), raw_row->lengths[i]);
+      p += raw_row->lengths[i];
+    }
+  }
+  return row;
+}
+
+static void cReader_kick(VALUE self) {
+  int status, infer_types, i;
+  pg_reader * reader;
+  Data_Get_Struct(self, pg_reader, reader);
+  // Return if we already initialized
+  if(reader->result) {
+    return;
+  }
+
+  VALUE postgres_connection = rb_iv_get(reader->connection, "@connection");
+
   if (Qnil == postgres_connection) {
     rb_raise(eConnectionError, "This connection has already been closed.");
   }
 
   PGconn *db = DATA_PTR(postgres_connection);
-  PGresult *response;
 
-  query = build_query_from_args(self, argc, argv);
+  reader->result = query_execute(reader->connection, db, reader->query);
 
-  response = cCommand_execute(self, connection, db, query);
-
-  if ( PQresultStatus(response) != PGRES_TUPLES_OK ) {
-    raise_error(self, response, query);
+  if ((status = PQresultStatus(reader->result)) != PGRES_TUPLES_OK ) {
+    raise_error(self, status, reader->result, reader->query);
   }
 
-  field_count = PQnfields(response);
+  reader->column_count = PQnfields(reader->result);
+  reader->row_count   = PQntuples(reader->result);
+  reader->columns = rb_ary_new2(reader->column_count);
 
-  reader = rb_funcall(cReader, ID_NEW, 0);
-  rb_iv_set(reader, "@connection", connection);
-  rb_iv_set(reader, "@reader", Data_Wrap_Struct(rb_cObject, 0, 0, response));
-  rb_iv_set(reader, "@field_count", INT2NUM(field_count));
-  rb_iv_set(reader, "@row_count", INT2NUM(PQntuples(response)));
-
-  field_names = rb_ary_new();
-  field_types = rb_iv_get(self, "@field_types");
-
-  if ( field_types == Qnil || 0 == RARRAY_LEN(field_types) ) {
-    field_types = rb_ary_new();
+  if(reader->types == Qnil) {
+    reader->types = rb_ary_new2(reader->column_count);
     infer_types = 1;
-  } else if (RARRAY_LEN(field_types) != field_count) {
+  } else if (RARRAY_LEN(reader->types) != reader->column_count) {
     // Whoops...  wrong number of types passed to set_types.  Close the reader and raise
     // and error
-    rb_funcall(reader, rb_intern("close"), 0);
-    rb_raise(rb_eArgError, "Field-count mismatch. Expected %ld fields, but the query yielded %d", RARRAY_LEN(field_types), field_count);
+    rb_raise(rb_eArgError, "Column count mismatch. Expected %ld columns, but the query yielded %d", RARRAY_LEN(reader->types), reader->column_count);
   }
 
-  for ( i = 0; i < field_count; i++ ) {
-    rb_ary_push(field_names, rb_str_new2(PQfname(response, i)));
-    if ( infer_types == 1 ) {
-      rb_ary_push(field_types, infer_ruby_type(PQftype(response, i)));
+  for ( i = 0; i < reader->column_count; ++i ) {
+    rb_ary_store(reader->columns, i, rb_str_new2(PQfname(reader->result, i)));
+    if ( infer_types ) {
+      rb_ary_store(reader->types, i, infer_ruby_type(PQftype(reader->result, i)));
     }
   }
-
-  rb_iv_set(reader, "@position", INT2NUM(0));
-  rb_iv_set(reader, "@fields", field_names);
-  rb_iv_set(reader, "@field_types", field_types);
-
-  return reader;
 }
 
-static VALUE cReader_close(VALUE self) {
-  VALUE reader_container = rb_iv_get(self, "@reader");
 
-  PGresult *reader;
+static VALUE cReader_each(VALUE self) {
+  if (!rb_block_given_p()) {
+    rb_raise(rb_eLocalJumpError, "no block given");
+  }
 
-  if (Qnil == reader_container)
-    return Qfalse;
-
-  reader = DATA_PTR(reader_container);
-
-  if (NULL == reader)
-    return Qfalse;
-
-  PQclear(reader);
-  rb_iv_set(self, "@reader", Qnil);
-  return Qtrue;
-}
-
-static VALUE cReader_next(VALUE self) {
-  PGresult *reader = DATA_PTR(rb_iv_get(self, "@reader"));
-
-  int field_count;
-  int row_count;
   int i;
-  int position;
+  pg_reader * reader;
+  VALUE encoding_id;
+  Data_Get_Struct(self, pg_reader, reader);
 
-  VALUE array = rb_ary_new();
-  VALUE field_types, field_type;
-  VALUE value;
+  cReader_kick(self);
 
-  row_count = NUM2INT(rb_iv_get(self, "@row_count"));
-  field_count = NUM2INT(rb_iv_get(self, "@field_count"));
-  field_types = rb_iv_get(self, "@field_types");
-  position = NUM2INT(rb_iv_get(self, "@position"));
-
-  if ( position > (row_count - 1) ) {
-    rb_iv_set(self, "@values", Qnil);
-    return Qfalse;
-  }
-
-  int enc = -1;
 #ifdef HAVE_RUBY_ENCODING_H
-  VALUE encoding_id = rb_iv_get(rb_iv_get(self, "@connection"), "@encoding_id");
-  if (encoding_id != Qnil) {
-    enc = FIX2INT(encoding_id);
-  }
+  encoding_id = rb_iv_get(reader->connection, "@encoding_id");
 #endif
 
-  for ( i = 0; i < field_count; i++ ) {
-    field_type = rb_ary_entry(field_types, i);
+  for (i = 0; i < reader->row_count; ++i) {
+    VALUE row = cRow_populate(reader, encoding_id, i);
+    rb_yield(row);
+  }
 
-    // Always return nil if the value returned from Postgres is null
-    if (!PQgetisnull(reader, position, i)) {
-      value = typecast(PQgetvalue(reader, position, i), PQgetlength(reader, position, i), field_type, enc);
-    } else {
-      value = Qnil;
+  return self;
+}
+
+static VALUE cReader_columns(VALUE self) {
+  pg_reader * reader;
+  Data_Get_Struct(self, pg_reader, reader);
+  cReader_kick(self);
+  return reader->columns;
+}
+
+static VALUE cReader_types(VALUE self) {
+  pg_reader * reader;
+  Data_Get_Struct(self, pg_reader, reader);
+  cReader_kick(self);
+  return reader->types;
+}
+
+static VALUE cReader_column_count(VALUE self) {
+  pg_reader * reader;
+  Data_Get_Struct(self, pg_reader, reader);
+  cReader_kick(self);
+  return INT2NUM(reader->column_count);
+}
+
+static VALUE cReader_row_count(VALUE self) {
+  pg_reader * reader;
+  Data_Get_Struct(self, pg_reader, reader);
+  cReader_kick(self);
+  return INT2NUM(reader->row_count);
+}
+
+static VALUE cRow_entry(VALUE self, int idx) {
+  pg_row * row;
+  Data_Get_Struct(self, pg_row, row);
+
+  if(idx < 0) {
+    rb_raise(rb_eArgError, "Negative index used for row");
+  }
+  if(idx >= row->column_count) {
+    rb_raise(rb_eArgError, "Index larger than row size");
+  }
+
+  if(!row->values[idx]) {
+    // Ok, we need to initialize the data here.
+    // Retrieve the right piece of data
+
+    VALUE column_type  = rb_ary_entry(row->types, idx);
+
+    int enc = -1;
+#ifdef HAVE_RUBY_ENCODING_H
+    if (row->encoding_id != Qnil) {
+      enc = FIX2INT(row->encoding_id);
     }
+#endif
 
-    rb_ary_push(array, value);
+    int offset = 0;
+    int i      = 0;
+    for(; i < idx; ++i) {
+      offset += row->lengths[i];
+    }
+    // We have to subtract 1 to the length here, since we
+    // made room for it because it can contain a trailing NULL byte
+    row->values[idx] = typecast(row->raw + offset, row->lengths[idx] - 1, column_type, enc);
+  }
+  return row->values[idx];
+
+}
+
+static VALUE cRow_aref(int argc, VALUE* argv, VALUE self) {
+
+  if(argc == 1) {
+    if(FIXNUM_P(argv[0])) {
+      int idx = NUM2INT(argv[0]);
+      return cRow_entry(self, idx);
+    } else {
+      VALUE sidx = StringValue(argv[0]);
+      // Initialize the shared column => index hash
+      pg_row * row;
+      Data_Get_Struct(self, pg_row, row);
+      if(NUM2INT(rb_hash_size(row->column_hash)) == 0) {
+        int i = 0;
+        for(; i < row->column_count; ++i) {
+          rb_hash_aset(row->column_hash, rb_ary_entry(row->columns, i), INT2NUM(i));
+        }
+      }
+      int idx = NUM2INT(rb_hash_aref(row->column_hash, sidx));
+      return cRow_entry(self, idx);
+    }
+  } else if(argc == 2) {
+    // Ok, syntax here is that we have a start / end
+    rb_raise(rb_eArgError, "Not yet supported");
+  }
+  return Qnil;
+}
+
+static VALUE cRow_each(VALUE self) {
+  if (!rb_block_given_p()) {
+    rb_raise(rb_eLocalJumpError, "no block given");
   }
 
-  rb_iv_set(self, "@values", array);
-  rb_iv_set(self, "@position", INT2NUM(position+1));
+  pg_row * row;
+  Data_Get_Struct(self, pg_row, row);
+  int i = 0;
 
-  return Qtrue;
-}
-
-static VALUE cReader_values(VALUE self) {
-
-  VALUE values = rb_iv_get(self, "@values");
-  if(values == Qnil) {
-    rb_raise(eDataError, "Reader not initialized");
-    return Qnil;
-  } else {
-    return values;
+  for(; i < row->column_count; ++i) {
+    VALUE field = cRow_entry(self, i);
+    rb_yield(field);
   }
+  return self;
 }
 
-static VALUE cReader_fields(VALUE self) {
-  return rb_iv_get(self, "@fields");
-}
-
-static VALUE cReader_field_count(VALUE self) {
-  return rb_iv_get(self, "@field_count");
+static VALUE cRow_size(VALUE self) {
+  pg_row * row;
+  Data_Get_Struct(self, pg_row, row);
+  return INT2NUM(row->column_count);
 }
 
 void Init_do_postgres() {
@@ -1009,20 +1194,18 @@ void Init_do_postgres() {
   ID_ESCAPE = rb_intern("escape_sql");
   ID_LOG = rb_intern("log");
 
-  // Get references to the Extlib module
-  mExtlib = CONST_GET(rb_mKernel, "Extlib");
-  rb_cByteArray = CONST_GET(mExtlib, "ByteArray");
 
   // Get references to the DataObjects module and its classes
   mDO = CONST_GET(rb_mKernel, "DataObjects");
   cDO_Quoting = CONST_GET(mDO, "Quoting");
   cDO_Connection = CONST_GET(mDO, "Connection");
-  cDO_Command = CONST_GET(mDO, "Command");
   cDO_Result = CONST_GET(mDO, "Result");
   cDO_Reader = CONST_GET(mDO, "Reader");
+  cDO_Row    = CONST_GET(mDO, "Row");
   cDO_Logger = CONST_GET(mDO, "Logger");
   cDO_Logger_Message = CONST_GET(cDO_Logger, "Message");
 
+  rb_cByteArray = CONST_GET(mDO, "ByteArray");
   mPostgres = rb_define_module_under(mDO, "Postgres");
   eConnectionError = CONST_GET(mDO, "ConnectionError");
   eDataError = CONST_GET(mDO, "DataError");
@@ -1034,20 +1217,24 @@ void Init_do_postgres() {
   rb_define_method(cConnection, "character_set", cConnection_character_set , 0);
   rb_define_method(cConnection, "quote_string", cConnection_quote_string, 1);
   rb_define_method(cConnection, "quote_byte_array", cConnection_quote_byte_array, 1);
-
-  cCommand = DRIVER_CLASS("Command", cDO_Command);
-  rb_define_method(cCommand, "set_types", cCommand_set_types, -1);
-  rb_define_method(cCommand, "execute_non_query", cCommand_execute_non_query, -1);
-  rb_define_method(cCommand, "execute_reader", cCommand_execute_reader, -1);
+  rb_define_method(cConnection, "execute", cConnection_execute, -1);
+  rb_define_method(cConnection, "query", cConnection_query, -1);
 
   cResult = DRIVER_CLASS("Result", cDO_Result);
 
   cReader = DRIVER_CLASS("Reader", cDO_Reader);
-  rb_define_method(cReader, "close", cReader_close, 0);
-  rb_define_method(cReader, "next!", cReader_next, 0);
-  rb_define_method(cReader, "values", cReader_values, 0);
-  rb_define_method(cReader, "fields", cReader_fields, 0);
-  rb_define_method(cReader, "field_count", cReader_field_count, 0);
+  rb_define_method(cReader, "set_types", cReader_set_types, -1);
+  rb_define_method(cReader, "types", cReader_types, 0);
+  rb_define_method(cReader, "columns", cReader_columns, 0);
+  rb_define_method(cReader, "each", cReader_each, 0);
+  rb_define_method(cReader, "column_count", cReader_column_count, 0);
+  rb_define_method(cReader, "row_count", cReader_row_count, 0);
+
+  cRow = DRIVER_CLASS("Row", cDO_Row);
+
+  rb_define_method(cRow, "[]", cRow_aref, -1);
+  rb_define_method(cRow, "each", cRow_each, 0);
+  rb_define_method(cRow, "size", cRow_size, 0);
 
   rb_global_variable(&ID_NEW_DATE);
   rb_global_variable(&ID_RATIONAL);
@@ -1066,6 +1253,7 @@ void Init_do_postgres() {
 
   rb_global_variable(&cResult);
   rb_global_variable(&cReader);
+  rb_global_variable(&cRow);
 
   rb_global_variable(&eConnectionError);
   rb_global_variable(&eDataError);

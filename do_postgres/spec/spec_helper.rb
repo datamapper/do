@@ -47,19 +47,19 @@ module DataObjectsSpecHelpers
   def setup_test_environment
     conn = DataObjects::Connection.new(CONFIG.uri)
 
-    conn.create_command(<<-EOF).execute_non_query
+    conn.execute(<<-EOF)
       DROP TABLE IF EXISTS "invoices"
     EOF
 
-    conn.create_command(<<-EOF).execute_non_query
+    conn.execute(<<-EOF)
       DROP TABLE IF EXISTS "users"
     EOF
 
-    conn.create_command(<<-EOF).execute_non_query
+    conn.execute(<<-EOF)
       DROP TABLE IF EXISTS "widgets"
     EOF
 
-    conn.create_command(<<-EOF).execute_non_query
+    conn.execute(<<-EOF)
       CREATE TABLE "users" (
         "id" SERIAL,
         "name" VARCHAR(200) default 'Billy' NULL,
@@ -68,14 +68,14 @@ module DataObjectsSpecHelpers
       );
     EOF
 
-    conn.create_command(<<-EOF).execute_non_query
+    conn.execute(<<-EOF)
       CREATE TABLE "invoices" (
         "invoice_number" varchar(50) NOT NULL,
         PRIMARY KEY  ("invoice_number")
       );
     EOF
 
-    conn.create_command(<<-EOF).execute_non_query
+    conn.execute(<<-EOF)
       CREATE TABLE "widgets" (
         "id" SERIAL,
         "code" char(8) default 'A14' NULL,
@@ -102,40 +102,40 @@ module DataObjectsSpecHelpers
     EOF
 
     1.upto(16) do |n|
-      conn.create_command(<<-EOF).execute_non_query(::Extlib::ByteArray.new("CAD \001 \000 DRAWING"))
+      conn.execute(<<-EOF, ::DataObjects::ByteArray.new("CAD \001 \000 DRAWING"))
         insert into widgets(code, name, shelf_location, description, image_data, ad_description, ad_image, whitepaper_text, cad_drawing, super_number, weight) VALUES ('W#{n.to_s.rjust(7,"0")}', 'Widget #{n}', 'A14', 'This is a description', 'IMAGE DATA', 'Buy this product now!', 'AD IMAGE DATA', 'String', ?, 1234, 13.4)
       EOF
     end
 
-    conn.create_command(<<-EOF).execute_non_query
+    conn.execute(<<-EOF)
       update widgets set flags = true where id = 2
     EOF
 
-    conn.create_command(<<-EOF).execute_non_query
+    conn.execute(<<-EOF)
       update widgets set ad_description = NULL where id = 3
     EOF
 
-    conn.create_command(<<-EOF).execute_non_query
+    conn.execute(<<-EOF)
       update widgets set flags = NULL where id = 4
     EOF
 
-    conn.create_command(<<-EOF).execute_non_query
+    conn.execute(<<-EOF)
       update widgets set cost1 = NULL where id = 5
     EOF
 
-    conn.create_command(<<-EOF).execute_non_query
+    conn.execute(<<-EOF)
       update widgets set cost2 = NULL where id = 6
     EOF
 
-    conn.create_command(<<-EOF).execute_non_query
+    conn.execute(<<-EOF)
       update widgets set release_date = NULL where id = 7
     EOF
 
-    conn.create_command(<<-EOF).execute_non_query
+    conn.execute(<<-EOF)
       update widgets set release_datetime = NULL where id = 8
     EOF
 
-    conn.create_command(<<-EOF).execute_non_query
+    conn.execute(<<-EOF)
       update widgets set release_timestamp = NULL where id = 9
     EOF
 

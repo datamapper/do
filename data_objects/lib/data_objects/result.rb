@@ -7,8 +7,8 @@ module DataObjects
     attr_accessor :affected_rows
 
     # Create a new Result. Used internally in the adapters.
-    def initialize(command, affected_rows, insert_id = nil)
-      @command, @affected_rows, @insert_id = command, affected_rows, insert_id
+    def initialize(affected_rows, insert_id = nil)
+      @affected_rows, @insert_id = affected_rows, insert_id
     end
 
     # Return the number of affected rows

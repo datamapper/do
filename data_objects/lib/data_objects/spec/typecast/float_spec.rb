@@ -15,15 +15,9 @@ shared 'supporting Float' do
     describe 'with manual typecasting' do
 
       before do
-        @command = @connection.create_command("SELECT id FROM widgets WHERE ad_description = ?")
-        @command.set_types(Float)
-        @reader = @command.execute_reader('Buy this product now!')
-        @reader.next!
-        @values = @reader.values
-      end
-
-      after do
-        @reader.close
+        @reader = @connection.query("SELECT id FROM widgets WHERE ad_description = ?", 'Buy this product now!')
+        @reader.set_types(Float)
+        @values = @reader.first
       end
 
       it 'should return the correctly typed result' do
@@ -40,15 +34,9 @@ shared 'supporting Float' do
     describe 'with manual typecasting a nil' do
 
       before do
-        @command = @connection.create_command("SELECT cost1 FROM widgets WHERE id = ?")
-        @command.set_types(Float)
-        @reader = @command.execute_reader(5)
-        @reader.next!
-        @values = @reader.values
-      end
-
-      after do
-        @reader.close
+        @reader = @connection.query("SELECT cost1 FROM widgets WHERE id = ?", 5)
+        @reader.set_types(Float)
+        @values = @reader.first
       end
 
       it 'should return the correctly typed result' do
@@ -65,13 +53,8 @@ shared 'supporting Float' do
   describe 'writing an Float' do
 
     before do
-      @reader = @connection.create_command("SELECT id FROM widgets WHERE id = ?").execute_reader(2.0)
-      @reader.next!
-      @values = @reader.values
-    end
-
-    after do
-      @reader.close
+      @reader = @connection.query("SELECT id FROM widgets WHERE id = ?", 2.0)
+      @values = @reader.first
     end
 
     it 'should return the correct entry' do
@@ -100,23 +83,18 @@ shared 'supporting Float autocasting' do
     describe 'with automatic typecasting' do
 
       before do
-        @reader = @connection.create_command("SELECT weight, cost1 FROM widgets WHERE ad_description = ?").execute_reader('Buy this product now!')
-        @reader.next!
-        @values = @reader.values
-      end
-
-      after do
-        @reader.close
+        @reader = @connection.query("SELECT weight, cost1 FROM widgets WHERE ad_description = ?", 'Buy this product now!')
+        @values = @reader.first
       end
 
       it 'should return the correctly typed result' do
-        @values.first.should.be.kind_of(Float)
-        @values.last.should.be.kind_of(Float)
+        @values[0].should.be.kind_of(Float)
+        @values[1].should.be.kind_of(Float)
       end
 
       it 'should return the correct result' do
-        @values.first.should == 13.4
-        BigDecimal.new(@values.last.to_s).round(2).should == 10.23
+        @values[0].should == 13.4
+        BigDecimal.new(@values[1].to_s).round(2).should == 10.23
       end
 
     end

@@ -14,7 +14,7 @@ describe DataObjects::Postgres::Result do
 
     before do
       @connection = DataObjects::Connection.new(CONFIG.uri)
-      @result    = @connection.create_command("INSERT INTO users (name) VALUES (?)").execute_non_query("monkey")
+      @result    = @connection.execute("INSERT INTO users (name) VALUES (?)", "monkey")
     end
 
     after do
@@ -40,9 +40,8 @@ describe DataObjects::Postgres::Result do
       end
 
       it 'should be retrievable through curr_val' do
-        reader = @connection.create_command("SELECT currval('users_id_seq')").execute_reader
-        reader.next!
-        reader.values.first.should == 2
+        reader = @connection.query("SELECT currval('users_id_seq')")
+        reader.first.first.should == 2
       end
 
     end
@@ -53,7 +52,7 @@ describe DataObjects::Postgres::Result do
 
     before do
       @connection = DataObjects::Connection.new(CONFIG.uri)
-      @result    = @connection.create_command("INSERT INTO users (name) VALUES (?) RETURNING id").execute_non_query("monkey")
+      @result    = @connection.execute("INSERT INTO users (name) VALUES (?) RETURNING id", "monkey")
     end
 
     after do

@@ -6,18 +6,16 @@ module DataObjects
         @uri = uri
       end
 
+      def query(*args)
+        Reader.new
+      end
+
+      def execute(*args)
+        Result.new(0, nil)
+      end
+
       def dispose
         nil
-      end
-    end
-
-    class Command < DataObjects::Command
-      def execute_non_query(*args)
-        Result.new(self, 0, nil)
-      end
-
-      def execute_reader(*args)
-        Reader.new
       end
     end
 

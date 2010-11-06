@@ -15,15 +15,9 @@ shared 'supporting BigDecimal' do
     describe 'with manual typecasting' do
 
       before do
-        @command = @connection.create_command("SELECT cost1 FROM widgets WHERE ad_description = ?")
-        @command.set_types(BigDecimal)
-        @reader = @command.execute_reader('Buy this product now!')
-        @reader.next!
-        @values = @reader.values
-      end
-
-      after do
-        @reader.close
+        @reader = @connection.query("SELECT cost1 FROM widgets WHERE ad_description = ?", 'Buy this product now!')
+        @reader.set_types(BigDecimal)
+        @values = @reader.first
       end
 
       it 'should return the correctly typed result' do
@@ -40,15 +34,9 @@ shared 'supporting BigDecimal' do
     describe 'with manual typecasting a nil value' do
 
       before do
-        @command = @connection.create_command("SELECT cost2 FROM widgets WHERE id = ?")
-        @command.set_types(BigDecimal)
-        @reader = @command.execute_reader(6)
-        @reader.next!
-        @values = @reader.values
-      end
-
-      after do
-        @reader.close
+        @reader = @connection.query("SELECT cost2 FROM widgets WHERE id = ?", 6)
+        @reader.set_types(BigDecimal)
+        @values = @reader.first
       end
 
       it 'should return the correctly typed result' do
@@ -66,13 +54,8 @@ shared 'supporting BigDecimal' do
   describe 'writing an Integer' do
 
     before do
-      @reader = @connection.create_command("SELECT id FROM widgets WHERE id = ?").execute_reader(BigDecimal("2.0"))
-      @reader.next!
-      @values = @reader.values
-    end
-
-    after do
-      @reader.close
+      @reader = @connection.query("SELECT id FROM widgets WHERE id = ?", BigDecimal("2.0"))
+      @values = @reader.first
     end
 
     it 'should return the correct entry' do
@@ -100,13 +83,8 @@ shared 'supporting BigDecimal autocasting' do
     describe 'with automatic typecasting' do
 
       before do
-        @reader = @connection.create_command("SELECT cost2 FROM widgets WHERE ad_description = ?").execute_reader('Buy this product now!')
-        @reader.next!
-        @values = @reader.values
-      end
-
-      after do
-        @reader.close
+        @reader = @connection.query("SELECT cost2 FROM widgets WHERE ad_description = ?", 'Buy this product now!')
+        @values = @reader.first
       end
 
       it 'should return the correctly typed result' do

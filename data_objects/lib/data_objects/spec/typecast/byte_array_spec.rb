@@ -15,17 +15,12 @@ shared 'supporting ByteArray' do
     describe 'with automatic typecasting' do
 
       before do
-        @reader = @connection.create_command("SELECT cad_drawing FROM widgets WHERE ad_description = ?").execute_reader('Buy this product now!')
-        @reader.next!
-        @values = @reader.values
-      end
-
-      after do
-        @reader.close
+        @reader = @connection.query("SELECT cad_drawing FROM widgets WHERE ad_description = ?", 'Buy this product now!')
+        @values = @reader.first
       end
 
       it 'should return the correctly typed result' do
-        @values.first.should.be.kind_of(::Extlib::ByteArray)
+        @values.first.should.be.kind_of(DataObjects::ByteArray)
       end
 
       it 'should return the correct result' do
@@ -37,19 +32,13 @@ shared 'supporting ByteArray' do
     describe 'with manual typecasting' do
 
       before do
-        @command = @connection.create_command("SELECT cad_drawing FROM widgets WHERE ad_description = ?")
-        @command.set_types(::Extlib::ByteArray)
-        @reader = @command.execute_reader('Buy this product now!')
-        @reader.next!
-        @values = @reader.values
-      end
-
-      after do
-        @reader.close
+        @reader = @connection.query("SELECT cad_drawing FROM widgets WHERE ad_description = ?", 'Buy this product now!')
+        @reader.set_types(DataObjects::ByteArray)
+        @values = @reader.first
       end
 
       it 'should return the correctly typed result' do
-        @values.first.should.be.kind_of(::Extlib::ByteArray)
+        @values.first.should.be.kind_of(DataObjects::ByteArray)
       end
 
       it 'should return the correct result' do
@@ -63,13 +52,8 @@ shared 'supporting ByteArray' do
   describe 'writing a ByteArray' do
 
     before do
-      @reader = @connection.create_command("SELECT ad_description FROM widgets WHERE cad_drawing = ?").execute_reader(::Extlib::ByteArray.new("CAD \001 \000 DRAWING"))
-      @reader.next!
-      @values = @reader.values
-    end
-
-    after do
-      @reader.close
+      @reader = @connection.query("SELECT ad_description FROM widgets WHERE cad_drawing = ?", DataObjects::ByteArray.new("CAD \001 \000 DRAWING"))
+      @values = @reader.first
     end
 
     it 'should return the correct entry' do

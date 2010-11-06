@@ -31,7 +31,7 @@ compat_functions = %w(PQescapeString PQexecParams)
 
 if have_build_env
   desired_functions.each(&method(:have_func))
-  $CFLAGS << ' -Wall ' unless RUBY_PLATFORM =~ /mswin/
+  $CFLAGS << ' -Wall -O0 ' unless RUBY_PLATFORM =~ /mswin/
   if RUBY_VERSION < '1.8.6'
     $CFLAGS << ' -DRUBY_LESS_THAN_186'
   end

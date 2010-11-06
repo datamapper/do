@@ -15,13 +15,8 @@ shared 'supporting Integer' do
     describe 'with automatic typecasting' do
 
       before do
-        @reader = @connection.create_command("SELECT id FROM widgets WHERE ad_description = ?").execute_reader('Buy this product now!')
-        @reader.next!
-        @values = @reader.values
-      end
-
-      after do
-        @reader.close
+        @reader = @connection.query("SELECT id FROM widgets WHERE ad_description = ?", 'Buy this product now!')
+        @values = @reader.first
       end
 
       it 'should return the correctly typed result' do
@@ -38,15 +33,9 @@ shared 'supporting Integer' do
     describe 'with manual typecasting' do
 
       before do
-        @command = @connection.create_command("SELECT weight FROM widgets WHERE ad_description = ?")
-        @command.set_types(Integer)
-        @reader = @command.execute_reader('Buy this product now!')
-        @reader.next!
-        @values = @reader.values
-      end
-
-      after do
-        @reader.close
+        @reader = @connection.query("SELECT weight FROM widgets WHERE ad_description = ?", 'Buy this product now!')
+        @reader.set_types(Integer)
+        @values = @reader.first
       end
 
       it 'should return the correctly typed result' do
@@ -64,13 +53,8 @@ shared 'supporting Integer' do
   describe 'writing an Integer' do
 
     before do
-      @reader = @connection.create_command("SELECT id FROM widgets WHERE id = ?").execute_reader(2)
-      @reader.next!
-      @values = @reader.values
-    end
-
-    after do
-      @reader.close
+      @reader = @connection.query("SELECT id FROM widgets WHERE id = ?", 2)
+      @values = @reader.first
     end
 
     it 'should return the correct entry' do
@@ -82,14 +66,9 @@ shared 'supporting Integer' do
   describe 'writing a big Integer' do
 
     before do
-      @connection.create_command("UPDATE widgets SET super_number = ? WHERE id = 10").execute_non_query(2147483648) # bigger than Integer.MAX in java !!
-      @reader = @connection.create_command("SELECT super_number FROM widgets WHERE id = ?").execute_reader(10)
-      @reader.next!
-      @values = @reader.values
-    end
-
-    after do
-      @reader.close
+      @connection.execute("UPDATE widgets SET super_number = ? WHERE id = 10", 2147483648) # bigger than Integer.MAX in java !!
+      @reader = @connection.query("SELECT super_number FROM widgets WHERE id = ?", 10)
+      @values = @reader.first
     end
 
     it 'should return the correct entry' do

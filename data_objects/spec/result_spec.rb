@@ -5,9 +5,7 @@ describe DataObjects::Result do
   it "should define a standard API" do
     connection = DataObjects::Connection.new('mock://localhost')
 
-    command = connection.create_command("SELECT * FROM example")
-
-    result = command.execute_non_query
+    result = connection.execute("INSERT INTO users (id) VALUES (1)")
 
     # Affected Rows:
     result.should.respond_to(:to_i)

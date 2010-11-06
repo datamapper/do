@@ -52,31 +52,39 @@ shared 'a Connection' do
 
       it 'should raise an error on creating a command' do
         should.raise(DataObjects::ConnectionError) {
-          @closed_connection.create_command("INSERT INTO non_existent_table (tester) VALUES (1)").execute_non_query
+          @closed_connection.execute("INSERT INTO non_existent_table (tester) VALUES (1)")
         }
       end
     end
 
   end
 
-  it 'should respond to #create_command' do @connection.should.respond_to(:create_command) end
+  it 'should respond to #query' do @connection.should.respond_to(:query) end
 
-  describe 'create_command' do
-    it 'should be a kind of Command' do
-      @connection.create_command('This is a dummy command').should.be.kind_of(DataObjects::Command)
+  describe 'query' do
+    it 'should be a kind of Reader' do
+      @connection.query('This is a dummy command').should.be.kind_of(DataObjects::Reader)
     end
   end
+
+  it 'should respond to #execute' do @connection.should.respond_to(:execute) end
+
+  describe 'execute' do
+    it 'should be a kind of Result' do
+      @connection.execute('update widgets set id = null where id is null').should.be.kind_of(DataObjects::Result)
+    end
+  end
+
 
   describe 'various connection URIs' do
 
     def test_connection(conn)
-      reader = conn.create_command(CONFIG.testsql || "SELECT 1").execute_reader
-      reader.next!
-      reader.values[0]
-    end
-
-    after do
-      @open_connection.close if @open_connection
+      reader = conn.query(CONFIG.testsql || "SELECT 1")
+      result = nil
+      reader.each do |row|
+        result = row[0]
+      end
+      result
     end
 
     it 'should open with an uri object' do
@@ -145,9 +153,12 @@ end
 shared 'a Connection with JDBC URL support' do
 
   def test_connection(conn)
-    reader = conn.create_command(CONFIG.testsql || "SELECT 1").execute_reader
-    reader.next!
-    reader.values[0]
+    reader = conn.query(CONFIG.testsql || "SELECT 1")
+    result = nil
+    reader.each do |row|
+      result = row[0]
+    end
+    result
   end
 
   it 'should work with JDBC URLs' do

@@ -15,15 +15,9 @@ shared 'supporting Class' do
     describe 'with manual typecasting' do
 
       before do
-        @command = @connection.create_command("SELECT whitepaper_text FROM widgets WHERE ad_description = ?")
-        @command.set_types(Class)
-        @reader = @command.execute_reader('Buy this product now!')
-        @reader.next!
-        @values = @reader.values
-      end
-
-      after do
-        @reader.close
+        @reader = @connection.query("SELECT whitepaper_text FROM widgets WHERE ad_description = ?", 'Buy this product now!')
+        @reader.set_types(Class)
+        @values = @reader.first
       end
 
       it 'should return the correctly typed result' do
@@ -41,13 +35,8 @@ shared 'supporting Class' do
   describe 'writing a Class' do
 
     before do
-      @reader = @connection.create_command("SELECT whitepaper_text FROM widgets WHERE whitepaper_text = ?").execute_reader(String)
-      @reader.next!
-      @values = @reader.values
-    end
-
-    after do
-      @reader.close
+      @reader = @connection.query("SELECT whitepaper_text FROM widgets WHERE whitepaper_text = ?", String)
+      @values = @reader.first
     end
 
     it 'should return the correct entry' do

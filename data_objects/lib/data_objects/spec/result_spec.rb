@@ -4,7 +4,7 @@ shared 'a Result' do
 
   before do
     @connection = DataObjects::Connection.new(CONFIG.uri)
-    @result    = @connection.create_command("INSERT INTO users (name) VALUES (?)").execute_non_query("monkey")
+    @result    = @connection.execute("INSERT INTO users (name) VALUES (?)", "monkey")
   end
 
   after do
@@ -28,9 +28,9 @@ shared 'a Result which returns inserted key with sequences' do
   before do
     setup_test_environment
     @connection = DataObjects::Connection.new(CONFIG.uri)
-    command = @connection.create_command("INSERT INTO users (name) VALUES (?)")
     # execute the command twice and expose the second result
-    command.execute_non_query("monkey")
+    @connection.execute("INSERT INTO users (name) VALUES (?)", "monkey")
+    @result = @connection.execute("INSERT INTO users (name) VALUES (?)", "monkey")
     @result = command.execute_non_query("monkey")
   end
 
@@ -56,9 +56,7 @@ shared 'a Result which returns nil without sequences' do
   before do
     setup_test_environment
     @connection = DataObjects::Connection.new(CONFIG.uri)
-    command = @connection.create_command("INSERT INTO invoices (invoice_number) VALUES (?)")
-    # execute the command twice and expose the second result
-    @result = command.execute_non_query("monkey")
+    @result = @connection.execute("INSERT INTO invoices (invoice_number) VALUES (?)", "monkey")
   end
 
   after do
