@@ -236,7 +236,9 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
             querySb.append(java.net.URLEncoder.encode(key, "UTF-8"))
                     .append("=");
             querySb.append(java.net.URLEncoder.encode(value, "UTF-8"));
+            querySb.append("&");
         }
+        querySb.deleteCharAt(querySb.length()-1);
         return querySb.toString();
     }
 
