@@ -82,8 +82,8 @@ shared 'supporting Integer' do
   describe 'writing a big Integer' do
 
     before do
-      @connection.create_command("UPDATE widgets SET number_sold = ? WHERE id = 10").execute_non_query(2147483648) # bigger than Integer.MAX in java !!
-      @reader = @connection.create_command("SELECT number_sold FROM widgets WHERE id = ?").execute_reader(10)
+      @connection.create_command("UPDATE widgets SET super_number = ? WHERE id = 10").execute_non_query(2147483648) # bigger than Integer.MAX in java !!
+      @reader = @connection.create_command("SELECT super_number FROM widgets WHERE id = ?").execute_reader(10)
       @reader.next!
       @values = @reader.values
     end
