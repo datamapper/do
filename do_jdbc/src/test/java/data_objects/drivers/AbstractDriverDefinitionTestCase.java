@@ -2,6 +2,7 @@ package data_objects.drivers;
 
 import java.net.URI;
 import java.sql.PreparedStatement;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
 
@@ -54,7 +55,7 @@ public class AbstractDriverDefinitionTestCase extends TestCase {
         final RubyObjectAdapter api = JavaEmbedUtils.newObjectAdapter();
         final IRubyObject query_values = api.callMethod(connection_uri, "query");
 
-	if (query_values.isNil())
+        if (query_values.isNil())
             return null;
         else
             return query_values.convertToHash();
@@ -67,7 +68,7 @@ public class AbstractDriverDefinitionTestCase extends TestCase {
         final IRubyObject connection_uri = getConnectionUri(uri);
         final IRubyObject result_connection_uri = getConnectionUri(driver.parseConnectionURI(connection_uri).toString());
 
-        assertEquals(getQueryParameter(connection_uri), getQueryParameter(result_connection_uri));
+        assertEquals(new HashMap(getQueryParameter(connection_uri)), new HashMap(getQueryParameter(result_connection_uri)));
     }
 
     public void testSetPreparedStatementParam() throws Exception {
