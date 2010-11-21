@@ -31,6 +31,7 @@
 #endif
 
 #include <ruby.h>
+#include <st.h>
 #include <string.h>
 #include <math.h>
 #include <ctype.h>
@@ -75,12 +76,6 @@
 
 #define DO_STR_NEW(str, len, encoding, internal_encoding) \
   rb_str_new((const char *)str, (long)len)
-#endif
-
-// Ugly clutch :(
-#ifndef rb_hash_size
-#include <st.h>
-#define rb_hash_size(hash) (INT2FIX(RHASH_TBL(hash)->num_entries))
 #endif
 
 typedef struct {
@@ -989,7 +984,8 @@ static VALUE cRow_populate(pg_reader* reader, VALUE encoding_id, int position) {
 }
 
 static void cReader_kick(VALUE self) {
-  int status, infer_types, i;
+  int status, i;
+  int infer_types = 0;
   pg_reader * reader;
   Data_Get_Struct(self, pg_reader, reader);
   // Return if we already initialized
@@ -1133,7 +1129,7 @@ static VALUE cRow_aref(int argc, VALUE* argv, VALUE self) {
       // Initialize the shared column => index hash
       pg_row * row;
       Data_Get_Struct(self, pg_row, row);
-      if(NUM2INT(rb_hash_size(row->column_hash)) == 0) {
+      if(RHASH_SIZE(row->column_hash) == 0) {
         int i = 0;
         for(; i < row->column_count; ++i) {
           rb_hash_aset(row->column_hash, rb_ary_entry(row->columns, i), INT2NUM(i));
