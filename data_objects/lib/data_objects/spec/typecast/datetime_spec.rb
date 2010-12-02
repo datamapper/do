@@ -63,6 +63,32 @@ shared 'supporting DateTime' do
 
     end
 
+    describe 'with manual typecasting a datetime column' do
+
+      before do
+        @command = @connection.create_command("SELECT release_datetime FROM widgets WHERE id = ? OR id = ? ORDER BY id")
+        @command.set_types(DateTime)
+        @reader = @command.execute_reader(1, 10)
+        @reader.next!
+        @feb_row = @reader.values
+        @reader.next!
+        @jul_row = @reader.values
+      end
+
+      after do
+        @reader.close
+      end
+
+      it 'should return the correct offset in Feb' do
+        (@feb_row.first.offset * 86400).to_i.should == Time.local(2008, 2, 14, 0, 31, 12).utc_offset
+      end
+
+      it 'should return the correct offset in Jul' do
+        (@jul_row.first.offset * 86400).to_i.should == Time.local(2008, 7, 14, 0, 31, 12).utc_offset
+      end
+
+    end
+
   end
 
   describe 'writing an DateTime' do

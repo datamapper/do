@@ -176,6 +176,10 @@ module DataObjectsSpecHelpers
         update widgets set release_timestamp = NULL where id = 9
       EOF
 
+      conn.create_command(<<-EOF).execute_non_query
+        update widgets set release_datetime = '2008-07-14 00:31:12' where id = 10
+      EOF
+
       conn.close
     end
 

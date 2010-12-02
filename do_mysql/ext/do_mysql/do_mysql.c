@@ -236,10 +236,10 @@ static VALUE parse_date_time(const char *date) {
 
 
   time_t gmt_offset;
-  int is_dst;
+  int dst_adjustment;
 
   time_t rawtime;
-  struct tm * timeinfo;
+  struct tm timeinfo;
 
   int tokens_read, max_tokens;
 
@@ -273,22 +273,40 @@ static VALUE parse_date_time(const char *date) {
     }
     // We read the Date and Time, default to the current locale's offset
 
+    tzset();
+
     // Get localtime
     time(&rawtime);
-    timeinfo = localtime(&rawtime);
+    localtime_r(&rawtime, &timeinfo);
 
-    is_dst = timeinfo->tm_isdst * 3600;
+    timeinfo.tm_sec = sec;
+    timeinfo.tm_min = min;
+    timeinfo.tm_hour = hour;
+    timeinfo.tm_mday = day;
+    timeinfo.tm_mon = month;
+    timeinfo.tm_year = year - 1900;
+    timeinfo.tm_isdst = -1;
+
+    // Update tm_isdst
+    mktime(&timeinfo);
+
+    if (timeinfo.tm_isdst) {
+      dst_adjustment = 3600;
+    } else {
+      dst_adjustment = 0;
+    }
 
     // Reset to GM Time
-    timeinfo = gmtime(&rawtime);
+    gmtime_r(&rawtime, &timeinfo);
 
-    gmt_offset = mktime(timeinfo) - rawtime;
+    gmt_offset = rawtime - mktime(&timeinfo);
 
-    if ( is_dst > 0 )
-      gmt_offset -= is_dst;
+    if (dst_adjustment) {
+      gmt_offset += dst_adjustment;
+    }
 
-    hour_offset = -((int)gmt_offset / 3600);
-    minute_offset = -((int)gmt_offset % 3600 / 60);
+    hour_offset = ((int)gmt_offset / 3600);
+    minute_offset = ((int)gmt_offset % 3600 / 60);
 
   } else {
     // Something went terribly wrong
