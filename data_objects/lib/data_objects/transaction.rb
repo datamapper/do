@@ -1,3 +1,4 @@
+require 'socket'
 require 'digest'
 require 'digest/sha2'
 
@@ -23,9 +24,10 @@ module DataObjects
     #
     # Creates a Transaction bound to a connection for the given DataObjects::URI
     #
-    def initialize(uri)
-      @connection = DataObjects::Connection.new(uri)
-      @id = Digest::SHA256.hexdigest("#{HOST}:#{$$}:#{Time.now.to_f}:#{@@counter += 1}")
+    def initialize(uri, connection = nil)
+      @connection = connection || DataObjects::Connection.new(uri)
+      # PostgreSQL can't handle the full 64 bytes.  This should be enough for everyone.
+      @id = Digest::SHA256.hexdigest("#{HOST}:#{$$}:#{Time.now.to_f}:#{@@counter += 1}")[0..-2]
     end
 
     # Close the connection for this Transaction
@@ -34,18 +36,15 @@ module DataObjects
     end
 
     def begin
-      cmd = "BEGIN"
-      connection.create_command(cmd).execute_non_query
+      run "BEGIN"
     end
 
     def commit
-      cmd = "COMMIT"
-      connection.create_command(cmd).execute_non_query
+      run "COMMIT"
     end
 
     def rollback
-      cmd = "ROLLBACK"
-      connection.create_command(cmd).execute_non_query
+      run "ROLLBACK"
     end
 
     def prepare; not_implemented; end;
@@ -54,9 +53,36 @@ module DataObjects
     def rollback_prepared; not_implemented; end;
     def prepare; not_implemented; end;
 
+  protected
+    def run(cmd)
+      connection.create_command(cmd).execute_non_query
+    end
+
   private
     def not_implemented
       raise NotImplementedError
     end
-  end
+  end # class Transaction
+
+  class SavePoint < Transaction
+    # We don't bounce through DO::<Adapter/scheme>::SavePoint because there
+    # doesn't appear to be any custom SQL to support this.
+    def self.create_for_uri(uri, connection)
+      uri = uri.is_a?(String) ? URI::parse(uri) : uri
+      DataObjects::SavePoint.new(uri, connection)
+    end
+
+    def begin
+      run %{SAVEPOINT "#{@id}"}
+    end
+
+    def commit
+      run %{RELEASE SAVEPOINT "#{@id}"}
+    end
+
+    def rollback
+      run %{ROLLBACK TO SAVEPOINT "#{@id}"}
+    end
+  end # class SavePoint
+
 end
