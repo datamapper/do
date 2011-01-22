@@ -8,6 +8,7 @@
 #include <errmsg.h>
 #include <mysqld_error.h>
 
+#include "mysql_compat.h"
 #include "compat.h"
 #include "error.h"
 
@@ -130,11 +131,16 @@ static VALUE infer_ruby_type(MYSQL_FIELD *field) {
     case MYSQL_TYPE_MEDIUM_BLOB:
     case MYSQL_TYPE_LONG_BLOB:
     case MYSQL_TYPE_BLOB:
+#ifdef HAVE_ST_CHARSETNR
       if(field->charsetnr == 63) {
         return rb_cByteArray;
       } else {
         return rb_cString;
       }
+#else
+      // We assume a string here if we don't have a specific charset
+      return rb_cString;
+#endif
     default:
       return rb_cString;
   }
@@ -389,10 +395,15 @@ static void raise_error(VALUE self, MYSQL *db, VALUE query) {
 
   VALUE uri = rb_funcall(rb_iv_get(self, "@connection"), rb_intern("to_s"), 0);
 
+  VALUE sql_state = Qnil;
+#ifdef HAVE_MYSQL_SQLSTATE
+  sql_state = rb_str_new2(mysql_sqlstate(db));
+#endif
+
   exception = rb_funcall(CONST_GET(mDO, exception_type), ID_NEW, 5,
                          rb_str_new2(mysql_error_message),
                          INT2NUM(mysql_error_code),
-                         rb_str_new2(mysql_sqlstate(db)),
+                         sql_state,
                          query,
                          uri);
   rb_exc_raise(exception);
@@ -584,7 +595,7 @@ static void full_connect(VALUE self, MYSQL* db) {
     raise_error(self, db, Qnil);
   }
 
-#ifdef HAVE_MYSQL_SSL_SET
+#ifdef HAVE_MYSQL_GET_SSL_CIPHER
   const char *ssl_cipher_used = mysql_get_ssl_cipher(db);
 
   if (NULL != ssl_cipher_used) {
@@ -597,11 +608,20 @@ static void full_connect(VALUE self, MYSQL* db) {
   mysql_options(db, MYSQL_OPT_RECONNECT, &reconnect);
 #endif
 
+
+  // We only support encoding for MySQL versions providing mysql_set_character_set.
+  // Without this function there are potential issues with mysql_real_escape_string
+  // since that doesn't take the character set into consideration when setting it
+  // using a SET CHARACTER SET query. Since we don't want to stimulate these possible
+  // issues we simply ignore it and assume the user has configured this correctly.
+
+#ifdef HAVE_MYSQL_SET_CHARACTER_SET
   // Set the connections character set
   encoding = rb_iv_get(self, "@encoding");
 
   VALUE my_encoding = rb_hash_aref(CONST_GET(mEncoding, "MAP"), encoding);
   if(my_encoding != Qnil) {
+
     encoding_error = mysql_set_character_set(db, rb_str_ptr_readonly(my_encoding));
     if (0 != encoding_error) {
       raise_error(self, db, Qnil);
@@ -620,17 +640,22 @@ static void full_connect(VALUE self, MYSQL* db) {
     rb_iv_set(self, "@my_encoding", rb_str_new2("utf8"));
   }
 
+#endif
+
   // Disable sql_auto_is_null
   cCommand_execute(Qnil, self, db, rb_str_new2("SET sql_auto_is_null = 0"));
   // removed NO_AUTO_VALUE_ON_ZERO because of MySQL bug http://bugs.mysql.com/bug.php?id=42270
   // added NO_BACKSLASH_ESCAPES so that backslashes should not be escaped as in other databases
 
+// For really anscient MySQL versions we don't attempt any strictness
+#ifdef HAVE_MYSQL_GET_SERVER_VERSION
   //4.x versions do not support certain session parameters
   if(mysql_get_server_version(db) < 50000 ){
     cCommand_execute(Qnil, self, db, rb_str_new2("SET SESSION sql_mode = 'ANSI,NO_DIR_IN_CREATE,NO_UNSIGNED_SUBTRACTION'"));
   }else{
     cCommand_execute(Qnil, self, db, rb_str_new2("SET SESSION sql_mode = 'ANSI,NO_BACKSLASH_ESCAPES,NO_DIR_IN_CREATE,NO_ENGINE_SUBSTITUTION,NO_UNSIGNED_SUBTRACTION,TRADITIONAL'"));
   }
+#endif
 
   rb_iv_set(self, "@connection", Data_Wrap_Struct(rb_cObject, 0, 0, db));
 }

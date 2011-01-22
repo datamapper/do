@@ -68,8 +68,13 @@ end
 
 unless RUBY_PLATFORM =~ /mswin|mingw/
   have_header 'mysql.h'
-  have_func 'mysql_query'
-  have_func 'mysql_ssl_set'
+  have_func 'mysql_query', 'mysql.h'
+  have_func 'mysql_ssl_set', 'mysql.h'
+  have_func 'mysql_sqlstate', 'mysql.h'
+  have_func 'mysql_get_ssl_cipher', 'mysql.h'
+  have_func 'mysql_set_character_set', 'mysql.h'
+  have_func 'mysql_get_server_version', 'mysql.h'
+  have_struct_member 'MYSQL_FIELD', 'charsetnr', 'mysql.h'
 end
 
 $CFLAGS << ' -Wall ' unless RUBY_PLATFORM =~ /mswin/
