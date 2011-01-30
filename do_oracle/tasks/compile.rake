@@ -27,7 +27,7 @@ begin
     ext.lib_dir   = "lib/#{gemspec.name}"
     ext.ext_dir   = 'ext-java/src/main/java'
     ext.debug     = ENV.has_key?('DO_JAVA_DEBUG') && ENV['DO_JAVA_DEBUG']
-    ext.classpath = '../do_jdbc/lib/do_jdbc_internal.jar'
+    ext.classpath = '../do_jdbc/lib/do_jdbc_internal.jar:../jdbc_drivers/oracle/ojdbc5.jar'
     ext.java_compiling do |gem|
 
       # Hack: Unfortunately there is no way to remove a dependency in the

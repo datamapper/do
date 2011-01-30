@@ -12,6 +12,10 @@
 #include "compat.h"
 #include "error.h"
 
+#ifndef HAVE_CONST_MYSQL_TYPE_STRING
+#define HAVE_OLD_MYSQL_VERSION
+#endif
+
 #define CONST_GET(scope, constant) (rb_funcall(scope, ID_CONST_GET, 1, rb_str_new2(constant)))
 #define DRIVER_CLASS(klass, parent) (rb_define_class_under(mMysql, klass, parent))
 #define CHECK_AND_RAISE(mysql_result_value, query) if (0 != mysql_result_value) { raise_error(self, db, query); }
@@ -106,14 +110,18 @@ static VALUE infer_ruby_type(MYSQL_FIELD *field) {
       return Qnil;
     case MYSQL_TYPE_TINY:
       return rb_cTrueClass;
+#ifdef HAVE_CONST_MYSQL_TYPE_BIT
     case MYSQL_TYPE_BIT:
+#endif
     case MYSQL_TYPE_SHORT:
     case MYSQL_TYPE_LONG:
     case MYSQL_TYPE_INT24:
     case MYSQL_TYPE_LONGLONG:
     case MYSQL_TYPE_YEAR:
       return rb_cInteger;
+#ifdef HAVE_CONST_MYSQL_TYPE_NEWDECIMAL
     case MYSQL_TYPE_NEWDECIMAL:
+#endif
     case MYSQL_TYPE_DECIMAL:
       return rb_cBigDecimal;
     case MYSQL_TYPE_FLOAT:
@@ -277,7 +285,11 @@ static VALUE parse_date_time(const char *date) {
 
     // Get localtime
     time(&rawtime);
+#ifdef HAVE_LOCALTIME_R
     localtime_r(&rawtime, &timeinfo);
+#else
+    timeinfo = *localtime(&rawtime);
+#endif
 
     timeinfo.tm_sec = sec;
     timeinfo.tm_min = min;
@@ -297,7 +309,11 @@ static VALUE parse_date_time(const char *date) {
     }
 
     // Reset to GM Time
+#ifdef HAVE_GMTIME_R
     gmtime_r(&rawtime, &timeinfo);
+#else
+    timeinfo = *gmtime(&rawtime);
+#endif
 
     gmt_offset = rawtime - mktime(&timeinfo);
 

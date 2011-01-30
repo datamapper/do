@@ -13,6 +13,8 @@ import java.sql.DriverManager;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import static data_objects.util.DynamicProxyUtil.*;
+import data_objects.drivers.AbstractDriverDefinition;
+import data_objects.util.JDBCUtil;
 
 public class SqlServerDriverDefinition extends AbstractDriverDefinition {
 

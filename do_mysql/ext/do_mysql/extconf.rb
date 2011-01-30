@@ -66,8 +66,14 @@ else
   find_header('mysql.h', *lib_dirs.flatten.map { |p| p.gsub('/lib', '/include') })
 end
 
+have_func('localtime_r')
+have_func('gmtime_r')
+
 unless RUBY_PLATFORM =~ /mswin|mingw/
   have_header 'mysql.h'
+  have_const 'MYSQL_TYPE_STRING', 'mysql.h'
+  have_const 'MYSQL_TYPE_BIT', 'mysql.h'
+  have_const 'MYSQL_TYPE_NEWDECIMAL', 'mysql.h'
   have_func 'mysql_query', 'mysql.h'
   have_func 'mysql_ssl_set', 'mysql.h'
   have_func 'mysql_sqlstate', 'mysql.h'

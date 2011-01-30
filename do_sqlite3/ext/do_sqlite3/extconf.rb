@@ -19,6 +19,8 @@ end
 # Do the work
 # create_makefile(extension_name)
 if have_header( "sqlite3.h" ) && have_library( "sqlite3", "sqlite3_open" )
+  have_func("localtime_r")
+  have_func("gmtime_r")
   have_func("sqlite3_prepare_v2")
   have_func("sqlite3_open_v2")
 

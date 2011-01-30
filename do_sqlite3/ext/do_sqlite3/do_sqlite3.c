@@ -183,7 +183,11 @@ static VALUE parse_date_time(char *date) {
 
     // Get localtime
     time(&rawtime);
+#ifdef HAVE_LOCALTIME_R
     localtime_r(&rawtime, &timeinfo);
+#else
+    timeinfo = *localtime(&rawtime);
+#endif
 
     timeinfo.tm_sec = sec;
     timeinfo.tm_min = min;
@@ -203,7 +207,11 @@ static VALUE parse_date_time(char *date) {
     }
 
     // Reset to GM Time
+#ifdef HAVE_GMTIME_R
     gmtime_r(&rawtime, &timeinfo);
+#else
+    timeinfo = *gmtime(&rawtime);
+#endif
 
     gmt_offset = rawtime - mktime(&timeinfo);
 
@@ -663,6 +671,10 @@ static VALUE cReader_next(VALUE self) {
   VALUE field_type;
   VALUE value;
 
+  if(rb_iv_get(self, "@done") == Qtrue) {
+    return Qfalse;
+  }
+
   Data_Get_Struct(rb_iv_get(self, "@reader"), sqlite3_stmt, reader);
   field_count = NUM2INT(rb_iv_get(self, "@field_count"));
 
@@ -675,6 +687,7 @@ static VALUE cReader_next(VALUE self) {
 
   if ( result != SQLITE_ROW ) {
     rb_iv_set(self, "@values", Qnil);
+    rb_iv_set(self, "@done", Qtrue);
     return Qfalse;
   }
 

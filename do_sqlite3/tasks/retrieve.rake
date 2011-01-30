@@ -42,7 +42,7 @@ begin
   end
 
   # download dll binaries
-  file "vendor/sqlitedll-#{BINARY_VERSION}.zip" => ['vendor'] do |t|
+  file "vendor/sqlite-dll-win32-x86-#{BINARY_VERSION}.zip" => ['vendor'] do |t|
     url = "http://www.sqlite.org/#{File.basename(t.name)}"
     when_writing "downloading #{t.name}" do
       cd File.dirname(t.name) do
@@ -56,7 +56,7 @@ begin
     full_file = File.expand_path(t.prerequisites.last)
     when_writing "creating #{t.name}" do
       cd File.dirname(t.name) do
-        sh "unzip #{full_file}"
+        sh "unzip -j #{full_file}"
         # update file timestamp to avoid Rake perform this extraction again.
         touch File.basename(t.name)
       end
@@ -64,11 +64,11 @@ begin
   end
 
   # extract dll files into lib folder
-  file "vendor/sqlite3/lib/sqlite3.dll" => ['vendor/sqlite3/lib', "vendor/sqlitedll-#{BINARY_VERSION}.zip"] do |t|
+  file "vendor/sqlite3/lib/sqlite3.dll" => ['vendor/sqlite3/lib', "vendor/sqlite-dll-win32-x86-#{BINARY_VERSION}.zip"] do |t|
     full_file = File.expand_path(t.prerequisites.last)
     when_writing "creating #{t.name}" do
       cd File.dirname(t.name) do
-        sh "unzip #{full_file}"
+        sh "unzip -j #{full_file}"
         # update file timestamp to avoid Rake perform this extraction again.
         touch File.basename(t.name)
       end

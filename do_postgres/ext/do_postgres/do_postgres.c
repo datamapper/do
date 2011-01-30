@@ -238,7 +238,12 @@ static VALUE parse_date_time(const char *date) {
 
     // Get localtime
     time(&rawtime);
+#ifdef HAVE_LOCALTIME_R
     localtime_r(&rawtime, &timeinfo);
+#else
+    // Thread unsafe, this is used on Windows...
+    timeinfo = *localtime(&rawtime);
+#endif
 
     timeinfo.tm_sec = sec;
     timeinfo.tm_min = min;
@@ -257,8 +262,13 @@ static VALUE parse_date_time(const char *date) {
       dst_adjustment = 0;
     }
 
+#ifdef HAVE_GMTIME_R
     // Reset to GM Time
     gmtime_r(&rawtime, &timeinfo);
+#else
+    // Same as for localtime_r above
+    timeinfo = *gmtime(&rawtime);
+#endif
 
     gmt_offset = rawtime - mktime(&timeinfo);
 

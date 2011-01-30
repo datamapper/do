@@ -9,7 +9,7 @@ Gem::Specification.new do |s|
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Dirkjan Bussink"]
-  s.date = %q{2010-10-24}
+  s.date = %q{2011-01-29}
   s.description = %q{Implements the DataObjects API for MySQL}
   s.email = %q{d.bussink@gmail.com}
   s.extensions = ["ext/do_mysql/extconf.rb"]
@@ -27,6 +27,7 @@ Gem::Specification.new do |s|
      "ext/do_mysql/do_mysql.c",
      "ext/do_mysql/error.h",
      "ext/do_mysql/extconf.rb",
+     "ext/do_mysql/mysql_compat.h",
      "lib/do_mysql.rb",
      "lib/do_mysql/encoding.rb",
      "lib/do_mysql/transaction.rb",

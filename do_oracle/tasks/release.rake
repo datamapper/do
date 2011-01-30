@@ -3,7 +3,7 @@ task :build_all do
   `rake clean`
   `rake build`
   `rake java gem`
-  `rake cross native gem RUBY_CC_VERSION=1.8.6:1.9.1`
+  `rake cross native gem RUBY_CC_VERSION=1.8.7:1.9.2`
 end
 
 desc 'Release all gems (native, binaries for JRuby and Windows)'
