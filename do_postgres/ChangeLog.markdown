@@ -1,3 +1,7 @@
+## 0.10.3 2011-01-30
+* Reworked transactions
+* Fix a DST bug that could cause datetimes in the wrong timezone
+
 ## 0.10.2 2010-05-19
 * Make Encoding.default_internal aware
 * Rework logging for making callbacks possible
