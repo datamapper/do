@@ -197,7 +197,7 @@ module DataObjects
         lock.synchronize do
           instance.instance_variable_set(:@__allocated_in_pool, Time.now)
           @used.delete(instance.object_id)
-          @available.push(instance)
+          @available.push(instance) unless @available.include?(instance)
           wait.signal
         end
         nil
