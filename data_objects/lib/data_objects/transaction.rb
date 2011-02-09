@@ -72,6 +72,15 @@ module DataObjects
       DataObjects::SavePoint.new(uri, connection)
     end
 
+    # SavePoints can only occur in the context of a Transaction, thus they
+    # re-use TXN's connection (which was acquired from the connection pool
+    # legitimately via DO::Connection.new).  We no-op #close in SP because
+    # calling DO::Connection#close will release the connection back into the
+    # pool (before the top-level Transaction might be done with it).
+    def close
+        # no-op
+    end
+
     def begin
       run %{SAVEPOINT "#{@id}"}
     end
