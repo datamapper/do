@@ -856,16 +856,13 @@ static VALUE cConnection_quote_string(VALUE self, VALUE string) {
 }
 
 static VALUE build_query_from_args(VALUE klass, int count, VALUE *args) {
-  VALUE query = rb_iv_get(klass, "@text");
-
   int i;
   VALUE array = rb_ary_new();
   for ( i = 0; i < count; i++) {
     rb_ary_push(array, (VALUE)args[i]);
   }
-  query = rb_funcall(klass, ID_ESCAPE, 1, array);
 
-  return query;
+  return rb_funcall(klass, ID_ESCAPE, 1, array);
 }
 
 static VALUE cCommand_execute_non_query(int argc, VALUE *argv, VALUE self) {
@@ -921,6 +918,8 @@ static VALUE cCommand_execute_reader(int argc, VALUE *argv, VALUE self) {
   response = cCommand_execute(self, connection, db, query);
 
   if (!response) {
+    // FIXME: DM 1.0.x never expects execute_reader to return nil.  This might
+    // apply to other adapters also.
     return Qnil;
   }
 
