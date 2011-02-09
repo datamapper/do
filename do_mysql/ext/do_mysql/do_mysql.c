@@ -918,9 +918,7 @@ static VALUE cCommand_execute_reader(int argc, VALUE *argv, VALUE self) {
   response = cCommand_execute(self, connection, db, query);
 
   if (!response) {
-    // FIXME: DM 1.0.x never expects execute_reader to return nil.  This might
-    // apply to other adapters also.
-    return Qnil;
+    rb_raise(eConnectionError, "No result set received for a query that should yield one.");
   }
 
   field_count = mysql_field_count(db);
