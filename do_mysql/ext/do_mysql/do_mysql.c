@@ -245,8 +245,7 @@ static VALUE parse_date_time(const char *date) {
 
   time_t gmt_offset;
   int dst_adjustment;
-
-  time_t rawtime;
+  time_t current_time;
   struct tm timeinfo;
 
   int tokens_read, max_tokens;
@@ -279,47 +278,38 @@ static VALUE parse_date_time(const char *date) {
       minute_offset = 0;
       sec = 0;
     }
-    // We read the Date and Time, default to the current locale's offset
 
-    tzset();
+    // We read the Date and Time, and we default to the current locale's offset.
 
-    // Get localtime
-    time(&rawtime);
+    // First figure out if we're in DST and set adjustment appropriately.
+
+    time(&current_time);
 #ifdef HAVE_LOCALTIME_R
-    localtime_r(&rawtime, &timeinfo);
+    localtime_r(&current_time, &timeinfo);
 #else
-    timeinfo = *localtime(&rawtime);
+    timeinfo = *localtime(&current_time);
 #endif
 
-    timeinfo.tm_sec = sec;
-    timeinfo.tm_min = min;
-    timeinfo.tm_hour = hour;
-    timeinfo.tm_mday = day;
-    timeinfo.tm_mon = month;
-    timeinfo.tm_year = year - 1900;
+    dst_adjustment = timeinfo.tm_isdst ? 3600 : 0;
+
+    // Now figure out seconds from UTC.  Some modern libc's have tm_gmtoff
+    // in struct tm, but we can't count on that.
+
+    timeinfo.tm_sec   = sec;
+    timeinfo.tm_min   = min;
+    timeinfo.tm_hour  = hour;
+    timeinfo.tm_mday  = day;
+    timeinfo.tm_mon   = month;
+    timeinfo.tm_year  = year - 1900;
     timeinfo.tm_isdst = -1;
 
-    // Update tm_isdst
-    mktime(&timeinfo);
-
-    if (timeinfo.tm_isdst) {
-      dst_adjustment = 3600;
-    } else {
-      dst_adjustment = 0;
-    }
-
-    // Reset to GM Time
 #ifdef HAVE_GMTIME_R
-    gmtime_r(&rawtime, &timeinfo);
+    gmtime_r(&current_time, &timeinfo);
 #else
-    timeinfo = *gmtime(&rawtime);
+    timeinfo = *gmtime(&current_time);
 #endif
 
-    gmt_offset = rawtime - mktime(&timeinfo);
-
-    if (dst_adjustment) {
-      gmt_offset += dst_adjustment;
-    }
+    gmt_offset = current_time - mktime(&timeinfo) + dst_adjustment;
 
     hour_offset = ((int)gmt_offset / 3600);
     minute_offset = ((int)gmt_offset % 3600 / 60);
@@ -1148,4 +1138,6 @@ void Init_do_mysql() {
   for (errs = errors; errs->error_name; errs++) {
     rb_const_set(mMysql, rb_intern(errs->error_name), INT2NUM(errs->error_no));
   }
+
+  tzset();
 }
