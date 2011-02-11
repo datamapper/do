@@ -8,28 +8,59 @@ shared 'a Connection' do
 
   after do
     @connection.close
+    @connection = nil
   end
 
-  it 'should be a kind of Connection' do @connection.should.be.kind_of(::DataObjects::Connection) end
-  it 'should be a kind of Pooling'    do @connection.should.be.kind_of(::DataObjects::Pooling)    end
+  it 'should be a kind of Connection'    do @connection.should.be.kind_of(::DataObjects::Connection) end
+  it 'should be a kind of Pooling'       do @connection.should.be.kind_of(::DataObjects::Pooling)    end
+  it 'should respond to #dispose'        do @connection.should.respond_to?(:dispose)                 end
+  it 'should respond to #create_command' do @connection.should.respond_to?(:create_command)          end
 
-  it 'should respond to #dispose'     do @connection.should.respond_to(:dispose) end
+  describe 'create_command' do
+    it 'should be a kind of Command' do
+      @connection.create_command('This is a dummy command').should.be.kind_of(DataObjects::Command)
+    end
+  end
+
+  describe 'various connection URIs' do
+    def test_connection(conn)
+      reader = conn.create_command(CONFIG.testsql || "SELECT 1").execute_reader
+      reader.next!
+      reader.values[0]
+    end
+
+    it 'should open with an uri object' do
+      uri = DataObjects::URI.new(
+              @driver,
+              @user,
+              @password,
+              @host,
+              @port && @port.to_i,
+              @database,
+              nil, nil
+            )
+      conn = DataObjects::Connection.new(uri)
+      test_connection(conn).should == 1
+      conn.close
+    end
+
+    it 'should work with non-JDBC URLs' do
+      conn = DataObjects::Connection.new("#{CONFIG.uri.sub(/jdbc:/, '')}")
+      test_connection(conn).should == 1
+      conn.close
+    end
+
+  end
 
   describe 'dispose' do
 
     describe 'on open connection' do
 
-      before do
-        @open_connection = DataObjects::Connection.new("#{@driver}://#{@user}:#{@password}@#{@host}:#{@port}#{@database}")
-        @open_connection.detach
-      end
-
-      after do
-        @open_connection.close
-      end
-
       it 'dispose should be true' do
-        @open_connection.dispose.should.be.true
+        conn = DataObjects::Connection.new("#{@driver}://#{@user}:#{@password}@#{@host}:#{@port}#{@database}")
+        conn.detach
+        conn.dispose.should.be.true
+        conn.close
       end
 
     end
@@ -44,6 +75,7 @@ shared 'a Connection' do
 
       after do
         @closed_connection.close
+        @closed_connection = nil
       end
 
       it 'dispose should be false' do
@@ -59,45 +91,6 @@ shared 'a Connection' do
 
   end
 
-  it 'should respond to #create_command' do @connection.should.respond_to(:create_command) end
-
-  describe 'create_command' do
-    it 'should be a kind of Command' do
-      @connection.create_command('This is a dummy command').should.be.kind_of(DataObjects::Command)
-    end
-  end
-
-  describe 'various connection URIs' do
-
-    def test_connection(conn)
-      reader = conn.create_command(CONFIG.testsql || "SELECT 1").execute_reader
-      reader.next!
-      reader.values[0]
-    end
-
-    after do
-      @open_connection.close if @open_connection
-    end
-
-    it 'should open with an uri object' do
-      uri = DataObjects::URI.new(
-              @driver,
-              @user,
-              @password,
-              @host,
-              @port && @port.to_i,
-              @database,
-              nil, nil
-            )
-      test_connection(DataObjects::Connection.new(uri)).should == 1
-    end
-
-    it 'should work with non-JDBC URLs' do
-      conn = DataObjects::Connection.new("#{CONFIG.uri.sub(/jdbc:/, '')}")
-      test_connection(conn).should == 1
-    end
-
-  end
 end
 
 shared 'a Connection with authentication support' do
@@ -153,6 +146,7 @@ shared 'a Connection with JDBC URL support' do
   it 'should work with JDBC URLs' do
     conn = DataObjects::Connection.new(CONFIG.jdbc_uri || "jdbc:#{CONFIG.uri.sub(/jdbc:/, '')}")
     test_connection(conn).should == 1
+    conn.close
   end
 
 end if JRUBY
@@ -163,7 +157,9 @@ shared 'a Connection with SSL support' do
     describe 'connecting with SSL' do
 
       it 'should connect securely' do
-        DataObjects::Connection.new("#{CONFIG.uri}?#{CONFIG.ssl}").secure?.should.be.true
+        conn = DataObjects::Connection.new("#{CONFIG.uri}?#{CONFIG.ssl}")
+        conn.secure?.should.be.true
+        conn.close
       end
 
     end
@@ -172,7 +168,9 @@ shared 'a Connection with SSL support' do
   describe 'connecting without SSL' do
 
     it 'should not connect securely' do
-      DataObjects::Connection.new(CONFIG.uri).secure?.should.be.false
+      conn = DataObjects::Connection.new(CONFIG.uri)
+      conn.secure?.should.be.false
+      conn.close
     end
 
   end
@@ -208,6 +206,8 @@ shared 'a Connection via JDNI' do
               puts "use (after installation of maven) to test JNDI:"
               puts "mvn rails:spec -Drails.fork=false"
             end
+          else
+            c.close
           end
         end
       end
