@@ -2,15 +2,15 @@ shared 'supporting Date' do
 
   setup_test_environment
 
-  before do
-    @connection = DataObjects::Connection.new(CONFIG.uri)
-  end
-
-  after do
-    @connection.close
-  end
-
   describe 'reading a Date' do
+
+    before do
+      @connection = DataObjects::Connection.new(CONFIG.uri)
+    end
+
+    after do
+      @connection.close
+    end
 
     describe 'with manual typecasting' do
 
@@ -65,6 +65,14 @@ shared 'supporting Date' do
   describe 'writing an Date' do
 
     before do
+      @connection = DataObjects::Connection.new(CONFIG.uri)
+    end
+
+    after do
+      @connection.close
+    end
+
+    before do
       @reader = @connection.create_command("SELECT id FROM widgets WHERE release_date = ? ORDER BY id").execute_reader(Date.civil(2008, 2, 14))
       @reader.next!
       @values = @reader.values
@@ -87,15 +95,15 @@ shared 'supporting Date autocasting' do
 
   setup_test_environment
 
-  before do
-    @connection = DataObjects::Connection.new(CONFIG.uri)
-  end
-
-  after do
-    @connection.close
-  end
-
   describe 'reading a Date' do
+
+    before do
+      @connection = DataObjects::Connection.new(CONFIG.uri)
+    end
+
+    after do
+      @connection.close
+    end
 
     describe 'with automatic typecasting' do
 

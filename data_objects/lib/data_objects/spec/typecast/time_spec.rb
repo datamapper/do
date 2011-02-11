@@ -2,15 +2,15 @@ shared 'supporting Time' do
 
   setup_test_environment
 
-  before do
-    @connection = DataObjects::Connection.new(CONFIG.uri)
-  end
-
-  after do
-    @connection.close
-  end
-
   describe 'reading a Time' do
+
+    before do
+      @connection = DataObjects::Connection.new(CONFIG.uri)
+    end
+
+    after do
+      @connection.close
+    end
 
     describe 'with manual typecasting' do
 
@@ -63,6 +63,14 @@ shared 'supporting Time' do
   end
 
   describe 'writing an Time' do
+
+    before do
+      @connection = DataObjects::Connection.new(CONFIG.uri)
+    end
+
+    after do
+      @connection.close
+    end
 
     before do
       @reader = @connection.create_command("SELECT id FROM widgets WHERE release_datetime = ? ORDER BY id").execute_reader(Time.local(2008, 2, 14, 00, 31, 12))

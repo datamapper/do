@@ -2,15 +2,15 @@ shared 'supporting ByteArray' do
 
   setup_test_environment
 
-  before do
-    @connection = DataObjects::Connection.new(CONFIG.uri)
-  end
-
-  after do
-    @connection.close
-  end
-
   describe 'reading a ByteArray' do
+
+    before do
+      @connection = DataObjects::Connection.new(CONFIG.uri)
+    end
+
+    after do
+      @connection.close
+    end
 
     describe 'with automatic typecasting' do
 
@@ -61,6 +61,14 @@ shared 'supporting ByteArray' do
   end
 
   describe 'writing a ByteArray' do
+
+    before do
+      @connection = DataObjects::Connection.new(CONFIG.uri)
+    end
+
+    after do
+      @connection.close
+    end
 
     before do
       @reader = @connection.create_command("SELECT ad_description FROM widgets WHERE cad_drawing = ?").execute_reader(::Extlib::ByteArray.new("CAD \001 \000 DRAWING"))

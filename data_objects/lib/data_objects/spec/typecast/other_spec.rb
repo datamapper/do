@@ -14,15 +14,15 @@ shared 'supporting other (unknown) type' do
 
   setup_test_environment
 
-  before do
-    @connection = DataObjects::Connection.new(CONFIG.uri)
-  end
-
-  after do
-    @connection.close
-  end
-
   describe 'writing an object of unknown type' do
+
+    before do
+      @connection = DataObjects::Connection.new(CONFIG.uri)
+    end
+
+    after do
+      @connection.close
+    end
 
     before do
       @command = @connection.create_command("SELECT ad_description FROM widgets WHERE ad_description = ?")

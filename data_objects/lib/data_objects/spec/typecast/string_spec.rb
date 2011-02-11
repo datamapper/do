@@ -4,15 +4,15 @@ shared 'supporting String' do
 
   setup_test_environment
 
-  before do
-    @connection = DataObjects::Connection.new(CONFIG.uri)
-  end
-
-  after do
-    @connection.close
-  end
-
   describe 'reading a String' do
+
+    before do
+      @connection = DataObjects::Connection.new(CONFIG.uri)
+    end
+
+    after do
+      @connection.close
+    end
 
     describe 'with automatic typecasting' do
 
@@ -65,6 +65,14 @@ shared 'supporting String' do
   describe 'writing a String' do
 
     before do
+      @connection = DataObjects::Connection.new(CONFIG.uri)
+    end
+
+    after do
+      @connection.close
+    end
+
+    before do
       @reader = @connection.create_command("SELECT id FROM widgets WHERE id = ?").execute_reader("2")
       @reader.next!
       @values = @reader.values
@@ -82,6 +90,14 @@ shared 'supporting String' do
   end
 
   describe 'writing and reading a multibyte String' do
+
+    before do
+      @connection = DataObjects::Connection.new(CONFIG.uri)
+    end
+
+    after do
+      @connection.close
+    end
 
     ['Aslak Hellesøy',
      'Пётр Алексе́евич Рома́нов',
@@ -124,6 +140,14 @@ shared 'supporting String' do
   class ::StringWithExtraPowers < String; end
 
   describe 'writing a kind of (subclass of) String' do
+
+    before do
+      @connection = DataObjects::Connection.new(CONFIG.uri)
+    end
+
+    after do
+      @connection.close
+    end
 
     before do
       @reader = @connection.create_command("SELECT id FROM widgets WHERE id = ?").execute_reader(::StringWithExtraPowers.new("2"))

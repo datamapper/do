@@ -2,15 +2,15 @@ shared 'supporting Boolean' do
 
   setup_test_environment
 
-  before do
-    @connection = DataObjects::Connection.new(CONFIG.uri)
-  end
-
-  after do
-    @connection.close
-  end
-
   describe 'reading a Boolean' do
+
+    before do
+      @connection = DataObjects::Connection.new(CONFIG.uri)
+    end
+
+    after do
+      @connection.close
+    end
 
     describe 'with manual typecasting' do
 
@@ -89,6 +89,14 @@ shared 'supporting Boolean' do
   describe 'writing an Boolean' do
 
     before do
+      @connection = DataObjects::Connection.new(CONFIG.uri)
+    end
+
+    after do
+      @connection.close
+    end
+
+    before do
       @reader = @connection.create_command("SELECT id FROM widgets WHERE flags = ?").execute_reader(true)
       @reader.next!
       @values = @reader.values
@@ -110,15 +118,15 @@ shared 'supporting Boolean autocasting' do
 
   setup_test_environment
 
-  before do
-    @connection = DataObjects::Connection.new(CONFIG.uri)
-  end
-
-  after do
-    @connection.close
-  end
-
   describe 'reading a Boolean' do
+
+    before do
+      @connection = DataObjects::Connection.new(CONFIG.uri)
+    end
+
+    after do
+      @connection.close
+    end
 
     describe 'with automatic typecasting' do
 

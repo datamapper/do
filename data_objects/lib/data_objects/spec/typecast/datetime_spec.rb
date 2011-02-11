@@ -4,15 +4,15 @@ shared 'supporting DateTime' do
 
   setup_test_environment
 
-  before do
-    @connection = DataObjects::Connection.new(CONFIG.uri)
-  end
-
-  after do
-    @connection.close
-  end
-
   describe 'reading a DateTime' do
+
+    before do
+      @connection = DataObjects::Connection.new(CONFIG.uri)
+    end
+
+    after do
+      @connection.close
+    end
 
     describe 'with manual typecasting' do
 
@@ -94,6 +94,14 @@ shared 'supporting DateTime' do
   describe 'writing an DateTime' do
 
     before do
+      @connection = DataObjects::Connection.new(CONFIG.uri)
+    end
+
+    after do
+      @connection.close
+    end
+
+    before do
       local_offset = Rational(Time.local(2008, 2, 14).utc_offset, 86400)
       @reader = @connection.create_command("SELECT id FROM widgets WHERE release_datetime = ? ORDER BY id").execute_reader(DateTime.civil(2008, 2, 14, 00, 31, 12, local_offset))
       @reader.next!
@@ -117,15 +125,15 @@ shared 'supporting DateTime autocasting' do
 
   setup_test_environment
 
-  before do
-    @connection = DataObjects::Connection.new(CONFIG.uri)
-  end
-
-  after do
-    @connection.close
-  end
-
   describe 'reading a DateTime' do
+
+    before do
+      @connection = DataObjects::Connection.new(CONFIG.uri)
+    end
+
+    after do
+      @connection.close
+    end
 
     describe 'with automatic typecasting' do
 

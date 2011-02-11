@@ -6,7 +6,7 @@ require 'data_objects/spec/result_spec'
 describe DataObjects::Postgres::Result do
   behaves_like 'a Result'
 
-  after do
+  before do
     setup_test_environment
   end
 
@@ -42,7 +42,7 @@ describe DataObjects::Postgres::Result do
       it 'should be retrievable through curr_val' do
         reader = @connection.create_command("SELECT currval('users_id_seq')").execute_reader
         reader.next!
-        reader.values.first.should == 2
+        reader.values.first.should == 1
       end
 
     end
@@ -75,7 +75,7 @@ describe DataObjects::Postgres::Result do
     describe 'insert_id' do
 
       it 'should return the generated key value' do
-        @result.insert_id.should == 2
+        @result.insert_id.should == 1
       end
 
     end

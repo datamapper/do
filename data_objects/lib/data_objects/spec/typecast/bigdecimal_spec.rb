@@ -2,15 +2,15 @@ shared 'supporting BigDecimal' do
 
   setup_test_environment
 
-  before do
-    @connection = DataObjects::Connection.new(CONFIG.uri)
-  end
-
-  after do
-    @connection.close
-  end
-
   describe 'reading a BigDecimal' do
+
+    before do
+      @connection = DataObjects::Connection.new(CONFIG.uri)
+    end
+
+    after do
+      @connection.close
+    end
 
     describe 'with manual typecasting' do
 
@@ -66,6 +66,14 @@ shared 'supporting BigDecimal' do
   describe 'writing an Integer' do
 
     before do
+      @connection = DataObjects::Connection.new(CONFIG.uri)
+    end
+
+    after do
+      @connection.close
+    end
+
+    before do
       @reader = @connection.create_command("SELECT id FROM widgets WHERE id = ?").execute_reader(BigDecimal("2.0"))
       @reader.next!
       @values = @reader.values
@@ -87,15 +95,15 @@ shared 'supporting BigDecimal autocasting' do
 
   setup_test_environment
 
-  before do
-    @connection = DataObjects::Connection.new(CONFIG.uri)
-  end
-
-  after do
-    @connection.close
-  end
-
   describe 'reading a BigDecimal' do
+
+    before do
+      @connection = DataObjects::Connection.new(CONFIG.uri)
+    end
+
+    after do
+      @connection.close
+    end
 
     describe 'with automatic typecasting' do
 

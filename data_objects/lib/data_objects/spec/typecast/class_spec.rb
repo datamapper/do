@@ -2,15 +2,15 @@ shared 'supporting Class' do
 
   setup_test_environment
 
-  before do
-    @connection = DataObjects::Connection.new(CONFIG.uri)
-  end
-
-  after do
-    @connection.close
-  end
-
   describe 'reading a Class' do
+
+    before do
+      @connection = DataObjects::Connection.new(CONFIG.uri)
+    end
+
+    after do
+      @connection.close
+    end
 
     describe 'with manual typecasting' do
 
@@ -39,6 +39,14 @@ shared 'supporting Class' do
   end
 
   describe 'writing a Class' do
+
+    before do
+      @connection = DataObjects::Connection.new(CONFIG.uri)
+    end
+
+    after do
+      @connection.close
+    end
 
     before do
       @reader = @connection.create_command("SELECT whitepaper_text FROM widgets WHERE whitepaper_text = ?").execute_reader(String)

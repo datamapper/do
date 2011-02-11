@@ -8,7 +8,6 @@ shared 'a Connection' do
 
   after do
     @connection.close
-    @connection = nil
   end
 
   it 'should be a kind of Connection'    do @connection.should.be.kind_of(::DataObjects::Connection) end
@@ -140,7 +139,9 @@ shared 'a Connection with JDBC URL support' do
   def test_connection(conn)
     reader = conn.create_command(CONFIG.testsql || "SELECT 1").execute_reader
     reader.next!
-    reader.values[0]
+    result = reader.values[0]
+    reader.close
+    conn.close
   end
 
   it 'should work with JDBC URLs' do

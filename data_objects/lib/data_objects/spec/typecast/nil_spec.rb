@@ -2,15 +2,15 @@ shared 'supporting Nil' do
 
   setup_test_environment
 
-  before do
-    @connection = DataObjects::Connection.new(CONFIG.uri)
-  end
-
-  after do
-    @connection.close
-  end
-
   describe 'reading a Nil' do
+
+    before do
+      @connection = DataObjects::Connection.new(CONFIG.uri)
+    end
+
+    after do
+      @connection.close
+    end
 
     describe 'with manual typecasting' do
 
@@ -44,16 +44,16 @@ shared 'supporting writing an Nil' do
 
   setup_test_environment
 
-  before do
-    @connection = DataObjects::Connection.new(CONFIG.uri)
-  end
+  describe 'supporting writing an Nil' do
 
-  after do
-    @connection.close
-  end
+    before do
+      @connection = DataObjects::Connection.new(CONFIG.uri)
+    end
 
+    after do
+      @connection.close
+    end
 
-   describe 'supporting writing an Nil' do
     # see as an example oracle
     # http://download.oracle.com/docs/cd/B19306_01/server.102/b14200/sql_elements005.htm#sthref487
     # http://download.oracle.com/docs/cd/B19306_01/server.102/b14200/conditions013.htm#i1050801
@@ -82,15 +82,15 @@ shared 'supporting Nil autocasting' do
 
   setup_test_environment
 
-  before do
-    @connection = DataObjects::Connection.new(CONFIG.uri)
-  end
-
-  after do
-    @connection.close
-  end
-
   describe 'reading a Nil' do
+
+    before do
+      @connection = DataObjects::Connection.new(CONFIG.uri)
+    end
+
+    after do
+      @connection.close
+    end
 
     describe 'with automatic typecasting' do
 

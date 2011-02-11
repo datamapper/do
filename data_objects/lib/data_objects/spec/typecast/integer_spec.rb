@@ -2,15 +2,15 @@ shared 'supporting Integer' do
 
   setup_test_environment
 
-  before do
-    @connection = DataObjects::Connection.new(CONFIG.uri)
-  end
-
-  after do
-    @connection.close
-  end
-
   describe 'reading an Integer' do
+
+    before do
+      @connection = DataObjects::Connection.new(CONFIG.uri)
+    end
+
+    after do
+      @connection.close
+    end
 
     describe 'with automatic typecasting' do
 
@@ -64,6 +64,14 @@ shared 'supporting Integer' do
   describe 'writing an Integer' do
 
     before do
+      @connection = DataObjects::Connection.new(CONFIG.uri)
+    end
+
+    after do
+      @connection.close
+    end
+
+    before do
       @reader = @connection.create_command("SELECT id FROM widgets WHERE id = ?").execute_reader(2)
       @reader.next!
       @values = @reader.values
@@ -80,6 +88,14 @@ shared 'supporting Integer' do
   end
 
   describe 'writing a big Integer' do
+
+    before do
+      @connection = DataObjects::Connection.new(CONFIG.uri)
+    end
+
+    after do
+      @connection.close
+    end
 
     before do
       @connection.create_command("UPDATE widgets SET super_number = ? WHERE id = 10").execute_non_query(2147483648) # bigger than Integer.MAX in java !!

@@ -1,16 +1,16 @@
 shared 'a driver supporting different encodings' do
 
-  before do
-    @connection = DataObjects::Connection.new(CONFIG.uri)
-  end
-
-  after do
-    @connection.close
-  end
-
-  it 'should respond to #character_set' do @connection.should.respond_to(:character_set) end
-
   describe 'character_set' do
+
+    before do
+      @connection = DataObjects::Connection.new(CONFIG.uri)
+    end
+
+    after do
+      @connection.close
+    end
+
+    it 'should respond to #character_set' do @connection.should.respond_to(:character_set) end
 
     it 'uses utf8 by default' do
       @connection.character_set.should == 'UTF-8'
@@ -49,16 +49,15 @@ shared 'returning correctly encoded strings for the default database encoding' d
 
     setup_test_environment
 
-    before do
-      @connection.close if @connection
-      @connection = DataObjects::Connection.new(CONFIG.uri)
-    end
-
-    after do
-      @connection.close
-    end
-
     describe 'with encoded string support' do
+
+      before do
+        @connection = DataObjects::Connection.new(CONFIG.uri)
+      end
+
+      after do
+        @connection.close
+      end
 
       describe 'reading a String' do
         before do
@@ -108,19 +107,18 @@ shared 'returning correctly encoded strings for the default internal encoding' d
 
     setup_test_environment
 
-    before do
-      @connection.close if @connection
-      @encoding_before = Encoding.default_internal
-      Encoding.default_internal = 'ISO-8859-1'
-      @connection = DataObjects::Connection.new(CONFIG.uri)
-    end
-
-    after do
-      @connection.close
-      Encoding.default_internal = @encoding_before
-    end
-
     describe 'with encoded string support' do
+
+      before do
+        @encoding_before = Encoding.default_internal
+        Encoding.default_internal = 'ISO-8859-1'
+        @connection = DataObjects::Connection.new(CONFIG.uri)
+      end
+
+      after do
+        @connection.close
+        Encoding.default_internal = @encoding_before
+      end
 
       describe 'reading a String' do
         before do
