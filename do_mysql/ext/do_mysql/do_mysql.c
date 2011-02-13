@@ -27,7 +27,7 @@ VALUE cResult;
 VALUE cReader;
 
 // Figures out what we should cast a given mysql field type to
-VALUE infer_ruby_type(MYSQL_FIELD *field) {
+VALUE infer_ruby_type(const MYSQL_FIELD *field) {
   switch (field->type) {
     case MYSQL_TYPE_NULL:
       return Qnil;
