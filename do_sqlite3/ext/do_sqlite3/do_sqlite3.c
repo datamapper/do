@@ -16,10 +16,9 @@ VALUE OPEN_FLAG_NO_MUTEX;
 VALUE OPEN_FLAG_FULL_MUTEX;
 
 void raise_error(VALUE self, sqlite3 *result, VALUE query) {
-  VALUE exception;
+  int sqlite3_errno = sqlite3_errcode(result);
   const char *message = sqlite3_errmsg(result);
   const char *exception_type = "SQLError";
-  int sqlite3_errno = sqlite3_errcode(result);
 
   struct errcodes *errs;
 
@@ -31,13 +30,17 @@ void raise_error(VALUE self, sqlite3 *result, VALUE query) {
   }
 
   VALUE uri = rb_funcall(rb_iv_get(self, "@connection"), rb_intern("to_s"), 0);
+  VALUE exception = rb_funcall(
+    CONST_GET(mDO, exception_type),
+    ID_NEW,
+    5,
+    rb_str_new2(message),
+    INT2NUM(sqlite3_errno),
+    rb_str_new2(""),
+    query,
+    uri
+  );
 
-  exception = rb_funcall(CONST_GET(mDO, exception_type), ID_NEW, 5,
-                         rb_str_new2(message),
-                         INT2NUM(sqlite3_errno),
-                         rb_str_new2(""),
-                         query,
-                         uri);
   rb_exc_raise(exception);
 }
 
@@ -159,11 +162,9 @@ int flags_from_uri(VALUE uri) {
 /****** Public API ******/
 
 VALUE cConnection_initialize(VALUE self, VALUE uri) {
-  int ret;
-  VALUE path;
+  VALUE path = rb_funcall(uri, rb_intern("path"), 0);
   sqlite3 *db;
-
-  path = rb_funcall(uri, rb_intern("path"), 0);
+  int ret;
 
 #ifdef HAVE_SQLITE3_OPEN_V2
   ret = sqlite3_open_v2(StringValuePtr(path), &db, flags_from_uri(uri), 0);
@@ -189,13 +190,11 @@ VALUE cConnection_initialize(VALUE self, VALUE uri) {
 VALUE cConnection_dispose(VALUE self) {
   VALUE connection_container = rb_iv_get(self, "@connection");
 
-  sqlite3 *db;
-
   if (connection_container == Qnil) {
     return Qfalse;
   }
 
-  db = DATA_PTR(connection_container);
+  sqlite3 *db = DATA_PTR(connection_container);
 
   if (!db) {
     return Qfalse;
@@ -203,7 +202,6 @@ VALUE cConnection_dispose(VALUE self) {
 
   sqlite3_close(db);
   rb_iv_set(self, "@connection", Qnil);
-
   return Qtrue;
 }
 
@@ -213,13 +211,11 @@ VALUE cConnection_quote_boolean(VALUE self, VALUE value) {
 
 VALUE cConnection_quote_string(VALUE self, VALUE string) {
   const char *source = rb_str_ptr_readonly(string);
-  char *escaped_with_quotes;
-  VALUE result;
 
   // Wrap the escaped string in single-quotes, this is DO's convention
-  escaped_with_quotes = sqlite3_mprintf("%Q", source);
+  char *escaped_with_quotes = sqlite3_mprintf("%Q", source);
+  VALUE result = rb_str_new2(escaped_with_quotes);
 
-  result = rb_str_new2(escaped_with_quotes);
 #ifdef HAVE_RUBY_ENCODING_H
   rb_enc_associate_index(result, FIX2INT(rb_iv_get(self, "@encoding_id")));
 #endif
@@ -237,23 +233,19 @@ VALUE cConnection_quote_byte_array(VALUE self, VALUE string) {
 }
 
 VALUE cConnection_enable_load_extension(VALUE self, VALUE value) {
-  VALUE connection;
-  int status;
-  sqlite3 *db;
-
-  connection = rb_iv_get(self, "@connection");
+  VALUE connection = rb_iv_get(self, "@connection");
 
   if (connection == Qnil) {
     return Qfalse;
   }
 
-  db = DATA_PTR(connection);
+  sqlite3 *db = DATA_PTR(connection);
 
   if (!db) {
     return Qfalse;
   }
 
-  status = sqlite3_enable_load_extension(db, value == Qtrue ? 1 : 0);
+  int status = sqlite3_enable_load_extension(db, value == Qtrue ? 1 : 0);
 
   if (status != SQLITE_OK) {
     rb_raise(eConnectionError, "Error enabling load extension.");
@@ -262,25 +254,21 @@ VALUE cConnection_enable_load_extension(VALUE self, VALUE value) {
 }
 
 VALUE cConnection_load_extension(VALUE self, VALUE string) {
-  VALUE connection;
-  sqlite3 *db;
-  const char *extension_name  = rb_str_ptr_readonly(string);
-  char* errmsg;
-  int status;
-
-  connection = rb_iv_get(self, "@connection");
+  VALUE connection = rb_iv_get(self, "@connection");
 
   if (connection == Qnil) {
     return Qfalse;
   }
 
-  db = DATA_PTR(connection);
+  sqlite3 *db = DATA_PTR(connection);
 
   if (!db) {
     return Qfalse;
   }
 
-  status = sqlite3_load_extension(db, extension_name, 0, &errmsg);
+  const char *extension_name  = rb_str_ptr_readonly(string);
+  char *errmsg;
+  int status = sqlite3_load_extension(db, extension_name, 0, &errmsg);
 
   if (status != SQLITE_OK) {
     rb_raise(eConnectionError, "%s", errmsg);
@@ -289,25 +277,21 @@ VALUE cConnection_load_extension(VALUE self, VALUE string) {
 }
 
 VALUE cCommand_execute_non_query(int argc, VALUE *argv, VALUE self) {
-  sqlite3 *db;
-  char *error_message;
-  int status;
-  int affected_rows;
-  do_int64 insert_id;
-  VALUE connection, sqlite3_connection;
-  VALUE query;
-  struct timeval start;
-
-  query = build_query_from_args(self, argc, argv);
-
-  connection = rb_iv_get(self, "@connection");
-  sqlite3_connection = rb_iv_get(connection, "@connection");
+  VALUE query = build_query_from_args(self, argc, argv);
+  VALUE connection = rb_iv_get(self, "@connection");
+  VALUE sqlite3_connection = rb_iv_get(connection, "@connection");
 
   if (sqlite3_connection == Qnil) {
     rb_raise(eConnectionError, "This connection has already been closed.");
   }
 
+  sqlite3 *db = NULL;
+
   Data_Get_Struct(sqlite3_connection, sqlite3, db);
+
+  struct timeval start;
+  char *error_message;
+  int status;
 
   gettimeofday(&start, NULL);
   status = sqlite3_exec(db, rb_str_ptr_readonly(query), 0, 0, &error_message);
@@ -318,33 +302,28 @@ VALUE cCommand_execute_non_query(int argc, VALUE *argv, VALUE self) {
 
   data_objects_debug(connection, query, &start);
 
-  affected_rows = sqlite3_changes(db);
-  insert_id = sqlite3_last_insert_rowid(db);
+  int affected_rows = sqlite3_changes(db);
+  do_int64 insert_id = sqlite3_last_insert_rowid(db);
+
   return rb_funcall(cResult, ID_NEW, 3, self, INT2NUM(affected_rows), INT2NUM(insert_id));
 }
 
 VALUE cCommand_execute_reader(int argc, VALUE *argv, VALUE self) {
-  sqlite3 *db;
-  sqlite3_stmt *sqlite3_reader;
-  int status;
-  int field_count;
-  int i;
-  VALUE reader;
-  VALUE connection, sqlite3_connection;
-  VALUE query;
-  VALUE field_names, field_types;
-  struct timeval start;
-
-  connection = rb_iv_get(self, "@connection");
-  sqlite3_connection = rb_iv_get(connection, "@connection");
+  VALUE query = build_query_from_args(self, argc, argv);
+  VALUE connection = rb_iv_get(self, "@connection");
+  VALUE sqlite3_connection = rb_iv_get(connection, "@connection");
 
   if (sqlite3_connection == Qnil) {
     rb_raise(eConnectionError, "This connection has already been closed.");
   }
 
+  sqlite3 *db;
+
   Data_Get_Struct(sqlite3_connection, sqlite3, db);
 
-  query = build_query_from_args(self, argc, argv);
+  sqlite3_stmt *sqlite3_reader;
+  struct timeval start;
+  int status;
 
   gettimeofday(&start, NULL);
   status = sqlite3_prepare_v2(db, rb_str_ptr_readonly(query), -1, &sqlite3_reader, 0);
@@ -354,15 +333,14 @@ VALUE cCommand_execute_reader(int argc, VALUE *argv, VALUE self) {
     raise_error(self, db, query);
   }
 
-  field_count = sqlite3_column_count(sqlite3_reader);
-  reader = rb_funcall(cReader, ID_NEW, 0);
+  int field_count = sqlite3_column_count(sqlite3_reader);
+  VALUE reader = rb_funcall(cReader, ID_NEW, 0);
 
   rb_iv_set(reader, "@reader", Data_Wrap_Struct(rb_cObject, 0, 0, sqlite3_reader));
   rb_iv_set(reader, "@field_count", INT2NUM(field_count));
   rb_iv_set(reader, "@connection", connection);
 
-  field_names = rb_ary_new();
-  field_types = rb_iv_get(self, "@field_types");
+  VALUE field_types = rb_iv_get(self, "@field_types");
 
   if (field_types == Qnil || RARRAY_LEN(field_types) == 0) {
     field_types = rb_ary_new();
@@ -373,6 +351,9 @@ VALUE cCommand_execute_reader(int argc, VALUE *argv, VALUE self) {
     rb_funcall(reader, rb_intern("close"), 0);
     rb_raise(rb_eArgError, "Field-count mismatch. Expected %ld fields, but the query yielded %d", RARRAY_LEN(field_types), field_count);
   }
+
+  VALUE field_names = rb_ary_new();
+  int i;
 
   for (i = 0; i < field_count; i++) {
     rb_ary_push(field_names, rb_str_new2((char *)sqlite3_column_name(sqlite3_reader, i)));
@@ -399,28 +380,16 @@ VALUE cReader_close(VALUE self) {
 }
 
 VALUE cReader_next(VALUE self) {
-  sqlite3_stmt *reader;
-  int field_count;
-  int result;
-  int i;
-  size_t ft_length;
-  VALUE arr = rb_ary_new();
-  VALUE field_types;
-  VALUE field_type;
-  VALUE value;
-
   if (rb_iv_get(self, "@done") == Qtrue) {
     return Qfalse;
   }
 
-  Data_Get_Struct(rb_iv_get(self, "@reader"), sqlite3_stmt, reader);
-  field_count = NUM2INT(rb_iv_get(self, "@field_count"));
+  sqlite3_stmt *reader;
+  int result;
 
-  field_types = rb_iv_get(self, "@field_types");
-  ft_length = RARRAY_LEN(field_types);
+  Data_Get_Struct(rb_iv_get(self, "@reader"), sqlite3_stmt, reader);
 
   result = sqlite3_step(reader);
-
   rb_iv_set(self, "@state", INT2NUM(result));
 
   if (result != SQLITE_ROW) {
@@ -437,6 +406,13 @@ VALUE cReader_next(VALUE self) {
     enc = FIX2INT(encoding_id);
   }
 #endif
+
+  VALUE field_types = rb_iv_get(self, "@field_types");
+  int field_count = NUM2INT(rb_iv_get(self, "@field_count"));
+  VALUE arr = rb_ary_new();
+  VALUE field_type;
+  VALUE value;
+  int i;
 
   for (i = 0; i < field_count; i++) {
     field_type = rb_ary_entry(field_types, i);
