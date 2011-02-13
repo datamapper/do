@@ -142,11 +142,15 @@ VALUE timezone_to_offset(int hour_offset, int minute_offset) {
 
 VALUE parse_date(const char *date) {
   static char const *const _fmt_date = "%4d-%2d-%2d";
-  int year, month, day;
+  int year = 0, month = 0, day = 0;
   int jd, ajd;
   VALUE rational;
 
-  sscanf(date, _fmt_date, &year, &month, &day);
+  switch (sscanf(date, _fmt_date, &year, &month, &day)) {
+    case 0:
+    case EOF:
+      return Qnil;
+  }
 
   jd       = jd_from_date(year, month, day);
   ajd      = (jd * 2) - 1;        // Math from Date.jd_to_ajd
