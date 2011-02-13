@@ -184,25 +184,23 @@ MYSQL_RES *cCommand_execute_sync(VALUE self, VALUE connection, MYSQL *db, VALUE 
 }
 #else
 MYSQL_RES *cCommand_execute_async(VALUE self, VALUE connection, MYSQL *db, VALUE query) {
-  int socket_fd;
   int retval;
-  fd_set rset;
-  struct timeval start;
-  const char *str = rb_str_ptr_readonly(query);
-  size_t len = rb_str_len(query);
-  MYSQL_RES *result;
 
   if ((retval = mysql_ping(db)) && mysql_errno(db) == CR_SERVER_GONE_ERROR) {
     full_connect(connection, db);
   }
 
-  gettimeofday(&start, NULL);
+  struct timeval start;
+  const char *str = rb_str_ptr_readonly(query);
+  size_t len = rb_str_len(query);
 
+  gettimeofday(&start, NULL);
   retval = mysql_send_query(db, str, len);
 
   CHECK_AND_RAISE(retval, query);
 
-  socket_fd = db->net.fd;
+  int socket_fd = db->net.fd;
+  fd_set rset;
 
   while (1) {
     FD_ZERO(&rset);
@@ -227,7 +225,7 @@ MYSQL_RES *cCommand_execute_async(VALUE self, VALUE connection, MYSQL *db, VALUE
   CHECK_AND_RAISE(retval, query);
   data_objects_debug(connection, query, &start);
 
-  result = mysql_store_result(db);
+  MYSQL_RES *result = mysql_store_result(db);
 
   if (!result) {
     CHECK_AND_RAISE(mysql_errno(db), query);
