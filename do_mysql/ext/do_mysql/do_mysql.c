@@ -310,7 +310,7 @@ void full_connect(VALUE self, MYSQL *db) {
   }
 #endif
 
-  result = (MYSQL *)mysql_real_connect(
+  result = mysql_real_connect(
     db,
     host,
     user,
