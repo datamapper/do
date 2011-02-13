@@ -503,12 +503,6 @@ VALUE cConnection_quote_string(VALUE self, VALUE string) {
 }
 
 VALUE cCommand_execute_non_query(int argc, VALUE *argv, VALUE self) {
-  VALUE query;
-
-  MYSQL_RES *response = 0;
-
-  my_ulonglong affected_rows;
-  my_ulonglong insert_id;
   VALUE connection = rb_iv_get(self, "@connection");
   VALUE mysql_connection = rb_iv_get(connection, "@connection");
   
@@ -517,12 +511,12 @@ VALUE cCommand_execute_non_query(int argc, VALUE *argv, VALUE self) {
   }
 
   MYSQL *db = DATA_PTR(mysql_connection);
-  query = build_query_from_args(self, argc, argv);
+  VALUE query = build_query_from_args(self, argc, argv);
+  MYSQL_RES *response = cCommand_execute(self, connection, db, query);
 
-  response = cCommand_execute(self, connection, db, query);
+  my_ulonglong affected_rows = mysql_affected_rows(db);
+  my_ulonglong insert_id = mysql_insert_id(db);
 
-  affected_rows = mysql_affected_rows(db);
-  insert_id     = mysql_insert_id(db);
   mysql_free_result(response);
 
   if (((my_ulonglong)-1) == affected_rows) {
@@ -533,12 +527,6 @@ VALUE cCommand_execute_non_query(int argc, VALUE *argv, VALUE self) {
 }
 
 VALUE cCommand_execute_reader(int argc, VALUE *argv, VALUE self) {
-  VALUE query, reader;
-  VALUE field_names, field_types;
-
-  unsigned int field_count;
-  unsigned int i;
-
   VALUE connection = rb_iv_get(self, "@connection");
   VALUE mysql_connection = rb_iv_get(connection, "@connection");
 
@@ -546,26 +534,24 @@ VALUE cCommand_execute_reader(int argc, VALUE *argv, VALUE self) {
     rb_raise(eConnectionError, "This connection has already been closed.");
   }
 
+  VALUE query = build_query_from_args(self, argc, argv);
   MYSQL *db = DATA_PTR(mysql_connection);
-  MYSQL_RES *response = NULL;
-
-  query = build_query_from_args(self, argc, argv);
-  response = cCommand_execute(self, connection, db, query);
+  MYSQL_RES *response = cCommand_execute(self, connection, db, query);
 
   if (!response) {
     rb_raise(eConnectionError, "No result set received for a query that should yield one.");
   }
 
-  field_count = mysql_field_count(db);
+  unsigned int field_count = mysql_field_count(db);
+  VALUE reader = rb_funcall(cReader, ID_NEW, 0);
 
-  reader = rb_funcall(cReader, ID_NEW, 0);
   rb_iv_set(reader, "@connection", connection);
   rb_iv_set(reader, "@reader", Data_Wrap_Struct(rb_cObject, 0, 0, response));
   rb_iv_set(reader, "@opened", Qfalse);
   rb_iv_set(reader, "@field_count", INT2NUM(field_count));
 
-  field_names = rb_ary_new();
-  field_types = rb_iv_get(self, "@field_types");
+  VALUE field_names = rb_ary_new();
+  VALUE field_types = rb_iv_get(self, "@field_types");
 
   char guess_default_field_types = 0;
 
@@ -581,6 +567,7 @@ VALUE cCommand_execute_reader(int argc, VALUE *argv, VALUE self) {
   }
 
   MYSQL_FIELD *field;
+  unsigned int i;
 
   for(i = 0; i < field_count; i++) {
     field = mysql_fetch_field_direct(response, i);
@@ -634,15 +621,12 @@ VALUE cReader_next(VALUE self) {
   }
 
   MYSQL_RES *reader = DATA_PTR(reader_container);
-  MYSQL_ROW result;
-  VALUE field_types, field_type, row;
-  unsigned long *lengths;
+  MYSQL_ROW result = mysql_fetch_row(reader);
 
   // The Meat
-  field_types = rb_iv_get(self, "@field_types");
-  row = rb_ary_new();
-  result = mysql_fetch_row(reader);
-  lengths = mysql_fetch_lengths(reader);
+  VALUE field_types = rb_iv_get(self, "@field_types");
+  VALUE row = rb_ary_new();
+  unsigned long *lengths = mysql_fetch_lengths(reader);
 
   rb_iv_set(self, "@opened", result ? Qtrue : Qfalse);
 
@@ -659,6 +643,7 @@ VALUE cReader_next(VALUE self) {
   }
 #endif
 
+  VALUE field_type;
   unsigned int i;
 
   for (i = 0; i < reader->field_count; i++) {
