@@ -1,5 +1,9 @@
 #include <ruby.h>
 
+#ifdef HAVE_RUBY_ENCODING_H
+#include <ruby/encoding.h>
+#endif
+
 #ifdef _WIN32
 #define cCommand_execute cCommand_execute_sync
 typedef signed __int64 do_int64;
@@ -7,42 +11,6 @@ typedef signed __int64 do_int64;
 #define cCommand_execute cCommand_execute_async
 typedef signed long long int do_int64;
 #endif
-
-#ifdef HAVE_RUBY_ENCODING_H
-#include <ruby/encoding.h>
-#endif
-
-static inline VALUE do_str_new(const void *string, long length, int encoding, void *internal_encoding) {
-  VALUE new_string = rb_str_new(string, length);
-
-#ifdef HAVE_RUBY_ENCODING_H
-  if(encoding != -1) {
-    rb_enc_associate_index(new_string, encoding);
-  }
-
-  if(internal_encoding) {
-    new_string = rb_str_export_to_enc(new_string, internal_encoding);
-  }
-#endif
-
-  return new_string;
-}
-
-static inline VALUE do_str_new2(const void *string, int encoding, void *internal_encoding) {
-    VALUE new_string = rb_str_new2(string);
-
-#ifdef HAVE_RUBY_ENCODING_H
-    if(encoding != -1) {
-      rb_enc_associate_index(new_string, encoding);
-    }
-
-    if(internal_encoding) {
-      new_string = rb_str_export_to_enc(new_string, internal_encoding);
-    }
-#endif
-
-    return new_string;
-}
 
 // To store rb_intern values
 extern ID ID_NEW;
@@ -107,4 +75,36 @@ extern void common_init(void);
 
 static inline VALUE do_const_get(VALUE scope, const char *constant) {
   return rb_funcall(scope, ID_CONST_GET, 1, rb_str_new2(constant));
+}
+
+static inline VALUE do_str_new(const void *string, long length, int encoding, void *internal_encoding) {
+  VALUE new_string = rb_str_new(string, length);
+
+#ifdef HAVE_RUBY_ENCODING_H
+  if(encoding != -1) {
+    rb_enc_associate_index(new_string, encoding);
+  }
+
+  if(internal_encoding) {
+    new_string = rb_str_export_to_enc(new_string, internal_encoding);
+  }
+#endif
+
+  return new_string;
+}
+
+static inline VALUE do_str_new2(const void *string, int encoding, void *internal_encoding) {
+    VALUE new_string = rb_str_new2(string);
+
+#ifdef HAVE_RUBY_ENCODING_H
+    if(encoding != -1) {
+      rb_enc_associate_index(new_string, encoding);
+    }
+
+    if(internal_encoding) {
+      new_string = rb_str_export_to_enc(new_string, internal_encoding);
+    }
+#endif
+
+    return new_string;
 }
