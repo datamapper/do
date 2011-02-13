@@ -23,11 +23,6 @@
 #undef snprintf
 #undef sprintf
 #undef printf
-#define cCommand_execute cCommand_execute_sync
-#define do_int64 signed __int64
-#else
-#define cCommand_execute cCommand_execute_async
-#define do_int64 signed long long int
 #endif
 
 #include <ruby.h>
