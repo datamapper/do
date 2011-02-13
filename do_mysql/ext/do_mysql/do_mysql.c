@@ -189,7 +189,7 @@ MYSQL_RES *cCommand_execute_async(VALUE self, VALUE connection, MYSQL *db, VALUE
   fd_set rset;
   struct timeval start;
   const char *str = rb_str_ptr_readonly(query);
-  size_t len      = rb_str_len(query);
+  size_t len = rb_str_len(query);
   MYSQL_RES *result;
 
   if ((retval = mysql_ping(db)) && mysql_errno(db) == CR_SERVER_GONE_ERROR) {
@@ -475,7 +475,7 @@ VALUE cConnection_dispose(VALUE self) {
 VALUE cConnection_quote_string(VALUE self, VALUE string) {
   MYSQL *db = DATA_PTR(rb_iv_get(self, "@connection"));
   const char *source = rb_str_ptr_readonly(string);
-  unsigned long source_len  = rb_str_len(string);
+  unsigned long source_len = rb_str_len(string);
 
   // Allocate space for the escaped version of 'string'.  Use + 3 allocate space for null term.
   // and the leading and trailing single-quotes.
@@ -560,7 +560,7 @@ VALUE cCommand_execute_reader(int argc, VALUE *argv, VALUE self) {
     guess_default_field_types = 1;
   }
   else if (RARRAY_LEN(field_types) != field_count) {
-    // Whoops...  wrong number of types passed to set_types.  Close the reader and raise
+    // Whoops... wrong number of types passed to set_types. Close the reader and raise
     // and error
     rb_funcall(reader, rb_intern("close"), 0);
     rb_raise(rb_eArgError, "Field-count mismatch. Expected %ld fields, but the query yielded %d", RARRAY_LEN(field_types), field_count);
