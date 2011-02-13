@@ -18,6 +18,8 @@
 
 #define CHECK_AND_RAISE(mysql_result_value, query) if (0 != mysql_result_value) { raise_error(self, db, query); }
 
+void full_connect(VALUE self, MYSQL *db);
+
 // Classes that we'll build in Init
 VALUE mMysql;
 VALUE mEncoding;
@@ -158,8 +160,6 @@ void raise_error(VALUE self, MYSQL *db, VALUE query) {
                          uri);
   rb_exc_raise(exception);
 }
-
-void full_connect(VALUE self, MYSQL *db);
 
 #ifdef _WIN32
 MYSQL_RES *cCommand_execute_sync(VALUE self, VALUE connection, MYSQL *db, VALUE query) {
