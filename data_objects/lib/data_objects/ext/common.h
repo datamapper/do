@@ -2,10 +2,10 @@
 
 #ifdef _WIN32
 #define cCommand_execute cCommand_execute_sync
-#define do_int64 signed __int64
+typedef signed __int64 do_int64;
 #else
 #define cCommand_execute cCommand_execute_async
-#define do_int64 signed long long int
+typedef signed long long int do_int64;
 #endif
 
 #define CONST_GET(scope, constant) (rb_funcall(scope, ID_CONST_GET, 1, rb_str_new2(constant)))
