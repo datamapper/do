@@ -38,308 +38,20 @@
 #include "error.h"
 #include "compat.h"
 
-#define CONST_GET(scope, constant) (rb_funcall(scope, ID_CONST_GET, 1, rb_str_new2(constant)))
+#include "common.h"
+
 #define DRIVER_CLASS(klass, parent) (rb_define_class_under(mPostgres, klass, parent))
 
-#ifdef HAVE_RUBY_ENCODING_H
-#include <ruby/encoding.h>
-
-#define DO_STR_NEW2(str, encoding, internal_encoding) \
-  ({ \
-    VALUE _string = rb_str_new2((const char *)str); \
-    if(encoding != -1) { \
-      rb_enc_associate_index(_string, encoding); \
-    } \
-    if(internal_encoding) { \
-      _string = rb_str_export_to_enc(_string, internal_encoding); \
-    } \
-    _string; \
-  })
-
-#define DO_STR_NEW(str, len, encoding, internal_encoding) \
-  ({ \
-    VALUE _string = rb_str_new((const char *)str, (long)len); \
-    if(encoding != -1) { \
-      rb_enc_associate_index(_string, encoding); \
-    } \
-    if(internal_encoding) { \
-      _string = rb_str_export_to_enc(_string, internal_encoding); \
-    } \
-    _string; \
-  })
-
-#else
-
-#define DO_STR_NEW2(str, encoding, internal_encoding) \
-  rb_str_new2((const char *)str)
-
-#define DO_STR_NEW(str, len, encoding, internal_encoding) \
-  rb_str_new((const char *)str, (long)len)
-#endif
-
-// To store rb_intern values
-static ID ID_NEW_DATE;
-static ID ID_RATIONAL;
-static ID ID_CONST_GET;
-static ID ID_NEW;
-static ID ID_ESCAPE;
-static ID ID_LOG;
-
-static VALUE mExtlib;
-static VALUE mDO;
-static VALUE mEncoding;
-static VALUE cDO_Quoting;
-static VALUE cDO_Connection;
-static VALUE cDO_Command;
-static VALUE cDO_Result;
-static VALUE cDO_Reader;
-static VALUE cDO_Logger;
-static VALUE cDO_Logger_Message;
-
-static VALUE rb_cDate;
-static VALUE rb_cDateTime;
-static VALUE rb_cBigDecimal;
-static VALUE rb_cByteArray;
-
-static VALUE mPostgres;
-static VALUE cConnection;
-static VALUE cCommand;
-static VALUE cResult;
-static VALUE cReader;
-
-static VALUE eConnectionError;
-static VALUE eDataError;
-
-static void data_objects_debug(VALUE connection, VALUE string, struct timeval* start) {
-  struct timeval stop;
-  VALUE message;
-
-  gettimeofday(&stop, NULL);
-  do_int64 duration = (stop.tv_sec - start->tv_sec) * 1000000 + stop.tv_usec - start->tv_usec;
-
-  message = rb_funcall(cDO_Logger_Message, ID_NEW, 3, string, rb_time_new(start->tv_sec, start->tv_usec), INT2NUM(duration));
-
-  rb_funcall(connection, ID_LOG, 1, message);
-}
-
-static const char * get_uri_option(VALUE query_hash, const char * key) {
-  VALUE query_value;
-  const char * value = NULL;
-
-  if(!rb_obj_is_kind_of(query_hash, rb_cHash)) { return NULL; }
-
-  query_value = rb_hash_aref(query_hash, rb_str_new2(key));
-
-  if (Qnil != query_value) {
-    value = StringValuePtr(query_value);
-  }
-
-  return value;
-}
-
-/* ====== Time/Date Parsing Helper Functions ====== */
-static void reduce( do_int64 *numerator, do_int64 *denominator ) {
-  do_int64 a, b, c;
-  a = *numerator;
-  b = *denominator;
-  while ( a != 0 ) {
-    c = a; a = b % a; b = c;
-  }
-  *numerator = *numerator / b;
-  *denominator = *denominator / b;
-}
-
-// Generate the date integer which Date.civil_to_jd returns
-static int jd_from_date(int year, int month, int day) {
-  int a, b;
-  if ( month <= 2 ) {
-    year -= 1;
-    month += 12;
-  }
-  a = year / 100;
-  b = 2 - a + (a / 4);
-  return (int) (floor(365.25 * (year + 4716)) + floor(30.6001 * (month + 1)) + day + b - 1524);
-}
-
-static VALUE parse_date(const char *date) {
-  int year, month, day;
-  int jd, ajd;
-  VALUE rational;
-
-  sscanf(date, "%4d-%2d-%2d", &year, &month, &day);
-
-  jd = jd_from_date(year, month, day);
-
-  // Math from Date.jd_to_ajd
-  ajd = jd * 2 - 1;
-  rational = rb_funcall(rb_mKernel, ID_RATIONAL, 2, INT2NUM(ajd), INT2NUM(2));
-
-  return rb_funcall(rb_cDate, ID_NEW_DATE, 3, rational, INT2NUM(0), INT2NUM(2299161));
-}
-
-// Creates a Rational for use as a Timezone offset to be passed to DateTime.new!
-static VALUE seconds_to_offset(do_int64 num) {
-  do_int64 den = 86400;
-  reduce(&num, &den);
-  return rb_funcall(rb_mKernel, ID_RATIONAL, 2, rb_ll2inum(num), rb_ll2inum(den));
-}
-
-static VALUE timezone_to_offset(int hour_offset, int minute_offset) {
-  do_int64 seconds = 0;
-
-  seconds += hour_offset * 3600;
-  seconds += minute_offset * 60;
-
-  return seconds_to_offset(seconds);
-}
-
-static VALUE parse_date_time(const char *date) {
-  VALUE ajd, offset;
-
-  int year, month, day, hour, min, sec, usec, hour_offset, minute_offset;
-  int jd;
-  do_int64 num, den;
-
-  long int gmt_offset;
-  int dst_adjustment;
-
-  time_t rawtime;
-  struct tm timeinfo;
-
-  int tokens_read, max_tokens;
-
-  if (0 != strchr(date, '.')) {
-    // This is a datetime with sub-second precision
-    tokens_read = sscanf(date, "%4d-%2d-%2d %2d:%2d:%2d.%d%3d:%2d", &year, &month, &day, &hour, &min, &sec, &usec, &hour_offset, &minute_offset);
-    max_tokens = 9;
-  } else {
-    // This is a datetime second precision
-    tokens_read = sscanf(date, "%4d-%2d-%2d %2d:%2d:%2d%3d:%2d", &year, &month, &day, &hour, &min, &sec, &hour_offset, &minute_offset);
-    max_tokens = 8;
-  }
-
-  if (max_tokens == tokens_read) {
-    // We read the Date, Time, and Timezone info
-    minute_offset *= hour_offset < 0 ? -1 : 1;
-  } else if ((max_tokens - 1) == tokens_read) {
-    // We read the Date and Time, but no Minute Offset
-    minute_offset = 0;
-  } else if (tokens_read == 3 || tokens_read >= (max_tokens - 3)) {
-    if (tokens_read == 3) {
-      hour = 0;
-      min = 0;
-      hour_offset = 0;
-      minute_offset = 0;
-      sec = 0;
-    }
-    // We read the Date and Time, default to the current locale's offset
-
-    tzset();
-
-    // Get localtime
-    time(&rawtime);
-#ifdef HAVE_LOCALTIME_R
-    localtime_r(&rawtime, &timeinfo);
-#else
-    // Thread unsafe, this is used on Windows...
-    timeinfo = *localtime(&rawtime);
-#endif
-
-    timeinfo.tm_sec = sec;
-    timeinfo.tm_min = min;
-    timeinfo.tm_hour = hour;
-    timeinfo.tm_mday = day;
-    timeinfo.tm_mon = month;
-    timeinfo.tm_year = year - 1900;
-    timeinfo.tm_isdst = -1;
-
-    // Update tm_isdst
-    mktime(&timeinfo);
-
-    if (timeinfo.tm_isdst) {
-      dst_adjustment = 3600;
-    } else {
-      dst_adjustment = 0;
-    }
-
-#ifdef HAVE_GMTIME_R
-    // Reset to GM Time
-    gmtime_r(&rawtime, &timeinfo);
-#else
-    // Same as for localtime_r above
-    timeinfo = *gmtime(&rawtime);
-#endif
-
-    gmt_offset = rawtime - mktime(&timeinfo);
-
-    if (dst_adjustment) {
-      gmt_offset += dst_adjustment;
-    }
-
-    hour_offset = ((int)gmt_offset / 3600);
-    minute_offset = ((int)gmt_offset % 3600 / 60);
-
-  } else {
-    // Something went terribly wrong
-    rb_raise(eDataError, "Couldn't parse date: %s", date);
-  }
-
-  jd = jd_from_date(year, month, day);
-
-  // Generate ajd with fractional days for the time
-  // Extracted from Date#jd_to_ajd, Date#day_fraction_to_time, and Rational#+ and #-
-  num = (hour * 1440) + (min * 24);
-
-  // Modify the numerator so when we apply the timezone everything works out
-  num -= (hour_offset * 1440) + (minute_offset * 24);
-
-  den = (24 * 1440);
-  reduce(&num, &den);
-
-  num = (num * 86400) + (sec * den);
-  den = den * 86400;
-  reduce(&num, &den);
-
-  num = (jd * den) + num;
-
-  num = num * 2;
-  num = num - den;
-  den = den * 2;
-
-  reduce(&num, &den);
-
-  ajd = rb_funcall(rb_mKernel, ID_RATIONAL, 2, rb_ull2inum(num), rb_ull2inum(den));
-  offset = timezone_to_offset(hour_offset, minute_offset);
-
-  return rb_funcall(rb_cDateTime, ID_NEW_DATE, 3, ajd, offset, INT2NUM(2299161));
-}
-
-static VALUE parse_time(const char *date) {
-
-  int year, month, day, hour, min, sec, usec, tokens;
-  char subsec[7];
-
-  if (0 != strchr(date, '.')) {
-    // right padding usec with 0. e.g. '012' will become 12000 microsecond, since Time#local use microsecond
-    sscanf(date, "%4d-%2d-%2d %2d:%2d:%2d.%s", &year, &month, &day, &hour, &min, &sec, subsec);
-    usec   = atoi(subsec);
-    usec  *= (int) pow(10, (6 - strlen(subsec)));
-  } else {
-    tokens = sscanf(date, "%4d-%2d-%2d %2d:%2d:%2d", &year, &month, &day, &hour, &min, &sec);
-    if (tokens == 3) {
-      hour = 0;
-      min  = 0;
-      sec  = 0;
-    }
-    usec = 0;
-  }
-
-  return rb_funcall(rb_cTime, rb_intern("local"), 7, INT2NUM(year), INT2NUM(month), INT2NUM(day), INT2NUM(hour), INT2NUM(min), INT2NUM(sec), INT2NUM(usec));
-}
+VALUE mPostgres;
+VALUE mEncoding;
+VALUE cConnection;
+VALUE cCommand;
+VALUE cResult;
+VALUE cReader;
 
 /* ===== Typecasting Functions ===== */
 
-static VALUE infer_ruby_type(Oid type) {
+VALUE infer_ruby_type(Oid type) {
   switch(type) {
     case BITOID:
     case VARBITOID:
@@ -367,12 +79,12 @@ static VALUE infer_ruby_type(Oid type) {
   }
 }
 
-static VALUE typecast(const char *value, long length, const VALUE type, int encoding) {
+VALUE typecast(const char *value, long length, const VALUE type, int encoding) {
 
 #ifdef HAVE_RUBY_ENCODING_H
-  rb_encoding * internal_encoding = rb_default_internal_encoding();
+  rb_encoding *internal_encoding = rb_default_internal_encoding();
 #else
-  void * internal_encoding = NULL;
+  void *internal_encoding = NULL;
 #endif
 
   if (type == rb_cInteger) {
@@ -404,10 +116,9 @@ static VALUE typecast(const char *value, long length, const VALUE type, int enco
   } else {
     return DO_STR_NEW(value, length, encoding, internal_encoding);
   }
-
 }
 
-static void raise_error(VALUE self, PGresult *result, VALUE query) {
+void raise_error(VALUE self, PGresult *result, VALUE query) {
   VALUE exception;
   char *message;
   char *sqlstate;
@@ -442,7 +153,8 @@ static void raise_error(VALUE self, PGresult *result, VALUE query) {
 
 
 /* ====== Public API ======= */
-static VALUE cConnection_dispose(VALUE self) {
+
+VALUE cConnection_dispose(VALUE self) {
   VALUE connection_container = rb_iv_get(self, "@connection");
 
   PGconn *db;
@@ -461,53 +173,7 @@ static VALUE cConnection_dispose(VALUE self) {
   return Qtrue;
 }
 
-static VALUE cCommand_set_types(int argc, VALUE *argv, VALUE self) {
-  VALUE type_strings = rb_ary_new();
-  VALUE array = rb_ary_new();
-
-  int i, j;
-
-  for ( i = 0; i < argc; i++) {
-    rb_ary_push(array, argv[i]);
-  }
-
-  for (i = 0; i < RARRAY_LEN(array); i++) {
-    VALUE entry = rb_ary_entry(array, i);
-    if(TYPE(entry) == T_CLASS) {
-      rb_ary_push(type_strings, entry);
-    } else if (TYPE(entry) == T_ARRAY) {
-      for (j = 0; j < RARRAY_LEN(entry); j++) {
-        VALUE sub_entry = rb_ary_entry(entry, j);
-        if(TYPE(sub_entry) == T_CLASS) {
-          rb_ary_push(type_strings, sub_entry);
-        } else {
-          rb_raise(rb_eArgError, "Invalid type given");
-        }
-      }
-    } else {
-      rb_raise(rb_eArgError, "Invalid type given");
-    }
-  }
-
-  rb_iv_set(self, "@field_types", type_strings);
-
-  return array;
-}
-
-static VALUE build_query_from_args(VALUE klass, int count, VALUE *args[]) {
-  VALUE query = rb_iv_get(klass, "@text");
-
-  int i;
-  VALUE array = rb_ary_new();
-  for ( i = 0; i < count; i++) {
-    rb_ary_push(array, (VALUE)args[i]);
-  }
-  query = rb_funcall(klass, ID_ESCAPE, 1, array);
-
-  return query;
-}
-
-static VALUE cConnection_quote_string(VALUE self, VALUE string) {
+VALUE cConnection_quote_string(VALUE self, VALUE string) {
   PGconn *db = DATA_PTR(rb_iv_get(self, "@connection"));
 
   const char *source = rb_str_ptr_readonly(string);
@@ -533,7 +199,7 @@ static VALUE cConnection_quote_string(VALUE self, VALUE string) {
   return result;
 }
 
-static VALUE cConnection_quote_byte_array(VALUE self, VALUE string) {
+VALUE cConnection_quote_byte_array(VALUE self, VALUE string) {
   PGconn *db = DATA_PTR(rb_iv_get(self, "@connection"));
 
   const unsigned char *source = (unsigned char*) rb_str_ptr_readonly(string);
@@ -559,10 +225,10 @@ static VALUE cConnection_quote_byte_array(VALUE self, VALUE string) {
   return result;
 }
 
-static void full_connect(VALUE self, PGconn *db);
+void full_connect(VALUE self, PGconn *db);
 
 #ifdef _WIN32
-static PGresult* cCommand_execute_sync(VALUE self, VALUE connection, PGconn *db, VALUE query) {
+PGresult *cCommand_execute_sync(VALUE self, VALUE connection, PGconn *db, VALUE query) {
   PGresult *response;
   struct timeval start;
   char* str = StringValuePtr(query);
@@ -596,7 +262,7 @@ static PGresult* cCommand_execute_sync(VALUE self, VALUE connection, PGconn *db,
   return response;
 }
 #else
-static PGresult* cCommand_execute_async(VALUE self, VALUE connection, PGconn *db, VALUE query) {
+PGresult *cCommand_execute_async(VALUE self, VALUE connection, PGconn *db, VALUE query) {
   int socket_fd;
   int retval;
   fd_set rset;
@@ -613,7 +279,7 @@ static PGresult* cCommand_execute_async(VALUE self, VALUE connection, PGconn *db
   retval = PQsendQuery(db, str);
 
   if (!retval) {
-    if(PQstatus(db) != CONNECTION_OK) {
+    if (PQstatus(db) != CONNECTION_OK) {
       PQreset(db);
       if (PQstatus(db) == CONNECTION_OK) {
         retval = PQsendQuery(db, str);
@@ -623,7 +289,7 @@ static PGresult* cCommand_execute_async(VALUE self, VALUE connection, PGconn *db
       }
     }
 
-    if(!retval) {
+    if (!retval) {
       rb_raise(eConnectionError, "%s", PQerrorMessage(db));
     }
   }
@@ -631,24 +297,24 @@ static PGresult* cCommand_execute_async(VALUE self, VALUE connection, PGconn *db
   socket_fd = PQsocket(db);
 
   for(;;) {
-      FD_ZERO(&rset);
-      FD_SET(socket_fd, &rset);
-      retval = rb_thread_select(socket_fd + 1, &rset, NULL, NULL, NULL);
-      if (retval < 0) {
-          rb_sys_fail(0);
-      }
+    FD_ZERO(&rset);
+    FD_SET(socket_fd, &rset);
+    retval = rb_thread_select(socket_fd + 1, &rset, NULL, NULL, NULL);
+    if (retval < 0) {
+      rb_sys_fail(0);
+    }
 
-      if (retval == 0) {
-          continue;
-      }
+    if (retval == 0) {
+      continue;
+    }
 
-      if (PQconsumeInput(db) == 0) {
-          rb_raise(eConnectionError, "%s", PQerrorMessage(db));
-      }
+    if (PQconsumeInput(db) == 0) {
+      rb_raise(eConnectionError, "%s", PQerrorMessage(db));
+    }
 
-      if (PQisBusy(db) == 0) {
-          break;
-      }
+    if (PQisBusy(db) == 0) {
+      break;
+    }
   }
 
   data_objects_debug(connection, query, &start);
@@ -657,7 +323,7 @@ static PGresult* cCommand_execute_async(VALUE self, VALUE connection, PGconn *db
 }
 #endif
 
-static VALUE cConnection_initialize(VALUE self, VALUE uri) {
+VALUE cConnection_initialize(VALUE self, VALUE uri) {
   VALUE r_host, r_user, r_password, r_path, r_query, r_port;
 
   PGconn *db = NULL;
@@ -707,7 +373,7 @@ static VALUE cConnection_initialize(VALUE self, VALUE uri) {
   return Qtrue;
 }
 
-static void full_connect(VALUE self, PGconn *db) {
+void full_connect(VALUE self, PGconn *db) {
 
   PGresult *result = NULL;
   VALUE r_host, r_user, r_password, r_path, r_port, r_query, r_options;
@@ -720,23 +386,23 @@ static void full_connect(VALUE self, PGconn *db) {
   const char *standard_strings_on = "SET standard_conforming_strings = on";
   const char *warning_messages = "SET client_min_messages = warning";
 
-  if((r_host = rb_iv_get(self, "@host")) != Qnil) {
-    host     = StringValuePtr(r_host);
+  if ((r_host = rb_iv_get(self, "@host")) != Qnil) {
+    host = StringValuePtr(r_host);
   }
 
-  if((r_user = rb_iv_get(self, "@user")) != Qnil) {
-    user     = StringValuePtr(r_user);
+  if ((r_user = rb_iv_get(self, "@user")) != Qnil) {
+    user = StringValuePtr(r_user);
   }
 
-  if((r_password = rb_iv_get(self, "@password")) != Qnil) {
+  if ((r_password = rb_iv_get(self, "@password")) != Qnil) {
     password = StringValuePtr(r_password);
   }
 
-  if((r_port = rb_iv_get(self, "@port")) != Qnil) {
+  if ((r_port = rb_iv_get(self, "@port")) != Qnil) {
     port = StringValuePtr(r_port);
   }
 
-  if((r_path = rb_iv_get(self, "@path")) != Qnil) {
+  if ((r_path = rb_iv_get(self, "@path")) != Qnil) {
     path = StringValuePtr(r_path);
     database = strtok(path, "/");
   }
@@ -745,7 +411,7 @@ static void full_connect(VALUE self, PGconn *db) {
     rb_raise(eConnectionError, "Database must be specified");
   }
 
-  r_query        = rb_iv_get(self, "@query");
+  r_query = rb_iv_get(self, "@query");
 
   search_path = get_uri_option(r_query, "search_path");
 
@@ -823,11 +489,7 @@ static void full_connect(VALUE self, PGconn *db) {
   rb_iv_set(self, "@connection", Data_Wrap_Struct(rb_cObject, 0, 0, db));
 }
 
-static VALUE cConnection_character_set(VALUE self) {
-  return rb_iv_get(self, "@encoding");
-}
-
-static VALUE cCommand_execute_non_query(int argc, VALUE *argv[], VALUE self) {
+VALUE cCommand_execute_non_query(int argc, VALUE *argv, VALUE self) {
   VALUE connection = rb_iv_get(self, "@connection");
   VALUE postgres_connection = rb_iv_get(connection, "@connection");
   if (Qnil == postgres_connection) {
@@ -868,7 +530,7 @@ static VALUE cCommand_execute_non_query(int argc, VALUE *argv[], VALUE self) {
   return rb_funcall(cResult, ID_NEW, 3, self, affected_rows, insert_id);
 }
 
-static VALUE cCommand_execute_reader(int argc, VALUE *argv[], VALUE self) {
+VALUE cCommand_execute_reader(int argc, VALUE *argv, VALUE self) {
   VALUE reader, query;
   VALUE field_names, field_types;
 
@@ -928,7 +590,7 @@ static VALUE cCommand_execute_reader(int argc, VALUE *argv[], VALUE self) {
   return reader;
 }
 
-static VALUE cReader_close(VALUE self) {
+VALUE cReader_close(VALUE self) {
   VALUE reader_container = rb_iv_get(self, "@reader");
 
   PGresult *reader;
@@ -946,7 +608,7 @@ static VALUE cReader_close(VALUE self) {
   return Qtrue;
 }
 
-static VALUE cReader_next(VALUE self) {
+VALUE cReader_next(VALUE self) {
   PGresult *reader = DATA_PTR(rb_iv_get(self, "@reader"));
 
   int field_count;
@@ -995,65 +657,10 @@ static VALUE cReader_next(VALUE self) {
   return Qtrue;
 }
 
-static VALUE cReader_values(VALUE self) {
-
-  VALUE values = rb_iv_get(self, "@values");
-  if(values == Qnil) {
-    rb_raise(eDataError, "Reader not initialized");
-    return Qnil;
-  } else {
-    return values;
-  }
-}
-
-static VALUE cReader_fields(VALUE self) {
-  return rb_iv_get(self, "@fields");
-}
-
-static VALUE cReader_field_count(VALUE self) {
-  return rb_iv_get(self, "@field_count");
-}
-
 void Init_do_postgres() {
-  rb_require("date");
-  rb_require("rational");
-  rb_require("bigdecimal");
-  rb_require("data_objects");
-
-  ID_CONST_GET = rb_intern("const_get");
-
-  // Get references classes needed for Date/Time parsing
-  rb_cDate = CONST_GET(rb_mKernel, "Date");
-  rb_cDateTime = CONST_GET(rb_mKernel, "DateTime");
-  rb_cBigDecimal = CONST_GET(rb_mKernel, "BigDecimal");
-
-#ifdef RUBY_LESS_THAN_186
-  ID_NEW_DATE = rb_intern("new0");
-#else
-  ID_NEW_DATE = rb_intern("new!");
-#endif
-  ID_RATIONAL = rb_intern("Rational");
-  ID_NEW = rb_intern("new");
-  ID_ESCAPE = rb_intern("escape_sql");
-  ID_LOG = rb_intern("log");
-
-  // Get references to the Extlib module
-  mExtlib = CONST_GET(rb_mKernel, "Extlib");
-  rb_cByteArray = CONST_GET(mExtlib, "ByteArray");
-
-  // Get references to the DataObjects module and its classes
-  mDO = CONST_GET(rb_mKernel, "DataObjects");
-  cDO_Quoting = CONST_GET(mDO, "Quoting");
-  cDO_Connection = CONST_GET(mDO, "Connection");
-  cDO_Command = CONST_GET(mDO, "Command");
-  cDO_Result = CONST_GET(mDO, "Result");
-  cDO_Reader = CONST_GET(mDO, "Reader");
-  cDO_Logger = CONST_GET(mDO, "Logger");
-  cDO_Logger_Message = CONST_GET(cDO_Logger, "Message");
+  common_init();
 
   mPostgres = rb_define_module_under(mDO, "Postgres");
-  eConnectionError = CONST_GET(mDO, "ConnectionError");
-  eDataError = CONST_GET(mDO, "DataError");
   mEncoding = rb_define_module_under(mPostgres, "Encoding");
 
   cConnection = DRIVER_CLASS("Connection", cDO_Connection);
@@ -1077,31 +684,12 @@ void Init_do_postgres() {
   rb_define_method(cReader, "fields", cReader_fields, 0);
   rb_define_method(cReader, "field_count", cReader_field_count, 0);
 
-  rb_global_variable(&ID_NEW_DATE);
-  rb_global_variable(&ID_RATIONAL);
-  rb_global_variable(&ID_CONST_GET);
-  rb_global_variable(&ID_ESCAPE);
-  rb_global_variable(&ID_LOG);
-  rb_global_variable(&ID_NEW);
-
-  rb_global_variable(&rb_cDate);
-  rb_global_variable(&rb_cDateTime);
-  rb_global_variable(&rb_cBigDecimal);
-  rb_global_variable(&rb_cByteArray);
-
-  rb_global_variable(&mDO);
-  rb_global_variable(&cDO_Logger_Message);
-
   rb_global_variable(&cResult);
   rb_global_variable(&cReader);
-
-  rb_global_variable(&eConnectionError);
-  rb_global_variable(&eDataError);
 
   struct errcodes *errs;
 
   for (errs = errors; errs->error_name; errs++) {
     rb_const_set(mPostgres, rb_intern(errs->error_name), INT2NUM(errs->error_no));
   }
-
 }
