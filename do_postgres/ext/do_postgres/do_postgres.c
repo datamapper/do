@@ -560,6 +560,7 @@ VALUE cCommand_execute_reader(int argc, VALUE *argv, VALUE self) {
   reader = rb_funcall(cReader, ID_NEW, 0);
   rb_iv_set(reader, "@connection", connection);
   rb_iv_set(reader, "@reader", Data_Wrap_Struct(rb_cObject, 0, 0, response));
+  rb_iv_set(reader, "@opened", Qfalse);
   rb_iv_set(reader, "@field_count", INT2NUM(field_count));
   rb_iv_set(reader, "@row_count", INT2NUM(PQntuples(response)));
 
@@ -605,6 +606,8 @@ VALUE cReader_close(VALUE self) {
 
   PQclear(reader);
   rb_iv_set(self, "@reader", Qnil);
+  rb_iv_set(self, "@opened", Qfalse);
+
   return Qtrue;
 }
 
@@ -629,6 +632,8 @@ VALUE cReader_next(VALUE self) {
     rb_iv_set(self, "@values", Qnil);
     return Qfalse;
   }
+
+  rb_iv_set(self, "@opened", Qtrue);
 
   int enc = -1;
 #ifdef HAVE_RUBY_ENCODING_H
