@@ -475,16 +475,19 @@ VALUE cConnection_dispose(VALUE self) {
 VALUE cConnection_quote_string(VALUE self, VALUE string) {
   MYSQL *db = DATA_PTR(rb_iv_get(self, "@connection"));
   const char *source = rb_str_ptr_readonly(string);
-  size_t source_len  = rb_str_len(string);
-  char *escaped;
-  VALUE result;
-
-  size_t quoted_length = 0;
+  unsigned long source_len  = rb_str_len(string);
 
   // Allocate space for the escaped version of 'string'.  Use + 3 allocate space for null term.
   // and the leading and trailing single-quotes.
   // Thanks to http://www.browardphp.com/mysql_manual_en/manual_MySQL_APIs.html#mysql_real_escape_string
-  escaped = calloc((source_len * 2) + 3, sizeof(char));
+  char *escaped = calloc((source_len * 2) + 3, sizeof(char));
+
+  if (!escaped) {
+    return Qnil;
+  }
+
+  unsigned long quoted_length;
+  VALUE result;
 
   // Escape 'source' using the current encoding in use on the conection 'db'
   quoted_length = mysql_real_escape_string(db, escaped + 1, source, source_len);
