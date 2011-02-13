@@ -404,44 +404,42 @@ void full_connect(VALUE self, MYSQL *db) {
 }
 
 VALUE cConnection_initialize(VALUE self, VALUE uri) {
-  VALUE r_host, r_user, r_password, r_path, r_query, r_port;
-  MYSQL *db = mysql_init(NULL);
-
   rb_iv_set(self, "@using_socket", Qfalse);
   rb_iv_set(self, "@ssl_cipher", Qnil);
 
-  r_host = rb_funcall(uri, rb_intern("host"), 0);
+  VALUE r_host = rb_funcall(uri, rb_intern("host"), 0);
 
   if (r_host != Qnil) {
     rb_iv_set(self, "@host", r_host);
   }
 
-  r_user = rb_funcall(uri, rb_intern("user"), 0);
+  VALUE r_user = rb_funcall(uri, rb_intern("user"), 0);
 
   if (r_user != Qnil) {
     rb_iv_set(self, "@user", r_user);
   }
 
-  r_password = rb_funcall(uri, rb_intern("password"), 0);
+  VALUE r_password = rb_funcall(uri, rb_intern("password"), 0);
 
   if (r_password != Qnil) {
     rb_iv_set(self, "@password", r_password);
   }
 
-  r_path = rb_funcall(uri, rb_intern("path"), 0);
+  VALUE r_path = rb_funcall(uri, rb_intern("path"), 0);
 
   if (r_path != Qnil) {
     rb_iv_set(self, "@path", r_path);
   }
 
-  r_port = rb_funcall(uri, rb_intern("port"), 0);
+  VALUE r_port = rb_funcall(uri, rb_intern("port"), 0);
 
   if (r_port != Qnil) {
     rb_iv_set(self, "@port", r_port);
   }
 
   // Pull the querystring off the URI
-  r_query = rb_funcall(uri, rb_intern("query"), 0);
+  VALUE r_query = rb_funcall(uri, rb_intern("query"), 0);
+
   rb_iv_set(self, "@query", r_query);
 
   const char *encoding = get_uri_option(r_query, "encoding");
@@ -454,8 +452,9 @@ VALUE cConnection_initialize(VALUE self, VALUE uri) {
 
   rb_iv_set(self, "@encoding", rb_str_new2(encoding));
 
-  full_connect(self, db);
+  MYSQL *db = mysql_init(NULL);
 
+  full_connect(self, db);
   rb_iv_set(self, "@uri", uri);
   return Qtrue;
 }
