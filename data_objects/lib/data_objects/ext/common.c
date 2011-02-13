@@ -157,13 +157,13 @@ VALUE parse_date(const char *date) {
 
 VALUE parse_time(const char *date) {
   static char const* const _fmt_datetime = "%4d-%2d-%2d %2d:%2d:%2d.%6d";
-  int year, month, day, hour = 0, min = 0, sec = 0, usec = 0;
+  int year = 0, month = 0, day = 0, hour = 0, min = 0, sec = 0, usec = 0;
 
-  if (*date == '\0') {
-    return Qnil;
+  switch (sscanf(date, _fmt_datetime, &year, &month, &day, &hour, &min, &sec, &usec)) {
+    case 0:
+    case EOF:
+      return Qnil;
   }
-
-  sscanf(date, _fmt_datetime, &year, &month, &day, &hour, &min, &sec, &usec);
 
   /* Mysql TIMESTAMPS can default to 0 */
   if ((year + month + day + hour + min + sec + usec) == 0) {
