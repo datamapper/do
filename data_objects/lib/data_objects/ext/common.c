@@ -25,7 +25,6 @@ VALUE rb_cByteArray;
 
 // References to DataObjects base classes
 VALUE mDO;
-VALUE mEncoding;
 VALUE cDO_Quoting;
 VALUE cDO_Connection;
 VALUE cDO_Command;

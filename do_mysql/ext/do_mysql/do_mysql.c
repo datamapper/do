@@ -1,8 +1,6 @@
 #include <ruby.h>
-#include <string.h>
-#include <math.h>
-#include <ctype.h>
 #include <time.h>
+#include <string.h>
 
 #include <mysql.h>
 #include <errmsg.h>
@@ -22,6 +20,7 @@
 
 // Classes that we'll build in Init
 VALUE mMysql;
+VALUE mEncoding;
 VALUE cConnection;
 VALUE cCommand;
 VALUE cResult;
@@ -78,7 +77,6 @@ VALUE infer_ruby_type(MYSQL_FIELD *field) {
   }
 }
 
-// TODO: DRY
 // Convert C-string to a Ruby instance of Ruby type "type"
 VALUE typecast(const char *value, long length, const VALUE type, int encoding) {
   if (NULL == value) {
@@ -127,7 +125,7 @@ void raise_error(VALUE self, MYSQL *db, VALUE query) {
   struct errcodes *errs;
 
   for (errs = errors; errs->error_name; errs++) {
-    if(errs->error_no == mysql_error_code) {
+    if (errs->error_no == mysql_error_code) {
       exception_type = errs->exception;
       break;
     }
@@ -241,11 +239,11 @@ void full_connect(VALUE self, MYSQL *db) {
   int encoding_error;
 
   if ((r_host = rb_iv_get(self, "@host")) != Qnil) {
-    host     = StringValuePtr(r_host);
+    host = StringValuePtr(r_host);
   }
 
   if ((r_user = rb_iv_get(self, "@user")) != Qnil) {
-    user     = StringValuePtr(r_user);
+    user = StringValuePtr(r_user);
   }
 
   if ((r_password = rb_iv_get(self, "@password")) != Qnil) {
@@ -258,7 +256,7 @@ void full_connect(VALUE self, MYSQL *db) {
 
   if ((r_path = rb_iv_get(self, "@path")) != Qnil) {
     path = StringValuePtr(r_path);
-    database = strtok(path, "/");
+    database = strtok(path, "/"); // not threadsafe
   }
 
   if (NULL == database || 0 == strlen(database)) {
