@@ -96,7 +96,7 @@ VALUE typecast(const char *value, long length, const VALUE type, int encoding) {
     return rb_cstr2inum(value, 10);
   }
   else if (type == rb_cString) {
-    return DO_STR_NEW(value, length, encoding, internal_encoding);
+    return do_str_new(value, length, encoding, internal_encoding);
   }
   else if (type == rb_cFloat) {
     return rb_float_new(rb_cstr_to_dbl(value, Qfalse));
@@ -126,7 +126,7 @@ VALUE typecast(const char *value, long length, const VALUE type, int encoding) {
     return Qnil;
   }
   else {
-    return DO_STR_NEW(value, length, encoding, internal_encoding);
+    return do_str_new(value, length, encoding, internal_encoding);
   }
 }
 
@@ -503,7 +503,7 @@ VALUE cConnection_quote_string(VALUE self, VALUE string) {
   escaped[0] = escaped[quoted_length + 1] = '\'';
   // We don't want to use the internal encoding, because this needs
   // to go into the database in the connection encoding
-  result = DO_STR_NEW(escaped, quoted_length + 2, FIX2INT(rb_iv_get(self, "@encoding_id")), NULL);
+  result = do_str_new(escaped, quoted_length + 2, FIX2INT(rb_iv_get(self, "@encoding_id")), NULL);
 
   free(escaped);
   return result;
