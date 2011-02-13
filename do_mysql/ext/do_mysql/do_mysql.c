@@ -195,139 +195,135 @@ static VALUE timezone_to_offset(int hour_offset, int minute_offset) {
 }
 
 static VALUE parse_date(const char *date) {
+  static char const *const _fmt_date = "%4d-%2d-%2d";
   int year, month, day;
   int jd, ajd;
   VALUE rational;
 
-  sscanf(date, "%4d-%2d-%2d", &year, &month, &day);
+  sscanf(date, _fmt_date, &year, &month, &day);
 
-  jd = jd_from_date(year, month, day);
-
-  // Math from Date.jd_to_ajd
-  ajd = jd * 2 - 1;
+  jd       = jd_from_date(year, month, day);
+  ajd      = jd * 2 - 1;        // Math from Date.jd_to_ajd
   rational = rb_funcall(rb_mKernel, ID_RATIONAL, 2, INT2NUM(ajd), INT2NUM(2));
+
   return rb_funcall(rb_cDate, ID_NEW_DATE, 3, rational, INT2NUM(0), INT2NUM(2299161));
 }
 
 static VALUE parse_time(const char *date) {
+  static char const* const _fmt_datetime = "%4d-%2d-%2d %2d:%2d:%2d.%6d";
+  int year, month, day, hour = 0, min = 0, sec = 0, usec = 0;
 
-  int year, month, day, hour, min, sec, usec, tokens;
-  char subsec[7];
-
-  if (0 != strchr(date, '.')) {
-    // right padding usec with 0. e.g. '012' will become 12000 microsecond, since Time#local use microsecond
-    sscanf(date, "%4d-%2d-%2d %2d:%2d:%2d.%s", &year, &month, &day, &hour, &min, &sec, subsec);
-    sscanf(subsec, "%d", &usec);
-  } else {
-    tokens = sscanf(date, "%4d-%2d-%2d %2d:%2d:%2d", &year, &month, &day, &hour, &min, &sec);
-    if (tokens == 3) {
-      hour = 0;
-      min  = 0;
-      sec  = 0;
-    }
-    usec = 0;
-  }
-
-  if ( year + month + day + hour + min + sec + usec == 0 ) { // Mysql TIMESTAMPS can default to 0
+  if (*date == '\0')
     return Qnil;
-  }
+
+  sscanf(date, _fmt_datetime, &year, &month, &day, &hour, &min, &sec, &usec);
+
+  /* Mysql TIMESTAMPS can default to 0 */
+  if (year + month + day + hour + min + sec + usec == 0)
+    return Qnil;
 
   return rb_funcall(rb_cTime, rb_intern("local"), 7, INT2NUM(year), INT2NUM(month), INT2NUM(day), INT2NUM(hour), INT2NUM(min), INT2NUM(sec), INT2NUM(usec));
 }
 
 static VALUE parse_date_time(const char *date) {
+  static char const* const _fmt_datetime_tz_normal = "%4d-%2d-%2d %2d:%2d:%2d%3d:%2d";
+  static char const* const _fmt_datetime_tz_subsec = "%4d-%2d-%2d %2d:%2d:%2d.%*d%3d:%2d";
+  static unsigned int const tokens_expected        = 8;
+  unsigned int tokens_missing;
+  const char *fmt_datetime;
+
   VALUE ajd, offset;
 
-  int year, month, day, hour, min, sec, usec, hour_offset, minute_offset;
-  int jd;
+  int year, month, day, hour, min, sec, hour_offset, minute_offset, jd;
   do_int64 num, den;
 
-
+  struct tm timeinfo;
+  time_t target_time;
   time_t gmt_offset;
   int dst_adjustment;
-  time_t current_time;
-  struct tm timeinfo;
 
-  int tokens_read, max_tokens;
-
-  if ( strcmp(date, "") == 0 ) {
+  if (*date == '\0')
     return Qnil;
-  }
 
-  if (0 != strchr(date, '.')) {
-    // This is a datetime with sub-second precision
-    tokens_read = sscanf(date, "%4d-%2d-%2d%*c%2d:%2d:%2d.%d%3d:%2d", &year, &month, &day, &hour, &min, &sec, &usec, &hour_offset, &minute_offset);
-    max_tokens = 9;
-  } else {
-    // This is a datetime second precision
-    tokens_read = sscanf(date, "%4d-%2d-%2d%*c%2d:%2d:%2d%3d:%2d", &year, &month, &day, &hour, &min, &sec, &hour_offset, &minute_offset);
-    max_tokens = 8;
-  }
+  /*
+   * We handle the following cases:
+   *   - Date (default to midnight) [3 tokens, missing 5]
+   *   - DateTime [6 tokens, missing 2]
+   *   - DateTime with hour, possibly minute TZ offset [7-8 tokens]
+   */
 
-  if (max_tokens == tokens_read) {
-    // We read the Date, Time, and Timezone info
-    minute_offset *= hour_offset < 0 ? -1 : 1;
-  } else if ((max_tokens - 1) == tokens_read) {
-    // We read the Date and Time, but no Minute Offset
-    minute_offset = 0;
-  } else if (tokens_read == 3 || tokens_read >= (max_tokens - 3)) {
-    if (tokens_read == 3) {
-      hour = 0;
-      min = 0;
-      hour_offset = 0;
+  fmt_datetime   = strchr(date, '.') ? _fmt_datetime_tz_subsec : _fmt_datetime_tz_normal;
+  tokens_missing = tokens_expected - sscanf(date, fmt_datetime, &year, &month, &day, &hour, &min, &sec, &hour_offset, &minute_offset);
+
+  switch (tokens_missing) {
+    case 0:
+      minute_offset *= hour_offset < 0 ? -1 : 1;
+      break;
+
+    case 1: /* Only got TZ hour offset, so assume 0 for minute */
       minute_offset = 0;
-      sec = 0;
-    }
+      break;
 
-    // We read the Date and Time, and we default to the current locale's offset.
+    case 5: /* Only got Date */
+      hour = 0;
+      min  = 0;
+      sec  = 0;
+      /* Fall through */
 
-    // First figure out if we're in DST and set adjustment appropriately.
+    case 2: /* Only got DateTime */
+      /*
+       * Interpret the DateTime from the local system TZ.  If target date would
+       * end up in DST, assume adjustment of a 1 hour shift.
+       *
+       * FIXME: The DST adjustment calculation won't accurate for timezones that
+       * observe fractional-hour shifts.  But that's a real minority for now..
+       */
 
-    time(&current_time);
-#ifdef HAVE_LOCALTIME_R
-    localtime_r(&current_time, &timeinfo);
-#else
-    timeinfo = *localtime(&current_time);
-#endif
+      timeinfo.tm_year  = year - 1900;
+      timeinfo.tm_mon   = month - 1;    // 0 - 11
+      timeinfo.tm_mday  = day;
+      timeinfo.tm_hour  = hour;
+      timeinfo.tm_min   = min;
+      timeinfo.tm_sec   = sec;
+      timeinfo.tm_isdst = -1;
 
-    dst_adjustment = timeinfo.tm_isdst ? 3600 : 0;
+      target_time    = mktime(&timeinfo);
+      dst_adjustment = timeinfo.tm_isdst ? 3600 : 0;
 
-    // Now figure out seconds from UTC.  Some modern libc's have tm_gmtoff
-    // in struct tm, but we can't count on that.
-
-    timeinfo.tm_sec   = sec;
-    timeinfo.tm_min   = min;
-    timeinfo.tm_hour  = hour;
-    timeinfo.tm_mday  = day;
-    timeinfo.tm_mon   = month;
-    timeinfo.tm_year  = year - 1900;
-    timeinfo.tm_isdst = -1;
+      /*
+       * Now figure out seconds from UTC.  For that we need a UTC/GMT-adjusted
+       * time_t, which we get from mktime(gmtime(current_time)).
+       *
+       * NOTE: Some modern libc's have tm_gmtoff in struct tm, but we can't count
+       * on that.
+       */
 
 #ifdef HAVE_GMTIME_R
-    gmtime_r(&current_time, &timeinfo);
+      gmtime_r(&target_time, &timeinfo);
 #else
-    timeinfo = *gmtime(&current_time);
+      timeinfo = *gmtime(&target_time);
 #endif
 
-    gmt_offset = current_time - mktime(&timeinfo) + dst_adjustment;
+      gmt_offset    = target_time - mktime(&timeinfo) + dst_adjustment;
+      hour_offset   = ((int)gmt_offset / 3600);
+      minute_offset = ((int)gmt_offset % 3600 / 60);
+      break;
 
-    hour_offset = ((int)gmt_offset / 3600);
-    minute_offset = ((int)gmt_offset % 3600 / 60);
-
-  } else {
-    // Something went terribly wrong
-    rb_raise(eDataError, "Couldn't parse date: %s", date);
+    default: /* Any other combo of missing tokens and we can't do anything */
+      rb_raise(eDataError, "Couldn't parse date: %s", date);
   }
 
   jd = jd_from_date(year, month, day);
 
-  // Generate ajd with fractional days for the time
-  // Extracted from Date#jd_to_ajd, Date#day_fraction_to_time, and Rational#+ and #-
+  /*
+   * Generate ajd with fractional days for the time.
+   * Extracted from Date#jd_to_ajd, Date#day_fraction_to_time, and Rational#+ and #-.
+   *
+   * TODO: These are 64bit numbers; is reduce() really necessary?
+   */
+
   num = (hour * 1440) + (min * 24);
-
-  // Modify the numerator so when we apply the timezone everything works out
   num -= (hour_offset * 1440) + (minute_offset * 24);
-
   den = (24 * 1440);
   reduce(&num, &den);
 
@@ -335,12 +331,10 @@ static VALUE parse_date_time(const char *date) {
   den = den * 86400;
   reduce(&num, &den);
 
-  num = (jd * den) + num;
+  num += jd * den;
 
-  num = num * 2;
-  num = num - den;
-  den = den * 2;
-
+  num = (num * 2) - den;
+  den *= 2;
   reduce(&num, &den);
 
   ajd = rb_funcall(rb_mKernel, ID_RATIONAL, 2, rb_ull2inum(num), rb_ull2inum(den));
