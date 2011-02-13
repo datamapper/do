@@ -142,7 +142,7 @@ void raise_error(VALUE self, PGresult *result, VALUE query) {
 
   VALUE uri = rb_funcall(rb_iv_get(self, "@connection"), rb_intern("to_s"), 0);
 
-  exception = rb_funcall(CONST_GET(mDO, exception_type), ID_NEW, 5,
+  exception = rb_funcall(do_const_get(mDO, exception_type), ID_NEW, 5,
                          rb_str_new2(message),
                          INT2NUM(postgres_errno),
                          rb_str_new2(sqlstate),
@@ -467,7 +467,7 @@ void full_connect(VALUE self, PGconn *db) {
   encoding = rb_iv_get(self, "@encoding");
 
 #ifdef HAVE_PQSETCLIENTENCODING
-  VALUE pg_encoding = rb_hash_aref(CONST_GET(mEncoding, "MAP"), encoding);
+  VALUE pg_encoding = rb_hash_aref(do_const_get(mEncoding, "MAP"), encoding);
   if(pg_encoding != Qnil) {
     if(PQsetClientEncoding(db, rb_str_ptr_readonly(pg_encoding))) {
       rb_raise(eConnectionError, "Couldn't set encoding: %s", rb_str_ptr_readonly(encoding));

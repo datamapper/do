@@ -8,8 +8,6 @@ typedef signed __int64 do_int64;
 typedef signed long long int do_int64;
 #endif
 
-#define CONST_GET(scope, constant) (rb_funcall(scope, ID_CONST_GET, 1, rb_str_new2(constant)))
-
 #ifdef HAVE_RUBY_ENCODING_H
 #include <ruby/encoding.h>
 #endif
@@ -106,3 +104,7 @@ extern VALUE cReader_fields(VALUE self);
 extern VALUE cReader_field_count(VALUE self);
 
 extern void common_init(void);
+
+static inline VALUE do_const_get(VALUE scope, const char *constant) {
+  return rb_funcall(scope, ID_CONST_GET, 1, rb_str_new2(constant));
+}

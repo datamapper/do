@@ -152,7 +152,7 @@ void raise_error(VALUE self, MYSQL *db, VALUE query) {
 #endif
 
   VALUE exception = rb_funcall(
-    CONST_GET(mDO, exception_type),
+    do_const_get(mDO, exception_type),
     ID_NEW,
     5,
     rb_str_new2(mysql_error_message),
@@ -358,7 +358,7 @@ void full_connect(VALUE self, MYSQL *db) {
 #ifdef HAVE_MYSQL_SET_CHARACTER_SET
   // Set the connections character set
   VALUE encoding = rb_iv_get(self, "@encoding");
-  VALUE my_encoding = rb_hash_aref(CONST_GET(mEncoding, "MAP"), encoding);
+  VALUE my_encoding = rb_hash_aref(do_const_get(mEncoding, "MAP"), encoding);
 
   if (my_encoding != Qnil) {
     int encoding_error = mysql_set_character_set(db, rb_str_ptr_readonly(my_encoding));

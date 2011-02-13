@@ -31,7 +31,7 @@ void raise_error(VALUE self, sqlite3 *result, VALUE query) {
 
   VALUE uri = rb_funcall(rb_iv_get(self, "@connection"), rb_intern("to_s"), 0);
   VALUE exception = rb_funcall(
-    CONST_GET(mDO, exception_type),
+    do_const_get(mDO, exception_type),
     ID_NEW,
     5,
     rb_str_new2(message),

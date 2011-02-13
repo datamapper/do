@@ -387,12 +387,13 @@ void common_init(void) {
   rb_require("date");
   rb_require("data_objects");
 
+  // Needed by do_const_get
   ID_CONST_GET = rb_intern("const_get");
 
   // Get references classes needed for Date/Time parsing
-  rb_cDate = CONST_GET(rb_mKernel, "Date");
-  rb_cDateTime = CONST_GET(rb_mKernel, "DateTime");
-  rb_cBigDecimal = CONST_GET(rb_mKernel, "BigDecimal");
+  rb_cDate = do_const_get(rb_mKernel, "Date");
+  rb_cDateTime = do_const_get(rb_mKernel, "DateTime");
+  rb_cBigDecimal = do_const_get(rb_mKernel, "BigDecimal");
 
   ID_NEW = rb_intern("new");
 #ifdef RUBY_LESS_THAN_186
@@ -407,22 +408,22 @@ void common_init(void) {
   ID_LOG = rb_intern("log");
 
   // Get references to the Extlib module
-  mExtlib = CONST_GET(rb_mKernel, "Extlib");
-  rb_cByteArray = CONST_GET(mExtlib, "ByteArray");
+  mExtlib = do_const_get(rb_mKernel, "Extlib");
+  rb_cByteArray = do_const_get(mExtlib, "ByteArray");
 
   // Get references to the DataObjects module and its classes
-  mDO = CONST_GET(rb_mKernel, "DataObjects");
-  cDO_Quoting = CONST_GET(mDO, "Quoting");
-  cDO_Connection = CONST_GET(mDO, "Connection");
-  cDO_Command = CONST_GET(mDO, "Command");
-  cDO_Result = CONST_GET(mDO, "Result");
-  cDO_Reader = CONST_GET(mDO, "Reader");
-  cDO_Logger = CONST_GET(mDO, "Logger");
-  cDO_Logger_Message = CONST_GET(cDO_Logger, "Message");
-  cDO_Extension = CONST_GET(mDO, "Extension");
+  mDO = do_const_get(rb_mKernel, "DataObjects");
+  cDO_Quoting = do_const_get(mDO, "Quoting");
+  cDO_Connection = do_const_get(mDO, "Connection");
+  cDO_Command = do_const_get(mDO, "Command");
+  cDO_Result = do_const_get(mDO, "Result");
+  cDO_Reader = do_const_get(mDO, "Reader");
+  cDO_Logger = do_const_get(mDO, "Logger");
+  cDO_Logger_Message = do_const_get(cDO_Logger, "Message");
+  cDO_Extension = do_const_get(mDO, "Extension");
 
-  eConnectionError = CONST_GET(mDO, "ConnectionError");
-  eDataError = CONST_GET(mDO, "DataError");
+  eConnectionError = do_const_get(mDO, "ConnectionError");
+  eDataError = do_const_get(mDO, "DataError");
 
   rb_global_variable(&ID_NEW_DATE);
   rb_global_variable(&ID_RATIONAL);
