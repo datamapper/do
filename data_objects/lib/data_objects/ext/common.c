@@ -349,9 +349,12 @@ VALUE cCommand_set_types(int argc, VALUE *argv, VALUE self) {
 
 VALUE cReader_values(VALUE self) {
   VALUE state = rb_iv_get(self, "@opened");
-  if ( state == Qnil || state == Qfalse ) {
+  VALUE values = rb_iv_get(self, "@values");
+
+  if (state == Qnil || state == Qfalse || values == Qnil) {
     rb_raise(eDataError, "Reader is not initialized");
   }
+
   return rb_iv_get(self, "@values");
 }
 
