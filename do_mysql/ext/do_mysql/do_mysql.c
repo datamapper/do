@@ -134,7 +134,7 @@ void raise_error(VALUE self, MYSQL *db, VALUE query) {
   char *mysql_error_message = (char *)mysql_error(db);
   int mysql_error_code = mysql_errno(db);
 
-  struct errcodes *errs;
+  const struct errcodes *errs;
 
   for (errs = errors; errs->error_name; errs++) {
     if (errs->error_no == mysql_error_code) {
