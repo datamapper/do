@@ -240,36 +240,39 @@ MYSQL_RES *cCommand_execute_async(VALUE self, VALUE connection, MYSQL *db, VALUE
 #endif
 
 void full_connect(VALUE self, MYSQL *db) {
-  // Check to see if we're on the db machine.  If so, try to use the socket
-  VALUE r_host, r_user, r_password, r_path, r_query, r_port;
+  VALUE r_host = rb_iv_get(self, "@host");
+  const char *host = "localhost";
 
-  const char *host = "localhost", *user = "root";
-  char *database = NULL, *socket = NULL, *password = NULL, *path = NULL;
-  VALUE encoding = Qnil;
-
-  MYSQL *result;
-
-  int port = 3306;
-  unsigned long client_flags = 0;
-  int encoding_error;
-
-  if ((r_host = rb_iv_get(self, "@host")) != Qnil) {
+  if (r_host != Qnil) {
     host = StringValuePtr(r_host);
   }
 
-  if ((r_user = rb_iv_get(self, "@user")) != Qnil) {
+  VALUE r_user = rb_iv_get(self, "@user");
+  const char *user = "root";
+
+  if (r_user != Qnil) {
     user = StringValuePtr(r_user);
   }
 
-  if ((r_password = rb_iv_get(self, "@password")) != Qnil) {
+  VALUE r_password = rb_iv_get(self, "@password");
+  char *password = NULL;
+
+  if (r_password != Qnil) {
     password = StringValuePtr(r_password);
   }
 
-  if ((r_port = rb_iv_get(self, "@port")) != Qnil) {
+  VALUE r_port = rb_iv_get(self, "@port");
+  int port = 3306;
+
+  if (r_port != Qnil) {
     port = NUM2INT(r_port);
   }
 
-  if ((r_path = rb_iv_get(self, "@path")) != Qnil) {
+  VALUE r_path = rb_iv_get(self, "@path");
+  char *path = NULL;
+  char *database = NULL;
+
+  if (r_path != Qnil) {
     path = StringValuePtr(r_path);
     database = strtok(path, "/"); // not threadsafe
   }
@@ -278,8 +281,10 @@ void full_connect(VALUE self, MYSQL *db) {
     rb_raise(eConnectionError, "Database must be specified");
   }
 
-  r_query = rb_iv_get(self, "@query");
+  VALUE r_query = rb_iv_get(self, "@query");
+  char *socket = NULL;
 
+  // Check to see if we're on the db machine.  If so, try to use the socket
   if (strcasecmp(host, "localhost") == 0) {
     socket = get_uri_option(r_query, "socket");
 
@@ -314,7 +319,9 @@ void full_connect(VALUE self, MYSQL *db) {
   }
 #endif
 
-  result = mysql_real_connect(
+  unsigned long client_flags = 0;
+
+  MYSQL *result = mysql_real_connect(
     db,
     host,
     user,
@@ -350,12 +357,11 @@ void full_connect(VALUE self, MYSQL *db) {
 
 #ifdef HAVE_MYSQL_SET_CHARACTER_SET
   // Set the connections character set
-  encoding = rb_iv_get(self, "@encoding");
-
+  VALUE encoding = rb_iv_get(self, "@encoding");
   VALUE my_encoding = rb_hash_aref(CONST_GET(mEncoding, "MAP"), encoding);
 
   if (my_encoding != Qnil) {
-    encoding_error = mysql_set_character_set(db, rb_str_ptr_readonly(my_encoding));
+    int encoding_error = mysql_set_character_set(db, rb_str_ptr_readonly(my_encoding));
 
     if (encoding_error != 0) {
       raise_error(self, db, Qnil);
