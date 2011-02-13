@@ -228,8 +228,7 @@ static VALUE parse_time(const char *date) {
 static VALUE parse_date_time(const char *date) {
   static char const* const _fmt_datetime_tz_normal = "%4d-%2d-%2d %2d:%2d:%2d%3d:%2d";
   static char const* const _fmt_datetime_tz_subsec = "%4d-%2d-%2d %2d:%2d:%2d.%*d%3d:%2d";
-  static unsigned int const tokens_expected        = 8;
-  unsigned int tokens_missing;
+  unsigned int tokens_read;
   const char *fmt_datetime;
 
   VALUE ajd, offset;
@@ -252,31 +251,32 @@ static VALUE parse_date_time(const char *date) {
    *   - DateTime with hour, possibly minute TZ offset [7-8 tokens]
    */
 
-  fmt_datetime   = strchr(date, '.') ? _fmt_datetime_tz_subsec : _fmt_datetime_tz_normal;
-  tokens_missing = tokens_expected - sscanf(date, fmt_datetime, &year, &month, &day, &hour, &min, &sec, &hour_offset, &minute_offset);
+  fmt_datetime = strchr(date, '.') ? _fmt_datetime_tz_subsec : _fmt_datetime_tz_normal;
+  tokens_read  = sscanf(date, fmt_datetime, &year, &month, &day, &hour, &min, &sec, &hour_offset, &minute_offset);
 
-  switch (tokens_missing) {
-    case 0:
+  switch (tokens_read) {
+    case 8:
       minute_offset *= hour_offset < 0 ? -1 : 1;
       break;
 
-    case 1: /* Only got TZ hour offset, so assume 0 for minute */
+    case 7: /* Only got TZ hour offset, so assume 0 for minute */
       minute_offset = 0;
       break;
 
-    case 5: /* Only got Date */
+    case 3: /* Only got Date */
       hour = 0;
       min  = 0;
       sec  = 0;
       /* Fall through */
 
-    case 2: /* Only got DateTime */
+    case 6: /* Only got DateTime */
       /*
        * Interpret the DateTime from the local system TZ.  If target date would
        * end up in DST, assume adjustment of a 1 hour shift.
        *
-       * FIXME: The DST adjustment calculation won't accurate for timezones that
-       * observe fractional-hour shifts.  But that's a real minority for now..
+       * FIXME: The DST adjustment calculation won't be accurate for timezones
+       * that observe fractional-hour shifts.  But that's a real minority for
+       * now..
        */
 
       timeinfo.tm_year  = year - 1900;
