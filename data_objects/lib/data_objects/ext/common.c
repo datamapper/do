@@ -75,17 +75,19 @@ char *get_uri_option(VALUE query_hash, const char *key) {
 }
 
 void assert_file_exists(char *file, const char *message) {
-  if (file == NULL) { return; }
+  if (!file) { return; }
+
   if (rb_funcall(rb_cFile, rb_intern("exist?"), 1, rb_str_new2(file)) == Qfalse) {
     rb_raise(rb_eArgError, "%s", message);
   }
 }
 
 VALUE build_query_from_args(VALUE klass, int count, VALUE *args) {
-  int i;
   VALUE array = rb_ary_new();
+  int i;
+
   for (i = 0; i < count; i++) {
-    rb_ary_push(array, (VALUE)args[i]);
+    rb_ary_push(array, args[i]);
   }
 
   return rb_funcall(klass, ID_ESCAPE, 1, array);
@@ -118,11 +120,13 @@ int jd_from_date(int year, int month, int day) {
   a = year / 100;
   b = 2 - a + (a / 4);
 
-  return (int) (floor(365.25 * (year + 4716)) + floor(30.6001 * (month + 1)) + day + b - 1524);
+  return (int)(floor(365.25 * (year + 4716)) + floor(30.6001 * (month + 1)) + day + b - 1524);
 }
 
 VALUE seconds_to_offset(long seconds_offset) {
-  do_int64 num = seconds_offset, den = 86400;
+  do_int64 num = seconds_offset;
+  do_int64 den = 86400;
+
   reduce(&num, &den);
   return rb_funcall(rb_mKernel, ID_RATIONAL, 2, rb_ll2inum(num), rb_ll2inum(den));
 }
@@ -145,7 +149,7 @@ VALUE parse_date(const char *date) {
   sscanf(date, _fmt_date, &year, &month, &day);
 
   jd       = jd_from_date(year, month, day);
-  ajd      = jd * 2 - 1;        // Math from Date.jd_to_ajd
+  ajd      = (jd * 2) - 1;        // Math from Date.jd_to_ajd
   rational = rb_funcall(rb_mKernel, ID_RATIONAL, 2, INT2NUM(ajd), INT2NUM(2));
 
   return rb_funcall(rb_cDate, ID_NEW_DATE, 3, rational, INT2NUM(0), INT2NUM(2299161));
@@ -155,14 +159,16 @@ VALUE parse_time(const char *date) {
   static char const* const _fmt_datetime = "%4d-%2d-%2d %2d:%2d:%2d.%6d";
   int year, month, day, hour = 0, min = 0, sec = 0, usec = 0;
 
-  if (*date == '\0')
+  if (*date == '\0') {
     return Qnil;
+  }
 
   sscanf(date, _fmt_datetime, &year, &month, &day, &hour, &min, &sec, &usec);
 
   /* Mysql TIMESTAMPS can default to 0 */
-  if (year + month + day + hour + min + sec + usec == 0)
+  if ((year + month + day + hour + min + sec + usec) == 0) {
     return Qnil;
+  }
 
   return rb_funcall(rb_cTime, rb_intern("local"), 7, INT2NUM(year), INT2NUM(month), INT2NUM(day), INT2NUM(hour), INT2NUM(min), INT2NUM(sec), INT2NUM(usec));
 }
@@ -183,8 +189,9 @@ VALUE parse_date_time(const char *date) {
   time_t gmt_offset;
   int dst_adjustment;
 
-  if (*date == '\0')
+  if (*date == '\0') {
     return Qnil;
+  }
 
   /*
    * We handle the following cases:
@@ -192,7 +199,6 @@ VALUE parse_date_time(const char *date) {
    *   - DateTime [6 tokens, missing 2]
    *   - DateTime with hour, possibly minute TZ offset [7-8 tokens]
    */
-
   fmt_datetime = strchr(date, '.') ? _fmt_datetime_tz_subsec : _fmt_datetime_tz_normal;
   tokens_read  = sscanf(date, fmt_datetime, &year, &month, &day, &hour, &min, &sec, &hour_offset, &minute_offset);
 
@@ -220,7 +226,6 @@ VALUE parse_date_time(const char *date) {
        * that observe fractional-hour shifts.  But that's a real minority for
        * now..
        */
-
       timeinfo.tm_year  = year - 1900;
       timeinfo.tm_mon   = month - 1;    // 0 - 11
       timeinfo.tm_mday  = day;
@@ -239,7 +244,6 @@ VALUE parse_date_time(const char *date) {
        * NOTE: Some modern libc's have tm_gmtoff in struct tm, but we can't count
        * on that.
        */
-
 #ifdef HAVE_GMTIME_R
       gmtime_r(&target_time, &timeinfo);
 #else
@@ -325,26 +329,32 @@ VALUE cCommand_set_types(int argc, VALUE *argv, VALUE self) {
     rb_ary_push(array, argv[i]);
   }
 
+  VALUE entry, sub_entry;
+
   for (i = 0; i < RARRAY_LEN(array); i++) {
-    VALUE entry = rb_ary_entry(array, i);
+    entry = rb_ary_entry(array, i);
+
     if (TYPE(entry) == T_CLASS) {
       rb_ary_push(type_strings, entry);
-    } else if (TYPE(entry) == T_ARRAY) {
+    }
+    else if (TYPE(entry) == T_ARRAY) {
       for (j = 0; j < RARRAY_LEN(entry); j++) {
-        VALUE sub_entry = rb_ary_entry(entry, j);
+        sub_entry = rb_ary_entry(entry, j);
+
         if (TYPE(sub_entry) == T_CLASS) {
           rb_ary_push(type_strings, sub_entry);
-        } else {
+        }
+	else {
           rb_raise(rb_eArgError, "Invalid type given");
         }
       }
-    } else {
+    }
+    else {
       rb_raise(rb_eArgError, "Invalid type given");
     }
   }
 
   rb_iv_set(self, "@field_types", type_strings);
-
   return array;
 }
 
