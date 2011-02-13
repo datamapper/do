@@ -32,6 +32,7 @@ VALUE cDO_Result;
 VALUE cDO_Reader;
 VALUE cDO_Logger;
 VALUE cDO_Logger_Message;
+VALUE cDO_Extension;
 VALUE eConnectionError;
 VALUE eDataError;
 
@@ -404,6 +405,7 @@ void common_init(void) {
   cDO_Reader = CONST_GET(mDO, "Reader");
   cDO_Logger = CONST_GET(mDO, "Logger");
   cDO_Logger_Message = CONST_GET(cDO_Logger, "Message");
+  cDO_Extension = CONST_GET(mDO, "Extension");
 
   eConnectionError = CONST_GET(mDO, "ConnectionError");
   eDataError = CONST_GET(mDO, "DataError");

@@ -1,82 +1,22 @@
 #include "do_sqlite3.h"
 #include "error.h"
-// To store rb_intern values
 
-static ID ID_NEW;
-static ID ID_NEW_DATE;
-static ID ID_CONST_GET;
-static ID ID_RATIONAL;
-static ID ID_ESCAPE;
-static ID ID_LOG;
+#include "common.h"
 
-static VALUE mExtlib;
+VALUE mSqlite3;
+VALUE cConnection;
+VALUE cCommand;
+VALUE cResult;
+VALUE cReader;
 
-static VALUE mDO;
-static VALUE cDO_Quoting;
-static VALUE cDO_Connection;
-static VALUE cDO_Command;
-static VALUE cDO_Result;
-static VALUE cDO_Reader;
-static VALUE cDO_Logger;
-static VALUE cDO_Logger_Message;
+VALUE OPEN_FLAG_READONLY;
+VALUE OPEN_FLAG_READWRITE;
+VALUE OPEN_FLAG_CREATE;
+VALUE OPEN_FLAG_NO_MUTEX;
+VALUE OPEN_FLAG_FULL_MUTEX;
 
-static VALUE rb_cDate;
-static VALUE rb_cDateTime;
-static VALUE rb_cBigDecimal;
-static VALUE rb_cByteArray;
 
-static VALUE mSqlite3;
-static VALUE cConnection;
-static VALUE cCommand;
-static VALUE cResult;
-static VALUE cReader;
-static VALUE eConnectionError;
-static VALUE eDataError;
-
-static VALUE OPEN_FLAG_READONLY;
-static VALUE OPEN_FLAG_READWRITE;
-static VALUE OPEN_FLAG_CREATE;
-static VALUE OPEN_FLAG_NO_MUTEX;
-static VALUE OPEN_FLAG_FULL_MUTEX;
-
-// Find the greatest common denominator and reduce the provided numerator and denominator.
-// This replaces calles to Rational.reduce! which does the same thing, but really slowly.
-static void reduce( do_int64 *numerator, do_int64 *denominator ) {
-  do_int64 a, b, c = 0;
-  a = *numerator;
-  b = *denominator;
-  while ( a != 0 ) {
-    c = a; a = b % a; b = c;
-  }
-  *numerator = *numerator / b;
-  *denominator = *denominator / b;
-}
-
-// Generate the date integer which Date.civil_to_jd returns
-static int jd_from_date(int year, int month, int day) {
-  int a, b;
-  if ( month <= 2 ) {
-    year -= 1;
-    month += 12;
-  }
-  a = year / 100;
-  b = 2 - a + (a / 4);
-  return (int) (floor(365.25 * (year + 4716)) + floor(30.6001 * (month + 1)) + day + b - 1524);
-}
-
-static void data_objects_debug(VALUE connection, VALUE string, struct timeval* start) {
-  struct timeval stop;
-  VALUE message;
-
-  gettimeofday(&stop, NULL);
-  do_int64 duration = (stop.tv_sec - start->tv_sec) * 1000000 + stop.tv_usec - start->tv_usec;
-
-  message = rb_funcall(cDO_Logger_Message, ID_NEW, 3, string, rb_time_new(start->tv_sec, start->tv_usec), INT2NUM(duration));
-
-  rb_funcall(connection, ID_LOG, 1, message);
-}
-
-static void raise_error(VALUE self, sqlite3 *result, VALUE query) {
+void raise_error(VALUE self, sqlite3 *result, VALUE query) {
   VALUE exception;
   const char *message = sqlite3_errmsg(result);
   const char *exception_type = "SQLError";
@@ -85,12 +25,11 @@ static void raise_error(VALUE self, sqlite3 *result, VALUE query) {
   struct errcodes *errs;
 
   for (errs = errors; errs->error_name; errs++) {
-    if(errs->error_no == sqlite3_errno) {
+    if (errs->error_no == sqlite3_errno) {
       exception_type = errs->exception;
       break;
     }
   }
-
 
   VALUE uri = rb_funcall(rb_iv_get(self, "@connection"), rb_intern("to_s"), 0);
 
@@ -103,184 +42,7 @@ static void raise_error(VALUE self, sqlite3 *result, VALUE query) {
   rb_exc_raise(exception);
 }
 
-static VALUE parse_date(char *date) {
-  int year, month, day;
-  int jd, ajd;
-  VALUE rational;
-
-  sscanf(date, "%4d-%2d-%2d", &year, &month, &day);
-
-  jd = jd_from_date(year, month, day);
-
-  // Math from Date.jd_to_ajd
-  ajd = jd * 2 - 1;
-  rational = rb_funcall(rb_mKernel, ID_RATIONAL, 2, INT2NUM(ajd), INT2NUM(2));
-  return rb_funcall(rb_cDate, ID_NEW_DATE, 3, rational, INT2NUM(0), INT2NUM(2299161));
-}
-
-// Creates a Rational for use as a Timezone offset to be passed to DateTime.new!
-static VALUE seconds_to_offset(do_int64 num) {
-  do_int64 den = 86400;
-  reduce(&num, &den);
-  return rb_funcall(rb_mKernel, ID_RATIONAL, 2, rb_ll2inum(num), rb_ll2inum(den));
-}
-
-static VALUE timezone_to_offset(int hour_offset, int minute_offset) {
-  do_int64 seconds = 0;
-
-  seconds += hour_offset * 3600;
-  seconds += minute_offset * 60;
-
-  return seconds_to_offset(seconds);
-}
-
-static VALUE parse_date_time(char *date) {
-  VALUE ajd, offset;
-
-  int year, month, day, hour, min, sec, usec, hour_offset, minute_offset;
-  int jd;
-  do_int64 num, den;
-
-  long int gmt_offset;
-  int dst_adjustment;
-
-  time_t rawtime;
-  struct tm timeinfo;
-
-  int tokens_read, max_tokens;
-
-  if ( strcmp(date, "") == 0 ) {
-    return Qnil;
-  }
-
-  if (0 != strchr(date, '.')) {
-    // This is a datetime with sub-second precision
-    tokens_read = sscanf(date, "%4d-%2d-%2d%*c%2d:%2d:%2d.%d%3d:%2d", &year, &month, &day, &hour, &min, &sec, &usec, &hour_offset, &minute_offset);
-    max_tokens = 9;
-  } else {
-    // This is a datetime second precision
-    tokens_read = sscanf(date, "%4d-%2d-%2d%*c%2d:%2d:%2d%3d:%2d", &year, &month, &day, &hour, &min, &sec, &hour_offset, &minute_offset);
-    max_tokens = 8;
-  }
-
-  if (max_tokens == tokens_read) {
-    // We read the Date, Time, and Timezone info
-    minute_offset *= hour_offset < 0 ? -1 : 1;
-  } else if ((max_tokens - 1) == tokens_read) {
-    // We read the Date and Time, but no Minute Offset
-    minute_offset = 0;
-  } else if (tokens_read == 3 || tokens_read >= (max_tokens - 3)) {
-    if (tokens_read == 3) {
-      hour = 0;
-      min = 0;
-      hour_offset = 0;
-      minute_offset = 0;
-      sec = 0;
-    }
-    // We read the Date and Time, default to the current locale's offset
-
-    tzset();
-
-    // Get localtime
-    time(&rawtime);
-#ifdef HAVE_LOCALTIME_R
-    localtime_r(&rawtime, &timeinfo);
-#else
-    timeinfo = *localtime(&rawtime);
-#endif
-
-    timeinfo.tm_sec = sec;
-    timeinfo.tm_min = min;
-    timeinfo.tm_hour = hour;
-    timeinfo.tm_mday = day;
-    timeinfo.tm_mon = month;
-    timeinfo.tm_year = year - 1900;
-    timeinfo.tm_isdst = -1;
-
-    // Update tm_isdst
-    mktime(&timeinfo);
-
-    if (timeinfo.tm_isdst) {
-      dst_adjustment = 3600;
-    } else {
-      dst_adjustment = 0;
-    }
-
-    // Reset to GM Time
-#ifdef HAVE_GMTIME_R
-    gmtime_r(&rawtime, &timeinfo);
-#else
-    timeinfo = *gmtime(&rawtime);
-#endif
-
-    gmt_offset = rawtime - mktime(&timeinfo);
-
-    if (dst_adjustment) {
-      gmt_offset += dst_adjustment;
-    }
-
-    hour_offset = ((int)gmt_offset / 3600);
-    minute_offset = ((int)gmt_offset % 3600 / 60);
-
-  } else {
-    // Something went terribly wrong
-    rb_raise(eDataError, "Couldn't parse date: %s", date);
-  }
-
-  jd = jd_from_date(year, month, day);
-
-  // Generate ajd with fractional days for the time
-  // Extracted from Date#jd_to_ajd, Date#day_fraction_to_time, and Rational#+ and #-
-  num = (hour * 1440) + (min * 24);
-
-  // Modify the numerator so when we apply the timezone everything works out
-  num -= (hour_offset * 1440) + (minute_offset * 24);
-
-  den = (24 * 1440);
-  reduce(&num, &den);
-
-  num = (num * 86400) + (sec * den);
-  den = den * 86400;
-  reduce(&num, &den);
-
-  num = (jd * den) + num;
-
-  num = num * 2;
-  num = num - den;
-  den = den * 2;
-
-  reduce(&num, &den);
-
-  ajd = rb_funcall(rb_mKernel, ID_RATIONAL, 2, rb_ull2inum(num), rb_ull2inum(den));
-  offset = timezone_to_offset(hour_offset, minute_offset);
-
-  return rb_funcall(rb_cDateTime, ID_NEW_DATE, 3, ajd, offset, INT2NUM(2299161));
-}
-
-static VALUE parse_time(char *date) {
-
-  int year, month, day, hour, min, sec, usec, tokens, hour_offset, minute_offset;
-
-  if (0 != strchr(date, '.')) {
-    // This is a datetime with sub-second precision
-    tokens = sscanf(date, "%4d-%2d-%2d%*c%2d:%2d:%2d.%d%3d:%2d", &year, &month, &day, &hour, &min, &sec, &usec, &hour_offset, &minute_offset);
-  } else {
-    // This is a datetime second precision
-    tokens = sscanf(date, "%4d-%2d-%2d%*c%2d:%2d:%2d%3d:%2d", &year, &month, &day, &hour, &min, &sec, &hour_offset, &minute_offset);
-    usec = 0;
-    if(tokens == 3) {
-      hour = 0;
-      min = 0;
-      sec = 0;
-      hour_offset = 0;
-      minute_offset = 0;
-    }
-  }
-
-  return rb_funcall(rb_cTime, rb_intern("local"), 7, INT2NUM(year), INT2NUM(month), INT2NUM(day), INT2NUM(hour), INT2NUM(min), INT2NUM(sec), INT2NUM(usec));
-}
-
-static VALUE typecast(sqlite3_stmt *stmt, int i, VALUE type, int encoding) {
+VALUE typecast(sqlite3_stmt *stmt, int i, VALUE type, int encoding) {
   VALUE ruby_value = Qnil;
   int original_type = sqlite3_column_type(stmt, i);
   int length        = sqlite3_column_bytes(stmt, i);
@@ -289,9 +51,9 @@ static VALUE typecast(sqlite3_stmt *stmt, int i, VALUE type, int encoding) {
   }
 
 #ifdef HAVE_RUBY_ENCODING_H
-  rb_encoding * internal_encoding = rb_default_internal_encoding();
+  rb_encoding *internal_encoding = rb_default_internal_encoding();
 #else
-  void * internal_encoding = NULL;
+  void *internal_encoding = NULL;
 #endif
 
   if(type == Qnil) {
@@ -346,7 +108,7 @@ static VALUE typecast(sqlite3_stmt *stmt, int i, VALUE type, int encoding) {
 
 #define FLAG_PRESENT(query_values, flag) !NIL_P(rb_hash_aref(query_values, flag))
 
-static int flags_from_uri(VALUE uri) {
+int flags_from_uri(VALUE uri) {
   VALUE query_values = rb_funcall(uri, rb_intern("query"), 0);
 
   int flags = 0;
@@ -382,7 +144,7 @@ static int flags_from_uri(VALUE uri) {
 
 /****** Public API ******/
 
-static VALUE cConnection_initialize(VALUE self, VALUE uri) {
+VALUE cConnection_initialize(VALUE self, VALUE uri) {
   int ret;
   VALUE path;
   sqlite3 *db;
@@ -410,7 +172,7 @@ static VALUE cConnection_initialize(VALUE self, VALUE uri) {
   return Qtrue;
 }
 
-static VALUE cConnection_dispose(VALUE self) {
+VALUE cConnection_dispose(VALUE self) {
   VALUE connection_container = rb_iv_get(self, "@connection");
 
   sqlite3 *db;
@@ -430,44 +192,11 @@ static VALUE cConnection_dispose(VALUE self) {
 
 }
 
-static VALUE cCommand_set_types(int argc, VALUE *argv, VALUE self) {
-  VALUE type_strings = rb_ary_new();
-  VALUE array = rb_ary_new();
-
-  int i, j;
-
-  for ( i = 0; i < argc; i++) {
-    rb_ary_push(array, argv[i]);
-  }
-
-  for (i = 0; i < RARRAY_LEN(array); i++) {
-    VALUE entry = rb_ary_entry(array, i);
-    if(TYPE(entry) == T_CLASS) {
-      rb_ary_push(type_strings, entry);
-    } else if (TYPE(entry) == T_ARRAY) {
-      for (j = 0; j < RARRAY_LEN(entry); j++) {
-        VALUE sub_entry = rb_ary_entry(entry, j);
-        if(TYPE(sub_entry) == T_CLASS) {
-          rb_ary_push(type_strings, sub_entry);
-        } else {
-          rb_raise(rb_eArgError, "Invalid type given");
-        }
-      }
-    } else {
-      rb_raise(rb_eArgError, "Invalid type given");
-    }
-  }
-
-  rb_iv_set(self, "@field_types", type_strings);
-
-  return array;
-}
-
-static VALUE cConnection_quote_boolean(VALUE self, VALUE value) {
+VALUE cConnection_quote_boolean(VALUE self, VALUE value) {
   return rb_str_new2(value == Qtrue ? "'t'" : "'f'");
 }
 
-static VALUE cConnection_quote_string(VALUE self, VALUE string) {
+VALUE cConnection_quote_string(VALUE self, VALUE string) {
   const char *source = rb_str_ptr_readonly(string);
   char *escaped_with_quotes;
   VALUE result;
@@ -483,7 +212,7 @@ static VALUE cConnection_quote_string(VALUE self, VALUE string) {
   return result;
 }
 
-static VALUE cConnection_quote_byte_array(VALUE self, VALUE string) {
+VALUE cConnection_quote_byte_array(VALUE self, VALUE string) {
   VALUE source = StringValue(string);
   VALUE array = rb_funcall(source, rb_intern("unpack"), 1, rb_str_new2("H*"));
   rb_ary_unshift(array, rb_str_new2("X'"));
@@ -491,11 +220,7 @@ static VALUE cConnection_quote_byte_array(VALUE self, VALUE string) {
   return rb_ary_join(array, Qnil);
 }
 
-static VALUE cConnection_character_set(VALUE self) {
-  return rb_iv_get(self, "@encoding");
-}
-
-static VALUE cConnection_enable_load_extension(VALUE self, VALUE value) {
+VALUE cConnection_enable_load_extension(VALUE self, VALUE value) {
   VALUE connection;
   int status;
   sqlite3 *db;
@@ -517,7 +242,7 @@ static VALUE cConnection_enable_load_extension(VALUE self, VALUE value) {
   return Qtrue;
 }
 
-static VALUE cConnection_load_extension(VALUE self, VALUE string) {
+VALUE cConnection_load_extension(VALUE self, VALUE string) {
   VALUE connection;
   sqlite3 *db;
   const char *extension_name  = rb_str_ptr_readonly(string);
@@ -541,18 +266,7 @@ static VALUE cConnection_load_extension(VALUE self, VALUE string) {
   return Qtrue;
 }
 
-static VALUE build_query_from_args(VALUE klass, int count, VALUE *args) {
-  VALUE query = rb_iv_get(klass, "@text");
-  int i;
-  VALUE array = rb_ary_new();
-  for ( i = 0; i < count; i++) {
-    rb_ary_push(array, (VALUE)args[i]);
-  }
-  query = rb_funcall(klass, ID_ESCAPE, 1, array);
-  return query;
-}
-
-static VALUE cCommand_execute_non_query(int argc, VALUE *argv, VALUE self) {
+VALUE cCommand_execute_non_query(int argc, VALUE *argv, VALUE self) {
   sqlite3 *db;
   char *error_message;
   int status;
@@ -586,7 +300,7 @@ static VALUE cCommand_execute_non_query(int argc, VALUE *argv, VALUE self) {
   return rb_funcall(cResult, ID_NEW, 3, self, INT2NUM(affected_rows), INT2NUM(insert_id));
 }
 
-static VALUE cCommand_execute_reader(int argc, VALUE *argv, VALUE self) {
+VALUE cCommand_execute_reader(int argc, VALUE *argv, VALUE self) {
   sqlite3 *db;
   sqlite3_stmt *sqlite3_reader;
   int status;
@@ -645,7 +359,7 @@ static VALUE cCommand_execute_reader(int argc, VALUE *argv, VALUE self) {
   return reader;
 }
 
-static VALUE cReader_close(VALUE self) {
+VALUE cReader_close(VALUE self) {
   VALUE reader_obj = rb_iv_get(self, "@reader");
 
   if ( reader_obj != Qnil ) {
@@ -660,7 +374,7 @@ static VALUE cReader_close(VALUE self) {
   }
 }
 
-static VALUE cReader_next(VALUE self) {
+VALUE cReader_next(VALUE self) {
   sqlite3_stmt *reader;
   int field_count;
   int result;
@@ -711,7 +425,7 @@ static VALUE cReader_next(VALUE self) {
   return Qtrue;
 }
 
-static VALUE cReader_values(VALUE self) {
+VALUE cReader_values_sqlite(VALUE self) {
   VALUE state = rb_iv_get(self, "@state");
   if ( state == Qnil || NUM2INT(state) != SQLITE_ROW ) {
     rb_raise(eDataError, "Reader is not initialized");
@@ -722,56 +436,10 @@ static VALUE cReader_values(VALUE self) {
   }
 }
 
-static VALUE cReader_fields(VALUE self) {
-  return rb_iv_get(self, "@fields");
-}
-
-static VALUE cReader_field_count(VALUE self) {
-  return rb_iv_get(self, "@field_count");
-}
-
 void Init_do_sqlite3() {
-  rb_require("bigdecimal");
-  rb_require("date");
-  rb_require("rational");
-  rb_require("data_objects");
+  common_init();
 
-  ID_CONST_GET = rb_intern("const_get");
-
-  // Get references classes needed for Date/Time parsing
-  rb_cDate = CONST_GET(rb_mKernel, "Date");
-  rb_cDateTime = CONST_GET(rb_mKernel, "DateTime");
-  rb_cBigDecimal = CONST_GET(rb_mKernel, "BigDecimal");
-
-#ifdef RUBY_LESS_THAN_186
-  ID_NEW_DATE = rb_intern("new0");
-#else
-  ID_NEW_DATE = rb_intern("new!");
-#endif
-  ID_RATIONAL = rb_intern("Rational");
-  ID_NEW = rb_intern("new");
-  ID_ESCAPE = rb_intern("escape_sql");
-  ID_LOG = rb_intern("log");
-
-  // Get references to the Extlib module
-  mExtlib = CONST_GET(rb_mKernel, "Extlib");
-  rb_cByteArray = CONST_GET(mExtlib, "ByteArray");
-
-  // Get references to the DataObjects module and its classes
-  mDO = CONST_GET(rb_mKernel, "DataObjects");
-  cDO_Quoting = CONST_GET(mDO, "Quoting");
-  cDO_Connection = CONST_GET(mDO, "Connection");
-  cDO_Command = CONST_GET(mDO, "Command");
-  cDO_Result = CONST_GET(mDO, "Result");
-  cDO_Reader = CONST_GET(mDO, "Reader");
-  cDO_Logger = CONST_GET(mDO, "Logger");
-  cDO_Logger_Message = CONST_GET(cDO_Logger, "Message");
-
-  // Initialize the DataObjects::Sqlite3 module, and define its classes
   mSqlite3 = rb_define_module_under(mDO, "Sqlite3");
-
-  eConnectionError = CONST_GET(mDO, "ConnectionError");
-  eDataError = CONST_GET(mDO, "DataError");
 
   cConnection = DRIVER_CLASS("Connection", cDO_Connection);
   rb_define_method(cConnection, "initialize", cConnection_initialize, 1);
@@ -793,30 +461,12 @@ void Init_do_sqlite3() {
   cReader = DRIVER_CLASS("Reader", cDO_Reader);
   rb_define_method(cReader, "close", cReader_close, 0);
   rb_define_method(cReader, "next!", cReader_next, 0);
-  rb_define_method(cReader, "values", cReader_values, 0);
+  rb_define_method(cReader, "values", cReader_values_sqlite, 0); // TODO: DRY?
   rb_define_method(cReader, "fields", cReader_fields, 0);
   rb_define_method(cReader, "field_count", cReader_field_count, 0);
 
-  rb_global_variable(&ID_NEW_DATE);
-  rb_global_variable(&ID_RATIONAL);
-  rb_global_variable(&ID_CONST_GET);
-  rb_global_variable(&ID_ESCAPE);
-  rb_global_variable(&ID_LOG);
-  rb_global_variable(&ID_NEW);
-
-  rb_global_variable(&rb_cDate);
-  rb_global_variable(&rb_cDateTime);
-  rb_global_variable(&rb_cBigDecimal);
-  rb_global_variable(&rb_cByteArray);
-
-  rb_global_variable(&mDO);
-  rb_global_variable(&cDO_Logger_Message);
-
   rb_global_variable(&cResult);
   rb_global_variable(&cReader);
-
-  rb_global_variable(&eConnectionError);
-  rb_global_variable(&eDataError);
 
   OPEN_FLAG_READONLY = rb_str_new2("read_only");
   rb_global_variable(&OPEN_FLAG_READONLY);

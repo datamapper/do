@@ -1,17 +1,14 @@
+#include <ruby.h>
+#include "common.h"
 #include "do_sqlite3.h"
 
-static VALUE ID_CONST_GET;
-static VALUE mDO;
-static VALUE mSqlite3;
-static VALUE eConnectionError;
-static VALUE cDO_Extension;
-static VALUE cExtension;
+VALUE cExtension;
 
 /*****************************************************/
 /* File used for providing extensions on the default */
 /* API that are driver specific.                     */
 /*****************************************************/
-static VALUE cExtension_enable_load_extension(VALUE self, VALUE on) {
+VALUE cExtension_enable_load_extension(VALUE self, VALUE on) {
   VALUE id_connection = rb_intern("connection");
 
   VALUE connection = rb_funcall(self, id_connection, 0);
@@ -37,7 +34,7 @@ static VALUE cExtension_enable_load_extension(VALUE self, VALUE on) {
   return Qtrue;
 }
 
-static VALUE cExtension_load_extension(VALUE self, VALUE path) {
+VALUE cExtension_load_extension(VALUE self, VALUE path) {
   VALUE id_connection = rb_intern("connection");
 
   VALUE connection = rb_funcall(self, id_connection, 0);
@@ -64,14 +61,11 @@ static VALUE cExtension_load_extension(VALUE self, VALUE path) {
     sqlite3_free(errmsg);
     rb_exc_raise(errexp);
   }
+
   return Qtrue;
 }
 
 void Init_do_sqlite3_extension() {
-  ID_CONST_GET = rb_intern("const_get");
-  mDO = CONST_GET(rb_mKernel, "DataObjects");
-  cDO_Extension = CONST_GET(mDO, "Extension");
-  mSqlite3 = rb_define_module_under(mDO, "Sqlite3");
   cExtension = DRIVER_CLASS("Extension", cDO_Extension);
   rb_define_method(cExtension, "load_extension", cExtension_load_extension, 1);
   rb_define_method(cExtension, "enable_load_extension", cExtension_enable_load_extension, 1);

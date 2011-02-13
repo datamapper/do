@@ -1,3 +1,5 @@
+#include <ruby.h>
+
 #ifdef _WIN32
 #define cCommand_execute cCommand_execute_sync
 #define do_int64 signed __int64
@@ -67,6 +69,7 @@ extern VALUE cDO_Result;
 extern VALUE cDO_Reader;
 extern VALUE cDO_Logger;
 extern VALUE cDO_Logger_Message;
+extern VALUE cDO_Extension;
 extern VALUE eConnectionError;
 extern VALUE eDataError;
 
