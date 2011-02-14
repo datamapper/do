@@ -189,13 +189,15 @@ VALUE cConnection_quote_string(VALUE self, VALUE string) {
 
   // Allocate space for the escaped version of 'string'
   // http://www.postgresql.org/docs/8.3/static/libpq-exec.html#LIBPQ-EXEC-ESCAPE-STRING
-  escaped = calloc((source_len * 2) + 3, sizeof(char));
+  if (!(escaped = calloc((source_len * 2) + 3, sizeof(char)))) {
+    return Qnil;
+  }
 
   // Escape 'source' using the current charset in use on the conection 'db'
   quoted_length = PQescapeStringConn(db, escaped + 1, source, source_len, NULL);
 
   // Wrap the escaped string in single-quotes, this is DO's convention
-  escaped[quoted_length + 1] = escaped[0] = '\'';
+  escaped[0] = escaped[quoted_length + 1] = '\'';
 
   result = do_str_new(escaped, quoted_length + 2, FIX2INT(rb_iv_get(self, "@encoding_id")), NULL);
 
