@@ -15,6 +15,15 @@ typedef signed __int64 do_int64;
 typedef signed long long int do_int64;
 #endif
 
+// Needed for defining error.h
+struct errcodes {
+  int error_no;
+  const char *error_name;
+  const char *exception;
+};
+
+#define ERRCODE(name,message)	{name, #name, message}
+
 // To store rb_intern values
 extern ID ID_NEW;
 extern ID ID_NEW_DATE;
@@ -110,6 +119,14 @@ static inline VALUE do_str_new2(const void *string, int encoding, void *internal
 #endif
 
     return new_string;
+}
+
+static inline void do_define_errors(VALUE scope, const struct errcodes *errors) {
+  const struct errcodes *e;
+
+  for (e = errors; e->error_name; e++) {
+    rb_const_set(scope, rb_intern(e->error_name), INT2NUM(e->error_no));
+  }
 }
 
 #endif

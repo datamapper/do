@@ -1,109 +1,83 @@
-#ifndef DO_SQLITE3_ERROR_H
-#define DO_SQLITE3_ERROR_H
+#ifndef _DO_SQLITE3_ERROR_H_
+#define _DO_SQLITE3_ERROR_H_
 
-static struct errcodes {
-  int  error_no;
-  const char *error_name;
-  const char *exception;
-} errors [] = {
+#include "common.h"
+
+static struct errcodes errors[] = {
 #ifdef SQLITE_ERROR
-  {    SQLITE_ERROR,
-      "SQLITE_ERROR", "SyntaxError"},
+  ERRCODE(SQLITE_ERROR, "SyntaxError"),
 #endif
 #ifdef SQLITE_INTERNAL
-  {    SQLITE_INTERNAL,
-      "SQLITE_INTERNAL", "SQLError"},
+  ERRCODE(SQLITE_INTERNAL, "SQLError"),
 #endif
 #ifdef SQLITE_PERM
-  {    SQLITE_PERM,
-      "SQLITE_PERM", "ConnectionError"},
+  ERRCODE(SQLITE_PERM, "ConnectionError"),
 #endif
 #ifdef SQLITE_ABORT
-  {    SQLITE_ABORT,
-      "SQLITE_ABORT", "ConnectionError"},
+  ERRCODE(SQLITE_ABORT, "ConnectionError"),
 #endif
 #ifdef SQLITE_BUSY
-  {    SQLITE_BUSY,
-      "SQLITE_BUSY", "ConnectionError"},
+  ERRCODE(SQLITE_BUSY, "ConnectionError"),
 #endif
 
 #ifdef SQLITE_LOCKED
-  {    SQLITE_LOCKED,
-      "SQLITE_LOCKED", "ConnectionError"},
+  ERRCODE(SQLITE_LOCKED, "ConnectionError"),
 #endif
 #ifdef SQLITE_NOMEM
-  {    SQLITE_NOMEM,
-      "SQLITE_NOMEM", "ConnectionError"},
+  ERRCODE(SQLITE_NOMEM, "ConnectionError"),
 #endif
 #ifdef SQLITE_READONLY
-  {    SQLITE_READONLY,
-      "SQLITE_READONLY", "ConnectionError"},
+  ERRCODE(SQLITE_READONLY, "ConnectionError"),
 #endif
 #ifdef SQLITE_INTERRUPT
-  {    SQLITE_INTERRUPT,
-      "SQLITE_INTERRUPT", "ConnectionError"},
+  ERRCODE(SQLITE_INTERRUPT, "ConnectionError"),
 #endif
 #ifdef SQLITE_IOERR
-  {    SQLITE_IOERR,
-      "SQLITE_IOERR", "ConnectionError"},
+  ERRCODE(SQLITE_IOERR, "ConnectionError"),
 #endif
 #ifdef SQLITE_CORRUPT
-  {    SQLITE_CORRUPT,
-      "SQLITE_CORRUPT", "ConnectionError"},
+  ERRCODE(SQLITE_CORRUPT, "ConnectionError"),
 #endif
 #ifdef SQLITE_FULL
-  {    SQLITE_FULL,
-      "SQLITE_FULL", "ConnectionError"},
+  ERRCODE(SQLITE_FULL, "ConnectionError"),
 #endif
 #ifdef SQLITE_CANTOPEN
-  {    SQLITE_CANTOPEN,
-      "SQLITE_CANTOPEN", "ConnectionError"},
+  ERRCODE(SQLITE_CANTOPEN, "ConnectionError"),
 #endif
 #ifdef SQLITE_EMPTY
-  {    SQLITE_EMPTY,
-      "SQLITE_EMPTY", "ConnectionError"},
+  ERRCODE(SQLITE_EMPTY, "ConnectionError"),
 #endif
 #ifdef SQLITE_SCHEMA
-  {    SQLITE_SCHEMA,
-      "SQLITE_SCHEMA", "DataError"},
+  ERRCODE(SQLITE_SCHEMA, "DataError"),
 #endif
 #ifdef SQLITE_TOOBIG
-  {    SQLITE_TOOBIG,
-      "SQLITE_TOOBIG", "DataError"},
+  ERRCODE(SQLITE_TOOBIG, "DataError"),
 #endif
 #ifdef SQLITE_MISMATCH
-  {    SQLITE_MISMATCH,
-      "SQLITE_MISMATCH", "DataError"},
+  ERRCODE(SQLITE_MISMATCH, "DataError"),
 #endif
 #ifdef SQLITE_CONSTRAINT
-  {    SQLITE_CONSTRAINT,
-      "SQLITE_CONSTRAINT", "IntegrityError"},
+  ERRCODE(SQLITE_CONSTRAINT, "IntegrityError"),
 #endif
 #ifdef SQLITE_MISUSE
-  {    SQLITE_MISUSE,
-      "SQLITE_MISUSE", "SQLError"},
+  ERRCODE(SQLITE_MISUSE, "SQLError"),
 #endif
 
 #ifdef SQLITE_NOLFS
-  {    SQLITE_NOLFS,
-      "SQLITE_NOLFS", "ConnectionError"},
+  ERRCODE(SQLITE_NOLFS, "ConnectionError"),
 #endif
 #ifdef SQLITE_FORMAT
-  {    SQLITE_FORMAT,
-      "SQLITE_FORMAT", "SyntaxError"},
+  ERRCODE(SQLITE_FORMAT, "SyntaxError"),
 #endif
 #ifdef SQLITE_RANGE
-  {    SQLITE_RANGE,
-      "SQLITE_RANGE", "DataError"},
+  ERRCODE(SQLITE_RANGE, "DataError"),
 #endif
 #ifdef SQLITE_NOTADB
-  {    SQLITE_NOTADB,
-      "SQLITE_NOTADB", "ConnectionError"},
+  ERRCODE(SQLITE_NOTADB, "ConnectionError"),
 #endif
 
 #ifdef SQLITE_ROW
-  {    SQLITE_ROW,
-      "SQLITE_ROW", "SyntaxError"},
+  ERRCODE(SQLITE_ROW, "SyntaxError"),
 #endif
   {0, NULL, NULL}
 };

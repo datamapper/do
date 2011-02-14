@@ -700,9 +700,5 @@ void Init_do_mysql() {
   rb_global_variable(&cResult);
   rb_global_variable(&cReader);
 
-  struct errcodes *errs;
-
-  for (errs = errors; errs->error_name; errs++) {
-    rb_const_set(mMysql, rb_intern(errs->error_name), INT2NUM(errs->error_no));
-  }
+  do_define_errors(mMysql, errors);
 }

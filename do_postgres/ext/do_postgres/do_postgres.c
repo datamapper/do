@@ -717,9 +717,5 @@ void Init_do_postgres() {
   rb_global_variable(&cResult);
   rb_global_variable(&cReader);
 
-  struct errcodes *errs;
-
-  for (errs = errors; errs->error_name; errs++) {
-    rb_const_set(mPostgres, rb_intern(errs->error_name), INT2NUM(errs->error_no));
-  }
+  do_define_errors(mPostgres, errors);
 }
