@@ -131,4 +131,6 @@ static inline void do_define_errors(VALUE scope, const struct errcodes *errors) 
 
 extern void do_raise_error(VALUE self, const struct errcodes *errors, int errnum, const char *message, VALUE query, VALUE state);
 
+extern VALUE do_typecast(const char *value, long length, const VALUE type, int encoding);
+
 #endif

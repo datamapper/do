@@ -24,12 +24,11 @@ void raise_error(VALUE self, sqlite3 *result, VALUE query) {
 }
 
 VALUE typecast(sqlite3_stmt *stmt, int i, VALUE type, int encoding) {
-  VALUE ruby_value = Qnil;
   int original_type = sqlite3_column_type(stmt, i);
-  int length        = sqlite3_column_bytes(stmt, i);
+  int length = sqlite3_column_bytes(stmt, i);
 
   if (original_type == SQLITE_NULL) {
-    return ruby_value;
+    return Qnil;
   }
 
 #ifdef HAVE_RUBY_ENCODING_H

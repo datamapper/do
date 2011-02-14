@@ -75,34 +75,7 @@ VALUE infer_ruby_type(Oid type) {
 }
 
 VALUE typecast(const char *value, long length, const VALUE type, int encoding) {
-#ifdef HAVE_RUBY_ENCODING_H
-  rb_encoding *internal_encoding = rb_default_internal_encoding();
-#else
-  void *internal_encoding = NULL;
-#endif
-
-  if (type == rb_cInteger) {
-    return rb_cstr2inum(value, 10);
-  }
-  else if (type == rb_cString) {
-    return do_str_new(value, length, encoding, internal_encoding);
-  }
-  else if (type == rb_cFloat) {
-    return rb_float_new(rb_cstr_to_dbl(value, Qfalse));
-  }
-  else if (type == rb_cBigDecimal) {
-    return rb_funcall(rb_cBigDecimal, ID_NEW, 1, rb_str_new(value, length));
-  }
-  else if (type == rb_cDate) {
-    return parse_date(value);
-  }
-  else if (type == rb_cDateTime) {
-    return parse_date_time(value);
-  }
-  else if (type == rb_cTime) {
-    return parse_time(value);
-  }
-  else if (type == rb_cTrueClass) {
+  if (type == rb_cTrueClass) {
     return *value == 't' ? Qtrue : Qfalse;
   }
   else if (type == rb_cByteArray) {
@@ -113,14 +86,8 @@ VALUE typecast(const char *value, long length, const VALUE type, int encoding) {
     PQfreemem(unescaped);
     return byte_array;
   }
-  else if (type == rb_cClass) {
-    return rb_funcall(mDO, rb_intern("full_const_get"), 1, rb_str_new(value, length));
-  }
-  else if (type == rb_cNilClass) {
-    return Qnil;
-  }
   else {
-    return do_str_new(value, length, encoding, internal_encoding);
+    return do_typecast(value, length, type, encoding);
   }
 }
 
