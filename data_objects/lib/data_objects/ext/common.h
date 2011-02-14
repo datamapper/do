@@ -1,3 +1,6 @@
+#ifndef _DO_COMMON_H_
+#define _DO_COMMON_H_
+
 #include <ruby.h>
 
 #ifdef HAVE_RUBY_ENCODING_H
@@ -108,3 +111,5 @@ static inline VALUE do_str_new2(const void *string, int encoding, void *internal
 
     return new_string;
 }
+
+#endif
