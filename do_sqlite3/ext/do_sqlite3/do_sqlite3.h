@@ -9,8 +9,6 @@
 #include <sqlite3.h>
 #include "compat.h"
 
-#define DRIVER_CLASS(klass, parent) (rb_define_class_under(mSqlite3, klass, parent))
-
 #ifndef HAVE_SQLITE3_PREPARE_V2
 #define sqlite3_prepare_v2 sqlite3_prepare
 #endif

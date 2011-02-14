@@ -71,7 +71,7 @@ VALUE cExtension_load_extension(VALUE self, VALUE path) {
 }
 
 void Init_do_sqlite3_extension() {
-  cExtension = DRIVER_CLASS("Extension", cDO_Extension);
+  cExtension = rb_define_class_under(mSqlite3, "Extension", cDO_Extension);
   rb_define_method(cExtension, "load_extension", cExtension_load_extension, 1);
   rb_define_method(cExtension, "enable_load_extension", cExtension_enable_load_extension, 1);
 }

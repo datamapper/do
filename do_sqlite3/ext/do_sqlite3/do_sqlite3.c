@@ -440,7 +440,7 @@ void Init_do_sqlite3() {
 
   mSqlite3 = rb_define_module_under(mDO, "Sqlite3");
 
-  cConnection = DRIVER_CLASS("Connection", cDO_Connection);
+  cConnection = rb_define_class_under(mSqlite3, "Connection", cDO_Connection);
   rb_define_method(cConnection, "initialize", cConnection_initialize, 1);
   rb_define_method(cConnection, "dispose", cConnection_dispose, 0);
   rb_define_method(cConnection, "quote_boolean", cConnection_quote_boolean, 1);
@@ -450,14 +450,14 @@ void Init_do_sqlite3() {
   rb_define_method(cConnection, "enable_load_extension", cConnection_enable_load_extension, 1);
   rb_define_method(cConnection, "load_extension", cConnection_load_extension, 1);
 
-  cCommand = DRIVER_CLASS("Command", cDO_Command);
+  cCommand = rb_define_class_under(mSqlite3, "Command", cDO_Command);
   rb_define_method(cCommand, "set_types", cCommand_set_types, -1);
   rb_define_method(cCommand, "execute_non_query", cCommand_execute_non_query, -1);
   rb_define_method(cCommand, "execute_reader", cCommand_execute_reader, -1);
 
-  cResult = DRIVER_CLASS("Result", cDO_Result);
+  cResult = rb_define_class_under(mSqlite3, "Result", cDO_Result);
 
-  cReader = DRIVER_CLASS("Reader", cDO_Reader);
+  cReader = rb_define_class_under(mSqlite3, "Reader", cDO_Reader);
   rb_define_method(cReader, "close", cReader_close, 0);
   rb_define_method(cReader, "next!", cReader_next, 0);
   rb_define_method(cReader, "values", cReader_values_sqlite, 0); // TODO: DRY?
