@@ -52,7 +52,12 @@ VALUE cExtension_load_extension(VALUE self, VALUE path) {
   }
 
   const char *extension_path  = rb_str_ptr_readonly(path);
-  char* errmsg = sqlite3_malloc(1024);
+  char *errmsg;
+
+  if (!(errmsg = sqlite3_malloc(1024))) {
+    return Qfalse;
+  }
+
   int status = sqlite3_load_extension(db, extension_path, 0, &errmsg);
 
   if (status != SQLITE_OK) {
