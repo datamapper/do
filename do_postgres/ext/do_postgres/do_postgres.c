@@ -179,19 +179,18 @@ VALUE cConnection_dispose(VALUE self) {
 
 VALUE cConnection_quote_string(VALUE self, VALUE string) {
   PGconn *db = DATA_PTR(rb_iv_get(self, "@connection"));
-
   const char *source = rb_str_ptr_readonly(string);
   size_t source_len  = rb_str_len(string);
-
   char *escaped;
-  size_t quoted_length = 0;
-  VALUE result;
 
   // Allocate space for the escaped version of 'string'
   // http://www.postgresql.org/docs/8.3/static/libpq-exec.html#LIBPQ-EXEC-ESCAPE-STRING
   if (!(escaped = calloc((source_len * 2) + 3, sizeof(char)))) {
     return Qnil;
   }
+
+  size_t quoted_length;
+  VALUE result;
 
   // Escape 'source' using the current charset in use on the conection 'db'
   quoted_length = PQescapeStringConn(db, escaped + 1, source, source_len, NULL);
@@ -200,7 +199,6 @@ VALUE cConnection_quote_string(VALUE self, VALUE string) {
   escaped[0] = escaped[quoted_length + 1] = '\'';
 
   result = do_str_new(escaped, quoted_length + 2, FIX2INT(rb_iv_get(self, "@encoding_id")), NULL);
-
   free(escaped);
   return result;
 }
