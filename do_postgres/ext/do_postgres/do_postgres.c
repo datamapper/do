@@ -450,7 +450,11 @@ void full_connect(VALUE self, PGconn *db) {
   PGresult *result;
 
   if (search_path) {
-    char *search_path_query = calloc(256, sizeof(char));
+    char *search_path_query;
+    
+    if (!(search_path_query = calloc(256, sizeof(char)))) {
+      return;
+    }
 
     snprintf(search_path_query, 256, "set search_path to %s;", search_path);
 
