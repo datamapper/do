@@ -35,8 +35,6 @@
 
 #include "common.h"
 
-#define DRIVER_CLASS(klass, parent) (rb_define_class_under(mPostgres, klass, parent))
-
 VALUE mPostgres;
 VALUE mEncoding;
 VALUE cConnection;
@@ -695,21 +693,21 @@ void Init_do_postgres() {
   mPostgres = rb_define_module_under(mDO, "Postgres");
   mEncoding = rb_define_module_under(mPostgres, "Encoding");
 
-  cConnection = DRIVER_CLASS("Connection", cDO_Connection);
+  cConnection = rb_define_class_under(mPostgres, "Connection", cDO_Connection);
   rb_define_method(cConnection, "initialize", cConnection_initialize, 1);
   rb_define_method(cConnection, "dispose", cConnection_dispose, 0);
   rb_define_method(cConnection, "character_set", cConnection_character_set , 0);
   rb_define_method(cConnection, "quote_string", cConnection_quote_string, 1);
   rb_define_method(cConnection, "quote_byte_array", cConnection_quote_byte_array, 1);
 
-  cCommand = DRIVER_CLASS("Command", cDO_Command);
+  cCommand = rb_define_class_under(mPostgres, "Command", cDO_Command);
   rb_define_method(cCommand, "set_types", cCommand_set_types, -1);
   rb_define_method(cCommand, "execute_non_query", cCommand_execute_non_query, -1);
   rb_define_method(cCommand, "execute_reader", cCommand_execute_reader, -1);
 
-  cResult = DRIVER_CLASS("Result", cDO_Result);
+  cResult = rb_define_class_under(mPostgres, "Result", cDO_Result);
 
-  cReader = DRIVER_CLASS("Reader", cDO_Reader);
+  cReader = rb_define_class_under(mPostgres, "Reader", cDO_Reader);
   rb_define_method(cReader, "close", cReader_close, 0);
   rb_define_method(cReader, "next!", cReader_next, 0);
   rb_define_method(cReader, "values", cReader_values, 0);
