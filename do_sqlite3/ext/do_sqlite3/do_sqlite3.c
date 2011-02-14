@@ -163,7 +163,7 @@ int flags_from_uri(VALUE uri) {
 
 VALUE cConnection_initialize(VALUE self, VALUE uri) {
   VALUE path = rb_funcall(uri, rb_intern("path"), 0);
-  sqlite3 *db;
+  sqlite3 *db = NULL;
   int ret;
 
 #ifdef HAVE_SQLITE3_OPEN_V2
@@ -267,7 +267,7 @@ VALUE cConnection_load_extension(VALUE self, VALUE string) {
   }
 
   const char *extension_name  = rb_str_ptr_readonly(string);
-  char *errmsg;
+  char *errmsg = NULL;
   int status = sqlite3_load_extension(db, extension_name, 0, &errmsg);
 
   if (status != SQLITE_OK) {
@@ -317,7 +317,7 @@ VALUE cCommand_execute_reader(int argc, VALUE *argv, VALUE self) {
     rb_raise(eConnectionError, "This connection has already been closed.");
   }
 
-  sqlite3 *db;
+  sqlite3 *db = NULL;
 
   Data_Get_Struct(sqlite3_connection, sqlite3, db);
 
@@ -368,7 +368,7 @@ VALUE cReader_close(VALUE self) {
   VALUE reader_obj = rb_iv_get(self, "@reader");
 
   if (reader_obj != Qnil) {
-    sqlite3_stmt *reader;
+    sqlite3_stmt *reader = NULL;
 
     Data_Get_Struct(reader_obj, sqlite3_stmt, reader);
     sqlite3_finalize(reader);
@@ -384,7 +384,7 @@ VALUE cReader_next(VALUE self) {
     return Qfalse;
   }
 
-  sqlite3_stmt *reader;
+  sqlite3_stmt *reader = NULL;
   int result;
 
   Data_Get_Struct(rb_iv_get(self, "@reader"), sqlite3_stmt, reader);
