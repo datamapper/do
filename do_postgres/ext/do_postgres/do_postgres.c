@@ -125,26 +125,13 @@ VALUE typecast(const char *value, long length, const VALUE type, int encoding) {
 }
 
 void raise_error(VALUE self, PGresult *result, VALUE query) {
-  char *message = PQresultErrorMessage(result);
-  char *sqlstate = PQresultErrorField(result, PG_DIAG_SQLSTATE);
-  int postgres_errno = MAKE_SQLSTATE(sqlstate[0], sqlstate[1], sqlstate[2], sqlstate[3], sqlstate[4]);
-  const char *exception_type = do_lookup_error(errors,postgres_errno);
+  const char *message = PQresultErrorMessage(result);
+  char *sql_state = PQresultErrorField(result, PG_DIAG_SQLSTATE);
+  int postgres_errno = MAKE_SQLSTATE(sql_state[0], sql_state[1], sql_state[2], sql_state[3], sql_state[4]);
 
   PQclear(result);
 
-  VALUE uri = rb_funcall(rb_iv_get(self, "@connection"), rb_intern("to_s"), 0);
-  VALUE exception = rb_funcall(
-    do_const_get(mDO, exception_type),
-    ID_NEW,
-    5,
-    rb_str_new2(message),
-    INT2NUM(postgres_errno),
-    rb_str_new2(sqlstate),
-    query,
-    uri
-  );
-
-  rb_exc_raise(exception);
+  do_raise_error(self, errors, postgres_errno, message, query, rb_str_new2(sql_state));
 }
 
 /* ====== Public API ======= */

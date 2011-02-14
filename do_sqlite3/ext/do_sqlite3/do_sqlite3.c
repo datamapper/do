@@ -16,23 +16,11 @@ VALUE OPEN_FLAG_NO_MUTEX;
 VALUE OPEN_FLAG_FULL_MUTEX;
 
 void raise_error(VALUE self, sqlite3 *result, VALUE query) {
-  int sqlite3_errno = sqlite3_errcode(result);
+  int errnum = sqlite3_errcode(result);
   const char *message = sqlite3_errmsg(result);
-  const char *exception_type = do_lookup_error(errors,sqlite3_errno);
+  VALUE sql_state = rb_str_new2("");
 
-  VALUE uri = rb_funcall(rb_iv_get(self, "@connection"), rb_intern("to_s"), 0);
-  VALUE exception = rb_funcall(
-    do_const_get(mDO, exception_type),
-    ID_NEW,
-    5,
-    rb_str_new2(message),
-    INT2NUM(sqlite3_errno),
-    rb_str_new2(""),
-    query,
-    uri
-  );
-
-  rb_exc_raise(exception);
+  do_raise_error(self, errors, errnum, message, query, sql_state);
 }
 
 VALUE typecast(sqlite3_stmt *stmt, int i, VALUE type, int encoding) {

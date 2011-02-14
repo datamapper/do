@@ -131,29 +131,15 @@ VALUE typecast(const char *value, long length, const VALUE type, int encoding) {
 }
 
 void raise_error(VALUE self, MYSQL *db, VALUE query) {
-  int mysql_error_code = mysql_errno(db);
-  char *mysql_error_message = (char *)mysql_error(db);
-  const char *exception_type = do_lookup_error(errors,mysql_error_code);
-
-  VALUE uri = rb_funcall(rb_iv_get(self, "@connection"), rb_intern("to_s"), 0);
+  int errnum = mysql_errno(db);
+  const char *message = mysql_error(db);
   VALUE sql_state = Qnil;
 
 #ifdef HAVE_MYSQL_SQLSTATE
   sql_state = rb_str_new2(mysql_sqlstate(db));
 #endif
 
-  VALUE exception = rb_funcall(
-    do_const_get(mDO, exception_type),
-    ID_NEW,
-    5,
-    rb_str_new2(mysql_error_message),
-    INT2NUM(mysql_error_code),
-    sql_state,
-    query,
-    uri
-  );
-
-  rb_exc_raise(exception);
+  do_raise_error(self, errors, errnum, message, query, sql_state);
 }
 
 #ifdef _WIN32
