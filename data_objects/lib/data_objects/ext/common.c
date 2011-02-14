@@ -57,6 +57,34 @@ void data_objects_debug(VALUE connection, VALUE string, struct timeval *start) {
   rb_funcall(connection, ID_LOG, 1, message);
 }
 
+void do_raise_error(VALUE self, const struct errcodes *errors, int errnum, const char *message, VALUE query, VALUE state) {
+  const char *exception_type = "SQLError";
+  const struct errcodes *e;
+
+  for (e = errors; e->error_name; e++) {
+    if (e->error_no == errnum) {
+      // return the exception type for the matching error
+      exception_type = e->exception;
+      break;
+    }
+  }
+
+  VALUE uri = rb_funcall(rb_iv_get(self, "@connection"), rb_intern("to_s"), 0);
+
+  VALUE exception = rb_funcall(
+    do_const_get(mDO, exception_type),
+    ID_NEW,
+    5,
+    rb_str_new2(message),
+    INT2NUM(errnum),
+    state,
+    query,
+    uri
+  );
+
+  rb_exc_raise(exception);
+}
+
 char *get_uri_option(VALUE query_hash, const char *key) {
   VALUE query_value;
   char *value = NULL;

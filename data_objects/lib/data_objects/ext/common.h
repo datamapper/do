@@ -129,36 +129,6 @@ static inline void do_define_errors(VALUE scope, const struct errcodes *errors) 
   }
 }
 
-static inline const char * do_lookup_error(const struct errcodes *errors, int errnum) {
-  const struct errcodes *e;
-
-  for (e = errors; e->error_name; e++) {
-    if (e->error_no == errnum) {
-      // return the exception type for the matching error
-      return e->exception;
-    }
-  }
-
-  // default exception type
-  return "SQLError";
-}
-
-static inline void do_raise_error(VALUE self, const struct errcodes *errors, int errnum, const char *message, VALUE query, VALUE state) {
-  const char *exception_type = do_lookup_error(errors,errnum);
-  VALUE uri = rb_funcall(rb_iv_get(self, "@connection"), rb_intern("to_s"), 0);
-
-  VALUE exception = rb_funcall(
-    do_const_get(mDO, exception_type),
-    ID_NEW,
-    5,
-    rb_str_new2(message),
-    INT2NUM(errnum),
-    state,
-    query,
-    uri
-  );
-
-  rb_exc_raise(exception);
-}
+extern void do_raise_error(VALUE self, const struct errcodes *errors, int errnum, const char *message, VALUE query, VALUE state);
 
 #endif
