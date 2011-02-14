@@ -221,7 +221,7 @@ VALUE cConnection_quote_byte_array(VALUE self, VALUE string) {
     return Qnil;
   }
 
-  memcpy(escaped_quotes + 1, escaped, quoted_length);
+  memcpy(escaped_quotes + 1, escaped, quoted_length * sizeof(unsigned char));
 
   // Wrap the escaped string in single-quotes, this is DO's convention (replace trailing \0)
   escaped_quotes[0] = escaped_quotes[quoted_length] = '\'';
