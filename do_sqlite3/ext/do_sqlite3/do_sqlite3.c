@@ -479,4 +479,6 @@ void Init_do_sqlite3() {
   rb_global_variable(&OPEN_FLAG_FULL_MUTEX);
 
   Init_do_sqlite3_extension();
+
+  do_define_errors(mSqlite3, errors);
 }
