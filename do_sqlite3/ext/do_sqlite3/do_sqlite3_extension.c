@@ -10,10 +10,7 @@ VALUE cExtension;
 /*****************************************************/
 VALUE cExtension_enable_load_extension(VALUE self, VALUE on) {
   VALUE id_connection = rb_intern("connection");
-
   VALUE connection = rb_funcall(self, id_connection, 0);
-  sqlite3 *db;
-  int status;
 
   if (connection == Qnil) { return Qfalse; }
 
@@ -22,26 +19,24 @@ VALUE cExtension_enable_load_extension(VALUE self, VALUE on) {
 
   if (connection == Qnil) { return Qfalse; }
 
-  db = DATA_PTR(connection);
+  sqlite3 *db;
 
-  if(db == NULL) { return Qfalse; }
+  if (!(db = DATA_PTR(connection))) {
+    return Qfalse;
+  }
 
-  status = sqlite3_enable_load_extension(db, on == Qtrue ? 1 : 0);
+  int status = sqlite3_enable_load_extension(db, on == Qtrue ? 1 : 0);
 
-  if ( status != SQLITE_OK ) {
+  if (status != SQLITE_OK) {
     rb_raise(eConnectionError, "Couldn't enable extension loading");
   }
+
   return Qtrue;
 }
 
 VALUE cExtension_load_extension(VALUE self, VALUE path) {
   VALUE id_connection = rb_intern("connection");
-
   VALUE connection = rb_funcall(self, id_connection, 0);
-  sqlite3 *db;
-  const char *extension_path  = rb_str_ptr_readonly(path);
-  char* errmsg = sqlite3_malloc(1024);
-  int status;
 
   if (connection == Qnil) { return Qfalse; }
 
@@ -50,14 +45,19 @@ VALUE cExtension_load_extension(VALUE self, VALUE path) {
 
   if (connection == Qnil) { return Qfalse; }
 
-  db = DATA_PTR(connection);
+  sqlite3 *db;
 
-  if(db == NULL) { return Qfalse; }
+  if (!(db = DATA_PTR(connection))) {
+    return Qfalse;
+  }
 
-  status = sqlite3_load_extension(db, extension_path, 0, &errmsg);
+  const char *extension_path  = rb_str_ptr_readonly(path);
+  char* errmsg = sqlite3_malloc(1024);
+  int status = sqlite3_load_extension(db, extension_path, 0, &errmsg);
 
-  if ( status != SQLITE_OK ) {
+  if (status != SQLITE_OK) {
     VALUE errexp = rb_exc_new2(eConnectionError, errmsg);
+
     sqlite3_free(errmsg);
     rb_exc_raise(errexp);
   }
