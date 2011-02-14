@@ -205,7 +205,6 @@ VALUE cConnection_quote_string(VALUE self, VALUE string) {
 
 VALUE cConnection_quote_byte_array(VALUE self, VALUE string) {
   PGconn *db = DATA_PTR(rb_iv_get(self, "@connection"));
-
   const unsigned char *source = (unsigned char *)rb_str_ptr_readonly(string);
   size_t source_len = rb_str_len(string);
 
@@ -217,7 +216,11 @@ VALUE cConnection_quote_byte_array(VALUE self, VALUE string) {
   // Allocate space for the escaped version of 'string'
   // http://www.postgresql.org/docs/8.3/static/libpq-exec.html#LIBPQ-EXEC-ESCAPE-STRING
   escaped = PQescapeByteaConn(db, source, source_len, &quoted_length);
-  escaped_quotes = (unsigned char *)calloc(quoted_length + 1, sizeof(unsigned char));
+
+  if (!(escaped_quotes = calloc(quoted_length + 1, sizeof(unsigned char)))) {
+    return Qnil;
+  }
+
   memcpy(escaped_quotes + 1, escaped, quoted_length);
 
   // Wrap the escaped string in single-quotes, this is DO's convention (replace trailing \0)
