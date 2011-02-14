@@ -75,10 +75,10 @@ char *get_uri_option(VALUE query_hash, const char *key) {
 }
 
 void assert_file_exists(char *file, const char *message) {
-  if (!file) { return; }
-
-  if (rb_funcall(rb_cFile, rb_intern("exist?"), 1, rb_str_new2(file)) == Qfalse) {
-    rb_raise(rb_eArgError, "%s", message);
+  if (file) {
+    if (rb_funcall(rb_cFile, rb_intern("exist?"), 1, rb_str_new2(file)) == Qfalse) {
+      rb_raise(rb_eArgError, "%s", message);
+    }
   }
 }
 
