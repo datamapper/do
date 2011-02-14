@@ -18,16 +18,7 @@ VALUE OPEN_FLAG_FULL_MUTEX;
 void raise_error(VALUE self, sqlite3 *result, VALUE query) {
   int sqlite3_errno = sqlite3_errcode(result);
   const char *message = sqlite3_errmsg(result);
-  const char *exception_type = "SQLError";
-
-  struct errcodes *errs;
-
-  for (errs = errors; errs->error_name; errs++) {
-    if (errs->error_no == sqlite3_errno) {
-      exception_type = errs->exception;
-      break;
-    }
-  }
+  const char *exception_type = do_lookup_error(errors,sqlite3_errno);
 
   VALUE uri = rb_funcall(rb_iv_get(self, "@connection"), rb_intern("to_s"), 0);
   VALUE exception = rb_funcall(

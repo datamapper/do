@@ -129,4 +129,18 @@ static inline void do_define_errors(VALUE scope, const struct errcodes *errors) 
   }
 }
 
+static inline const char * do_lookup_error(const struct errcodes *errors, int errnum) {
+  const struct errcodes *e;
+
+  for (e = errors; e->error_name; e++) {
+    if (e->error_no == errnum) {
+      // return the exception type for the matching error
+      return e->exception;
+    }
+  }
+
+  // default exception type
+  return "SQLError";
+}
+
 #endif

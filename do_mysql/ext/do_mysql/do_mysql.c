@@ -133,16 +133,7 @@ VALUE typecast(const char *value, long length, const VALUE type, int encoding) {
 void raise_error(VALUE self, MYSQL *db, VALUE query) {
   int mysql_error_code = mysql_errno(db);
   char *mysql_error_message = (char *)mysql_error(db);
-
-  const char *exception_type = "SQLError";
-  const struct errcodes *errs;
-
-  for (errs = errors; errs->error_name; errs++) {
-    if (errs->error_no == mysql_error_code) {
-      exception_type = errs->exception;
-      break;
-    }
-  }
+  const char *exception_type = do_lookup_error(errors,mysql_error_code);
 
   VALUE uri = rb_funcall(rb_iv_get(self, "@connection"), rb_intern("to_s"), 0);
   VALUE sql_state = Qnil;

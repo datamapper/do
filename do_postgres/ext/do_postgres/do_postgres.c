@@ -128,17 +128,9 @@ void raise_error(VALUE self, PGresult *result, VALUE query) {
   char *message = PQresultErrorMessage(result);
   char *sqlstate = PQresultErrorField(result, PG_DIAG_SQLSTATE);
   int postgres_errno = MAKE_SQLSTATE(sqlstate[0], sqlstate[1], sqlstate[2], sqlstate[3], sqlstate[4]);
-  const char *exception_type = "SQLError";
-  struct errcodes *errs;
+  const char *exception_type = do_lookup_error(errors,postgres_errno);
 
   PQclear(result);
-
-  for (errs = errors; errs->error_name; errs++) {
-    if(errs->error_no == postgres_errno) {
-      exception_type = errs->exception;
-      break;
-    }
-  }
 
   VALUE uri = rb_funcall(rb_iv_get(self, "@connection"), rb_intern("to_s"), 0);
   VALUE exception = rb_funcall(
