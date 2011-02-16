@@ -4,7 +4,7 @@
 #include <ctype.h>
 #include <time.h>
 
-#include "common.h"
+#include "do_common.h"
 
 /*
  * Common variables ("globals")
