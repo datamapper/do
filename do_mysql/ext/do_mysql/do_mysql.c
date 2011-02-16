@@ -10,7 +10,7 @@
 #include "compat.h"
 #include "error.h"
 
-#include "common.h"
+#include "do_common.h"
 
 #ifndef HAVE_CONST_MYSQL_TYPE_STRING
 #define HAVE_OLD_MYSQL_VERSION

@@ -33,7 +33,7 @@
 #include "error.h"
 #include "compat.h"
 
-#include "common.h"
+#include "do_common.h"
 
 VALUE mPostgres;
 VALUE mEncoding;

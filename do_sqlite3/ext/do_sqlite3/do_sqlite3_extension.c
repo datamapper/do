@@ -1,5 +1,5 @@
 #include <ruby.h>
-#include "common.h"
+#include "do_common.h"
 #include "do_sqlite3.h"
 
 VALUE cExtension;

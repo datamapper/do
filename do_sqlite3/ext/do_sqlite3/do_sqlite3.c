@@ -1,7 +1,7 @@
 #include "do_sqlite3.h"
 #include "error.h"
 
-#include "common.h"
+#include "do_common.h"
 
 VALUE mSqlite3;
 VALUE cConnection;

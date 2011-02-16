@@ -1,7 +1,7 @@
 #ifndef _DO_SQLITE3_ERROR_H_
 #define _DO_SQLITE3_ERROR_H_
 
-#include "common.h"
+#include "do_common.h"
 
 static struct errcodes errors[] = {
 #ifdef SQLITE_ERROR
