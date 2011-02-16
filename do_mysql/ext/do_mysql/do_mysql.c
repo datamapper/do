@@ -447,7 +447,7 @@ VALUE cConnection_quote_string(VALUE self, VALUE string) {
   escaped[0] = escaped[quoted_length + 1] = '\'';
   // We don't want to use the internal encoding, because this needs
   // to go into the database in the connection encoding
-  result = do_str_new(escaped, quoted_length + 2, FIX2INT(rb_iv_get(self, "@encoding_id")), NULL);
+  result = DO_STR_NEW(escaped, quoted_length + 2, FIX2INT(rb_iv_get(self, "@encoding_id")), NULL);
 
   free(escaped);
   return result;
@@ -456,7 +456,7 @@ VALUE cConnection_quote_string(VALUE self, VALUE string) {
 VALUE cCommand_execute_non_query(int argc, VALUE *argv, VALUE self) {
   VALUE connection = rb_iv_get(self, "@connection");
   VALUE mysql_connection = rb_iv_get(connection, "@connection");
-  
+
   if (mysql_connection == Qnil) {
     rb_raise(eConnectionError, "This connection has already been closed.");
   }

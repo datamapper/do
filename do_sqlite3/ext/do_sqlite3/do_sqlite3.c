@@ -61,7 +61,7 @@ VALUE typecast(sqlite3_stmt *stmt, int i, VALUE type, int encoding) {
     return LL2NUM(sqlite3_column_int64(stmt, i));
   }
   else if (type == rb_cString) {
-    return do_str_new(sqlite3_column_text(stmt, i), length, encoding, internal_encoding);
+    return DO_STR_NEW((char*)sqlite3_column_text(stmt, i), length, encoding, internal_encoding);
   }
   else if (type == rb_cFloat) {
     return rb_float_new(sqlite3_column_double(stmt, i));
@@ -91,7 +91,7 @@ VALUE typecast(sqlite3_stmt *stmt, int i, VALUE type, int encoding) {
     return Qnil;
   }
   else {
-    return do_str_new(sqlite3_column_text(stmt, i), length, encoding, internal_encoding);
+    return DO_STR_NEW((char*)sqlite3_column_text(stmt, i), length, encoding, internal_encoding);
   }
 }
 

@@ -376,7 +376,7 @@ VALUE cCommand_set_types(int argc, VALUE *argv, VALUE self) {
         if (TYPE(sub_entry) == T_CLASS) {
           rb_ary_push(type_strings, sub_entry);
         }
-	else {
+    else {
           rb_raise(rb_eArgError, "Invalid type given");
         }
       }
@@ -518,6 +518,6 @@ extern VALUE do_typecast(const char *value, long length, const VALUE type, int e
     return Qnil;
   }
   else {
-    return do_str_new(value, length, encoding, internal_encoding);
+    return DO_STR_NEW(value, length, encoding, internal_encoding);
   }
 }

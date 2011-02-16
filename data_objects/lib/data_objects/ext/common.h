@@ -3,16 +3,48 @@
 
 #include <ruby.h>
 
-#ifdef HAVE_RUBY_ENCODING_H
-#include <ruby/encoding.h>
-#endif
-
 #ifdef _WIN32
 #define cCommand_execute cCommand_execute_sync
 typedef signed __int64 do_int64;
 #else
 #define cCommand_execute cCommand_execute_async
 typedef signed long long int do_int64;
+#endif
+
+#ifdef HAVE_RUBY_ENCODING_H
+#include <ruby/encoding.h>
+
+#define DO_STR_NEW2(str, encoding, internal_encoding) \
+  ({ \
+    VALUE _string = rb_str_new2((const char *)str); \
+    if(encoding != -1) { \
+      rb_enc_associate_index(_string, encoding); \
+    } \
+    if(internal_encoding) { \
+      _string = rb_str_export_to_enc(_string, internal_encoding); \
+    } \
+    _string; \
+  })
+
+#define DO_STR_NEW(str, len, encoding, internal_encoding) \
+  ({ \
+    VALUE _string = rb_str_new((const char *)str, (long)len); \
+    if(encoding != -1) { \
+      rb_enc_associate_index(_string, encoding); \
+    } \
+    if(internal_encoding) { \
+      _string = rb_str_export_to_enc(_string, internal_encoding); \
+    } \
+    _string; \
+  })
+
+# else
+
+#define DO_STR_NEW2(str, encoding, internal_encoding) \
+  rb_str_new2((const char *)str)
+
+#define DO_STR_NEW(str, len, encoding, internal_encoding) \
+  rb_str_new((const char *)str, (long)len)
 #endif
 
 // Needed for defining error.h
@@ -22,7 +54,7 @@ struct errcodes {
   const char *exception;
 };
 
-#define ERRCODE(name,message)	{name, #name, message}
+#define ERRCODE(name,message)   {name, #name, message}
 
 // To store rb_intern values
 extern ID ID_NEW;

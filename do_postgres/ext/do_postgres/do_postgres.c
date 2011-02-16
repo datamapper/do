@@ -142,7 +142,8 @@ VALUE cConnection_quote_string(VALUE self, VALUE string) {
   // Wrap the escaped string in single-quotes, this is DO's convention
   escaped[0] = escaped[quoted_length + 1] = '\'';
 
-  result = do_str_new(escaped, quoted_length + 2, FIX2INT(rb_iv_get(self, "@encoding_id")), NULL);
+  result = DO_STR_NEW(escaped, quoted_length + 2, FIX2INT(rb_iv_get(self, "@encoding_id")), NULL);
+
   free(escaped);
   return result;
 }
@@ -395,7 +396,7 @@ void full_connect(VALUE self, PGconn *db) {
 
   if (search_path) {
     char *search_path_query;
-    
+
     if (!(search_path_query = calloc(256, sizeof(char)))) {
       return;
     }
@@ -417,7 +418,7 @@ void full_connect(VALUE self, PGconn *db) {
   const char *standard_strings_on = "SET standard_conforming_strings = on";
   const char *warning_messages = "SET client_min_messages = warning";
   VALUE r_options;
-  
+
   r_options = rb_str_new2(backslash_off);
   result = cCommand_execute(Qnil, self, db, r_options);
 
