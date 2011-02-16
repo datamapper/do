@@ -371,7 +371,7 @@ void full_connect(VALUE self, PGconn *db) {
     database = strtok(path, "/");
   }
 
-  if (!database || strlen(database) == 0) {
+  if (!database || !*database) {
     rb_raise(eConnectionError, "Database must be specified");
   }
 

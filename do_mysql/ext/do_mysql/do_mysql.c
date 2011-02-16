@@ -221,7 +221,7 @@ void full_connect(VALUE self, MYSQL *db) {
     database = strtok(path, "/"); // not threadsafe
   }
 
-  if (!database || strlen(database) == 0) {
+  if (!database || !*database) {
     rb_raise(eConnectionError, "Database must be specified");
   }
 
