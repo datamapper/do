@@ -2,15 +2,15 @@ shared 'supporting Float' do
 
   setup_test_environment
 
-  before do
-    @connection = DataObjects::Connection.new(CONFIG.uri)
-  end
-
-  after do
-    @connection.close
-  end
-
   describe 'reading a Float' do
+
+    before do
+      @connection = DataObjects::Connection.new(CONFIG.uri)
+    end
+
+    after do
+      @connection.close
+    end
 
     describe 'with manual typecasting' do
 
@@ -62,7 +62,15 @@ shared 'supporting Float' do
     end
   end
 
-  describe 'writing an Float' do
+  describe 'writing a Float' do
+
+    before do
+      @connection = DataObjects::Connection.new(CONFIG.uri)
+    end
+
+    after do
+      @connection.close
+    end
 
     before do
       @reader = @connection.create_command("SELECT id FROM widgets WHERE id = ?").execute_reader(2.0)
@@ -75,8 +83,8 @@ shared 'supporting Float' do
     end
 
     it 'should return the correct entry' do
-       #Some of the drivers starts autoincrementation from 0 not 1
-       @values.first.should.satisfy { |val| val == 1 or val == 2 }
+      #Some of the drivers starts autoincrementation from 0 not 1
+      @values.first.should.satisfy { |val| val == 1 or val == 2 }
     end
 
   end
@@ -87,15 +95,15 @@ shared 'supporting Float autocasting' do
 
   setup_test_environment
 
-  before do
-    @connection = DataObjects::Connection.new(CONFIG.uri)
-  end
-
-  after do
-    @connection.close
-  end
-
   describe 'reading a Float' do
+
+    before do
+      @connection = DataObjects::Connection.new(CONFIG.uri)
+    end
+
+    after do
+      @connection.close
+    end
 
     describe 'with automatic typecasting' do
 
