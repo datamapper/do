@@ -192,31 +192,30 @@ shared 'a Command with async' do
   describe 'running queries in parallel' do
 
     before do
-
       threads = []
 
       @start = Time.now
       4.times do |i|
         threads << Thread.new do
-          connection = DataObjects::Connection.new(CONFIG.uri)
-          command = connection.create_command(CONFIG.sleep)
-          if CONFIG.sleep =~ /^SELECT/i
-            reader = command.execute_reader
-            reader.next!
-            reader.close
-          else
-            result = command.execute_non_query
+          begin
+            connection = DataObjects::Connection.new(CONFIG.uri)
+            command = connection.create_command(CONFIG.sleep)
+            if CONFIG.sleep =~ /^SELECT/i
+              reader = command.execute_reader
+              reader.next!
+              reader.close
+            else
+              result = command.execute_non_query
+            end
+          ensure
+            # Always make sure the connection gets released back into the pool.
+            connection.close
           end
-          connection.close
         end
       end
 
       threads.each{|t| t.join }
       @finish = Time.now
-    end
-
-    after do
-      @connection.close
     end
 
     it "should finish within 2 seconds" do
