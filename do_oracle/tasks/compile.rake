@@ -10,17 +10,18 @@ begin
     @clean_gemspec ||= eval("#{Rake.application.jeweler.gemspec.to_ruby}") # $SAFE = 3\n
   end
 
-  Rake::ExtensionTask.new('do_oracle', gemspec) do |ext|
+  unless JRUBY
+    Rake::ExtensionTask.new('do_oracle', gemspec) do |ext|
 
-    ext.lib_dir = "lib/#{gemspec.name}"
+      ext.lib_dir = "lib/#{gemspec.name}"
 
-    # automatically add build options to avoid need of manual input
-    if RUBY_PLATFORM =~ /mswin|mingw/ then
-    else
-      ext.cross_compile = true
-      ext.cross_platform = ['x86-mingw32', 'x86-mswin32-60']
+      # automatically add build options to avoid need of manual input
+      if RUBY_PLATFORM =~ /mswin|mingw/ then
+      else
+        ext.cross_compile = true
+        ext.cross_platform = ['x86-mingw32', 'x86-mswin32-60']
+      end
     end
-
   end
 
   Rake::JavaExtensionTask.new('do_oracle', gemspec) do |ext|

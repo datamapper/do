@@ -10,43 +10,45 @@ begin
     @clean_gemspec ||= eval("#{Rake.application.jeweler.gemspec.to_ruby}") # $SAFE = 3\n
   end
 
-  Rake::ExtensionTask.new('do_sqlite3', gemspec) do |ext|
+  unless JRUBY
+    Rake::ExtensionTask.new('do_sqlite3', gemspec) do |ext|
 
-    sqlite3_lib = File.expand_path(File.join(File.dirname(__FILE__), '..', 'vendor', 'sqlite3'))
+      sqlite3_lib = File.expand_path(File.join(File.dirname(__FILE__), '..', 'vendor', 'sqlite3'))
 
-    ext.lib_dir = "lib/#{gemspec.name}"
+      ext.lib_dir = "lib/#{gemspec.name}"
 
-    ext.cross_compile = true
-    ext.cross_platform = ['x86-mingw32', 'x86-mswin32-60']
-    ext.cross_config_options << "--with-sqlite3-dir=#{sqlite3_lib}"
+      ext.cross_compile = true
+      ext.cross_platform = ['x86-mingw32', 'x86-mswin32-60']
+      ext.cross_config_options << "--with-sqlite3-dir=#{sqlite3_lib}"
 
-    ext.cross_compiling do |gemspec|
-      gemspec.post_install_message = <<-POST_INSTALL_MESSAGE
+      ext.cross_compiling do |gemspec|
+        gemspec.post_install_message = <<-POST_INSTALL_MESSAGE
 
-=============================================================================
+  =============================================================================
 
-  You've installed the binary version of #{gemspec.name}.
-  It was built using Sqlite3 version #{BINARY_VERSION}.
-  It's recommended to use the exact same version to avoid potential issues.
+    You've installed the binary version of #{gemspec.name}.
+    It was built using Sqlite3 version #{BINARY_VERSION}.
+    It's recommended to use the exact same version to avoid potential issues.
 
-  At the time of building this gem, the necessary DLL files where available
-  in the following download:
+    At the time of building this gem, the necessary DLL files where available
+    in the following download:
 
-  http://www.sqlite.org/sqlitedll-#{BINARY_VERSION}.zip
+    http://www.sqlite.org/sqlitedll-#{BINARY_VERSION}.zip
 
-  You can put the sqlite3.dll available in this package in your Ruby bin
-  directory, for example C:\\Ruby\\bin
+    You can put the sqlite3.dll available in this package in your Ruby bin
+    directory, for example C:\\Ruby\\bin
 
-=============================================================================
+  =============================================================================
 
-      POST_INSTALL_MESSAGE
+        POST_INSTALL_MESSAGE
+      end
+
+      # automatically add build options to avoid need of manual input
+      if RUBY_PLATFORM =~ /mswin|mingw/ then
+        ext.config_options << "--with-sqlite3-dir=#{sqlite3_lib}"
+      end
+
     end
-
-    # automatically add build options to avoid need of manual input
-    if RUBY_PLATFORM =~ /mswin|mingw/ then
-      ext.config_options << "--with-sqlite3-dir=#{sqlite3_lib}"
-    end
-
   end
 
   Rake::JavaExtensionTask.new('do_sqlite3', gemspec) do |ext|
