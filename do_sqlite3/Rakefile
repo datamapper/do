@@ -38,7 +38,7 @@ begin
     gem.add_dependency 'data_objects', DataObjects::Sqlite3::VERSION
 
     gem.add_development_dependency 'bacon',         '~>1.1'
-    gem.add_development_dependency 'rake-compiler', '= 0.7.0'
+    gem.add_development_dependency 'rake-compiler', '~>0.7'
 
     gem.has_rdoc = false
     gem.rubyforge_project = 'dorb'
