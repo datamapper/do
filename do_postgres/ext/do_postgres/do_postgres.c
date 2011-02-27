@@ -125,12 +125,19 @@ VALUE cConnection_quote_string(VALUE self, VALUE string) {
   PGconn *db = DATA_PTR(rb_iv_get(self, "@connection"));
   const char *source = rb_str_ptr_readonly(string);
   size_t source_len  = rb_str_len(string);
+  size_t buffer_len  = source_len * 2 + 3;
+
+  // Overflow check
+  if(buffer_len <= source_len) {
+    rb_raise(rb_eArgError, "Input string is too large to be safely quoted");
+  }
+
   char *escaped;
 
   // Allocate space for the escaped version of 'string'
   // http://www.postgresql.org/docs/8.3/static/libpq-exec.html#LIBPQ-EXEC-ESCAPE-STRING
-  if (!(escaped = calloc((source_len * 2) + 3, sizeof(char)))) {
-    return Qnil;
+  if (!(escaped = calloc(buffer_len, sizeof(char)))) {
+    rb_memerror();
   }
 
   size_t quoted_length;
@@ -162,8 +169,12 @@ VALUE cConnection_quote_byte_array(VALUE self, VALUE string) {
   // http://www.postgresql.org/docs/8.3/static/libpq-exec.html#LIBPQ-EXEC-ESCAPE-STRING
   escaped = PQescapeByteaConn(db, source, source_len, &quoted_length);
 
+  if(!escaped) {
+    rb_memerror();
+  }
+
   if (!(escaped_quotes = calloc(quoted_length + 1, sizeof(unsigned char)))) {
-    return Qnil;
+    rb_memerror();
   }
 
   memcpy(escaped_quotes + 1, escaped, quoted_length * sizeof(unsigned char));
@@ -398,7 +409,7 @@ void full_connect(VALUE self, PGconn *db) {
     char *search_path_query;
 
     if (!(search_path_query = calloc(256, sizeof(char)))) {
-      return;
+      rb_memerror();
     }
 
     snprintf(search_path_query, 256, "set search_path to %s;", search_path);

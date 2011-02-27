@@ -426,15 +426,21 @@ VALUE cConnection_dispose(VALUE self) {
 VALUE cConnection_quote_string(VALUE self, VALUE string) {
   MYSQL *db = DATA_PTR(rb_iv_get(self, "@connection"));
   const char *source = rb_str_ptr_readonly(string);
-  unsigned long source_len = rb_str_len(string);
+  size_t source_len = rb_str_len(string);
+  size_t buffer_len = source_len * 2 + 3;
+
+  // Overflow check
+  if(buffer_len <= source_len) {
+    rb_raise(rb_eArgError, "Input string is too large to be safely quoted");
+  }
 
   // Allocate space for the escaped version of 'string'.  Use + 3 allocate space for null term.
   // and the leading and trailing single-quotes.
   // Thanks to http://www.browardphp.com/mysql_manual_en/manual_MySQL_APIs.html#mysql_real_escape_string
-  char *escaped = calloc((source_len * 2) + 3, sizeof(char));
+  char *escaped = calloc(buffer_len, sizeof(char));
 
   if (!escaped) {
-    return Qnil;
+    rb_memerror();
   }
 
   unsigned long quoted_length;
