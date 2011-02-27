@@ -34,7 +34,7 @@ bin/**
 *.swp
 gem_make.out
 *.gem
+*.bundle
 
 ## BUNDLER
-.bundle
 Gemfile.*
