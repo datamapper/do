@@ -6,7 +6,6 @@ _Yardoc
 .DS_Store
 *.o
 *.so
-*.bundle
 .yardoc
 Makefile
 **/*.db
@@ -35,3 +34,7 @@ bin/**
 *.swp
 gem_make.out
 *.gem
+*.bundle
+
+## BUNDLER
+Gemfile.*

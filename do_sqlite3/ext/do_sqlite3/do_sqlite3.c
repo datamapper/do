@@ -192,6 +192,11 @@ VALUE cConnection_quote_string(VALUE self, VALUE string) {
 
   // Wrap the escaped string in single-quotes, this is DO's convention
   char *escaped_with_quotes = sqlite3_mprintf("%Q", source);
+
+  if(!escaped_with_quotes) {
+    rb_memerror();
+  }
+
   VALUE result = rb_str_new2(escaped_with_quotes);
 
 #ifdef HAVE_RUBY_ENCODING_H

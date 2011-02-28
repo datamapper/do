@@ -22,8 +22,6 @@ import org.jruby.Ruby;
 import org.jruby.runtime.builtin.IRubyObject;
 import org.jruby.RubyString;
 
-import org.joda.time.DateTime;
-
 import data_objects.RubyType;
 import data_objects.drivers.AbstractDriverDefinition;
 import data_objects.util.JDBCUtil;
