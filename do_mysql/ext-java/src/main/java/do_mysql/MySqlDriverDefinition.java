@@ -158,6 +158,11 @@ public class MySqlDriverDefinition extends AbstractDriverDefinition {
         try {
             conn = proxyCON(DriverManager.getConnection(url, props));
         } catch (SQLException eex) {
+            /*
+             * Used to get an exception that indicated a bad character encoding,
+             * but that doesn't seem to be the case anywhere.  So instead we'll
+             * just try blindly to reconnect once with UTF8_ENCODING.
+
             Pattern p = Pattern.compile("Unsupported character encoding '(.+)'\\.");
             Matcher m = p.matcher(eex.getMessage());
 
@@ -167,13 +172,12 @@ public class MySqlDriverDefinition extends AbstractDriverDefinition {
                 runtime.getWarnings().warn(String.format(
                         "Encoding %s is not a known Ruby encoding for %s\n",
                         m.group(1), RUBY_MODULE_NAME));
-                setEncodingProperty(props, UTF8_ENCODING);
-                API.setInstanceVariable(connection,
-                        "@encoding", runtime.newString(UTF8_ENCODING));
-                conn = proxyCON(DriverManager.getConnection(url, props));
-            } else {
-                throw eex;
-            }
+
+            */
+
+            setEncodingProperty(props, UTF8_ENCODING);
+            API.setInstanceVariable(connection, "@encoding", runtime.newString(UTF8_ENCODING));
+            conn = proxyCON(DriverManager.getConnection(url, props));
         }
         return conn;
     }
