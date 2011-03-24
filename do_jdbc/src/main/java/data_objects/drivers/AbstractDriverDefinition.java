@@ -22,6 +22,7 @@ import java.sql.Types;
 import java.util.Map;
 import java.util.Properties;
 
+import org.jcodings.Encoding;
 import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
@@ -29,6 +30,7 @@ import org.jruby.Ruby;
 import org.jruby.RubyBigDecimal;
 import org.jruby.RubyBignum;
 import org.jruby.RubyClass;
+import org.jruby.RubyEncoding;
 import org.jruby.RubyFixnum;
 import org.jruby.RubyFloat;
 import org.jruby.RubyHash;
@@ -400,7 +402,16 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
             if (str == null) {
                 return runtime.getNil();
             }
-            RubyString return_str = RubyString.newUnicodeString(runtime, str);
+
+            RubyString return_str;
+            if (runtime.is1_9()){
+                IRubyObject obj = RubyEncoding.getDefaultInternal(RubyString.newEmptyString(runtime));            
+                Encoding enc = obj.isNil() ? Encoding.load("UTF8") : ((RubyEncoding) obj).getEncoding();
+                return_str = RubyString.newString(runtime, new ByteList(RubyEncoding.encodeUTF8(str), false), enc);
+            }
+            else {
+                return_str = RubyString.newUnicodeString(runtime, str);
+            }
             return_str.setTaint(true);
             return return_str;
         }
