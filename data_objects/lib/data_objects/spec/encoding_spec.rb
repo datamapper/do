@@ -131,7 +131,7 @@ shared 'returning correctly encoded strings for the default internal encoding' d
           @reader.close
         end
 
-        it 'should return UTF-8 encoded String' do
+        it 'should return ISO-8859-1 encoded String' do
           @values.first.should.be.kind_of(String)
           @values.first.encoding.name.should == 'ISO-8859-1'
           @values.last.should.be.kind_of(String)
