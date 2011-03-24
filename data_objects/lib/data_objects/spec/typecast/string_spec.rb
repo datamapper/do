@@ -117,7 +117,9 @@ shared 'supporting String' do
         @command = @connection.create_command('SELECT name FROM users WHERE name = ?')
         @reader = @command.execute_reader(name)
         @reader.next!
-        @reader.values.first.should == name
+        # workaround an error when using jruby --1.9 and 'should' method
+        # @reader.values.first.should == name
+        (@reader.values.first == name).should.be.true
         @reader.close
       end
 
@@ -130,7 +132,9 @@ shared 'supporting String' do
         @command = @connection.create_command("SELECT name FROM users WHERE name = #{@n}\'#{name}\'")
         @reader = @command.execute_reader
         @reader.next!
-        @reader.values.first.should == name
+        # workaround an error when using jruby --1.9 and 'should' method
+        # @reader.values.first.should == name
+        (@reader.values.first == name).should.be.true
         @reader.close
       end
 
