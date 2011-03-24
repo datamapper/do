@@ -150,7 +150,7 @@ shared 'a Connection with JDBC URL support' do
     conn.close
   end
 
-end if JRUBY
+end if defined? JRUBY_VERSION
 
 shared 'a Connection with SSL support' do
 
@@ -180,39 +180,36 @@ end
 
 shared 'a Connection via JDNI' do
 
-  if JRUBY
+  if defined? JRUBY_VERSION
     describe 'connecting with JNDI' do
 
       before do
+        require 'java'
         begin
-          @jndi = Java::data_objects.JNDITestSetup.new("jdbc:#{CONFIG.uri}".gsub(/:sqlite3:/, ':sqlite:'), CONFIG.jdbc_driver, 'mydb')
+          @jndi = Java::Data_objects::JNDITestSetup.new("jdbc:#{CONFIG.uri}".gsub(/:sqlite3:/, ':sqlite:'), CONFIG.jdbc_driver, 'mydb')
           @jndi.setup()
         rescue
-          puts "use (after installation of maven) to test JNDI:"
-          puts "mvn rails:spec -Drails.fork=false"
+          puts "no JNDITestSetup found in classpath - skip jndi spec"
         end
       end
 
       after do
-        @jndi.teardown() unless @jndi.nil?
+        @jndi.teardown() if @jndi
       end
 
-      unless @jndi.nil?
-        it 'should connect' do
+      it 'should connect' do
+        if @jndi
           begin
             c = DataObjects::Connection.new("java:comp/env/jdbc/mydb?scheme=#{CONFIG.scheme}")
-            c.should_not be_nil
-          rescue => e
-            if e.message =~ /java.naming.factory.initial/
-              puts "use (after installation of maven) to test JNDI:"
-              puts "mvn rails:spec -Drails.fork=false"
-            end
-          else
-            c.close
+            c.should.not.be.nil
+          ensure
+            c.close if c
           end
+        else
+          # to avoid empty spec error
+          @jndi.should.be.nil
         end
       end
-
     end
   end
 end
