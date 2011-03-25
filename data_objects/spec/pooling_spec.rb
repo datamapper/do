@@ -64,7 +64,7 @@ describe "DataObjects::Pooling" do
     end
   end
 
-  after do
+  after :each do
     DataObjects::Pooling.lock.synchronize do
       DataObjects::Pooling.pools.each do |pool|
         pool.lock.synchronize do
@@ -95,24 +95,24 @@ describe "DataObjects::Pooling" do
   it "should track the initialized pools" do
     bob = Person.new('Bob') # Ensure the pool is "primed"
     bob.name.should == 'Bob'
-    bob.instance_variable_get(:@__pool).should.not.be.nil
+    bob.instance_variable_get(:@__pool).should_not be_nil
     Person.__pools.size.should == 1
     bob.release
     Person.__pools.size.should == 1
 
-    DataObjects::Pooling::pools.should.not.be.empty
+    DataObjects::Pooling::pools.should_not be_empty
 
     sleep(1.2)
 
     # NOTE: This assertion is commented out, as our MockConnection objects are
     #       currently in the pool.
-    DataObjects::Pooling::pools.should.be.empty
-    bob.name.should == nil
+    # DataObjects::Pooling::pools.should be_empty
+    bob.name.should be_nil
   end
 
   it "should allow you to overwrite Class#new" do
     bob = Overwriter.new('Bob')
-    bob.should.be.overwritten
+    bob.should be_overwritten
     bob.release
   end
 
@@ -127,7 +127,7 @@ describe "DataObjects::Pooling" do
       bob = Person.new('Bob')
       t1.join
       bob.release
-    end.should.not.raise(DataObjects::Pooling::InvalidResourceError)
+    end.should_not raise_error(DataObjects::Pooling::InvalidResourceError)
   end
 
   it "should allow you to flush a pool" do
@@ -141,7 +141,7 @@ describe "DataObjects::Pooling" do
     Overwriter.__pools[['Bob']].flush!
     Overwriter.__pools[['Bob']].size.should == 0
 
-    bob.name.should.be.nil
+    bob.name.should be_nil
   end
 
   it "should wake up the scavenger thread when exiting" do
@@ -149,7 +149,7 @@ describe "DataObjects::Pooling" do
     bob.release
     DataObjects.exiting = true
     sleep(0.1)
-    DataObjects::Pooling.scavenger?.should.be.false
+    DataObjects::Pooling.scavenger?.should be_false
   end
 
   it "should be able to detach an instance from the pool" do

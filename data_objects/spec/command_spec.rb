@@ -12,13 +12,13 @@ describe DataObjects::Command do
 
   %w{connection execute_non_query execute_reader set_types}.each do |meth|
     it "should respond to ##{meth}" do
-      @command.should.respond_to(meth.intern)
+      @command.should respond_to(meth.intern)
     end
   end
 
   %w{execute_non_query execute_reader set_types}.each do |meth|
     it "should raise NotImplementedError on ##{meth}" do
-      should.raise(NotImplementedError) { @command.send(meth.intern, nil) }
+      lambda { @command.send(meth.intern, nil) }.should raise_error(NotImplementedError)
     end
   end
 

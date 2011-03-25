@@ -1,21 +1,11 @@
-# Specs
+require 'rspec/core/rake_task'
 
-require 'rake/testtask'
-Rake::TestTask.new(:spec) do |spec|
-  spec.libs << 'lib' << 'spec'
-  spec.pattern = 'spec/**/*_spec.rb'
-  spec.verbose = true
+RSpec::Core::RakeTask.new(:spec) do |spec|
+  spec.pattern = "./spec/**/*_spec.rb"
 end
 
-begin
-  require 'rcov/rcovtask'
-  Rcov::RcovTask.new do |spec|
-    spec.libs << 'spec'
-    spec.pattern = 'spec/**/*_spec.rb'
-    spec.verbose = true
-  end
-rescue LoadError
-  task :rcov do
-    abort "RCov is not available. In order to run rcov, you must: sudo gem install spicycode-rcov"
-  end
+RSpec::Core::RakeTask.new(:rcov) do |rcov|
+  rcov.pattern    = "./spec/**/*_spec.rb"
+  rcov.rcov       = true
+  rcov.rcov_opts  = File.read('spec/rcov.opts').split(/\s+/)
 end

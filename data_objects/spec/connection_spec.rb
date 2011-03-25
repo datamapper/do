@@ -11,7 +11,7 @@ describe DataObjects::Connection do
 
   %w{dispose create_command}.each do |meth|
     it "should respond to ##{meth}" do
-      @connection.should.respond_to(meth.intern)
+      @connection.should respond_to(meth.intern)
     end
   end
 
@@ -30,14 +30,14 @@ describe DataObjects::Connection do
 
     it "should return the Connection specified by the scheme" do
       conn = DataObjects::Connection.new(Addressable::URI.parse('mock://localhost/database'))
-      conn.should.be.kind_of(DataObjects::Mock::Connection)
-      conn.should.be.kind_of(DataObjects::Pooling)
+      conn.should be_kind_of(DataObjects::Mock::Connection)
+      conn.should be_kind_of(DataObjects::Pooling)
       conn.close
     end
 
     it "should return the Connection specified by the scheme without pooling" do
       conn = DataObjects::Connection.new(Addressable::URI.parse('java://jdbc/database?scheme=mock2'))
-      conn.should.not.be.kind_of(DataObjects::Pooling)
+      conn.should_not be_kind_of(DataObjects::Pooling)
       conn.close
     end
   end

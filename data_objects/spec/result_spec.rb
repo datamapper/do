@@ -10,11 +10,11 @@ describe DataObjects::Result do
     result = command.execute_non_query
 
     # Affected Rows:
-    result.should.respond_to(:to_i)
+    result.should respond_to(:to_i)
     result.to_i.should == 0
 
     # The id of the inserted row.
-    result.should.respond_to(:insert_id)
+    result.should respond_to(:insert_id)
     connection.close
   end
 

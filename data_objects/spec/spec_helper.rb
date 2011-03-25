@@ -1,9 +1,6 @@
 require 'rubygems'
 require 'data_objects'
-require 'data_objects/spec/bacon'
-require 'mocha/api'
-require 'mocha/object'
-require 'win32console' if RUBY_PLATFORM =~ /mingw|mswin/
+require 'rspec'
 
 module DataObjects::Pooling
   class << self
@@ -11,18 +8,6 @@ module DataObjects::Pooling
     def scavenger_interval
       0.5
     end
-  end
-end
-
-# see http://gnufied.org/2008/06/12/making-ruby-bacon-play-with-mocha/
-class Bacon::Context
-  include Mocha::API
-  alias_method :old_it,:it
-  def it description,&block
-    mocha_setup
-    old_it(description,&block)
-    mocha_verify
-    mocha_teardown
   end
 end
 
