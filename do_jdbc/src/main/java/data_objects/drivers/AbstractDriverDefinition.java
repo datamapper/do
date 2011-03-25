@@ -45,7 +45,6 @@ import org.jruby.runtime.builtin.IRubyObject;
 import org.jruby.util.ByteList;
 
 import data_objects.RubyType;
-import org.jruby.RubyRational;
 
 /**
  *
@@ -359,8 +358,7 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
                 if (str == null) {
                     return runtime.getNil();
                 }
-                RubyString return_str = RubyString.newUnicodeString(runtime,
-                        str);
+                RubyString return_str = newUnicodeString(runtime, str);
                 return_str.setTaint(true);
                 return return_str;
             }
@@ -389,8 +387,7 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
             if (classNameStr == null) {
                 return runtime.getNil();
             }
-            RubyString class_name_str = RubyString.newUnicodeString(runtime, rs
-                    .getString(col));
+            RubyString class_name_str = newUnicodeString(runtime, rs.getString(col));
             class_name_str.setTaint(true);
             return API.callMethod(runtime.fastGetModule("DataObjects"), "full_const_get",
                     class_name_str);
@@ -403,18 +400,23 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
                 return runtime.getNil();
             }
 
-            RubyString return_str;
-            if (runtime.is1_9()){
-                IRubyObject obj = RubyEncoding.getDefaultInternal(RubyString.newEmptyString(runtime));            
-                Encoding enc = obj.isNil() ? Encoding.load("UTF8") : ((RubyEncoding) obj).getEncoding();
-                return_str = RubyString.newString(runtime, new ByteList(RubyEncoding.encodeUTF8(str), false), enc);
-            }
-            else {
-                return_str = RubyString.newUnicodeString(runtime, str);
-            }
+            RubyString return_str = newUnicodeString(runtime, str);
             return_str.setTaint(true);
             return return_str;
         }
+    }
+
+    protected RubyString newUnicodeString(Ruby runtime, String str) {
+        RubyString return_str;
+        if (runtime.is1_9()){
+            IRubyObject obj = RubyEncoding.getDefaultInternal(RubyString.newEmptyString(runtime));            
+            Encoding enc = obj.isNil() ? Encoding.load("UTF8") : ((RubyEncoding) obj).getEncoding();
+            return_str = RubyString.newString(runtime, new ByteList(RubyEncoding.encodeUTF8(str), false), enc);
+        }
+        else {
+            return_str = RubyString.newUnicodeString(runtime, str);
+        }
+        return return_str;
     }
 
     /**

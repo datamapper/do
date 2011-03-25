@@ -110,8 +110,7 @@ public class OracleDriverDefinition extends AbstractDriverDefinition {
                 if (str == null) {
                     return runtime.getNil();
                 }
-                RubyString return_str = RubyString.newUnicodeString(runtime,
-                        str);
+                RubyString return_str = newUnicodeString(runtime, str);
                 return_str.setTaint(true);
                 return return_str;
             }
