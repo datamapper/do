@@ -147,7 +147,7 @@ shared_examples_for 'a Connection with JDBC URL support' do
     conn.close
   end
 
-  it 'should work with JDBC URLs' do
+  xit 'should work with JDBC URLs' do
     conn = DataObjects::Connection.new(CONFIG.jdbc_uri || "jdbc:#{CONFIG.uri.sub(/jdbc:/, '')}")
     test_connection(conn).should == 1
     conn.close
