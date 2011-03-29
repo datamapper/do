@@ -6,7 +6,7 @@ require 'data_objects/spec/shared/result_spec'
 describe DataObjects::Postgres::Result do
   it_should_behave_like 'a Result'
 
-  before :all do
+  before do
     setup_test_environment
   end
 
