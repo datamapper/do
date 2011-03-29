@@ -34,7 +34,7 @@ begin
     gem.add_dependency 'do_jdbc',      DataObjects::H2::VERSION
     gem.add_dependency 'jdbc-h2',      '~>1.1.107'
 
-    gem.add_development_dependency 'bacon',         '~>1.1'
+    gem.add_development_dependency 'rspec',         '~>2.5'
     gem.add_development_dependency 'rake-compiler', '~>0.7'
 
     gem.has_rdoc = false

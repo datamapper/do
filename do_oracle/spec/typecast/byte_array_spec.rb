@@ -1,11 +1,14 @@
 # encoding: utf-8
 
 require File.expand_path(File.join(File.dirname(__FILE__), '..', 'spec_helper'))
-require 'data_objects/spec/typecast/byte_array_spec'
+require 'data_objects/spec/shared/typecast/byte_array_spec'
 
 describe 'DataObjects::Oracle with ByteArray' do
+  include DataObjectsSpecHelpers
 
-  setup_test_environment
+  before :all do
+    setup_test_environment
+  end
 
   before do
     @connection = DataObjects::Connection.new(CONFIG.uri)
@@ -30,7 +33,7 @@ describe 'DataObjects::Oracle with ByteArray' do
       end
 
       it 'should return the correctly typed result' do
-        @values.first.should.be.kind_of(::Extlib::ByteArray)
+        @values.first.should be_kind_of(::Extlib::ByteArray)
       end
 
       it 'should return the correct result' do
@@ -54,7 +57,7 @@ describe 'DataObjects::Oracle with ByteArray' do
       end
 
       it 'should return the correctly typed result' do
-        @values.first.should.be.kind_of(::Extlib::ByteArray)
+        @values.first.should be_kind_of(::Extlib::ByteArray)
       end
 
       it 'should return the correct result' do

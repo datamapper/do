@@ -2,6 +2,7 @@ $TESTING=true
 JRUBY = true
 
 require 'rubygems'
+require 'rspec'
 require 'date'
 require 'ostruct'
 require 'fileutils'
@@ -18,11 +19,13 @@ repo_root = File.expand_path('../../..', __FILE__)
 end
 
 require 'data_objects'
-require 'data_objects/spec/bacon'
+require 'data_objects/spec/setup'
+require 'data_objects/spec/lib/pending_helpers'
 require 'do_hsqldb'
 
 DataObjects::Hsqldb.logger = DataObjects::Logger.new(STDOUT, :off)
 at_exit { DataObjects.logger.flush }
+
 
 CONFIG = OpenStruct.new
 # CONFIG.scheme   = 'hsqldb'
@@ -165,4 +168,7 @@ module DataObjectsSpecHelpers
   end
 end
 
-include DataObjectsSpecHelpers
+RSpec.configure do |config|
+  config.include(DataObjectsSpecHelpers)
+  config.include(DataObjects::Spec::PendingHelpers)
+end

@@ -2,6 +2,7 @@ $TESTING=true
 JRUBY = RUBY_PLATFORM =~ /java/
 
 require 'rubygems'
+require 'rspec'
 require 'date'
 require 'ostruct'
 require 'fileutils'
@@ -19,11 +20,14 @@ repo_root = File.expand_path('../../..', __FILE__)
 end
 
 require 'data_objects'
-require 'data_objects/spec/bacon'
+require 'data_objects/spec/setup'
+require 'data_objects/spec/lib/pending_helpers'
 require 'do_sqlite3'
 
-DataObjects::Sqlite3.logger = DataObjects::Logger.new(STDOUT, :off)
-at_exit { DataObjects.logger.flush }
+
+RSpec.configure do |config|
+  #config.include(DataObjects::Spec::PendingHelpers)
+end
 
 CONFIG = OpenStruct.new
 CONFIG.scheme   = 'sqlite3'
@@ -140,4 +144,7 @@ module DataObjectsSpecHelpers
 
 end
 
-include DataObjectsSpecHelpers
+RSpec.configure do |config|
+  config.include(DataObjectsSpecHelpers)
+  config.include(DataObjects::Spec::PendingHelpers)
+end

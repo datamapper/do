@@ -9,7 +9,7 @@ Gem::Specification.new do |s|
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Dirkjan Bussink"]
-  s.date = %q{2011-03-25}
+  s.date = %q{2011-03-29}
   s.description = %q{Provide a standard and simplified API for communicating with RDBMS from Ruby}
   s.email = %q{d.bussink@gmail.com}
   s.extra_rdoc_files = [
@@ -37,32 +37,31 @@ Gem::Specification.new do |s|
     "lib/data_objects/quoting.rb",
     "lib/data_objects/reader.rb",
     "lib/data_objects/result.rb",
-    "lib/data_objects/spec/bacon.rb",
-    "lib/data_objects/spec/command_spec.rb",
-    "lib/data_objects/spec/connection_spec.rb",
-    "lib/data_objects/spec/encoding_spec.rb",
-    "lib/data_objects/spec/error/sql_error_spec.rb",
-    "lib/data_objects/spec/helpers/immediate_red_green_output.rb",
-    "lib/data_objects/spec/helpers/pending.rb",
-    "lib/data_objects/spec/helpers/ssl.rb",
-    "lib/data_objects/spec/quoting_spec.rb",
-    "lib/data_objects/spec/reader_spec.rb",
-    "lib/data_objects/spec/result_spec.rb",
-    "lib/data_objects/spec/typecast/array_spec.rb",
-    "lib/data_objects/spec/typecast/bigdecimal_spec.rb",
-    "lib/data_objects/spec/typecast/boolean_spec.rb",
-    "lib/data_objects/spec/typecast/byte_array_spec.rb",
-    "lib/data_objects/spec/typecast/class_spec.rb",
-    "lib/data_objects/spec/typecast/date_spec.rb",
-    "lib/data_objects/spec/typecast/datetime_spec.rb",
-    "lib/data_objects/spec/typecast/float_spec.rb",
-    "lib/data_objects/spec/typecast/integer_spec.rb",
-    "lib/data_objects/spec/typecast/ipaddr_spec.rb",
-    "lib/data_objects/spec/typecast/nil_spec.rb",
-    "lib/data_objects/spec/typecast/other_spec.rb",
-    "lib/data_objects/spec/typecast/range_spec.rb",
-    "lib/data_objects/spec/typecast/string_spec.rb",
-    "lib/data_objects/spec/typecast/time_spec.rb",
+    "lib/data_objects/spec/lib/pending_helpers.rb",
+    "lib/data_objects/spec/lib/ssl.rb",
+    "lib/data_objects/spec/setup.rb",
+    "lib/data_objects/spec/shared/command_spec.rb",
+    "lib/data_objects/spec/shared/connection_spec.rb",
+    "lib/data_objects/spec/shared/encoding_spec.rb",
+    "lib/data_objects/spec/shared/error/sql_error_spec.rb",
+    "lib/data_objects/spec/shared/quoting_spec.rb",
+    "lib/data_objects/spec/shared/reader_spec.rb",
+    "lib/data_objects/spec/shared/result_spec.rb",
+    "lib/data_objects/spec/shared/typecast/array_spec.rb",
+    "lib/data_objects/spec/shared/typecast/bigdecimal_spec.rb",
+    "lib/data_objects/spec/shared/typecast/boolean_spec.rb",
+    "lib/data_objects/spec/shared/typecast/byte_array_spec.rb",
+    "lib/data_objects/spec/shared/typecast/class_spec.rb",
+    "lib/data_objects/spec/shared/typecast/date_spec.rb",
+    "lib/data_objects/spec/shared/typecast/datetime_spec.rb",
+    "lib/data_objects/spec/shared/typecast/float_spec.rb",
+    "lib/data_objects/spec/shared/typecast/integer_spec.rb",
+    "lib/data_objects/spec/shared/typecast/ipaddr_spec.rb",
+    "lib/data_objects/spec/shared/typecast/nil_spec.rb",
+    "lib/data_objects/spec/shared/typecast/other_spec.rb",
+    "lib/data_objects/spec/shared/typecast/range_spec.rb",
+    "lib/data_objects/spec/shared/typecast/string_spec.rb",
+    "lib/data_objects/spec/shared/typecast/time_spec.rb",
     "lib/data_objects/transaction.rb",
     "lib/data_objects/uri.rb",
     "lib/data_objects/utilities.rb",
@@ -106,17 +105,16 @@ Gem::Specification.new do |s|
 
     if Gem::Version.new(Gem::VERSION) >= Gem::Version.new('1.2.0') then
       s.add_runtime_dependency(%q<addressable>, ["~> 2.1"])
-      s.add_development_dependency(%q<rspec>, ["~> 2.0"])
+      s.add_development_dependency(%q<rspec>, ["~> 2.5"])
       s.add_development_dependency(%q<yard>, ["~> 0.5"])
     else
       s.add_dependency(%q<addressable>, ["~> 2.1"])
-      s.add_dependency(%q<rspec>, ["~> 2.0"])
+      s.add_dependency(%q<rspec>, ["~> 2.5"])
       s.add_dependency(%q<yard>, ["~> 0.5"])
     end
   else
     s.add_dependency(%q<addressable>, ["~> 2.1"])
-    s.add_dependency(%q<rspec>, ["~> 2.0"])
+    s.add_dependency(%q<rspec>, ["~> 2.5"])
     s.add_dependency(%q<yard>, ["~> 0.5"])
   end
 end
-

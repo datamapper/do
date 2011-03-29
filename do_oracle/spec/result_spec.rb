@@ -1,23 +1,26 @@
 # encoding: utf-8
 
 require File.expand_path(File.join(File.dirname(__FILE__), 'spec_helper'))
-require 'data_objects/spec/result_spec'
+require 'data_objects/spec/shared/result_spec'
 
 describe DataObjects::Oracle::Result do
-  behaves_like 'a Result'
-end
-
-def current_sequence_value(seq_name)
-  reader = @connection.create_command("SELECT #{seq_name}.currval FROM dual").execute_reader
-  reader.next!
-  value = reader.values.first
-  reader.close
-  value
+  it_should_behave_like 'a Result'
 end
 
 describe DataObjects::Oracle::Result do
+  #include DataObjectsSpecHelpers
 
-  setup_test_environment(false)
+  def current_sequence_value(seq_name)
+    reader = @connection.create_command("SELECT #{seq_name}.currval FROM dual").execute_reader
+    reader.next!
+    value = reader.values.first
+    reader.close
+    value
+  end
+
+  before :all do
+    setup_test_environment(false)
+  end
 
   describe 'without using RETURNING' do
 
@@ -31,7 +34,7 @@ describe DataObjects::Oracle::Result do
       @connection.close
     end
 
-    it 'should respond to #affected_rows' do @result.should.respond_to(:affected_rows) end
+    it { @result.should respond_to(:affected_rows) }
 
     describe 'affected_rows' do
 
@@ -41,12 +44,12 @@ describe DataObjects::Oracle::Result do
 
     end
 
-    it 'should respond to #insert_id' do @result.should.respond_to(:insert_id) end
+    it { @result.should respond_to(:insert_id) }
 
     describe 'insert_id' do
 
       it 'should return nil' do
-        @result.insert_id.should.be.nil
+        @result.insert_id.should be_nil
       end
 
       it 'should be retrievable through currval' do
@@ -70,7 +73,7 @@ describe DataObjects::Oracle::Result do
       @connection.close
     end
 
-    it 'should respond to #affected_rows' do @result.should.respond_to(:affected_rows) end
+    it { @result.should respond_to(:affected_rows) }
 
     describe 'affected_rows' do
 
@@ -80,7 +83,7 @@ describe DataObjects::Oracle::Result do
 
     end
 
-    it 'should respond to #insert_id' do @result.should.respond_to(:insert_id) end
+    it { @result.should respond_to(:insert_id) }
 
     describe 'insert_id' do
 

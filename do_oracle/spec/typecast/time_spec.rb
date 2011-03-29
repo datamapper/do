@@ -1,15 +1,19 @@
 # encoding: utf-8
 
 require File.expand_path(File.join(File.dirname(__FILE__), '..', 'spec_helper'))
-require 'data_objects/spec/typecast/time_spec'
+require 'data_objects/spec/shared/typecast/time_spec'
 
 describe 'DataObjects::Oracle with Time' do
-  behaves_like 'supporting Time'
+  it_should_behave_like 'supporting Time'
 end
 
 describe 'DataObjects::Oracle with Time' do
 
-  setup_test_environment
+  include DataObjectsSpecHelpers
+
+  before :all do
+    setup_test_environment
+  end
 
   before do
     @connection = DataObjects::Connection.new(CONFIG.uri)
@@ -34,7 +38,7 @@ describe 'DataObjects::Oracle with Time' do
       end
 
       it 'should return the correctly typed result' do
-        @values.first.should.be.kind_of(Time)
+        @values.first.should be_kind_of(Time)
       end
 
       it 'should return the correct result' do
@@ -49,18 +53,18 @@ end
 
 describe 'DataObjects::Oracle session time zone' do
 
-  after do
-    @connection.close
-  end
-
   describe 'set from environment' do
 
     before do
-      pending "set TZ environment shell variable before running this test" unless ENV['TZ']
       @connection = DataObjects::Connection.new(CONFIG.uri)
     end
 
+    after do
+      @connection.close
+    end
+
     it "should have time zone from environment" do
+      pending "set TZ environment shell variable before running this test" unless ENV['TZ']
       @reader = @connection.create_command("SELECT sessiontimezone FROM dual").execute_reader
       @reader.next!
       @reader.values.first.should == ENV['TZ']
@@ -72,6 +76,10 @@ describe 'DataObjects::Oracle session time zone' do
 
     before do
       @connection = DataObjects::Connection.new(CONFIG.uri+"?time_zone=CET")
+    end
+
+    after do
+      @connection.close
     end
 
     it "should have time zone from connection option" do

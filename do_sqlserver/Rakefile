@@ -35,7 +35,7 @@ begin
     gem.add_dependency 'do_jdbc',           DataObjects::SqlServer::VERSION
     gem.add_dependency 'do-jdbc_sqlserver', '~>1.2.4'
 
-    gem.add_development_dependency 'bacon',         '~>1.1'
+    gem.add_development_dependency 'rspec',         '~>2.5'
     gem.add_development_dependency 'rake-compiler', '~>0.7'
 
     gem.has_rdoc    = false

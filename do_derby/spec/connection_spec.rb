@@ -1,21 +1,21 @@
 # encoding: utf-8
 
 require File.expand_path(File.join(File.dirname(__FILE__), 'spec_helper'))
-require 'data_objects/spec/connection_spec'
+require 'data_objects/spec/shared/connection_spec'
 
 describe DataObjects::Derby::Connection do
 
-  before do
-    @driver   = 'derby'
-    @user     = ''
+  before :all do
+    @driver = 'derby'
+    @user   = ''
     @password = ''
-    @host     = ''
-    @port     = ''
+    @host   = ''
+    @port   = ''
     @database = "#{File.expand_path(File.dirname(__FILE__))}/test.db;create=true"
   end
 
-  behaves_like 'a Connection'
-  #behaves_like 'a Connection with authentication support'
-  behaves_like 'a Connection with JDBC URL support'
-  behaves_like 'a Connection via JDNI'
+  it_should_behave_like 'a Connection'
+  #it_should_behave_like 'a Connection with authentication support'
+  it_should_behave_like 'a Connection with JDBC URL support'
+  it_should_behave_like 'a Connection via JDNI'
 end

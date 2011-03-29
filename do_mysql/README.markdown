@@ -77,7 +77,7 @@ For more information, see the MySQL driver wiki page:
 ## Developers
 
 Follow the above installation instructions. Additionally, you'll need:
-  * `bacon` gem for running specs.
+  * `rspec` gem for running specs.
   * `YARD` gem for generating documentation.
 
 See the DataObjects wiki for more comprehensive information on installing and

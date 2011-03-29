@@ -1,7 +1,7 @@
 # encoding: utf-8
 
 require File.expand_path(File.join(File.dirname(__FILE__), 'spec_helper'))
-require 'data_objects/spec/encoding_spec'
+require 'data_objects/spec/shared/encoding_spec'
 
 describe DataObjects::Postgres::Connection do
   unless JRUBY
@@ -14,8 +14,8 @@ describe DataObjects::Postgres::Connection do
     #   handles setting the internal client_encoding setting appropriately. It
     #   can be overridden -- but for now, we won't support doing this.
     #
-    behaves_like 'a driver supporting different encodings'
-    behaves_like 'returning correctly encoded strings for the default database encoding'
-    behaves_like 'returning correctly encoded strings for the default internal encoding'
+    it_should_behave_like 'a driver supporting different encodings'
+    it_should_behave_like 'returning correctly encoded strings for the default database encoding'
+    it_should_behave_like 'returning correctly encoded strings for the default internal encoding'
   end
 end

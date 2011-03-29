@@ -1,11 +1,15 @@
 # encoding: utf-8
 
 require File.expand_path(File.join(File.dirname(__FILE__), '..', 'spec_helper'))
-require 'data_objects/spec/typecast/class_spec'
+require 'data_objects/spec/shared/typecast/class_spec'
 
 describe 'DataObjects::Oracle with Class' do
 
-  setup_test_environment
+  include DataObjectsSpecHelpers
+
+  before :all do
+    setup_test_environment
+  end
 
   before do
     @connection = DataObjects::Connection.new(CONFIG.uri)
@@ -32,7 +36,7 @@ describe 'DataObjects::Oracle with Class' do
       end
 
       it 'should return the correctly typed result' do
-        @values.first.should.be.kind_of(Class)
+        @values.first.should be_kind_of(Class)
       end
 
       it 'should return the correct result' do
