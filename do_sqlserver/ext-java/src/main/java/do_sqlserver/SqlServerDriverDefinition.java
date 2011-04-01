@@ -1,18 +1,19 @@
 package do_sqlserver;
 
-import java.sql.Connection;
-import java.sql.Statement;
-import java.sql.SQLException;
-import java.sql.Types;
-import java.util.Properties;
-import org.jruby.Ruby;
-import org.jruby.runtime.builtin.IRubyObject;
 import java.lang.reflect.Field;
 import java.net.URI;
+import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.sql.Types;
+import java.util.Properties;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import static data_objects.util.DynamicProxyUtil.*;
+
+import org.jruby.Ruby;
+import org.jruby.runtime.builtin.IRubyObject;
+
 import data_objects.drivers.AbstractDriverDefinition;
 import data_objects.util.JDBCUtil;
 
@@ -84,7 +85,7 @@ public class SqlServerDriverDefinition extends AbstractDriverDefinition {
             IRubyObject connection, String url, Properties props) throws SQLException {
         java.sql.Connection conn;
         try  {
-            conn = proxyCON(DriverManager.getConnection(url, props));
+            conn = DriverManager.getConnection(url, props);
         } catch (SQLException eex) {
             Pattern p = Pattern.compile("Could not find a Java charset equivalent to DB charset (.+).");
             Matcher m = p.matcher(eex.getMessage());
@@ -98,7 +99,7 @@ public class SqlServerDriverDefinition extends AbstractDriverDefinition {
                 setEncodingProperty(props, UTF8_ENCODING);
                 API.setInstanceVariable(connection,
                         "@encoding", runtime.newString(UTF8_ENCODING));
-                conn = proxyCON(DriverManager.getConnection(url, props));
+                conn = DriverManager.getConnection(url, props);
             } else {
                 throw eex;
             }

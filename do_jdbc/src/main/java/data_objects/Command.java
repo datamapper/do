@@ -30,7 +30,6 @@ import org.jruby.runtime.builtin.IRubyObject;
 import data_objects.drivers.DriverDefinition;
 import data_objects.errors.Errors;
 import data_objects.util.JDBCUtil;
-import static data_objects.util.DynamicProxyUtil.*;
 
 
 /**
@@ -126,8 +125,8 @@ public class Command extends DORubyObject {
         try {
             if (usePS) {
                 if (driver.supportsConnectionPrepareStatementMethodWithGKFlag()) {
-                    sqlStatement = proxyPS(conn.prepareStatement(sqlText,
-                    driver.supportsJdbcGeneratedKeys() ? Statement.RETURN_GENERATED_KEYS : Statement.NO_GENERATED_KEYS));
+                    sqlStatement = conn.prepareStatement(sqlText,
+                    driver.supportsJdbcGeneratedKeys() ? Statement.RETURN_GENERATED_KEYS : Statement.NO_GENERATED_KEYS);
                 } else {
                     // If java.sql.PreparedStatement#getGeneratedKeys() is not supported,
                     // then it is important to call java.sql.Connection#prepareStatement(String)
@@ -138,18 +137,18 @@ public class Command extends DORubyObject {
                     // being SQLiteJDBC which currently throws an ugly (and cryptic)
                     // "NYI" SQLException if Connection#prepareStatement(String, int)
                     // is called.
-                    sqlStatement = proxyPS(conn.prepareStatement(sqlText));
+                    sqlStatement = conn.prepareStatement(sqlText);
                 }
 
                 hasReturnParam = prepareStatementFromArgs(sqlText, sqlStatement, args);
             } else {
-                sqlSimpleStatement = proxyST(conn.createStatement());
+                sqlSimpleStatement = conn.createStatement();
             }
 
             long startTime = System.currentTimeMillis();
             if (usePS) {
                 if (sqlText.contains("RETURNING") && !hasReturnParam) {
-                    keys = proxyRS(sqlStatement.executeQuery());
+                    keys = sqlStatement.executeQuery();
                 } else {
                     affectedCount = sqlStatement.executeUpdate();
                 }
@@ -181,7 +180,7 @@ public class Command extends DORubyObject {
 
                     // apparently the prepared statements always provide the
                     // generated keys
-                    keys = proxyRS(sqlStatement.getGeneratedKeys());
+                    keys = sqlStatement.getGeneratedKeys();
 
                 } else if (hasReturnParam) {
                     // Used in Oracle for INSERT ... RETURNING ... INTO ... statements
@@ -189,7 +188,7 @@ public class Command extends DORubyObject {
                 } else {
                     // If there is no support, then a custom method can be defined
                     // to return a ResultSet with keys
-                    keys = proxyRS(driver.getGeneratedKeys(conn));
+                    keys = driver.getGeneratedKeys(conn);
                 }
             }
             if (usePS && keys != null) {
@@ -247,20 +246,20 @@ public class Command extends DORubyObject {
                     api.getInstanceVariable(this, "@text")).getUnicodeValue();
             String sqlText = prepareSqlTextForPs(doSqlText, args);
 
-            sqlStatement = proxyPS(conn.prepareStatement(
+            sqlStatement = conn.prepareStatement(
                            sqlText,
                            driver.supportsJdbcScrollableResultSets() ? ResultSet.TYPE_SCROLL_INSENSITIVE : ResultSet.TYPE_FORWARD_ONLY,
-                           ResultSet.CONCUR_READ_ONLY));
+                           ResultSet.CONCUR_READ_ONLY);
 
             prepareStatementFromArgs(sqlText, sqlStatement, args);
 
             long startTime = System.currentTimeMillis();
-            resultSet = proxyRS(sqlStatement.executeQuery());
+            resultSet = sqlStatement.executeQuery();
             long endTime = System.currentTimeMillis();
 
             debug(driver.statementToString(sqlStatement), Long.valueOf(endTime - startTime));
 
-            metaData = proxyRSMD(resultSet.getMetaData());
+            metaData = resultSet.getMetaData();
             columnCount = metaData.getColumnCount();
 
             // reduce columnCount by 1 if RAW_RNUM_ is present as last column
@@ -325,7 +324,7 @@ public class Command extends DORubyObject {
                 List<String> fieldNames = new ArrayList<String>();
                 // for each field
                 try {
-                    metaData = proxyRSMD(sqlStatement.getMetaData());
+                    metaData = sqlStatement.getMetaData();
                     for (int i = 0; i < columnCount; i++) {
                         int col = i + 1;
                         // downcase the field name
@@ -409,7 +408,7 @@ public class Command extends DORubyObject {
     public IRubyObject unmarshal_id_result(ResultSet rs) throws SQLException {
         try {
             if (rs.next()) {
-                if (proxyRSMD(rs.getMetaData()).getColumnCount() > 0) {
+                if (rs.getMetaData().getColumnCount() > 0) {
                     // TODO: Need to do check for other types here, as keys could be
                     // of type Integer, Long or String
                     return getRuntime().newFixnum(rs.getLong(1));
@@ -537,7 +536,7 @@ public class Command extends DORubyObject {
         int index = 1;
         boolean hasReturnParam = false;
         try {
-            int psCount = proxyPMD(ps.getParameterMetaData()).getParameterCount();
+            int psCount = ps.getParameterMetaData().getParameterCount();
             // fail fast
             if (args.length > psCount) {
                 throw getRuntime().newArgumentError(

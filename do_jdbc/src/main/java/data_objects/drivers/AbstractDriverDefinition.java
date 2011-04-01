@@ -1,8 +1,5 @@
 package data_objects.drivers;
 
-import static data_objects.util.DynamicProxyUtil.proxyCON;
-import static data_objects.util.DynamicProxyUtil.proxyRSMD;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
@@ -138,7 +135,7 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
      * @throws SQLException
      */
     public Connection getConnection(String uri, Properties properties) throws SQLException{
-        return proxyCON(driver.connect(uri, properties));
+        return driver.connect(uri, properties);
     }
 
     /**
@@ -334,7 +331,7 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
             }
             return prepareRubyDateTimeFromSqlTimestamp(runtime, sqlTimestampToDateTime(dt));
         case TIME:
-            switch (proxyRSMD(rs.getMetaData()).getColumnType(col)) {
+            switch (rs.getMetaData().getColumnType(col)) {
             case Types.TIME:
                 java.sql.Time tm = rs.getTime(col);
                 if (tm == null) {

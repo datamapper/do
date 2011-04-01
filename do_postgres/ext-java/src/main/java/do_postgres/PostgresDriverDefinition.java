@@ -17,7 +17,6 @@ import data_objects.RubyType;
 import data_objects.drivers.AbstractDriverDefinition;
 import data_objects.util.JDBCUtil;
 import java.util.Properties;
-import static data_objects.util.DynamicProxyUtil.*;
 
 public class PostgresDriverDefinition extends AbstractDriverDefinition {
 
@@ -79,7 +78,7 @@ public class PostgresDriverDefinition extends AbstractDriverDefinition {
         int jdbcType;
         switch (RubyType.inferRubyType(arg)) {
         case STRING:
-            jdbcType = proxyPMD(ps.getParameterMetaData()).getParameterType(idx);
+            jdbcType = ps.getParameterMetaData().getParameterType(idx);
             switch (jdbcType) {
             case Types.INTEGER:
                 // conversion for '.execute_reader("2")'
@@ -90,7 +89,7 @@ public class PostgresDriverDefinition extends AbstractDriverDefinition {
             }
             break;
         case BYTE_ARRAY:
-            jdbcType = proxyPMD(ps.getParameterMetaData()).getParameterType(idx);
+            jdbcType = ps.getParameterMetaData().getParameterType(idx);
             switch (jdbcType) {
             case Types.BINARY:
                 ps.setBytes(idx, ((RubyString) arg).getBytes());
@@ -170,8 +169,8 @@ public class PostgresDriverDefinition extends AbstractDriverDefinition {
         Statement st = null;
         boolean standardConformingStrings = false;
         try {
-            st = proxyST(conn.createStatement());
-            ResultSet rs = proxyRS(st.executeQuery("SHOW standard_conforming_strings"));
+            st = conn.createStatement();
+            ResultSet rs = st.executeQuery("SHOW standard_conforming_strings");
             if (rs.next()) {
                 standardConformingStrings = rs.getString(1).equals("on");
             }
