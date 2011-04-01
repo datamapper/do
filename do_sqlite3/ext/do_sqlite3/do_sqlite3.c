@@ -125,7 +125,7 @@ int flags_from_uri(VALUE uri) {
       flags |= SQLITE_OPEN_FULLMUTEX;
     }
 #endif
-    
+
     flags |= SQLITE_OPEN_CREATE;
   }
   else {
