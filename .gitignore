@@ -1,9 +1,11 @@
+## MAC OS
+.DS_Store
+
 *.log*
 ./doc
 ./cov
 pkg/*
 _Yardoc
-.DS_Store
 *.o
 *.so
 .yardoc
@@ -11,7 +13,6 @@ Makefile
 **/*.db
 mem.*
 testdb
-nbproject
 *.*~
 *.*#
 *.rbc
@@ -27,10 +28,6 @@ do_*/target
 do_*/tmp
 do_*/vendor
 bin/**
-*.ipr
-*.iws
-*.iml
-.project
 *.swp
 gem_make.out
 *.gem
@@ -38,3 +35,13 @@ gem_make.out
 
 ## BUNDLER
 Gemfile.*
+
+## JAVA IDEs
+.classpath
+.project
+.settings
+*.ipr
+*.iws
+*.iml
+nb-configuration.xml
+nbproject
