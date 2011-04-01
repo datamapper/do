@@ -26,6 +26,13 @@ shared_examples_for 'a Reader' do
       @reader.fields.should be_array_case_insensitively_equal_to(['code', 'name'])
     end
 
+    it 'should return the field alias as the name, when the SQL AS keyword is specified' do
+      reader = @connection.create_command("SELECT code AS codigo, name AS nombre FROM widgets WHERE ad_description = ? order by id").execute_reader('Buy this product now!')
+      reader.fields.should_not be_array_case_insensitively_equal_to(['code',   'name'])
+      reader.fields.should     be_array_case_insensitively_equal_to(['codigo', 'nombre'])
+      reader.close
+    end
+
   end
 
   it { @reader.should respond_to(:values) }

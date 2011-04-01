@@ -295,7 +295,7 @@ public class Command extends DORubyObject {
             for (int i = 0; i < columnCount; i++) {
                 int col = i + 1;
                 // downcase the field name
-                fieldNames.add(metaData.getColumnName(col));
+                fieldNames.add(metaData.getColumnLabel(col));
 
                 if (inferTypes) {
                     // infer the type if no types passed
@@ -328,7 +328,7 @@ public class Command extends DORubyObject {
                     for (int i = 0; i < columnCount; i++) {
                         int col = i + 1;
                         // downcase the field name
-                        fieldNames.add(metaData.getColumnName(col));
+                        fieldNames.add(metaData.getColumnLabel(col));
 
                         // infer the type if no types passed
                         fieldTypes.add(
