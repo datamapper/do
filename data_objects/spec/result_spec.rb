@@ -1,21 +1,23 @@
 require File.expand_path(File.join(File.dirname(__FILE__), 'spec_helper'))
 
 describe DataObjects::Result do
+  subject { command.execute_non_query }
 
-  it "should define a standard API" do
-    connection = DataObjects::Connection.new('mock://localhost')
+  let(:connection)  { DataObjects::Connection.new('mock://localhost')     }
+  let(:command)     { connection.create_command('SELECT * FROM example')  }
 
-    command = connection.create_command("SELECT * FROM example")
+  after { connection.close }
 
-    result = command.execute_non_query
+  context 'should define a standard API' do
 
-    # Affected Rows:
-    result.should respond_to(:to_i)
-    result.to_i.should == 0
+    it 'should provide the number of affected rows' do
+      should respond_to(:to_i)
+      subject.to_i.should == 0
+    end
 
-    # The id of the inserted row.
-    result.should respond_to(:insert_id)
-    connection.close
+    it 'should provide the id of the inserted row' do
+      should respond_to(:insert_id)
+    end
+
   end
-
 end

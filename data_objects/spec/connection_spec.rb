@@ -1,44 +1,47 @@
 require File.expand_path(File.join(File.dirname(__FILE__), 'spec_helper'))
 
 describe DataObjects::Connection do
-  before do
-    @connection = DataObjects::Connection.new('mock://localhost')
+  subject { klass.new(url) }
+
+  let(:klass) { DataObjects::Connection }
+
+  after(:each) { subject.close }
+
+  context 'should define a standard API' do
+    let(:url)   { 'mock://localhost'      }
+
+    it { should respond_to(:dispose)        }
+    it { should respond_to(:create_command) }
+
+    it 'should have #to_s that returns the connection uri string' do
+      subject.to_s.should == 'mock://localhost'
+    end
+
   end
 
-  after do
-    @connection.close
-  end
+  describe 'initialization' do
 
-  %w{dispose create_command}.each do |meth|
-    it "should respond to ##{meth}" do
-      @connection.should respond_to(meth.intern)
+    context 'should accept a connection uri as a Addressable::URI' do
+      let(:url)  { Addressable::URI::parse('mock://localhost/database') }
+
+      # NOTE: Using its results in an error, as subject gets redefined:
+      #       NoMethodError: undefined method `close' for "mock://localhost/database":String
+      # its(:to_s) { should == 'mock://localhost/database' }
+      it { subject.to_s.should == 'mock://localhost/database' }
+     end
+
+    context 'should return the Connection specified by the scheme' do
+      let(:url)  { Addressable::URI.parse('mock://localhost/database') }
+
+      it { should be_kind_of(DataObjects::Mock::Connection) }
+      it { should be_kind_of(DataObjects::Pooling)          }
+    end
+
+    context 'should return the Connection specified by the scheme without pooling' do
+      let(:url)  { Addressable::URI.parse('java://jdbc/database?scheme=mock2') }
+
+      it { should_not be_kind_of(DataObjects::Pooling) }
     end
   end
 
-  it "should have #to_s that returns the connection uri string" do
-    @connection.to_s.should == 'mock://localhost'
-  end
-
-  describe "initialization" do
-
-    it "should accept a connection uri as a Addressable::URI" do
-      conn = DataObjects::Connection.new(Addressable::URI::parse('mock://localhost/database'))
-      # relying on the fact that mock connection sets @uri
-      conn.to_s.should == 'mock://localhost/database'
-      conn.close
-    end
-
-    it "should return the Connection specified by the scheme" do
-      conn = DataObjects::Connection.new(Addressable::URI.parse('mock://localhost/database'))
-      conn.should be_kind_of(DataObjects::Mock::Connection)
-      conn.should be_kind_of(DataObjects::Pooling)
-      conn.close
-    end
-
-    it "should return the Connection specified by the scheme without pooling" do
-      conn = DataObjects::Connection.new(Addressable::URI.parse('java://jdbc/database?scheme=mock2'))
-      conn.should_not be_kind_of(DataObjects::Pooling)
-      conn.close
-    end
-  end
 end

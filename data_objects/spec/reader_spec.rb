@@ -1,23 +1,22 @@
 require File.expand_path(File.join(File.dirname(__FILE__), 'spec_helper'))
 
 describe DataObjects::Reader do
+  subject { command.execute_reader }
 
-  it "should define a standard API" do
-    connection = DataObjects::Connection.new('mock://localhost')
+  let(:connection)  { DataObjects::Connection.new('mock://localhost')     }
+  let(:command)     { connection.create_command('SELECT * FROM example')  }
 
-    command = connection.create_command("SELECT * FROM example")
+  after { connection.close }
 
-    reader = command.execute_reader
+  context 'should define a standard API' do
 
-    reader.should be_a(Enumerable)
+    it { should be_a(Enumerable)    }
 
-    reader.should respond_to(:close)
-    reader.should respond_to(:next!)
-    reader.should respond_to(:values)
-    reader.should respond_to(:fields)
-    reader.should respond_to(:each)
-
-    connection.close
+    it { should respond_to(:close)  }
+    it { should respond_to(:next!)  }
+    it { should respond_to(:values) }
+    it { should respond_to(:fields) }
+    it { should respond_to(:each)   }
   end
 
 end
