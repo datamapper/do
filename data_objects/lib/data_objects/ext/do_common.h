@@ -165,4 +165,6 @@ extern void do_raise_error(VALUE self, const struct errcodes *errors, int errnum
 
 extern VALUE do_typecast(const char *value, long length, const VALUE type, int encoding);
 
+#define RSTRING_NOT_MODIFIED
+
 #endif
