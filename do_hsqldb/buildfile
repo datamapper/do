@@ -12,7 +12,7 @@ define 'do_hsqldb' do
   project.version = VERSION_NUMBER
   project.group = 'data_objects.rb'
 
-  manifest['Copyright'] = 'Alex Coles (C) 2008-2010'
+  manifest['Copyright'] = 'Alex Coles (C) 2008-2011'
 
   compile.using :target => '1.5', :lint => 'all', :deprecation => 'true'
 
