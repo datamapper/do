@@ -114,7 +114,7 @@ MYSQL_RES *cCommand_execute_sync(VALUE self, VALUE connection, MYSQL *db, VALUE 
   int retval;
   struct timeval start;
   const char *str = rb_str_ptr_readonly(query);
-  int len = rb_str_len(query);
+  long len = rb_str_len(query);
 
   if (mysql_ping(db) && mysql_errno(db) == CR_SERVER_GONE_ERROR) {
     // Ok, we do one more try here by doing a full connect
@@ -140,7 +140,7 @@ MYSQL_RES *cCommand_execute_async(VALUE self, VALUE connection, MYSQL *db, VALUE
 
   struct timeval start;
   const char *str = rb_str_ptr_readonly(query);
-  size_t len = rb_str_len(query);
+  long len = rb_str_len(query);
 
   gettimeofday(&start, NULL);
   retval = mysql_send_query(db, str, len);
@@ -426,8 +426,8 @@ VALUE cConnection_dispose(VALUE self) {
 VALUE cConnection_quote_string(VALUE self, VALUE string) {
   MYSQL *db = DATA_PTR(rb_iv_get(self, "@connection"));
   const char *source = rb_str_ptr_readonly(string);
-  size_t source_len = rb_str_len(string);
-  size_t buffer_len = source_len * 2 + 3;
+  long source_len = rb_str_len(string);
+  long buffer_len = source_len * 2 + 3;
 
   // Overflow check
   if(buffer_len <= source_len) {

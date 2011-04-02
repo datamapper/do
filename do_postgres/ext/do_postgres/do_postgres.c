@@ -124,8 +124,9 @@ VALUE cConnection_dispose(VALUE self) {
 VALUE cConnection_quote_string(VALUE self, VALUE string) {
   PGconn *db = DATA_PTR(rb_iv_get(self, "@connection"));
   const char *source = rb_str_ptr_readonly(string);
-  size_t source_len  = rb_str_len(string);
-  size_t buffer_len  = source_len * 2 + 3;
+  int error = 0;
+  long source_len  = rb_str_len(string);
+  long buffer_len  = source_len * 2 + 3;
 
   // Overflow check
   if(buffer_len <= source_len) {
@@ -140,11 +141,15 @@ VALUE cConnection_quote_string(VALUE self, VALUE string) {
     rb_memerror();
   }
 
-  size_t quoted_length;
+  long quoted_length;
   VALUE result;
 
   // Escape 'source' using the current charset in use on the conection 'db'
-  quoted_length = PQescapeStringConn(db, escaped + 1, source, source_len, NULL);
+  quoted_length = PQescapeStringConn(db, escaped + 1, source, source_len, &error);
+
+  if(error) {
+    rb_raise(eDataError, PQerrorMessage(db));
+  }
 
   // Wrap the escaped string in single-quotes, this is DO's convention
   escaped[0] = escaped[quoted_length + 1] = '\'';
@@ -158,11 +163,11 @@ VALUE cConnection_quote_string(VALUE self, VALUE string) {
 VALUE cConnection_quote_byte_array(VALUE self, VALUE string) {
   PGconn *db = DATA_PTR(rb_iv_get(self, "@connection"));
   const unsigned char *source = (unsigned char *)rb_str_ptr_readonly(string);
-  size_t source_len = rb_str_len(string);
+  long source_len = rb_str_len(string);
 
   unsigned char *escaped;
   unsigned char *escaped_quotes;
-  size_t quoted_length = 0;
+  long quoted_length = 0;
   VALUE result;
 
   // Allocate space for the escaped version of 'string'
