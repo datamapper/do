@@ -8,13 +8,14 @@ describe DataObjects::Mysql::Reader do
 
   describe 'reading database metadata' do
 
-    subject { command.execute_reader }
+    subject { reader }
 
     let(:connection) { DataObjects::Connection.new(CONFIG.uri) }
     let(:command)    { connection.create_command(sql) }
+    let(:reader)     { command.execute_reader }
 
     after do
-      #subject.close FIXME: its redefines subject?
+      reader.close
       connection.close
     end
 
