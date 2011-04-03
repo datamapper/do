@@ -1,10 +1,9 @@
 require File.expand_path(File.join(File.dirname(__FILE__), 'spec_helper'))
 
 describe DataObjects::URI do
-  subject { klass.parse(arg) }
+  subject { described_class.parse(uri) }
 
-  let(:klass) { DataObjects::URI                                                        }
-  let(:arg)   { 'mock://username:password@localhost:12345/path?encoding=utf8#fragment'  }
+  let(:uri) { 'mock://username:password@localhost:12345/path?encoding=utf8#fragment'  }
 
   it 'should parse the scheme part' do
     subject.scheme.should == "mock"

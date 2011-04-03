@@ -1,11 +1,11 @@
 require File.expand_path(File.join(File.dirname(__FILE__), 'spec_helper'))
 
 describe DataObjects::Connection do
-  subject { klass.new(url) }
+  subject { connection }
 
-  let(:klass) { DataObjects::Connection }
+  let(:connection) { described_class.new(url) }
 
-  after(:each) { subject.close }
+  after { connection.close }
 
   context 'should define a standard API' do
     let(:url)   { 'mock://localhost'      }
@@ -13,10 +13,7 @@ describe DataObjects::Connection do
     it { should respond_to(:dispose)        }
     it { should respond_to(:create_command) }
 
-    it 'should have #to_s that returns the connection uri string' do
-      subject.to_s.should == 'mock://localhost'
-    end
-
+    its(:to_s)  { should == 'mock://localhost' }
   end
 
   describe 'initialization' do
@@ -24,11 +21,8 @@ describe DataObjects::Connection do
     context 'should accept a connection uri as a Addressable::URI' do
       let(:url)  { Addressable::URI::parse('mock://localhost/database') }
 
-      # NOTE: Using its results in an error, as subject gets redefined:
-      #       NoMethodError: undefined method `close' for "mock://localhost/database":String
-      # its(:to_s) { should == 'mock://localhost/database' }
-      it { subject.to_s.should == 'mock://localhost/database' }
-     end
+      its(:to_s) { should == 'mock://localhost/database' }
+    end
 
     context 'should return the Connection specified by the scheme' do
       let(:url)  { Addressable::URI.parse('mock://localhost/database') }
