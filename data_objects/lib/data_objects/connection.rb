@@ -17,13 +17,16 @@ module DataObjects
       case uri.scheme.to_sym
       when :java
         warn 'JNDI URLs (connection strings) are only for use with JRuby' unless RUBY_PLATFORM =~ /java/
-        driver_name = uri.query.delete("scheme")
+
+        driver   = uri.query.delete('scheme')
+        driver   = uri.query.delete('driver')
+
         conn_uri = uri.to_s.gsub(/\?$/, '')
       when :jdbc
         warn 'JDBC URLs (connection strings) are only for use with JRuby' unless RUBY_PLATFORM =~ /java/
 
-        path = uri.path.sub(/jdbc:/, '')
-        driver_name = if path.split(':').first == 'sqlite'
+        path = uri.subscheme
+        driver = if path.split(':').first == 'sqlite'
           'sqlite3'
         elsif path.split(':').first == 'postgresql'
           'postgres'
@@ -38,15 +41,15 @@ module DataObjects
                          # java.sql.DriverManager.getConnection to throw a
                          # 'No suitable driver found for...' exception.
       else
-        driver_name = uri.scheme
+        driver   = uri.scheme
         conn_uri = uri
       end
 
       # Exceptions to how a driver class is determined for a given URI
-      driver_class = if driver_name == 'sqlserver'
+      driver_class = if driver == 'sqlserver'
         'SqlServer'
       else
-        driver_name.capitalize
+        driver.capitalize
       end
 
       clazz = DataObjects.const_get(driver_class)::Connection

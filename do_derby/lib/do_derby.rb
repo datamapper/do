@@ -4,9 +4,14 @@ if RUBY_PLATFORM =~ /java/
   require 'do_jdbc'
   require 'java'
 
-  driver = 'org.apache.derby.jdbc.EmbeddedDriver'
+  module DataObjects
+    module Derby
+      JDBC_DRIVER = 'org.apache.derby.jdbc.EmbeddedDriver'
+    end
+  end
+
   begin
-    java.lang.Thread.currentThread.getContextClassLoader().loadClass(driver, true)
+    java.lang.Thread.currentThread.getContextClassLoader().loadClass(DataObjects::Derby::JDBC_DRIVER, true)
   rescue
     require 'jdbc/derby'      # the JDBC driver, packaged as a gem
   end
@@ -16,7 +21,7 @@ if RUBY_PLATFORM =~ /java/
   # Another way of loading the JDBC Class. This seems to be more reliable
   # than Class.forName() within the data_objects.Connection Java class,
   # which is currently not working as expected.
-  java_import driver
+  java_import DataObjects::Derby::JDBC_DRIVER
 
 else
   warn "do_derby is only for use with JRuby"

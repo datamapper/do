@@ -3,9 +3,14 @@ if RUBY_PLATFORM =~ /java/
   require 'do_jdbc'
   require 'java'
 
-  driver =  'org.sqlite.JDBC'
+  module DataObjects
+    module Sqlite3
+      JDBC_DRIVER = 'org.sqlite.JDBC'
+    end
+  end
+
   begin
-    java.lang.Thread.currentThread.getContextClassLoader().loadClass(driver, true)
+    java.lang.Thread.currentThread.getContextClassLoader().loadClass(DataObjects::Sqlite3::JDBC_DRIVER, true)
   rescue
     require 'jdbc/sqlite3' # the JDBC driver, packaged as a gem
   end
@@ -15,7 +20,7 @@ if RUBY_PLATFORM =~ /java/
   # Thread.currentThread.getContextClassLoader().loadClass() within the
   # data_objects.Connection Java class, which is currently not working as
   # expected.
-  java_import driver
+  java_import DataObjects::Sqlite3::JDBC_DRIVER
 end
 
 begin

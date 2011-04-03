@@ -155,13 +155,12 @@ public final class Connection extends DORubyObject {
         java.sql.Connection conn = null;
 
         try {
-            if (connectionUri.getPath() != null && connectionUri.getScheme().equals("java")) {
-                String jndiName = connectionUri.toString().replace("://", ":");
+            if (connectionUri.getSchemeSpecificPart() != null && connectionUri.getScheme().equals("java")) {
+                String jndiName = connectionUri.toString();
 
                 try {
                     InitialContext context = new InitialContext();
                     DataSource dataSource = (DataSource) context.lookup(jndiName);
-                    // TODO maybe allow username and password here as well !??!
                     conn = dataSource.getConnection();
                 } catch (NamingException ex) {
                     JDBCUtil.close(conn);

@@ -282,6 +282,12 @@ if RUBY_PLATFORM !~ /java/
 
 else
 
+  module DataObjects
+    module SqlServer
+      JDBC_DRIVER = 'net.sourceforge.jtds.jdbc.Driver'
+    end
+  end
+
   # Register SqlServer JDBC driver
   java.sql.DriverManager.registerDriver Java::net.sourceforge.jtds.jdbc.Driver.new
 

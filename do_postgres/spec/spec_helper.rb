@@ -41,9 +41,11 @@ CONFIG.host      = ENV['DO_POSTGRES_HOST'] || 'localhost'
 CONFIG.port      = ENV['DO_POSTGRES_PORT'] || '5432'
 CONFIG.database  = ENV['DO_POSTGRES_DATABASE'] || '/do_test'
 
-CONFIG.uri = ENV["DO_POSTGRES_SPEC_URI"] ||"#{CONFIG.scheme}://#{CONFIG.user_info}#{CONFIG.host}:#{CONFIG.port}#{CONFIG.database}"
-CONFIG.jdbc_uri = CONFIG.uri.sub(/postgres/,"jdbc:postgresql")
-CONFIG.sleep = "SELECT pg_sleep(1)"
+CONFIG.driver       = 'postgres'
+CONFIG.jdbc_driver  = DataObjects::Postgres.const_get('JDBC_DRIVER') rescue nil
+CONFIG.uri          = ENV["DO_POSTGRES_SPEC_URI"] ||"#{CONFIG.scheme}://#{CONFIG.user_info}#{CONFIG.host}:#{CONFIG.port}#{CONFIG.database}"
+CONFIG.jdbc_uri     = CONFIG.uri.sub(/postgres/,"jdbc:postgresql")
+CONFIG.sleep        = "SELECT pg_sleep(1)"
 
 module DataObjectsSpecHelpers
 

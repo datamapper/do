@@ -137,20 +137,21 @@ shared_examples_for 'a Connection with authentication support' do
 
 end
 
+def test_connection(conn)
+  reader = conn.create_command(CONFIG.testsql || "SELECT 1").execute_reader
+  reader.next!
+  result = reader.values[0]
+  result
+ensure
+  reader.close
+  conn.close
+end
+
 shared_examples_for 'a Connection with JDBC URL support' do
 
-  def test_connection(conn)
-    reader = conn.create_command(CONFIG.testsql || "SELECT 1").execute_reader
-    reader.next!
-    result = reader.values[0]
-    reader.close
-    conn.close
-  end
-
-  xit 'should work with JDBC URLs' do
+  it 'should work with JDBC URLs' do
     conn = DataObjects::Connection.new(CONFIG.jdbc_uri || "jdbc:#{CONFIG.uri.sub(/jdbc:/, '')}")
     test_connection(conn).should == 1
-    conn.close
   end
 
 end if defined? JRUBY_VERSION
@@ -184,33 +185,59 @@ end
 shared_examples_for 'a Connection via JDNI' do
 
   if defined? JRUBY_VERSION
+    require 'java'
+    begin
+      require 'do_jdbc/spec/lib/tyrex-1.0.3.jar'
+      require 'do_jdbc/spec/lib/javaee-api-6.0.jar'
+      require 'do_jdbc/spec/lib/commons-dbcp-1.2.2.jar'
+      require 'do_jdbc/spec/lib/commons-pool-1.3.jar'
+    rescue LoadError
+      pending 'JNDI specs currently require manual download of Tyrex and Apache Commons JARs'
+      break
+    end
+
     describe 'connecting with JNDI' do
 
+      before(:all) do
+        java_import java.lang.System
+        java_import javax.naming.Context
+        java_import javax.naming.NamingException
+        java_import javax.naming.Reference
+        java_import javax.naming.StringRefAddr
+        java_import 'tyrex.naming.MemoryContext'
+        java_import 'tyrex.tm.RuntimeContext'
+
+        System.set_property(Context.INITIAL_CONTEXT_FACTORY, 'tyrex.naming.MemoryContextFactory')
+        ref  = Reference.new('javax.sql.DataSource',
+                             'org.apache.commons.dbcp.BasicDataSourceFactory', nil)
+        ref.add(StringRefAddr.new('driverClassName',  CONFIG.jdbc_driver))
+        ref.add(StringRefAddr.new('url',              (CONFIG.jdbc_uri || CONFIG.uri)))
+        ref.add(StringRefAddr.new('username',         CONFIG.user))
+        ref.add(StringRefAddr.new('password',         CONFIG.pass))
+
+        @root = MemoryContext.new(nil)
+        ctx   = @root.createSubcontext('comp')
+        ctx   = ctx.createSubcontext('env')
+        ctx   = ctx.createSubcontext('jdbc')
+        ctx.bind('mydb', ref)
+      end
+
       before do
-        require 'java'
-        begin
-          @jndi = Java::Data_objects::JNDITestSetup.new("jdbc:#{CONFIG.uri}".gsub(/:sqlite3:/, ':sqlite:'), CONFIG.jdbc_driver, 'mydb')
-          @jndi.setup()
-        rescue
-          puts "no JNDITestSetup found in classpath - skip jndi spec"
-        end
+        runCtx = RuntimeContext.newRuntimeContext(@root, nil)
+        RuntimeContext.setRuntimeContext(runCtx)
       end
 
       after do
-        @jndi.teardown() if @jndi
+        RuntimeContext.unsetRuntimeContext()
       end
 
       it 'should connect' do
-        if @jndi
-          begin
-            c = DataObjects::Connection.new("java:comp/env/jdbc/mydb?scheme=#{CONFIG.scheme}")
-            c.should_not be_nil
-          ensure
-            c.close if c
-          end
-        else
-          # to avoid empty spec error
-          @jndi.should be_nil
+        begin
+          c = DataObjects::Connection.new("java:comp/env/jdbc/mydb?driver=#{CONFIG.driver}")
+          c.should_not be_nil
+          test_connection(c).should == 1
+        ensure
+          c.close if c
         end
       end
     end

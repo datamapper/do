@@ -27,16 +27,11 @@ DataObjects::Hsqldb.logger = DataObjects::Logger.new(STDOUT, :off)
 at_exit { DataObjects.logger.flush }
 
 
-CONFIG = OpenStruct.new
-# CONFIG.scheme   = 'hsqldb'
-# CONFIG.user     = ENV['DO_HSQLDB_USER'] || 'hsqldb'
-# CONFIG.pass     = ENV['DO_HSQLDB_PASS'] || ''
-# CONFIG.host     = ENV['DO_HSQLDB_HOST'] || ''
-# CONFIG.port     = ENV['DO_HSQLDB_PORT'] || ''
-# CONFIG.database = ENV['DO_HSQLDB_DATABASE'] || "#{File.expand_path(File.dirname(__FILE__))}/testdb"
-
-CONFIG.uri = ENV["DO_HSQLDB_SPEC_URI"] || "jdbc:hsqldb:mem:test"
-CONFIG.testsql = "select 1 from INFORMATION_SCHEMA.SYSTEM_USERS"
+CONFIG              = OpenStruct.new
+CONFIG.uri          = ENV["DO_HSQLDB_SPEC_URI"] || "jdbc:hsqldb:mem:test"
+CONFIG.driver       = 'hsqldb'
+CONFIG.jdbc_driver  = DataObjects::Hsqldb::JDBC_DRIVER
+CONFIG.testsql      = "select 1 from INFORMATION_SCHEMA.SYSTEM_USERS"
 
 module DataObjectsSpecHelpers
 

@@ -27,16 +27,11 @@ DataObjects::Derby.logger = DataObjects::Logger.new(STDOUT, :off)
 at_exit { DataObjects.logger.flush }
 
 
-CONFIG = OpenStruct.new
-# CONFIG.scheme   = 'derby'
-# CONFIG.user     = ENV['DO_DERBY_USER'] || 'derby'
-# CONFIG.pass     = ENV['DO_DERBY_PASS'] || ''
-# CONFIG.host     = ENV['DO_DERBY_HOST'] || ''
-# CONFIG.port     = ENV['DO_DERBY_PORT'] || ''
-# CONFIG.database = ENV['DO_DERBY_DATABASE'] || "#{File.expand_path(File.dirname(__FILE__))}/testdb"
-
-CONFIG.uri = ENV["DO_DERBY_SPEC_URI"] || "jdbc:derby:testdb;create=true"
-CONFIG.testsql = "SELECT 1 FROM SYSIBM.SYSDUMMY1"
+CONFIG              = OpenStruct.new
+CONFIG.uri          = ENV["DO_DERBY_SPEC_URI"] || "jdbc:derby:testdb;create=true"
+CONFIG.driver       = 'derby'
+CONFIG.jdbc_driver  = DataObjects::Derby::JDBC_DRIVER
+CONFIG.testsql      = "SELECT 1 FROM SYSIBM.SYSDUMMY1"
 
 module DataObjectsSpecHelpers
 

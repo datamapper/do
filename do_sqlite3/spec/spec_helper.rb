@@ -25,17 +25,13 @@ require 'data_objects/spec/lib/pending_helpers'
 require 'do_sqlite3'
 
 
-RSpec.configure do |config|
-  #config.include(DataObjects::Spec::PendingHelpers)
-end
-
-CONFIG = OpenStruct.new
-CONFIG.scheme   = 'sqlite3'
-CONFIG.database = ENV['DO_SQLITE3_DATABASE'] || ":memory:"
-
-CONFIG.uri = ENV["DO_SQLITE3_SPEC_URI"] || "#{CONFIG.scheme}:#{CONFIG.database}"
-CONFIG.jdbc_driver = 'org.sqlite.JDBC'
-CONFIG.jdbc_uri = CONFIG.uri.sub(/sqlite3/,"jdbc:sqlite")
+CONFIG              = OpenStruct.new
+CONFIG.scheme       = 'sqlite3'
+CONFIG.database     = ENV['DO_SQLITE3_DATABASE'] || ":memory:"
+CONFIG.uri          = ENV["DO_SQLITE3_SPEC_URI"] || "#{CONFIG.scheme}:#{CONFIG.database}"
+CONFIG.driver       = 'sqlite3'
+CONFIG.jdbc_driver  = DataObjects::Sqlite3.const_get('JDBC_DRIVER') rescue nil
+CONFIG.jdbc_uri     = CONFIG.uri.sub(/sqlite3/,"jdbc:sqlite")
 
 module DataObjectsSpecHelpers
 

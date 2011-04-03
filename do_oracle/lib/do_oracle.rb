@@ -21,6 +21,13 @@ end
 require 'do_oracle/version'
 
 if RUBY_PLATFORM =~ /java/
+
+  module DataObjects
+    module Oracle
+      JDBC_DRIVER = 'oracle.jdbc.OracleDriver'
+    end
+  end
+
   # Oracle JDBC driver (ojdbc14.jar or ojdbc5.jar) file should be in JRUBY_HOME/lib or should be in Java class path
   # Register Oracle JDBC driver
   begin

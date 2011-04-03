@@ -36,8 +36,10 @@ CONFIG.port     = ENV['DO_SQLSERVER_PORT'] || '1433'
 CONFIG.instance = ENV['DO_SQLSERVER_INSTANCE'] || 'SQLEXPRESS'
 CONFIG.database = ENV['DO_SQLSERVER_DATABASE'] || "/do_test;instance=#{CONFIG.instance};"
 
-CONFIG.uri = ENV["DO_SQLSERVER_SPEC_URI"] ||"#{CONFIG.scheme}://#{CONFIG.user}:#{CONFIG.pass}@#{CONFIG.host}:#{CONFIG.port}#{CONFIG.database}"
-CONFIG.sleep = "WAITFOR DELAY '00:00:01'"
+CONFIG.driver       = 'sqlserver'
+CONFIG.jdbc_driver  = DataObjects::SqlServer.const_get('JDBC_DRIVER') rescue nil
+CONFIG.uri          = ENV["DO_SQLSERVER_SPEC_URI"] ||"#{CONFIG.scheme}://#{CONFIG.user}:#{CONFIG.pass}@#{CONFIG.host}:#{CONFIG.port}#{CONFIG.database}"
+CONFIG.sleep        = "WAITFOR DELAY '00:00:01'"
 
 module DataObjectsSpecHelpers
 

@@ -27,15 +27,10 @@ DataObjects::H2.logger = DataObjects::Logger.new(STDOUT, :off)
 at_exit { DataObjects.logger.flush }
 
 
-CONFIG = OpenStruct.new
-# CONFIG.scheme   = 'h2'
-# CONFIG.user     = ENV['DO_H2_USER'] || 'h2'
-# CONFIG.pass     = ENV['DO_H2_PASS'] || ''
-# CONFIG.host     = ENV['DO_H2_HOST'] || ''
-# CONFIG.port     = ENV['DO_H2_PORT'] || ''
-# CONFIG.database = ENV['DO_H2_DATABASE'] || "#{File.expand_path(File.dirname(__FILE__))}/testdb"
-
-CONFIG.uri = ENV["DO_H2_SPEC_URI"] || "jdbc:h2:mem"
+CONFIG              = OpenStruct.new
+CONFIG.uri          = ENV["DO_H2_SPEC_URI"] || "jdbc:h2:mem"
+CONFIG.driver       = 'h2'
+CONFIG.jdbc_driver  = DataObjects::H2::JDBC_DRIVER
 
 module DataObjectsSpecHelpers
 

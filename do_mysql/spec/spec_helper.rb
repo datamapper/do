@@ -43,8 +43,11 @@ CONFIG.port     = ENV['DO_MYSQL_PORT'] || '3306'
 CONFIG.database = ENV['DO_MYSQL_DATABASE'] || '/do_test'
 CONFIG.ssl      = SSLHelpers.query(:ca_cert, :client_cert, :client_key)
 
-CONFIG.uri = ENV["DO_MYSQL_SPEC_URI"] ||"#{CONFIG.scheme}://#{CONFIG.user_info}#{CONFIG.host}:#{CONFIG.port}#{CONFIG.database}"
-CONFIG.sleep = "SELECT sleep(1)"
+CONFIG.driver       = 'mysql'
+CONFIG.jdbc_driver  = DataObjects::Mysql.const_get('JDBC_DRIVER') rescue nil
+CONFIG.uri          = ENV["DO_MYSQL_SPEC_URI"] || "#{CONFIG.scheme}://#{CONFIG.user_info}#{CONFIG.host}:#{CONFIG.port}#{CONFIG.database}"
+CONFIG.jdbc_uri     = "jdbc:#{CONFIG.uri}"
+CONFIG.sleep        = "SELECT sleep(1)"
 
 module DataObjectsSpecHelpers
 
