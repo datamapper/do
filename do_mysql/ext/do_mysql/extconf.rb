@@ -69,21 +69,19 @@ end
 have_func('localtime_r')
 have_func('gmtime_r')
 
-unless RUBY_PLATFORM =~ /mswin|mingw/
-  have_header 'mysql.h'
-  have_const 'MYSQL_TYPE_STRING', 'mysql.h'
-  have_const 'MYSQL_TYPE_BIT', 'mysql.h'
-  have_const 'MYSQL_TYPE_NEWDECIMAL', 'mysql.h'
-  have_func 'mysql_query', 'mysql.h'
-  have_func 'mysql_ssl_set', 'mysql.h'
-  have_func 'mysql_sqlstate', 'mysql.h'
-  have_func 'mysql_get_ssl_cipher', 'mysql.h'
-  have_func 'mysql_set_character_set', 'mysql.h'
-  have_func 'mysql_get_server_version', 'mysql.h'
-  have_struct_member 'MYSQL_FIELD', 'charsetnr', 'mysql.h'
-end
+have_header 'mysql.h'
+have_const 'MYSQL_TYPE_STRING', 'mysql.h'
+have_const 'MYSQL_TYPE_BIT', 'mysql.h'
+have_const 'MYSQL_TYPE_NEWDECIMAL', 'mysql.h'
+have_func 'mysql_query', 'mysql.h'
+have_func 'mysql_ssl_set', 'mysql.h'
+have_func 'mysql_sqlstate', 'mysql.h'
+have_func 'mysql_get_ssl_cipher', 'mysql.h'
+have_func 'mysql_set_character_set', 'mysql.h'
+have_func 'mysql_get_server_version', 'mysql.h'
+have_struct_member 'MYSQL_FIELD', 'charsetnr', 'mysql.h'
 
-$CFLAGS << ' -Wall ' unless RUBY_PLATFORM =~ /mswin/
+$CFLAGS << ' -Wall '
 
 if RUBY_VERSION < '1.8.6'
   $CFLAGS << ' -DRUBY_LESS_THAN_186'
