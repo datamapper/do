@@ -2,11 +2,8 @@ begin
   gem 'rake-compiler', '~>0.7'
   require 'rake/javaextensiontask'
 
-  # Hack to avoid "allocator undefined for Proc" issue when unpacking Gems:
-  # gemspec provided by Jeweler uses Rake::FileList for files, test_files and
-  # extra_rdoc_files, and procs cannot be marshalled.
   def gemspec
-    @clean_gemspec ||= eval("#{Rake.application.jeweler.gemspec.to_ruby}") # $SAFE = 3\n
+    @clean_gemspec ||= Gem::Specification::load(File.expand_path('../../do_derby.gemspec', __FILE__))
   end
 
   Rake::JavaExtensionTask.new('do_derby', gemspec) do |ext|

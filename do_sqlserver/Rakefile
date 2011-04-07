@@ -1,5 +1,8 @@
 require 'pathname'
-require 'rubygems'
+require 'bundler'
+Bundler.setup
+Bundler::GemHelper.install_tasks
+
 require 'rake'
 require 'rake/clean'
 
@@ -14,43 +17,8 @@ SUDO     = WINDOWS ? '' : ('sudo' unless ENV['SUDOLESS'])
 
 CLEAN.include(%w[ {tmp,pkg}/ **/*.{o,so,bundle,jar,log,a,gem,dSYM,obj,pdb,exp,DS_Store,rbc,db} ext-java/target ])
 
-begin
-  gem 'jeweler', '~> 1.4'
-  require 'jeweler'
 
-  Jeweler::Tasks.new do |gem|
-    gem.name        = 'do_sqlserver'
-    gem.version     = DataObjects::SqlServer::VERSION
-    gem.summary     = 'DataObjects SQL Server Driver'
-    gem.description = 'Implements the DataObjects API for Microsoft SQL Server'
-    gem.platform    = 'java'
-    gem.files       = FileList['lib/**/*.rb', 'spec/**/*.rb', 'tasks/**/*.rake',
-                               'LICENSE', 'Rakefile', '*.{markdown,rdoc,txt,yml}',
-                               'lib/*.jar']
-    gem.extra_rdoc_files = FileList['README*', 'ChangeLog*', 'INSTALL.markdown',
-                                    'FAQS.markdown', 'LICENSE']
-    gem.test_files  = FileList['spec/**/*.rb']
+Rake::Task['build'].clear_actions if Rake::Task.task_defined?('build')
+task :build => [ :java, :gem ]
 
-    gem.add_dependency 'data_objects',      DataObjects::SqlServer::VERSION
-    gem.add_dependency 'do_jdbc',           DataObjects::SqlServer::VERSION
-    gem.add_dependency 'do-jdbc_sqlserver', '~>1.2.4'
-
-    gem.add_development_dependency 'rspec',         '~>2.5'
-    gem.add_development_dependency 'rake-compiler', '~>0.7'
-
-    gem.has_rdoc    = false
-
-    gem.rubyforge_project = 'dorb'
-    gem.authors     = [ 'Alex Coles' ]
-    gem.email       = 'alex@alexbcoles.com'
-  end
-
-  Rake::Task['build'].clear_actions if Rake::Task.task_defined?('build')
-  task :build => [ :java, :gem ]
-
-  Jeweler::GemcutterTasks.new
-
-  FileList['tasks/**/*.rake'].each { |task| import task }
-rescue LoadError
-  puts 'Jeweler (or a dependency) not available. Install it with: gem install jeweler'
-end
+FileList['tasks/**/*.rake'].each { |task| import task }
