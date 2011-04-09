@@ -1,7 +1,8 @@
 require 'rspec/core/rake_task'
 
 RSpec::Core::RakeTask.new(:spec => [:clean, :compile]) do |spec|
-  spec.pattern = "./spec/**/*_spec.rb"
+  spec.pattern      = './spec/**/*_spec.rb'
+  spec.skip_bundler = true
 end
 
 RSpec::Core::RakeTask.new(:rcov => [:clean, :compile]) do |rcov|
