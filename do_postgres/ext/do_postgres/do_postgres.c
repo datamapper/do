@@ -148,7 +148,7 @@ VALUE cConnection_quote_string(VALUE self, VALUE string) {
   quoted_length = PQescapeStringConn(db, escaped + 1, source, source_len, &error);
 
   if(error) {
-    rb_raise(eDataError, PQerrorMessage(db));
+    rb_raise(eDataError, "%s", PQerrorMessage(db));
   }
 
   // Wrap the escaped string in single-quotes, this is DO's convention
@@ -163,11 +163,11 @@ VALUE cConnection_quote_string(VALUE self, VALUE string) {
 VALUE cConnection_quote_byte_array(VALUE self, VALUE string) {
   PGconn *db = DATA_PTR(rb_iv_get(self, "@connection"));
   const unsigned char *source = (unsigned char *)rb_str_ptr_readonly(string);
-  long source_len = rb_str_len(string);
+  size_t source_len = rb_str_len(string);
 
   unsigned char *escaped;
   unsigned char *escaped_quotes;
-  long quoted_length = 0;
+  size_t quoted_length = 0;
   VALUE result;
 
   // Allocate space for the escaped version of 'string'

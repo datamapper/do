@@ -112,11 +112,11 @@ shared_examples_for 'supporting sub second Time' do
   end
 
   it 'should handle variable subsecond lengths properly' do
-    @values.first.should == Time.at(1292452328.49377)
+    @values.first.should == Time.at(1292452328, 493770)
 
     @reader.next!
     @values = @reader.values
-    @values.first.should == Time.at(1292452348.942694)
+    @values.first.should == Time.at(1292452348, 942694)
   end
 
 end

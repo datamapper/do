@@ -188,9 +188,9 @@ VALUE parse_date(const char *date) {
 }
 
 VALUE parse_time(const char *date) {
-  static char const* const _fmt_datetime = "%4d-%2d-%2d %2d:%2d:%2d%7f";
+  static char const* const _fmt_datetime = "%4d-%2d-%2d %2d:%2d:%2d%7lf";
   int year = 0, month = 0, day = 0, hour = 0, min = 0, sec = 0, usec = 0;
-  float subsec = 0;
+  double subsec = 0;
 
   switch (sscanf(date, _fmt_datetime, &year, &month, &day, &hour, &min, &sec, &subsec)) {
     case 0:
