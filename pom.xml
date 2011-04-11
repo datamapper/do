@@ -12,13 +12,13 @@
   </description>
   <url>http://datamapper.org/</url>
   <issueManagement>
-    <system>lighthouse</system>
-    <url>http://datamapper.lighthouseapp.com/projects/20609-datamapper</url>
+    <system>github</system>
+    <url>https://github.com/datamapper/do/issues</url>
   </issueManagement>
   <scm>
     <connection>scm:git:git://github.com/datamapper/do.git</connection>
     <developerConnection>scm:git:git@github.com:datamapper/do.git</developerConnection>
-    <url>http://github.com/datamapper/do</url>
+    <url>https://github.com/datamapper/do</url>
   </scm>
   <licenses>
     <license>
