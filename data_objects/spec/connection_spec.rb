@@ -29,15 +29,14 @@ describe DataObjects::Connection do
     end
 
     [
-      'java:comp/env/jdbc/DataSource?driver=mock',
-      Addressable::URI.parse('java:comp/env/jdbc/DataSource?driver=mock')
+      'java:comp/env/jdbc/DataSource?driver=mock2',
+      Addressable::URI.parse('java:comp/env/jdbc/DataSource?driver=mock2')
     ].each do |jndi_url|
     context 'should return the Connection specified by the scheme without pooling' do
       let(:uri)  { jndi_url }
 
-      it { should be_kind_of(DataObjects::Mock::Connection) }
-      # FIXME: The mock connection class is including Pooling first context block
-      xit { should_not be_kind_of(DataObjects::Pooling)      }
+      it { should be_kind_of(DataObjects::Mock2::Connection) }
+      it { should_not be_kind_of(DataObjects::Pooling)       }
     end
   end
 
