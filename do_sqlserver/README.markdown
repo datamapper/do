@@ -99,10 +99,7 @@ To run specs without compiling extensions first:
 
 To run individual specs:
 
-    rake spec TEST=spec/connection_spec.rb
-
-(Note that the `rake` task uses a `TEST` parameter, not `SPEC`. This is because
-the `Rake::TestTask` is used for executing the Bacon specs).
+    rake spec SPEC=spec/connection_spec.rb
 
 ## License
 
