@@ -408,7 +408,9 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
         if (runtime.is1_9()){
             IRubyObject obj = RubyEncoding.getDefaultInternal(RubyString.newEmptyString(runtime));
             Encoding enc = obj.isNil() ? Encoding.load("UTF8") : ((RubyEncoding) obj).getEncoding();
-            return_str = RubyString.newString(runtime, new ByteList(RubyEncoding.encodeUTF8(str), false), enc);
+            ByteList value = new ByteList(RubyEncoding.encodeUTF8(str), false);
+            return_str = RubyString.newString(runtime, value);
+            value.setEncoding(enc);
         }
         else {
             return_str = RubyString.newUnicodeString(runtime, str);
