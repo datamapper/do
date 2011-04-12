@@ -42,7 +42,7 @@ CONFIG.database = ENV['DO_ORACLE_DATABASE'] || '/orcl'
 CONFIG.driver       = 'oracle'
 CONFIG.jdbc_driver  = DataObjects::Oracle.const_get('JDBC_DRIVER') rescue nil
 CONFIG.uri          = ENV["DO_ORACLE_SPEC_URI"] ||"#{CONFIG.scheme}://#{CONFIG.user}:#{CONFIG.pass}@#{CONFIG.host}:#{CONFIG.port}#{CONFIG.database}"
-CONFIG.jdbc_uri     = "jdbc:oracle:thin:#{CONFIG.user}:#{CONFIG.pass}@//#{CONFIG.host}:#{CONFIG.port}#{CONFIG.database}"
+CONFIG.jdbc_uri     = "jdbc:oracle:thin:#{CONFIG.user}/#{CONFIG.pass}@//#{CONFIG.host}:#{CONFIG.port}#{CONFIG.database}"
 CONFIG.sleep        = "BEGIN SYS.DBMS_LOCK.sleep(seconds => 1); END;"
 CONFIG.testsql      = "SELECT 1 FROM dual"
 
