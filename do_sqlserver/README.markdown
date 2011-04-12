@@ -29,10 +29,6 @@ Examples of usage:
     @reader = @connection.create_command('SELECT * FROM users').execute_reader
     @reader.next!
 
-In the future, the `Connection` constructor will be able to be passed either a
-DataObjects-style URL or JDBC style URL, when using do\_sqlserver on JRuby.
-However, this feature is not currently working reliably and is a known issue.
-
 * See also the accompanying `CONNECTING.markdown`.
 
 ## Requirements
