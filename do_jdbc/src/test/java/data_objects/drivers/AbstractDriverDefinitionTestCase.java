@@ -1,6 +1,5 @@
 package data_objects.drivers;
 
-import java.net.URI;
 import java.sql.PreparedStatement;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -13,7 +12,6 @@ import org.jmock.Expectations;
 
 import org.jruby.Ruby;
 import org.jruby.RubyFixnum;
-import org.jruby.RubyHash;
 import org.jruby.RubyObjectAdapter;
 import org.jruby.RubyRuntimeAdapter;
 import org.jruby.javasupport.JavaEmbedUtils;
@@ -38,6 +36,7 @@ public class AbstractDriverDefinitionTestCase extends TestCase {
     private Mockery context;
     private Ruby runtime;
 
+    @Override
     public void setUp() {
         context = new Mockery();
         runtime = JavaEmbedUtils.initialize(new LinkedList());
@@ -55,10 +54,11 @@ public class AbstractDriverDefinitionTestCase extends TestCase {
         final RubyObjectAdapter api = JavaEmbedUtils.newObjectAdapter();
         final IRubyObject query_values = api.callMethod(connection_uri, "query");
 
-        if (query_values.isNil())
+        if (query_values.isNil()) {
             return null;
-        else
+        } else {
             return query_values.convertToHash();
+        }
     }
 
     public void testParseConnectionURI() throws Exception {
