@@ -59,7 +59,7 @@ shared_examples_for 'a Connection' do
     describe 'on open connection' do
 
       it 'dispose should be true' do
-        conn = DataObjects::Connection.new("#{@driver}://#{@user}:#{@password}@#{@host}:#{@port}#{@database}")
+        conn = DataObjects::Connection.new(CONFIG.uri)
         conn.detach
         conn.dispose.should be_true
         conn.close
@@ -70,7 +70,7 @@ shared_examples_for 'a Connection' do
     describe 'on closed connection' do
 
       before do
-        @closed_connection = DataObjects::Connection.new("#{@driver}://#{@user}:#{@password}@#{@host}:#{@port}#{@database}")
+        @closed_connection = DataObjects::Connection.new(CONFIG.uri)
         @closed_connection.detach
         @closed_connection.dispose
       end
