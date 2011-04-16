@@ -343,7 +343,10 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
                 if (ts == null) {
                     return runtime.getNil();
                 }
-                return prepareRubyTimeFromSqlTime(runtime, sqlTimestampToDateTime(ts));
+                RubyTime rbt = prepareRubyTimeFromSqlTime(runtime, sqlTimestampToDateTime(ts));
+                long usec = (long) (ts.getNanos() / 1000) % 1000;
+                rbt.setUSec(usec);
+                return rbt;
             case Types.DATE:
                 java.sql.Date da = rs.getDate(col);
                 if (da == null) {
@@ -470,6 +473,7 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
         case TIME:
             DateTime dateTime = ((RubyTime) arg).getDateTime();
             Timestamp ts = new Timestamp(dateTime.getMillis());
+            ts.setNanos(ts.getNanos() + (int)(((RubyTime)arg).getUSec()) * 1000);
             ps.setTimestamp(idx, ts, dateTime.toGregorianCalendar());
             break;
         case DATE_TIME:
@@ -712,13 +716,8 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
      * @param time
      * @return
      */
-    protected static IRubyObject prepareRubyTimeFromSqlTime(Ruby runtime,
+    protected static RubyTime prepareRubyTimeFromSqlTime(Ruby runtime,
             DateTime time) {
-        // TODO: why in this case nil is returned?
-        if (time.getMillis() + 3600000 == 0) {
-            return runtime.getNil();
-        }
-
         RubyTime rbTime = RubyTime.newTime(runtime, time);
         return rbTime;
     }
@@ -729,12 +728,8 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
      * @param date
      * @return
      */
-    protected static IRubyObject prepareRubyTimeFromSqlDate(Ruby runtime,
+    protected static RubyTime prepareRubyTimeFromSqlDate(Ruby runtime,
             Date date) {
-
-        if (date.getTime() + 3600000 == 0) {
-            return runtime.getNil();
-        }
         RubyTime rbTime = RubyTime.newTime(runtime, date.getTime());
         return rbTime;
     }
