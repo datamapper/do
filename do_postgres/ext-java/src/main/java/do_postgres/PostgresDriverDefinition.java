@@ -180,6 +180,18 @@ public class PostgresDriverDefinition extends AbstractDriverDefinition {
             JDBCUtil.close(st);
         }
 
+        if(!standardConformingStrings) {
+            try {
+                st = conn.createStatement();
+                st.execute("SET standard_conforming_strings = on");
+                standardConformingStrings = true;
+            } catch (SQLException e) {
+
+            } finally {
+                JDBCUtil.close(st);
+            }
+        }
+
         getObjectAdapter().setInstanceVariable(doConn, "@standard_conforming_strings",
             RubyBoolean.newBoolean(doConn.getRuntime(), standardConformingStrings));
     }
