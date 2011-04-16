@@ -93,11 +93,11 @@ shared_examples_for 'supporting sub second Time' do
 
   before do
     @connection = DataObjects::Connection.new(CONFIG.uri)
-    @connection.create_command(<<-EOF).execute_non_query
-      update widgets set release_timestamp = '2010-12-15 14:32:08.49377-08' where id = 1
+    @connection.create_command(<<-EOF).execute_non_query(Time.parse('2010-12-15 14:32:08.49377-08'))
+      update widgets set release_timestamp = ? where id = 1
     EOF
-    @connection.create_command(<<-EOF).execute_non_query
-      update widgets set release_timestamp = '2010-12-15 14:32:28.942694-08' where id = 2
+    @connection.create_command(<<-EOF).execute_non_query(Time.parse('2010-12-15 14:32:28.942694-08'))
+      update widgets set release_timestamp = ? where id = 2
     EOF
 
     @command = @connection.create_command("SELECT release_timestamp FROM widgets WHERE id < ? order by id")
