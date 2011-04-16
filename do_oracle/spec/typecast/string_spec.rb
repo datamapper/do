@@ -66,7 +66,7 @@ describe 'DataObjects::Oracle with String' do
       end
 
       it 'should return the correct result' do
-        @values.first.to_f.should be_close(13.4, 0.000001)
+        @values.first.to_f.should be_within(0.000001).of(13.4)
       end
 
     end
