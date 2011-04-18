@@ -3,7 +3,7 @@ begin
   require 'rake/javaextensiontask'
 
   def gemspec
-    @clean_gemspec ||= Gem::Specification::load(File.expand_path('../../do_jdbc_internal.gemspec', __FILE__))
+    @clean_gemspec ||= Gem::Specification::load(File.expand_path('../../do_jdbc.gemspec', __FILE__))
   end
 
   Rake::JavaExtensionTask.new('do_jdbc_internal', gemspec) do |ext|
