@@ -23,7 +23,7 @@ end
 
 desc 'Release all do gems'
 task :release do
-  (jruby_projects + projects).uniq.each do |dir|
+  (projects).uniq.each do |dir|
     Dir.chdir(dir){ rake "release_all" }
   end
 end

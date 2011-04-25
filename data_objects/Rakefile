@@ -16,8 +16,4 @@ SUDO     = WINDOWS ? '' : ('sudo' unless ENV['SUDOLESS'])
 
 CLEAN.include(%w[ pkg/ **/*.rbc ])
 
-
-Rake::Task['build'].clear_actions if Rake::Task.task_defined?('build')
-task :build => [ :java, :gem ]
-
 FileList['tasks/**/*.rake'].each { |task| import task }
