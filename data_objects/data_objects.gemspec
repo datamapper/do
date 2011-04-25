@@ -73,7 +73,6 @@ Gem::Specification.new do |s|
     "spec/spec_helper.rb",
     "spec/transaction_spec.rb",
     "spec/uri_spec.rb",
-    "tasks/metrics.rake",
     "tasks/release.rake",
     "tasks/spec.rake",
     "tasks/yard.rake",
