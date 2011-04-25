@@ -32,7 +32,7 @@ begin
       #       Gem::Specification API.
       gem.dependencies.delete_if { |d| d.name == 'ruby-oci8'}
 
-      gem.add_dependency "do_jdbc", '0.10.3'
+      gem.add_dependency "do_jdbc", '0.10.4.rc1'
     end
   end
 rescue LoadError

@@ -55,7 +55,7 @@ begin
     ext.classpath = '../do_jdbc/lib/do_jdbc_internal.jar'
     ext.java_compiling do |gem|
       gem.add_dependency 'jdbc-sqlite3', '>=3.5.8'
-      gem.add_dependency 'do_jdbc',      '0.10.3'
+      gem.add_dependency 'do_jdbc',      '0.10.4.rc1'
     end
   end
 rescue LoadError
