@@ -19,7 +19,7 @@ shared_examples_for 'supporting DateTime' do
     describe 'with manual typecasting' do
 
       before do
-        @command = @connection.create_command("SELECT release_date FROM widgets WHERE ad_description = ?")
+        @command = @connection.create_command("SELECT release_datetime FROM widgets WHERE ad_description = ?")
         @command.set_types(DateTime)
         @reader = @command.execute_reader('Buy this product now!')
         @reader.next!
@@ -36,7 +36,8 @@ shared_examples_for 'supporting DateTime' do
 
       it 'should return the correct result' do
         date = @values.first
-        Date.civil(date.year, date.mon, date.day).should == Date.civil(2008, 2, 14)
+        local_offset = Rational(Time.local(2008, 2, 14).utc_offset, 86400)
+        date.should == DateTime.civil(2008, 2, 14, 00, 31, 12, local_offset)
       end
 
     end
