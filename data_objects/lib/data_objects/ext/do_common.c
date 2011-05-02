@@ -209,8 +209,8 @@ VALUE parse_time(const char *date) {
 }
 
 VALUE parse_date_time(const char *date) {
-  static char const* const _fmt_datetime_tz_normal = "%4d-%2d-%2d %2d:%2d:%2d%3d:%2d";
-  static char const* const _fmt_datetime_tz_subsec = "%4d-%2d-%2d %2d:%2d:%2d.%*d%3d:%2d";
+  static char const* const _fmt_datetime_tz_normal = "%4d-%2d-%2d%*c%2d:%2d:%2d%3d:%2d";
+  static char const* const _fmt_datetime_tz_subsec = "%4d-%2d-%2d%*c%2d:%2d:%2d.%*d%3d:%2d";
   int tokens_read;
   const char *fmt_datetime;
 
