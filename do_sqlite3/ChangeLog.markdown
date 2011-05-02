@@ -1,3 +1,8 @@
+## 0.10.5 2011-05-03
+
+Bugfixes
+* Fix an issue with DateTime
+
 ## 0.10.4 2011-04-28
 
 New features
