@@ -1,3 +1,8 @@
+## 0.10.6 2011-05-22
+
+Bugfixes
+* Fix an issue on some platforms when multiple DO drivers are loaded
+
 ## 0.10.5 2011-05-03
 
 Bugfixes
