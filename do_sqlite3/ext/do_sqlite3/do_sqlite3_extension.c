@@ -2,13 +2,13 @@
 #include "do_common.h"
 #include "do_sqlite3.h"
 
-VALUE cExtension;
+VALUE cSqlite3Extension;
 
 /*****************************************************/
 /* File used for providing extensions on the default */
 /* API that are driver specific.                     */
 /*****************************************************/
-VALUE cExtension_enable_load_extension(VALUE self, VALUE on) {
+VALUE do_sqlite3_cExtension_enable_load_extension(VALUE self, VALUE on) {
   VALUE id_connection = rb_intern("connection");
   VALUE connection = rb_funcall(self, id_connection, 0);
 
@@ -34,7 +34,7 @@ VALUE cExtension_enable_load_extension(VALUE self, VALUE on) {
   return Qtrue;
 }
 
-VALUE cExtension_load_extension(VALUE self, VALUE path) {
+VALUE do_sqlite3_cExtension_load_extension(VALUE self, VALUE path) {
   VALUE id_connection = rb_intern("connection");
   VALUE connection = rb_funcall(self, id_connection, 0);
 
@@ -71,7 +71,7 @@ VALUE cExtension_load_extension(VALUE self, VALUE path) {
 }
 
 void Init_do_sqlite3_extension() {
-  cExtension = rb_define_class_under(mSqlite3, "Extension", cDO_Extension);
-  rb_define_method(cExtension, "load_extension", cExtension_load_extension, 1);
-  rb_define_method(cExtension, "enable_load_extension", cExtension_enable_load_extension, 1);
+  cSqlite3Extension = rb_define_class_under(mSqlite3, "Extension", cDO_Extension);
+  rb_define_method(cSqlite3Extension, "load_extension", do_sqlite3_cExtension_load_extension, 1);
+  rb_define_method(cSqlite3Extension, "enable_load_extension", do_sqlite3_cExtension_enable_load_extension, 1);
 }

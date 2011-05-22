@@ -3,7 +3,7 @@
 
 #include "do_common.h"
 
-static struct errcodes errors[] = {
+static struct errcodes do_sqlite3_errors[] = {
 #ifdef SQLITE_ERROR
   ERRCODE(SQLITE_ERROR, "SyntaxError"),
 #endif

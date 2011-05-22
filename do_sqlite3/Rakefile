@@ -1,6 +1,11 @@
+require 'rubygems'
 require 'pathname'
 require 'bundler'
 Bundler::GemHelper.install_tasks
+
+$: << '../do_mysql/lib'
+
+require 'do_mysql'
 
 require 'rake'
 require 'rake/clean'

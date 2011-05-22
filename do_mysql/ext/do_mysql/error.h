@@ -3,7 +3,7 @@
 
 #include "do_common.h"
 
-static struct errcodes errors[] = {
+static struct errcodes do_mysql_errors[] = {
 #ifdef ER_ABORTING_CONNECTION
   ERRCODE(ER_ABORTING_CONNECTION, "ConnectionError"),
 #endif

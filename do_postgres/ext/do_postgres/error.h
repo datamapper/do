@@ -3,7 +3,7 @@
 
 #include "do_common.h"
 
-static struct errcodes errors[] = {
+static struct errcodes do_postgres_errors[] = {
 #ifdef ERRCODE_CONNECTION_EXCEPTION
   ERRCODE(ERRCODE_CONNECTION_EXCEPTION, "ConnectionError"),
 #endif
