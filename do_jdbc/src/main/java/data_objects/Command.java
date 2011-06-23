@@ -622,24 +622,20 @@ public class Command extends DORubyObject {
      * @param executionTime
      */
     private void debug(String logMessage, Long executionTime) {
-        RubyModule driverModule = (RubyModule) getRuntime().getModule(
-                DATA_OBJECTS_MODULE_NAME).getConstant(driver.getModuleName());
-        IRubyObject logger = api.callMethod(driverModule, "logger");
-        int level = RubyNumeric.fix2int(api.callMethod(logger, "level"));
+      Ruby runtime = getRuntime();
+      Connection connection_instance = (Connection) api.getInstanceVariable(this,
+          "@connection");
+      RubyModule doModule  = runtime.getModule(DATA_OBJECTS_MODULE_NAME);
+      RubyClass loggerClass = doModule.getClass("Logger");
+      RubyClass messageClass = loggerClass.getClass("Message");
 
-        if (level == 0) {
-            StringBuilder msgSb = new StringBuilder();
-            Formatter formatter = new Formatter(msgSb);
+      IRubyObject loggerMsg  = messageClass.newInstance(runtime.getCurrentContext(),
+          runtime.newString(logMessage),    // query
+          runtime.newString(""),            // start
+          runtime.newFixnum(executionTime), // duration
+          Block.NULL_BLOCK);
 
-            if (executionTime != null) {
-                formatter.format("(%.3f) ", executionTime / 1000.0);
-            }
-
-            msgSb.append(logMessage);
-
-            api.callMethod(logger, "debug", getRuntime().newString(
-                    msgSb.toString()));
-        }
+      api.callMethod(connection_instance, "log", loggerMsg);
     }
 
 }
