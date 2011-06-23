@@ -625,9 +625,9 @@ public class Command extends DORubyObject {
       Ruby runtime = getRuntime();
       Connection connection_instance = (Connection) api.getInstanceVariable(this,
           "@connection");
-      RubyClass messageClass = runtime.getModule(DATA_OBJECTS_MODULE_NAME)
-        .getClass("Logger")
-        .loggerClass.getClass("Message");
+      RubyModule doModule  = runtime.getModule(DATA_OBJECTS_MODULE_NAME);
+      RubyClass loggerClass = doModule.getClass("Logger");
+      RubyClass messageClass = loggerClass.getClass("Message");
 
       IRubyObject loggerMsg  = messageClass.newInstance(runtime.getCurrentContext(),
           runtime.newString(logMessage),    // query
