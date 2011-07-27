@@ -51,6 +51,7 @@ task :spec do
   spec_projects = %w[do_mysql do_postgres do_sqlite3]
   if JRUBY
     spec_projects += %w[do_derby do_h2 do_hsqldb]
+    Dir.chdir("do_jdbc") { rake :compile }
   end
 
   spec_projects.each do |gem_name|
