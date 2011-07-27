@@ -29,12 +29,27 @@ task :release do
 end
 
 tasks = {
-  :spec      => 'Run the specification',
   :install   => 'Install the do gems',
   :build_all => 'Package the do gems',
   :clean     => 'clean temporary files',
   :clobber   => 'clobber temporary files',
 }
+
+task :default => [:spec]
+
+desc 'Run all the specs for the subprojects'
+task :spec do
+
+  spec_projects = %w[do_mysql do_postgres do_sqlite3]
+  if JRUBY
+    spec_projects += %w[do_derby do_h2 do_hsqldb]
+  end
+
+  spec_projects.each do |gem_name|
+    Dir.chdir(gem_name) { rake :spec }
+  end
+
+end
 
 tasks.each do |name, description|
   desc description
