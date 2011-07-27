@@ -1,6 +1,8 @@
 source :rubygems
 
 gem 'addressable', '~> 2.1'
+gem 'rake'
+gem 'rspec', '~> 2.5'
 
 platforms :jruby do
   gem 'jdbc-mysql',    '>=5.0.4'
