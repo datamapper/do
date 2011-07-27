@@ -112,10 +112,14 @@ shared_examples_for 'supporting sub second Time' do
   end
 
   it 'should handle variable subsecond lengths properly' do
+    puts @values.first
+    puts @values.first.usec
     @values.first.should == Time.at(1292452328, 493770)
 
     @reader.next!
     @values = @reader.values
+    puts @values.first
+    puts @values.first.usec
     @values.first.should == Time.at(1292452348, 942694)
   end
 
