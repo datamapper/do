@@ -40,6 +40,15 @@ task :default => [:spec]
 desc 'Run all the specs for the subprojects'
 task :spec do
 
+  commands = [
+    'mysql -e "create database do_test;"',
+    'psql  -c "create database do_test;" -U postgres',
+  ]
+
+  commands.each do |command|
+    system("#{command} > /dev/null 2>&1")
+  end
+
   spec_projects = %w[do_mysql do_postgres do_sqlite3]
   if JRUBY
     spec_projects += %w[do_derby do_h2 do_hsqldb]
