@@ -112,15 +112,10 @@ shared_examples_for 'supporting sub second Time' do
   end
 
   it 'should handle variable subsecond lengths properly' do
-    puts @values.first
-    puts @values.first.usec
-    @values.first.should == Time.at(1292452328, 493770)
-
+    @values.first.to_f.should be_within(0.00002).of(Time.at(1292452328, 493770).to_f)
     @reader.next!
     @values = @reader.values
-    puts @values.first
-    puts @values.first.usec
-    @values.first.should == Time.at(1292452348, 942694)
+    @values.first.to_f.should be_within(0.00002).of(Time.at(1292452348, 942694).to_f)
   end
 
 end
