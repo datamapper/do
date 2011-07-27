@@ -1,7 +1,6 @@
 require 'pathname'
 require 'rubygems'
 require 'rake'
-require 'rake/rdoctask'
 
 ROOT     = Pathname(__FILE__).dirname.expand_path
 JRUBY    = RUBY_PLATFORM =~ /java/
