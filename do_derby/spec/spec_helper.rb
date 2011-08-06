@@ -43,21 +43,21 @@ module DataObjectsSpecHelpers
         conn.create_command(<<-EOF).execute_non_query
           DROP TABLE invoices
         EOF
-    rescue DerbyError
+    rescue DataObjects::SQLError
     end
 
     begin
         conn.create_command(<<-EOF).execute_non_query
             DROP TABLE users
         EOF
-    rescue DerbyError
+    rescue DataObjects::SQLError
     end
 
     begin
         conn.create_command(<<-EOF).execute_non_query
           DROP TABLE widgets
         EOF
-    rescue DerbyError
+    rescue DataObjects::SQLError
     end
 
     conn.create_command(<<-EOF).execute_non_query

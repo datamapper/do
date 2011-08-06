@@ -40,12 +40,12 @@ desc 'Run all the specs for the subprojects'
 task :spec do
 
   commands = [
-    'mysql -e "create database do_test;"',
+    'mysql -u root -e "create database do_test;"',
     'psql  -c "create database do_test;" -U postgres',
   ]
 
   commands.each do |command|
-    system("#{command} > /dev/null 2>&1")
+    `#{command}`
   end
 
   spec_projects = %w[do_mysql do_postgres do_sqlite3]

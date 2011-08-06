@@ -9,5 +9,8 @@ platforms :jruby do
   gem 'jdbc-mysql',    '>=5.0.4'
   gem 'jdbc-postgres', '>=8.2'
   gem 'jdbc-sqlite3',  '>=3.5.8'
+  gem 'jdbc-derby'
+  gem 'jdbc-h2'
+  gem 'jdbc-hsqldb'
   gem 'do_jdbc',       '0.10.6'
 end
