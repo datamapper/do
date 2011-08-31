@@ -185,11 +185,16 @@ VALUE data_objects_parse_date(const char *date) {
       return Qnil;
   }
 
+#ifdef HAVE_NO_DATETIME_NEWBANG
+  return rb_funcall(rb_cDate, ID_NEW, 3, INT2NUM(year), INT2NUM(month), INT2NUM(day));
+#else
+
   jd       = data_objects_jd_from_date(year, month, day);
   ajd      = (jd * 2) - 1;        // Math from Date.jd_to_ajd
   rational = rb_funcall(rb_mKernel, ID_RATIONAL, 2, INT2NUM(ajd), INT2NUM(2));
 
   return rb_funcall(rb_cDate, ID_NEW_DATE, 3, rational, INT2NUM(0), INT2NUM(2299161));
+#endif
 }
 
 VALUE data_objects_parse_time(const char *date) {
@@ -299,6 +304,11 @@ VALUE data_objects_parse_date_time(const char *date) {
       rb_raise(eDataError, "Couldn't parse date: %s", date);
   }
 
+#ifdef HAVE_NO_DATETIME_NEWBANG
+  offset = data_objects_timezone_to_offset(hour_offset, minute_offset);
+  return rb_funcall(rb_cDateTime, ID_NEW, 7, INT2NUM(year), INT2NUM(month), INT2NUM(day),
+                                             INT2NUM(hour), INT2NUM(min), INT2NUM(sec), offset);
+#else
   jd = data_objects_jd_from_date(year, month, day);
 
   /*
@@ -327,6 +337,7 @@ VALUE data_objects_parse_date_time(const char *date) {
   offset = data_objects_timezone_to_offset(hour_offset, minute_offset);
 
   return rb_funcall(rb_cDateTime, ID_NEW_DATE, 3, ajd, offset, INT2NUM(2299161));
+#endif
 }
 
 VALUE data_objects_cConnection_character_set(VALUE self) {

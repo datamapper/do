@@ -1,6 +1,7 @@
 ENV["RC_ARCHS"] = "" if RUBY_PLATFORM =~ /darwin/
 
 require 'mkmf'
+require 'date'
 
 # Allow for custom compiler to be specified.
 RbConfig::MAKEFILE_CONFIG['CC'] = ENV['CC'] if ENV['CC']
@@ -21,6 +22,10 @@ def have_build_env
 end
 
 $CFLAGS << ' -UENABLE_NLS -DHAVE_GETTIMEOFDAY -DHAVE_CRYPT' if RUBY_PLATFORM =~ /mswin|mingw/
+
+unless DateTime.respond_to?(:new!)
+  $CFLAGS << ' -DHAVE_NO_DATETIME_NEWBANG'
+end
 
 dir_config('pgsql-server', config_value('includedir-server'), config_value('libdir'))
 dir_config('pgsql-client', config_value('includedir'), config_value('libdir'))

@@ -2,6 +2,7 @@ ENV["RC_ARCHS"] = "" if RUBY_PLATFORM =~ /darwin/
 
 # Loads mkmf which is used to make makefiles for Ruby extensions
 require 'mkmf'
+require 'date'
 
 # need to check dynamically for libraries and include files directories
 def config_value(type)
@@ -27,6 +28,10 @@ if have_build_env
   $CFLAGS << ' -Wall ' unless RUBY_PLATFORM =~ /mswin/
   if RUBY_VERSION < '1.8.6'
     $CFLAGS << ' -DRUBY_LESS_THAN_186'
+  end
+
+  unless DateTime.respond_to?(:new!)
+    $CFLAGS << ' -DHAVE_NO_DATETIME_NEWBANG'
   end
 
   create_makefile("do_oracle/do_oracle")
