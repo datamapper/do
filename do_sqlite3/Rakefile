@@ -1,6 +1,7 @@
 require 'rubygems'
 require 'pathname'
 require 'bundler'
+require 'rubygems/package_task'
 Bundler::GemHelper.install_tasks
 
 require 'rake'
