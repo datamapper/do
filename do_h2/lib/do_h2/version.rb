@@ -1,5 +1,5 @@
 module DataObjects
   module H2
-    VERSION = '0.10.6'
+    VERSION = '0.10.7'
   end
 end
