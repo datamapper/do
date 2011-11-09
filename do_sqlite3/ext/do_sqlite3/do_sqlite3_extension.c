@@ -9,6 +9,7 @@ VALUE cSqlite3Extension;
 /* API that are driver specific.                     */
 /*****************************************************/
 VALUE do_sqlite3_cExtension_enable_load_extension(VALUE self, VALUE on) {
+#ifdef HAVE_SQLITE3_ENABLE_LOAD_EXTENSION
   VALUE id_connection = rb_intern("connection");
   VALUE connection = rb_funcall(self, id_connection, 0);
 
@@ -32,9 +33,13 @@ VALUE do_sqlite3_cExtension_enable_load_extension(VALUE self, VALUE on) {
   }
 
   return Qtrue;
+#else
+  return Qfalse;
+#endif
 }
 
 VALUE do_sqlite3_cExtension_load_extension(VALUE self, VALUE path) {
+#ifdef HAVE_SQLITE3_ENABLE_LOAD_EXTENSION
   VALUE id_connection = rb_intern("connection");
   VALUE connection = rb_funcall(self, id_connection, 0);
 
@@ -68,6 +73,9 @@ VALUE do_sqlite3_cExtension_load_extension(VALUE self, VALUE path) {
   }
 
   return Qtrue;
+#else
+  return Qfalse;
+#endif
 }
 
 void Init_do_sqlite3_extension() {

@@ -215,50 +215,6 @@ VALUE do_sqlite3_cConnection_quote_byte_array(VALUE self, VALUE string) {
   return rb_ary_join(array, Qnil);
 }
 
-VALUE do_sqlite3_cConnection_enable_load_extension(VALUE self, VALUE value) {
-  VALUE connection = rb_iv_get(self, "@connection");
-
-  if (connection == Qnil) {
-    return Qfalse;
-  }
-
-  sqlite3 *db = DATA_PTR(connection);
-
-  if (!db) {
-    return Qfalse;
-  }
-
-  int status = sqlite3_enable_load_extension(db, value == Qtrue ? 1 : 0);
-
-  if (status != SQLITE_OK) {
-    rb_raise(eConnectionError, "Error enabling load extension.");
-  }
-  return Qtrue;
-}
-
-VALUE do_sqlite3_cConnection_load_extension(VALUE self, VALUE string) {
-  VALUE connection = rb_iv_get(self, "@connection");
-
-  if (connection == Qnil) {
-    return Qfalse;
-  }
-
-  sqlite3 *db = DATA_PTR(connection);
-
-  if (!db) {
-    return Qfalse;
-  }
-
-  const char *extension_name  = rb_str_ptr_readonly(string);
-  char *errmsg = NULL;
-  int status = sqlite3_load_extension(db, extension_name, 0, &errmsg);
-
-  if (status != SQLITE_OK) {
-    rb_raise(eConnectionError, "%s", errmsg);
-  }
-  return Qtrue;
-}
-
 VALUE do_sqlite3_cCommand_execute_non_query(int argc, VALUE *argv, VALUE self) {
   VALUE query = data_objects_build_query_from_args(self, argc, argv);
   VALUE connection = rb_iv_get(self, "@connection");
@@ -430,8 +386,6 @@ void Init_do_sqlite3() {
   rb_define_method(cSqlite3Connection, "quote_string", do_sqlite3_cConnection_quote_string, 1);
   rb_define_method(cSqlite3Connection, "quote_byte_array", do_sqlite3_cConnection_quote_byte_array, 1);
   rb_define_method(cSqlite3Connection, "character_set", data_objects_cConnection_character_set, 0);
-  rb_define_method(cSqlite3Connection, "enable_load_extension", do_sqlite3_cConnection_enable_load_extension, 1);
-  rb_define_method(cSqlite3Connection, "load_extension", do_sqlite3_cConnection_load_extension, 1);
 
   cSqlite3Command = rb_define_class_under(mSqlite3, "Command", cDO_Command);
   rb_define_method(cSqlite3Command, "set_types", data_objects_cCommand_set_types, -1);
