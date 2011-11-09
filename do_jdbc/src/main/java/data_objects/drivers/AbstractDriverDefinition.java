@@ -16,6 +16,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Timestamp;
 import java.sql.Types;
+import java.util.Calendar;
 import java.util.Map;
 import java.util.Properties;
 
@@ -315,7 +316,7 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
             if (date == null) {
                 return runtime.getNil();
             }
-            return prepareRubyDateFromSqlDate(runtime, sqlDateToDateTime(date));
+            return prepareRubyDateFromSqlDate(runtime, date);
         case DATE_TIME:
             java.sql.Timestamp dt = null;
             // DateTimes with all-zero components throw a SQLException with
@@ -658,18 +659,6 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
 
     /**
      *
-     * @param date
-     * @return
-     */
-    protected static DateTime sqlDateToDateTime(Date date) {
-        if (date == null)
-            return null;
-        else
-            return new DateTime(date);
-    }
-
-    /**
-     *
      * @param ts
      * @return
      */
@@ -740,18 +729,14 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
      * @param date
      * @return
      */
-    public static IRubyObject prepareRubyDateFromSqlDate(Ruby runtime,
-            DateTime date) {
-
-        if (date.getMillis() == 0) {
-            return runtime.getNil();
-        }
-
+    public static IRubyObject prepareRubyDateFromSqlDate(Ruby runtime, java.sql.Date date) {
+        Calendar c = Calendar.getInstance();
+        c.setTime(date);
         RubyClass klazz = runtime.fastGetClass("Date");
         return klazz.callMethod(runtime.getCurrentContext(), "civil",
-                new IRubyObject[] { runtime.newFixnum(date.getYear()),
-                        runtime.newFixnum(date.getMonthOfYear()),
-                        runtime.newFixnum(date.getDayOfMonth()) });
+                new IRubyObject[] { runtime.newFixnum(c.get(Calendar.YEAR)),
+                        runtime.newFixnum(c.get(Calendar.MONTH) + 1),
+                        runtime.newFixnum(c.get(Calendar.DAY_OF_MONTH)) });
     }
 
     /**
