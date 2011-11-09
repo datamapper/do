@@ -53,9 +53,10 @@ VALUE data_objects_const_get(VALUE scope, const char *constant) {
 void data_objects_debug(VALUE connection, VALUE string, struct timeval *start) {
   struct timeval stop;
   VALUE message;
+  do_int64 duration;
 
   gettimeofday(&stop, NULL);
-  do_int64 duration = (stop.tv_sec - start->tv_sec) * 1000000 + stop.tv_usec - start->tv_usec;
+  duration = (stop.tv_sec - start->tv_sec) * 1000000 + stop.tv_usec - start->tv_usec;
 
   message = rb_funcall(cDO_Logger_Message, ID_NEW, 3, string, rb_time_new(start->tv_sec, start->tv_usec), INT2NUM(duration));
 
@@ -65,6 +66,7 @@ void data_objects_debug(VALUE connection, VALUE string, struct timeval *start) {
 void data_objects_raise_error(VALUE self, const struct errcodes *errors, int errnum, const char *message, VALUE query, VALUE state) {
   const char *exception_type = "SQLError";
   const struct errcodes *e;
+  VALUE uri, exception;
 
   for (e = errors; e->error_name; e++) {
     if (e->error_no == errnum) {
@@ -74,9 +76,9 @@ void data_objects_raise_error(VALUE self, const struct errcodes *errors, int err
     }
   }
 
-  VALUE uri = rb_funcall(rb_iv_get(self, "@connection"), rb_intern("to_s"), 0);
+  uri = rb_funcall(rb_iv_get(self, "@connection"), rb_intern("to_s"), 0);
 
-  VALUE exception = rb_funcall(
+  exception = rb_funcall(
     data_objects_const_get(mDO, exception_type),
     ID_NEW,
     5,
@@ -116,8 +118,8 @@ void data_objects_assert_file_exists(char *file, const char *message) {
 }
 
 VALUE data_objects_build_query_from_args(VALUE klass, int count, VALUE *args) {
-  VALUE array = rb_ary_new();
   int i;
+  VALUE array = rb_ary_new();
 
   for (i = 0; i < count; i++) {
     rb_ary_push(array, args[i]);
@@ -176,8 +178,6 @@ VALUE data_objects_timezone_to_offset(int hour_offset, int minute_offset) {
 VALUE data_objects_parse_date(const char *date) {
   static char const *const _fmt_date = "%4d-%2d-%2d";
   int year = 0, month = 0, day = 0;
-  int jd, ajd;
-  VALUE rational;
 
   switch (sscanf(date, _fmt_date, &year, &month, &day)) {
     case 0:
@@ -185,16 +185,7 @@ VALUE data_objects_parse_date(const char *date) {
       return Qnil;
   }
 
-#ifdef HAVE_NO_DATETIME_NEWBANG
   return rb_funcall(rb_cDate, ID_NEW, 3, INT2NUM(year), INT2NUM(month), INT2NUM(day));
-#else
-
-  jd       = data_objects_jd_from_date(year, month, day);
-  ajd      = (jd * 2) - 1;        // Math from Date.jd_to_ajd
-  rational = rb_funcall(rb_mKernel, ID_RATIONAL, 2, INT2NUM(ajd), INT2NUM(2));
-
-  return rb_funcall(rb_cDate, ID_NEW_DATE, 3, rational, INT2NUM(0), INT2NUM(2299161));
-#endif
 }
 
 VALUE data_objects_parse_time(const char *date) {
@@ -224,10 +215,9 @@ VALUE data_objects_parse_date_time(const char *date) {
   int tokens_read;
   const char *fmt_datetime;
 
-  VALUE ajd, offset;
+  VALUE offset;
 
-  int year, month, day, hour, min, sec, hour_offset, minute_offset, jd;
-  do_int64 num, den;
+  int year, month, day, hour, min, sec, hour_offset, minute_offset;
 
   struct tm timeinfo;
   time_t target_time;
@@ -304,40 +294,9 @@ VALUE data_objects_parse_date_time(const char *date) {
       rb_raise(eDataError, "Couldn't parse date: %s", date);
   }
 
-#ifdef HAVE_NO_DATETIME_NEWBANG
   offset = data_objects_timezone_to_offset(hour_offset, minute_offset);
   return rb_funcall(rb_cDateTime, ID_NEW, 7, INT2NUM(year), INT2NUM(month), INT2NUM(day),
                                              INT2NUM(hour), INT2NUM(min), INT2NUM(sec), offset);
-#else
-  jd = data_objects_jd_from_date(year, month, day);
-
-  /*
-   * Generate ajd with fractional days for the time.
-   * Extracted from Date#jd_to_ajd, Date#day_fraction_to_time, and Rational#+ and #-.
-   *
-   * TODO: These are 64bit numbers; is reduce() really necessary?
-   */
-
-  num = (hour * 1440) + (min * 24);
-  num -= (hour_offset * 1440) + (minute_offset * 24);
-  den = (24 * 1440);
-  data_objects_reduce(&num, &den);
-
-  num = (num * 86400) + (sec * den);
-  den = den * 86400;
-  data_objects_reduce(&num, &den);
-
-  num += jd * den;
-
-  num = (num * 2) - den;
-  den *= 2;
-  data_objects_reduce(&num, &den);
-
-  ajd = rb_funcall(rb_mKernel, ID_RATIONAL, 2, rb_ull2inum(num), rb_ull2inum(den));
-  offset = data_objects_timezone_to_offset(hour_offset, minute_offset);
-
-  return rb_funcall(rb_cDateTime, ID_NEW_DATE, 3, ajd, offset, INT2NUM(2299161));
-#endif
 }
 
 VALUE data_objects_cConnection_character_set(VALUE self) {
@@ -371,16 +330,14 @@ VALUE data_objects_cConnection_quote_date(VALUE self, VALUE value) {
  * into Ruby-strings so we can easily typecast later
  */
 VALUE data_objects_cCommand_set_types(int argc, VALUE *argv, VALUE self) {
+  VALUE entry, sub_entry;
+  int i, j;
   VALUE type_strings = rb_ary_new();
   VALUE array = rb_ary_new();
-
-  int i, j;
 
   for (i = 0; i < argc; i++) {
     rb_ary_push(array, argv[i]);
   }
-
-  VALUE entry, sub_entry;
 
   for (i = 0; i < RARRAY_LEN(array); i++) {
     entry = rb_ary_entry(array, i);
