@@ -729,7 +729,7 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
      * @param date
      * @return
      */
-    public static IRubyObject prepareRubyDateFromSqlDate(Ruby runtime, java.sql.Date date) {
+    public static IRubyObject prepareRubyDateFromSqlDate(Ruby runtime, java.util.Date date) {
         Calendar c = Calendar.getInstance();
         c.setTime(date);
         RubyClass klazz = runtime.fastGetClass("Date");

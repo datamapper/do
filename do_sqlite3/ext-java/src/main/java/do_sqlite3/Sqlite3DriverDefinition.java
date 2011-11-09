@@ -47,8 +47,8 @@ public class Sqlite3DriverDefinition extends AbstractDriverDefinition {
      * @param date
      * @return
      */
-    public static DateTime toDate(String date) {
-        return DATE_FORMAT.parseDateTime(date.replaceFirst("T.*", ""));
+    public static java.util.Date toDate(String date) {
+        return DATE_FORMAT.parseDateTime(date.replaceFirst("T.*", "")).toDate();
     }
 
     /**
