@@ -12,32 +12,14 @@ JRuby variant driver
 1.8.6/7 (MRI) and 1.9.x (YARV) variant
 --------------------------------------
 
-  1. Install the DBI and DBD::ODBC dependencies:
+  1. Install the DBI, DBD::ODBC dependencies and ODBC Binding for Ruby:
 
-        sudo gem install dbi
-        sudo gem install dbd-odbc
+        sudo gem install dbi dbd-odbc ruby-odbc
 
-  2. Install [ODBC Binding for Ruby][rubyodbc]. It it *not* currently available
-     via RubyGems, so you'll have to download the source tarball:
-
-        wget http://www.ch-werner.de/rubyodbc/ruby-odbc-0.9997.tar.gz
-        tar xvfz ruby-odbc-0.9997.tar.gz
-        cd ruby-odbc-0.9997
-
-
-  3. Ensure you read the accompanying `COPYING` file, as the ODBC Binding for Ruby
-     is licensed under the GPL, unlike DataObjects. To install read the
-     accompanying `INSTALL` file. On a recent variant of OS X, installation
-     should look like this:
-
-        ruby extconf.rb
-        make
-        sudo make install
-
-  4. You must also have FreeTDS or [unixODBC][unixodbc] (SQL Server license for
+  2. You must also have FreeTDS or [unixODBC][unixodbc] (SQL Server license for
      unixODBC is commercially licensed though) installed.
 
-  5. To install FreeTDS on OS X, you can use MacPorts:
+  3. To install FreeTDS on OS X, you can use MacPorts:
 
         sudo port install freetds
 
@@ -50,6 +32,9 @@ JRuby variant driver
             /opt/local/etc/freetds/pool.conf.sample
         ****************************************************************
 
+     or Brew:
+
+        sudo brew install freetds
 
   * Then edit your ODBC configuration and add the FreeTDS driver.
 
