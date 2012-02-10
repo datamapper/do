@@ -16,7 +16,7 @@ describe DataObjects::URI do
     its(:fragment)  { should == 'fragment'  }
 
     it 'should provide a correct string representation' do
-      subject.to_s.should == 'mock://username:password@localhost:12345/path?encoding=utf8#fragment'
+      subject.to_s.should == 'mock://username@localhost:12345/path?encoding=utf8#fragment'
     end
   end
 
@@ -34,7 +34,7 @@ describe DataObjects::URI do
     its(:fragment)  { should == 'fragment'  }
 
     it 'should provide a correct string representation' do
-      subject.to_s.should == 'jdbc:mock://username:password@localhost:12345/path?encoding=utf8#fragment'
+      subject.to_s.should == 'jdbc:mock://username@localhost:12345/path?encoding=utf8#fragment'
     end
   end
 

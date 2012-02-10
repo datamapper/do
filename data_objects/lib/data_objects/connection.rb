@@ -103,7 +103,8 @@ module DataObjects
     # Standard API Definition
     #####################################################
 
-    # Show the URI for this connection
+    # Show the URI for this connection, without
+    # the password the connection was setup with
     def to_s
       @uri.to_s
     end

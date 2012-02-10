@@ -84,7 +84,6 @@ module DataObjects
       string << '//'             if relative?
       if user
         string << "#{user}"
-        string << ":#{password}" if password
         string << "@"
       end
       string << "#{host}"        if host
