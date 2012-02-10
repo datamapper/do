@@ -148,7 +148,7 @@ describe "DataObjects::Pooling" do
     bob = Person.new('Bob')
     bob.release
     DataObjects.exiting = true
-    sleep(0.1)
+    sleep(1)
     DataObjects::Pooling.scavenger?.should be_false
   end
 
