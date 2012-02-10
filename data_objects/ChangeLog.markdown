@@ -1,3 +1,8 @@
+## 0.10.8 2012-02-10
+
+* Ruby 1.9.3 compatibility on Windows
+* Don't display password in URI
+
 ## 0.10.7 2011-10-13
 
 * Ruby 1.9.3 compatibility
