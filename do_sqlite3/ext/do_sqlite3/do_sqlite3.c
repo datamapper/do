@@ -319,17 +319,23 @@ VALUE do_sqlite3_cReader_close(VALUE self) {
 }
 
 VALUE do_sqlite3_cReader_next(VALUE self) {
-  if (rb_iv_get(self, "@done") == Qtrue) {
+
+  VALUE reader = rb_iv_get(self, "@reader");
+
+  if(reader == Qnil) {
     rb_raise(eConnectionError, "This result set has already been closed.");
+  }
+
+  if (rb_iv_get(self, "@done") == Qtrue) {
     return Qfalse;
   }
 
-  sqlite3_stmt *reader = NULL;
+  sqlite3_stmt *sqlite_reader = NULL;
   int result;
 
-  Data_Get_Struct(rb_iv_get(self, "@reader"), sqlite3_stmt, reader);
+  Data_Get_Struct(reader, sqlite3_stmt, sqlite_reader);
 
-  result = sqlite3_step(reader);
+  result = sqlite3_step(sqlite_reader);
   rb_iv_set(self, "@state", INT2NUM(result));
 
   if (result != SQLITE_ROW) {
@@ -356,7 +362,7 @@ VALUE do_sqlite3_cReader_next(VALUE self) {
 
   for (i = 0; i < field_count; i++) {
     field_type = rb_ary_entry(field_types, i);
-    value = do_sqlite3_typecast(reader, i, field_type, enc);
+    value = do_sqlite3_typecast(sqlite_reader, i, field_type, enc);
     rb_ary_push(arr, value);
   }
 
