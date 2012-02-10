@@ -497,7 +497,7 @@ VALUE do_mysql_cCommand_execute_reader(int argc, VALUE *argv, VALUE self) {
   VALUE mysql_connection = rb_iv_get(connection, "@connection");
 
   if (mysql_connection == Qnil) {
-    rb_raise(eConnectionError, "This connection has already been closed.");
+    rb_raise(eConnectionError, "This result set has already been closed.");
   }
 
   VALUE query = data_objects_build_query_from_args(self, argc, argv);

@@ -320,6 +320,7 @@ VALUE do_sqlite3_cReader_close(VALUE self) {
 
 VALUE do_sqlite3_cReader_next(VALUE self) {
   if (rb_iv_get(self, "@done") == Qtrue) {
+    rb_raise(eConnectionError, "This result set has already been closed.");
     return Qfalse;
   }
 

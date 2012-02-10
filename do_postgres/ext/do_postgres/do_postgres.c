@@ -610,7 +610,15 @@ VALUE do_postgres_cReader_close(VALUE self) {
 }
 
 VALUE do_postgres_cReader_next(VALUE self) {
-  PGresult *reader = DATA_PTR(rb_iv_get(self, "@reader"));
+
+  VALUE reader = rb_iv_get(self, "@reader");
+
+  if(reader == Qnil) {
+    rb_raise(eConnectionError, "This result set has already been closed.");
+    return Qfalse;
+  }
+
+  PGresult *pg_reader = DATA_PTR(reader);
 
   int row_count = NUM2INT(rb_iv_get(self, "@row_count"));
   int field_count = NUM2INT(rb_iv_get(self, "@field_count"));
@@ -642,8 +650,8 @@ VALUE do_postgres_cReader_next(VALUE self) {
     field_type = rb_ary_entry(field_types, i);
 
     // Always return nil if the value returned from Postgres is null
-    if (!PQgetisnull(reader, position, i)) {
-      value = do_postgres_typecast(PQgetvalue(reader, position, i), PQgetlength(reader, position, i), field_type, enc);
+    if (!PQgetisnull(pg_reader, position, i)) {
+      value = do_postgres_typecast(PQgetvalue(pg_reader, position, i), PQgetlength(pg_reader, position, i), field_type, enc);
     }
     else {
       value = Qnil;
