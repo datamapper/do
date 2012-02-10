@@ -15,7 +15,7 @@ JRUBY    = RUBY_PLATFORM =~ /java/
 IRONRUBY = defined?(RUBY_ENGINE) && RUBY_ENGINE == 'ironruby'
 WINDOWS  = Gem.win_platform? || (JRUBY && ENV_JAVA['os.name'] =~ /windows/i)
 SUDO     = WINDOWS ? '' : ('sudo' unless ENV['SUDOLESS'])
-BINARY_VERSION = '5.1.56'
+BINARY_VERSION = '5.1.60'
 
 CLEAN.include(%w[ {tmp,pkg}/ **/*.{o,so,bundle,jar,log,a,gem,dSYM,obj,pdb,exp,DS_Store,rbc,db} ext/do_mysql/Makefile ext-java/target ])
 

@@ -34,7 +34,6 @@
 
 // To store rb_intern values
 static ID ID_NEW;
-static ID ID_NEW_DATE;
 static ID ID_LOGGER;
 static ID ID_DEBUG;
 static ID ID_LEVEL;
@@ -144,75 +143,19 @@ static char * get_uri_option(VALUE query_hash, char * key) {
   return value;
 }
 
-/* ====== Time/Date Parsing Helper Functions ====== */
-static void reduce( do_int64 *numerator, do_int64 *denominator ) {
-  do_int64 a, b, c;
-  a = *numerator;
-  b = *denominator;
-  while ( a != 0 ) {
-    c = a; a = b % a; b = c;
-  }
-  *numerator = *numerator / b;
-  *denominator = *denominator / b;
-}
-
-// Generate the date integer which Date.civil_to_jd returns
-static int jd_from_date(int year, int month, int day) {
-  int a, b;
-  if ( month <= 2 ) {
-    year -= 1;
-    month += 12;
-  }
-  a = year / 100;
-  b = 2 - a + (a / 4);
-  return floor(365.25 * (year + 4716)) + floor(30.6001 * (month + 1)) + day + b - 1524;
-}
-
-// Creates a Rational for use as a Timezone offset to be passed to DateTime.new!
-static VALUE seconds_to_offset(do_int64 num) {
-  do_int64 den = 86400;
-  reduce(&num, &den);
-  return rb_funcall(rb_mKernel, ID_RATIONAL, 2, rb_ll2inum(num), rb_ll2inum(den));
-}
-
-static VALUE timezone_to_offset(int hour_offset, int minute_offset) {
-  do_int64 seconds = 0;
-
-  seconds += hour_offset * 3600;
-  seconds += minute_offset * 60;
-
-  return seconds_to_offset(seconds);
-}
-
 // Implementation using C functions
 
 static VALUE parse_date(VALUE r_value) {
-  VALUE time_array;
   int year, month, day;
-  int jd, ajd;
-  VALUE rational;
 
-  if (rb_obj_class(r_value) == rb_cTime) {
-    time_array = rb_funcall(r_value, ID_TO_A, 0);
-    year = NUM2INT(rb_ary_entry(time_array, 5));
-    month = NUM2INT(rb_ary_entry(time_array, 4));
-    day = NUM2INT(rb_ary_entry(time_array, 3));
-
-    jd = jd_from_date(year, month, day);
-
-    // Math from Date.jd_to_ajd
-    ajd = jd * 2 - 1;
-    rational = rb_funcall(rb_mKernel, ID_RATIONAL, 2, INT2NUM(ajd), INT2NUM(2));
-
-    return rb_funcall(rb_cDate, ID_NEW_DATE, 3, rational, INT2NUM(0), INT2NUM(2299161));
-
-  } else if (rb_obj_class(r_value) == rb_cDate) {
+  if (rb_obj_class(r_value) == rb_cDate) {
     return r_value;
-
-  } else if (rb_obj_class(r_value) == rb_cDateTime) {
-    rational = rb_iv_get(r_value, "@ajd");
-    return rb_funcall(rb_cDate, ID_NEW_DATE, 3, rational, INT2NUM(0), INT2NUM(2299161));
-
+  } else if (rb_obj_class(r_value) == rb_cTime ||
+             rb_obj_class(r_value) == rb_cDateTime) {
+    year = NUM2INT(rb_funcall(r_value, rb_intern("year"), 0));
+    month = NUM2INT(rb_funcall(r_value, rb_intern("month"), 0));
+    day = NUM2INT(rb_funcall(r_value, rb_intern("day"), 0));
+    return rb_funcall(rb_cDate, ID_NEW, 3, INT2NUM(year), INT2NUM(month), INT2NUM(day));
   } else {
     // Something went terribly wrong
     rb_raise(eDataError, "Couldn't parse date from class %s object", rb_obj_classname(r_value));
@@ -222,16 +165,10 @@ static VALUE parse_date(VALUE r_value) {
 // Implementation using C functions
 
 static VALUE parse_date_time(VALUE r_value) {
-  VALUE ajd, offset;
-
   VALUE time_array;
-  int year, month, day, hour, min, sec, hour_offset, minute_offset;
+  int year, month, day, hour, min, sec;
   // int usec;
-  int jd;
-  do_int64 num, den;
-
   long int gmt_offset;
-  int is_dst;
 
   // time_t rawtime;
   // struct tm * timeinfo;
@@ -249,43 +186,10 @@ static VALUE parse_date_time(VALUE r_value) {
     min = NUM2INT(rb_ary_entry(time_array, 1));
     sec = NUM2INT(rb_ary_entry(time_array, 0));
 
-    is_dst = rb_ary_entry(time_array, 8) == Qtrue ? 3600 : 0;
     gmt_offset = NUM2INT(rb_funcall(r_value, ID_UTC_OFFSET, 0 ));
 
-    if ( is_dst > 0 )
-      gmt_offset -= is_dst;
-
-    hour_offset = -(gmt_offset / 3600);
-    minute_offset = -(gmt_offset % 3600 / 60);
-
-    jd = jd_from_date(year, month, day);
-
-    // Generate ajd with fractional days for the time
-    // Extracted from Date#jd_to_ajd, Date#day_fraction_to_time, and Rational#+ and #-
-    num = (hour * 1440) + (min * 24);
-
-    // Modify the numerator so when we apply the timezone everything works out
-    num -= (hour_offset * 1440) + (minute_offset * 24);
-
-    den = (24 * 1440);
-    reduce(&num, &den);
-
-    num = (num * 86400) + (sec * den);
-    den = den * 86400;
-    reduce(&num, &den);
-
-    num = (jd * den) + num;
-
-    num = num * 2;
-    num = num - den;
-    den = den * 2;
-
-    reduce(&num, &den);
-
-    ajd = rb_funcall(rb_mKernel, ID_RATIONAL, 2, rb_ull2inum(num), rb_ull2inum(den));
-    offset = timezone_to_offset(hour_offset, minute_offset);
-
-    return rb_funcall(rb_cDateTime, ID_NEW_DATE, 3, ajd, offset, INT2NUM(2299161));
+    return rb_funcall(rb_cDateTime, ID_NEW, 7, INT2NUM(year), INT2NUM(month), INT2NUM(day),
+                                               INT2NUM(hour), INT2NUM(min), INT2NUM(sec), gmt_offset);
   } else {
     // Something went terribly wrong
     rb_raise(eDataError, "Couldn't parse datetime from class %s object", rb_obj_classname(r_value));
@@ -794,11 +698,6 @@ void Init_do_oracle() {
   rb_funcall(rb_mKernel, rb_intern("require"), 1, rb_str_new2("data_objects"));
 
   ID_NEW = rb_intern("new");
-#ifdef RUBY_LESS_THAN_186
-  ID_NEW_DATE = rb_intern("new0");
-#else
-  ID_NEW_DATE = rb_intern("new!");
-#endif
   ID_LOGGER = rb_intern("logger");
   ID_DEBUG = rb_intern("debug");
   ID_LEVEL = rb_intern("level");
