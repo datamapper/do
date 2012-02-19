@@ -190,6 +190,9 @@ public class Command extends DORubyObject {
                     // If there is no support, then a custom method can be defined
                     // to return a ResultSet with keys
                     keys = driver.getGeneratedKeys(conn);
+                    // The OpenEdge driver needs additional information
+                    if (keys == null)
+                        keys = driver.getGeneratedKeys(conn, sqlStatement, sqlText);
                 }
             }
             if (usePS && keys != null) {

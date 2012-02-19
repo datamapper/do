@@ -562,6 +562,17 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
 
     /**
      *
+     * @param connection
+     * @param ps
+     * @param sqlText
+     * @return
+     */
+    public ResultSet getGeneratedKeys(Connection connection, PreparedStatement ps, String sqlText) throws SQLException{
+        return null;
+    }
+
+    /**
+     *
      * @return
      */
     public Properties getDefaultConnectionProperties() {
