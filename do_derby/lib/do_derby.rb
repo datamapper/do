@@ -12,7 +12,7 @@ if RUBY_PLATFORM =~ /java/
 
   begin
     java.lang.Thread.currentThread.getContextClassLoader().loadClass(DataObjects::Derby::JDBC_DRIVER, true)
-  rescue
+  rescue StandardError, java.lang.ClassNotFoundException
     require 'jdbc/derby'      # the JDBC driver, packaged as a gem
   end
 

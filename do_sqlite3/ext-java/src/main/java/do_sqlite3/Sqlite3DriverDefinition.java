@@ -13,7 +13,6 @@ import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.joda.time.format.ISODateTimeFormat;
 import org.jruby.Ruby;
-import org.jruby.RubyBigDecimal;
 import org.jruby.RubyBignum;
 import org.jruby.RubyNumeric;
 import org.jruby.RubyFloat;
@@ -150,7 +149,8 @@ public class Sqlite3DriverDefinition extends AbstractDriverDefinition {
             if (dvalue == null) {
                 return runtime.getNil();
             }
-            return new RubyBigDecimal(runtime, new BigDecimal(dvalue));
+            return runtime.getKernel().callMethod("BigDecimal",
+                    runtime.newString(dvalue));
         case BYTE_ARRAY:
             ByteList bytes = new ByteList(rs.getBytes(col));
             if (rs.wasNull() || bytes.length() == 0) {
@@ -181,7 +181,7 @@ public class Sqlite3DriverDefinition extends AbstractDriverDefinition {
             IRubyObject arg, int idx) throws SQLException {
         switch (RubyType.inferRubyType(arg)) {
         case BIG_DECIMAL:
-            ps.setString(idx, ((RubyBigDecimal) arg).toString());
+            ps.setString(idx, ((BigDecimal) arg.toJava(Object.class)).toPlainString());
             break;
         case TRUE_CLASS:
             ps.setString(idx, "t");
