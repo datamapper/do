@@ -147,10 +147,11 @@ public class Command extends DORubyObject {
 
             long startTime = System.currentTimeMillis();
             if (usePS) {
-                if (sqlText.contains("RETURNING") && !hasReturnParam) {
-                    keys = sqlStatement.executeQuery();
+                boolean hasResult = sqlStatement.execute();
+                if (hasResult) {
+                    keys = sqlStatement.getResultSet();
                 } else {
-                    affectedCount = sqlStatement.executeUpdate();
+                    affectedCount = sqlStatement.getUpdateCount();
                 }
             } else {
                 sqlSimpleStatement.execute(sqlText);
