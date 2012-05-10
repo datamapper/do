@@ -12,7 +12,7 @@ if RUBY_PLATFORM =~ /java/
 
   begin
     java.lang.Thread.currentThread.getContextClassLoader().loadClass(DataObjects::Hsqldb::JDBC_DRIVER, true)
-  rescue StandardError, java.lang.ClassNotFoundException
+  rescue java.lang.ClassNotFoundException
     require 'jdbc/hsqldb'     # the JDBC driver, packaged as a gem
   end
   require 'do_hsqldb/do_hsqldb'   # the Java extension for this DO driver
