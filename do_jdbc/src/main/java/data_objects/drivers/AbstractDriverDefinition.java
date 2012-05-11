@@ -25,7 +25,6 @@ import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.jruby.Ruby;
-import org.jruby.RubyBigDecimal;
 import org.jruby.RubyBignum;
 import org.jruby.RubyClass;
 import org.jruby.RubyEncoding;
@@ -310,7 +309,8 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
             if (bd  == null) {
                 return runtime.getNil();
             }
-            return new RubyBigDecimal(runtime, bd);
+            return runtime.getKernel().callMethod("BigDecimal",
+                    runtime.newString(bd.toPlainString()));
         case DATE:
             java.sql.Date date = rs.getDate(col);
             if (date == null) {
@@ -449,7 +449,7 @@ public abstract class AbstractDriverDefinition implements DriverDefinition {
             ps.setDouble(idx, RubyNumeric.num2dbl(arg));
             break;
         case BIG_DECIMAL:
-            ps.setBigDecimal(idx, ((RubyBigDecimal) arg).getValue());
+            ps.setBigDecimal(idx, ((BigDecimal) arg.toJava(Object.class)));
             break;
         case NIL:
             ps.setNull(idx, ps.getParameterMetaData().getParameterType(idx));
