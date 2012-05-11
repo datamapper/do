@@ -41,7 +41,7 @@ shared_examples_for 'supporting String' do
     describe 'with manual typecasting' do
 
       before do
-        @command = @connection.create_command("SELECT weight FROM widgets WHERE ad_description = ?")
+        @command = @connection.create_command("SELECT number_sold FROM widgets WHERE ad_description = ?")
         @command.set_types(String)
         @reader = @command.execute_reader('Buy this product now!')
         @reader.next!
@@ -57,7 +57,7 @@ shared_examples_for 'supporting String' do
       end
 
       it 'should return the correct result' do
-        @values.first.should == "13.4"
+        @values.first.should == "0"
       end
 
     end
