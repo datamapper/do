@@ -1,3 +1,13 @@
+def test_connection(conn)
+  reader = conn.create_command(CONFIG.testsql || "SELECT 1").execute_reader
+  reader.next!
+  result = reader.values[0]
+  result
+ensure
+  reader.close
+  conn.close
+end
+
 shared_examples_for 'a Connection' do
 
   before :all do
@@ -25,11 +35,6 @@ shared_examples_for 'a Connection' do
   end
 
   describe 'various connection URIs' do
-    def test_connection(conn)
-      reader = conn.create_command(CONFIG.testsql || "SELECT 1").execute_reader
-      reader.next!
-      reader.values[0]
-    end
 
     it 'should open with an uri object' do
       uri = DataObjects::URI.new(
@@ -135,16 +140,6 @@ shared_examples_for 'a Connection with authentication support' do
 
   end
 
-end
-
-def test_connection(conn)
-  reader = conn.create_command(CONFIG.testsql || "SELECT 1").execute_reader
-  reader.next!
-  result = reader.values[0]
-  result
-ensure
-  reader.close
-  conn.close
 end
 
 shared_examples_for 'a Connection with JDBC URL support' do

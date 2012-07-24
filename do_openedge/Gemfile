@@ -5,7 +5,7 @@ path '../'
 gemspec
 
 platforms :jruby do
-  gem 'jdbc-openedge', '>=10.1C'
+  gem 'jdbc-openedge'
   gem 'do_jdbc'
 end
 

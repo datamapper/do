@@ -12,7 +12,7 @@ begin
     ext.debug     = ENV.has_key?('DO_JAVA_DEBUG') && ENV['DO_JAVA_DEBUG']
     ext.classpath = '../do_jdbc/lib/do_jdbc_internal.jar'
     ext.java_compiling do |gem|
-      gem.add_dependency 'jdbc-openedge', '>=10.1C'
+      gem.add_dependency 'jdbc-openedge'
       gem.add_dependency 'do_jdbc',       '0.10.8'
     end
   end
