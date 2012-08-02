@@ -489,7 +489,7 @@ VALUE do_mysql_cCommand_execute_non_query(int argc, VALUE *argv, VALUE self) {
     return Qnil;
   }
 
-  return rb_funcall(cMysqlResult, ID_NEW, 3, self, INT2NUM(affected_rows), insert_id == 0 ? Qnil : INT2NUM(insert_id));
+  return rb_funcall(cMysqlResult, ID_NEW, 3, self, INT2NUM(affected_rows), insert_id == 0 ? Qnil : ULL2NUM(insert_id));
 }
 
 VALUE do_mysql_cCommand_execute_reader(int argc, VALUE *argv, VALUE self) {
