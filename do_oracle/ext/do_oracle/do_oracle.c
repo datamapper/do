@@ -189,7 +189,7 @@ static VALUE parse_date_time(VALUE r_value) {
     gmt_offset = NUM2INT(rb_funcall(r_value, ID_UTC_OFFSET, 0 ));
 
     return rb_funcall(rb_cDateTime, ID_NEW, 7, INT2NUM(year), INT2NUM(month), INT2NUM(day),
-                                               INT2NUM(hour), INT2NUM(min), INT2NUM(sec), gmt_offset);
+                                               INT2NUM(hour), INT2NUM(min), INT2NUM(sec), INT2NUM(gmt_offset));
   } else {
     // Something went terribly wrong
     rb_raise(eDataError, "Couldn't parse datetime from class %s object", rb_obj_classname(r_value));
