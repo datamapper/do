@@ -17,11 +17,10 @@ This driver is currently provided only for JRuby.
    operators.  In other words, you cannot query rows based on their value. You
    will have to query the rows using a different column value (there is no
    issue doing reads or writes with `BLOB`/`CLOB` fields). See [ProKB P91964][0]
-   for more info. This causes one ByteArray spec to fail.
+   for more info.
  * The 10.2B JDBC driver causes `DECIMAL`/`NUMERIC` SQL types to round up to the
    nearest integer and then truncate all digits after the decimal point. According
    to [ProKB P187898][1], it appears to be a regression bug in the JDBC driver.
-   This causes one of the BigDecimal specs to fail.
 
 ## Synopsis
 
@@ -29,7 +28,7 @@ An example of usage:
 
     @connection = DataObjects::Connection.new("openedge://localhost:4000/sports2000")
     @reader = @connection.create_command('SELECT * FROM State').execute_reader
-    @reader.next! && @reader.values
+    @reader.next!
 
 The `Connection` constructor should be passed either a DataObjects-style URI or
 JDBC-style URI:
@@ -41,7 +40,7 @@ Note that the DataDirect proprietary-style JDBC URI tokenized with `;`s:
 
     jdbc:datadirect:openedge://host:port;databaseName=database;user=<value>;password=<value>
 
-are **NOT** supported (pull requests accepted).
+is **not** supported.
 
 ## Requirements
 
@@ -86,27 +85,18 @@ To run individual specs:
 
     jruby -S rake spec SPEC=spec/connection_spec.rb
 
-Note that the *typecast tests must be run individually*. There is apparently
-some type of concurrency issue when trying to run many at the same time.
-The error that the JDBC driver returns when this happens (on 10.2B) is:
-
-    [DataDirect][OpenEdge JDBC Driver][OpenEdge] Failure to acquire exclusive schema lock for DDL operation. (7872)
-
 ### Spec data setup
 
 The specs require an empty database to use for running tests against
 (the database will be written/read from by the tests). Here are
-some commands to be ran from `proenv` to create and bootstrap a
+some commands to be ran from `proenv` to create an empty
 database that can be used for testing (note the use of UTF-8,
 which is required for proper multibyte string support):
 
     prodb test empty
     proutil test -C convchar convert utf-8
     sql_env
-    proserve test -S 4000 -cpinternal utf-8 -cpstream utf-8
-
-Note that I think the SQL engine is unaffected by the codepage
-parameters, but it doesn't hurt to be careful.
+    proserve test -S 4000
 
 ## License
 
