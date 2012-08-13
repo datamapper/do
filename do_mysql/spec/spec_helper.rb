@@ -45,7 +45,7 @@ CONFIG.ssl      = SSLHelpers.query(:ca_cert, :client_cert, :client_key)
 
 CONFIG.driver       = 'mysql'
 CONFIG.jdbc_driver  = DataObjects::Mysql.const_get('JDBC_DRIVER') rescue nil
-CONFIG.uri          = ENV["DO_MYSQL_SPEC_URI"] || "#{CONFIG.scheme}://#{CONFIG.user_info}#{CONFIG.host}:#{CONFIG.port}#{CONFIG.database}"
+CONFIG.uri          = ENV["DO_MYSQL_SPEC_URI"] || "#{CONFIG.scheme}://#{CONFIG.user_info}#{CONFIG.host}:#{CONFIG.port}#{CONFIG.database}?zeroDateTimeBehavior=convertToNull"
 CONFIG.jdbc_uri     = "jdbc:#{CONFIG.uri}"
 CONFIG.sleep        = "SELECT sleep(1)"
 
