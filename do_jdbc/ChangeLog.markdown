@@ -1,3 +1,8 @@
+## 0.10.9 2012-08-13
+
+* Improve RETURNING handling
+* Add support for JRuby 1.7
+
 ## 0.10.7 2011-10-13
 
 No changes

@@ -1,3 +1,7 @@
+## 0.10.9 2012-08-13
+
+* Fix segfault when converting Time into DateTime
+
 ## 0.10.8 2012-02-10
 
 * Ruby 1.9.3 compatibility

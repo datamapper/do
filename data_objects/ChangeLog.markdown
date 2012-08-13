@@ -1,3 +1,7 @@
+## 0.10.9 2012-08-13
+
+* Don't try to escape queries when no binding parameters are given
+
 ## 0.10.8 2012-02-10
 
 * Ruby 1.9.3 compatibility on Windows
