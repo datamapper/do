@@ -11,7 +11,7 @@ shared_examples_for 'a Command' do
     @command     = @connection.create_command("INSERT INTO users (name) VALUES (?)")
     @reader      = @connection.create_command("SELECT code, name FROM widgets WHERE ad_description = ?")
     @arg_command = @connection.create_command("INSERT INTO users (name, fired_at) VALUES (?, ?)")
-    @arg_reader  = @connection.create_command("SELECT code, name FROM widgets WHERE ad_description = ? AND ad_content = ?")
+    @arg_reader  = @connection.create_command("SELECT code, name FROM widgets WHERE ad_description = ? AND whitepaper_text = ?")
   end
 
   after do
@@ -75,7 +75,7 @@ shared_examples_for 'a Command' do
     describe 'with an invalid reader' do
 
       before do
-        @invalid_reader = @connection.create_command("SELECT * FROM non_existent_widgets WHERE ad_description = ? AND ad_content = ?")
+        @invalid_reader = @connection.create_command("SELECT * FROM non_existent_widgets WHERE ad_description = ? AND white_paper_text = ?")
       end
 
       it 'should raise an error on an invalid query' do
