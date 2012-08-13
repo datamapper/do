@@ -185,6 +185,10 @@ VALUE data_objects_parse_date(const char *date) {
       return Qnil;
   }
 
+  if(!year && !month && !day) {
+    return Qnil;
+  }
+
   return rb_funcall(rb_cDate, ID_NEW, 3, INT2NUM(year), INT2NUM(month), INT2NUM(day));
 }
 
@@ -236,6 +240,10 @@ VALUE data_objects_parse_date_time(const char *date) {
    */
   fmt_datetime = strchr(date, '.') ? _fmt_datetime_tz_subsec : _fmt_datetime_tz_normal;
   tokens_read  = sscanf(date, fmt_datetime, &year, &month, &day, &hour, &min, &sec, &hour_offset, &minute_offset);
+
+  if(!year && !month && !day && !hour && !min && !sec) {
+    return Qnil;
+  }
 
   switch (tokens_read) {
     case 8:
