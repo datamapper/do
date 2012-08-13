@@ -33,7 +33,7 @@ begin
   end
 
   version = BINARY_VERSION
-  file "vendor/postgresql-#{version}-1-binaries-no-installer.zip" => ['vendor'] do |t|
+  file "vendor/postgresql-#{version}-1-windows-binaries.zip" => ['vendor'] do |t|
     url = "http://wwwmaster.postgresql.org/redir/107/h/binary/v#{version}/win32/#{File.basename(t.name)}"
     when_writing "downloading #{t.name}" do
       cd File.dirname(t.name) do
@@ -42,7 +42,7 @@ begin
     end
   end
 
-  file "vendor/pgsql/include/pg_config.h" => ["vendor/postgresql-#{version}-1-binaries-no-installer.zip"] do |t|
+  file "vendor/pgsql/include/pg_config.h" => ["vendor/postgresql-#{version}-1-windows-binaries.zip"] do |t|
     full_file = File.expand_path(t.prerequisites.last)
     when_writing "creating #{t.name}" do
       cd "vendor" do
