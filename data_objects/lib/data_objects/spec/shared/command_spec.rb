@@ -7,9 +7,11 @@ shared_examples_for 'a Command' do
   end
 
   before do
-    @connection = DataObjects::Connection.new(CONFIG.uri)
-    @command    = @connection.create_command("INSERT INTO users (name) VALUES (?)")
-    @reader     = @connection.create_command("SELECT code, name FROM widgets WHERE ad_description = ?")
+    @connection  = DataObjects::Connection.new(CONFIG.uri)
+    @command     = @connection.create_command("INSERT INTO users (name) VALUES (?)")
+    @reader      = @connection.create_command("SELECT code, name FROM widgets WHERE ad_description = ?")
+    @arg_command = @connection.create_command("INSERT INTO users (name, fired_at) VALUES (?, ?)")
+    @arg_reader  = @connection.create_command("SELECT code, name FROM widgets WHERE ad_description = ? AND ad_content = ?")
   end
 
   after do
@@ -32,14 +34,14 @@ shared_examples_for 'a Command' do
         expect { @invalid_command.execute_non_query }.to raise_error(DataObjects::SQLError)
       end
 
-      it 'should raise an error with too few binding parameters' do
-        expect { @command.execute_non_query("Too", "Many") }.to raise_error(ArgumentError,
-          /Binding mismatch: 2 for 1/)
+      it 'should raise an error with too many binding parameters' do
+        expect { @arg_command.execute_non_query("Too", Date.today, "Many") }.to raise_error(ArgumentError,
+          /Binding mismatch: 3 for 2/)
       end
 
-      it 'should raise an error with too many binding parameters' do
-        expect { @command.execute_non_query }.to raise_error(ArgumentError,
-          /Binding mismatch: 0 for 1/)
+      it 'should raise an error with too few binding parameters' do
+        expect { @arg_command.execute_non_query("Few") }.to raise_error(ArgumentError,
+          /Binding mismatch: 1 for 2/)
       end
 
     end
@@ -47,7 +49,7 @@ shared_examples_for 'a Command' do
     describe 'with a valid statement' do
 
       it 'should not raise an error with an explicit nil as parameter' do
-        expect { @command.execute_non_query(nil) }.not_to raise_error(ArgumentError)
+        expect { @arg_command.execute_non_query(nil, nil) }.not_to raise_error(ArgumentError)
       end
 
     end
@@ -73,7 +75,7 @@ shared_examples_for 'a Command' do
     describe 'with an invalid reader' do
 
       before do
-        @invalid_reader = @connection.create_command("SELECT * FROM non_existent_widgets WHERE ad_description = ?")
+        @invalid_reader = @connection.create_command("SELECT * FROM non_existent_widgets WHERE ad_description = ? AND ad_content = ?")
       end
 
       it 'should raise an error on an invalid query' do
@@ -81,14 +83,14 @@ shared_examples_for 'a Command' do
         expect { @invalid_reader.execute_reader }.to raise_error # (ArgumentError, DataObjects::SQLError)
       end
 
-      it 'should raise an error with too few binding parameters' do
-        expect { @reader.execute_reader("Too", "Many") }.to raise_error(ArgumentError,
-          /Binding mismatch: 2 for 1/)
+      it 'should raise an error with too many few binding parameters' do
+        expect { @arg_reader.execute_reader("Too", "Many", "Args") }.to raise_error(ArgumentError,
+          /Binding mismatch: 3 for 2/)
       end
 
-      it 'should raise an error with too many binding parameters' do
-        expect { @reader.execute_reader }.to raise_error(ArgumentError,
-          /Binding mismatch: 0 for 1/)
+      it 'should raise an error with too few binding parameters' do
+        expect { @arg_reader.execute_reader("Few") }.to raise_error(ArgumentError,
+          /Binding mismatch: 1 for 2/)
       end
 
     end
@@ -96,7 +98,7 @@ shared_examples_for 'a Command' do
     describe 'with a valid reader' do
 
       it 'should not raise an error with an explicit nil as parameter' do
-        expect { @reader.execute_reader(nil) }.not_to raise_error(ArgumentError)
+        expect { @arg_reader.execute_reader(nil, nil) }.not_to raise_error(ArgumentError)
       end
 
     end
@@ -127,7 +129,7 @@ shared_examples_for 'a Command' do
       end
 
       it 'should raise an error when types are set' do
-        expect { @command.execute_non_query }.to raise_error(ArgumentError)
+        expect { @arg_command.execute_non_query("Few") }.to raise_error(ArgumentError)
       end
 
     end

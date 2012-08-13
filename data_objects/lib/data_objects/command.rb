@@ -52,6 +52,7 @@ module DataObjects
     # This method is meant mostly for adapters that don't support
     # bind-parameters.
     def escape_sql(args)
+      return @text if args.empty?
       sql = @text.dup
       vars = args.dup
 
