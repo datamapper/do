@@ -172,7 +172,8 @@ VALUE do_sqlite3_cConnection_dispose(VALUE self) {
     return Qfalse;
   }
 
-  sqlite3 *db = DATA_PTR(connection_container);
+  sqlite3 *db;
+  Data_Get_Struct(connection_container, sqlite3, db);
 
   if (!db) {
     return Qfalse;

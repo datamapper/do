@@ -16,11 +16,14 @@ VALUE do_sqlite3_cExtension_enable_load_extension(VALUE self, VALUE on) {
   if (connection == Qnil) { return Qfalse; }
 
   // Retrieve the actual connection from the
-  connection = rb_iv_get(self, "@connection");
+  VALUE sqlite3_connection = rb_iv_get(connection, "@connection");
 
-  if (connection == Qnil) { return Qfalse; }
+  if (sqlite3_connection == Qnil) { return Qfalse; }
 
   sqlite3 *db;
+
+  Data_Get_Struct(sqlite3_connection, sqlite3, db);
+
 
   if (!(db = DATA_PTR(connection))) {
     return Qfalse;
@@ -40,26 +43,23 @@ VALUE do_sqlite3_cExtension_enable_load_extension(VALUE self, VALUE on) {
 
 VALUE do_sqlite3_cExtension_load_extension(VALUE self, VALUE path) {
 #ifdef HAVE_SQLITE3_ENABLE_LOAD_EXTENSION
-  VALUE id_connection = rb_intern("connection");
-  VALUE connection = rb_funcall(self, id_connection, 0);
+  VALUE connection = rb_iv_get(self, "@connection");
 
   if (connection == Qnil) { return Qfalse; }
 
-  // Retrieve the actual connection from the
-  connection = rb_iv_get(self, "@connection");
+  // Retrieve the actual connection from the object
+  VALUE sqlite3_connection = rb_iv_get(connection, "@connection");
 
-  if (connection == Qnil) { return Qfalse; }
+  if (sqlite3_connection == Qnil) { return Qfalse; }
 
   sqlite3 *db;
 
-  if (!(db = DATA_PTR(connection))) {
-    return Qfalse;
-  }
+  Data_Get_Struct(sqlite3_connection, sqlite3, db);
 
   const char *extension_path  = rb_str_ptr_readonly(path);
-  char *errmsg;
+  char *errmsg = sqlite3_malloc(1024);
 
-  if (!(errmsg = sqlite3_malloc(1024))) {
+  if (!errmsg) {
     return Qfalse;
   }
 
@@ -72,6 +72,7 @@ VALUE do_sqlite3_cExtension_load_extension(VALUE self, VALUE path) {
     rb_exc_raise(errexp);
   }
 
+  sqlite3_free(errmsg);
   return Qtrue;
 #else
   return Qfalse;
