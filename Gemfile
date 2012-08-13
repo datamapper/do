@@ -12,5 +12,5 @@ platforms :jruby do
   gem 'jdbc-derby'
   gem 'jdbc-h2'
   gem 'jdbc-hsqldb'
-  gem 'do_jdbc',       '0.10.8'
+  gem 'do_jdbc',       '0.10.9'
 end
