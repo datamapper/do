@@ -44,6 +44,10 @@ At present the following drivers are available:
     <td>SQL Server</td>
     <td><em>pending</em></td>
     <td>x</td></tr>
+  <tr>
+    <td>OpenEdge</td>
+    <td>-</td>
+    <td>x</td></tr>
 </table>
 
 There is experimental support for [Rubinius][rubinius].
