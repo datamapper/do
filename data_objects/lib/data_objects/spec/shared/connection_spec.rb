@@ -33,13 +33,12 @@ shared_examples_for 'a Connection' do
 
     it 'should open with an uri object' do
       uri = DataObjects::URI.new(
-              @driver,
-              @user,
-              @password,
-              @host,
-              @port && @port.to_i,
-              @database,
-              nil, nil
+              :scheme   => @driver,
+              :user     => @user,
+              :password => @password,
+              :host     => @host,
+              :port     => @port && @port.to_i,
+              :path     => @database
             )
       conn = DataObjects::Connection.new(uri)
       test_connection(conn).should == 1
