@@ -108,10 +108,6 @@ shared_examples_for 'a Connection with authentication support' do
       lambda { DataObjects::Connection.new(uri) }
     end
 
-    it 'should raise an error if no database specified' do
-      connecting_with("#{@driver}://#{@user}:#{@password}@#{@host}:#{@port}").should raise_error #(ArgumentError, DataObjects::Error)
-    end
-
     it 'should raise an error if bad username is given' do
       connecting_with("#{@driver}://thisreallyshouldntexist:#{@password}@#{@host}:#{@port}#{@database}").should raise_error #(ArgumentError, DataObjects::Error)
     end
@@ -134,6 +130,15 @@ shared_examples_for 'a Connection with authentication support' do
 
   end
 
+end
+
+shared_examples_for 'a Connection allowing default database' do
+  describe 'with a URI without a database' do
+    it 'should connect properly' do
+      conn = DataObjects::Connection.new("#{@driver}://#{@user}:#{@password}@#{@host}:#{@port}")
+      test_connection(conn).should == 1
+    end
+  end
 end
 
 def test_connection(conn)
