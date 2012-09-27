@@ -117,17 +117,6 @@ public final class Connection extends DORubyObject {
             throw runtime.newArgumentError("Unsupported Encoding in Query Parameters" + ex);
         }
 
-        // Normally, a database path must be specified. However, we should only
-        // throw this error for opaque URIs - so URIs like jdbc:h2:mem should work.
-        if (!connectionUri.isOpaque() && (connectionUri.getPath() == null
-                || "".equals(connectionUri.getPath())
-                || "/".equals(connectionUri.getPath()))) {
-            // XXX Nothing to close
-            // XXX: MRI driver raises a ConnectionError. Is a ArgumentError not
-            //      more appropriate?
-            throw Errors.newConnectionError(runtime, "No database specified");
-        }
-
         if (connectionUri.getQuery() != null) {
             try {
                 query = parseQueryString(connectionUri.getQuery());

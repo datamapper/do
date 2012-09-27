@@ -228,7 +228,7 @@ void do_mysql_full_connect(VALUE self, MYSQL *db) {
   }
 
   if (!database || !*database) {
-    rb_raise(eConnectionError, "Database must be specified");
+    database = NULL;
   }
 
   VALUE r_query = rb_iv_get(self, "@query");
