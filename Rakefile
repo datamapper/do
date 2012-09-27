@@ -12,7 +12,7 @@ SUDO     = WINDOWS ? '' : ('sudo' unless ENV['SUDOLESS'])
 # RCov is run by default, except on the JRuby and IronRuby platforms, or if NO_RCOV env is true
 RUN_RCOV = JRUBY || IRONRUBY ? false : (ENV.has_key?('NO_RCOV') ? ENV['NO_RCOV'] != 'true' : true)
 
-jruby_projects = %w[do_jdbc do_derby do_h2 do_hsqldb]
+jruby_projects = %w[do_jdbc do_derby do_h2 do_hsqldb do_openedge]
 projects = %w[data_objects]
 projects += %w[do_mysql do_postgres do_sqlite3 do_sqlserver do_oracle]
 projects += jruby_projects if JRUBY
