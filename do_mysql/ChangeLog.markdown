@@ -2,6 +2,7 @@
 
 * Handle bigint insert id's
 * Add handling for invalid date and datetimes with value 0000-00-00
+* Handle empty database names for connecting to the default database
 
 ## 0.10.8 2012-02-10
 

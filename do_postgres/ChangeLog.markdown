@@ -1,6 +1,7 @@
 ## 0.10.9 2012-08-13
 
 * Improved RETURNING handling on JRuby
+* Allow for an empty database name
 
 ## 0.10.8 2012-02-10
 
