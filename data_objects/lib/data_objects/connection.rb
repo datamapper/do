@@ -131,19 +131,10 @@ module DataObjects
       DataObjects::const_get(self.class.name.split('::')[-2])
     end
 
-    def concrete_command
-      @concrete_command || begin
-
-        class << self
-          private
-          def concrete_command
-            @concrete_command
-          end
-        end
-
-        @concrete_command = DataObjects::const_get(self.class.name.split('::')[-2]).const_get('Command')
-      end
+    def self.concrete_command
+      @concrete_command ||= DataObjects::const_get(self.name.split('::')[-2]).const_get('Command')
     end
 
-  end
+
+
 end
