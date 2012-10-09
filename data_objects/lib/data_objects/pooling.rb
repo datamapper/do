@@ -98,33 +98,37 @@ module DataObjects
     end
 
     def self.included(target)
-      target.class_eval do
-        class << self
-          alias __new new
-        end
+      lock.synchronize do
+        unless target.respond_to? :__pools
+          target.class_eval do
+            class << self
+              alias __new new
+            end
 
-        @__pools     = {}
-        @__pool_lock = Mutex.new
-        @__pool_wait = ConditionVariable.new
+            @__pools     = {}
+            @__pool_lock = Mutex.new
+            @__pool_wait = ConditionVariable.new
 
-        def self.__pool_lock
-          @__pool_lock
-        end
+            def self.__pool_lock
+              @__pool_lock
+            end
 
-        def self.__pool_wait
-          @__pool_wait
-        end
+            def self.__pool_wait
+              @__pool_wait
+            end
 
-        def self.new(*args)
-          (@__pools[args] ||= __pool_lock.synchronize { Pool.new(self.pool_size, self, args) }).new
-        end
+            def self.new(*args)
+              (@__pools[args] ||= __pool_lock.synchronize { Pool.new(self.pool_size, self, args) }).new
+            end
 
-        def self.__pools
-          @__pools
-        end
+            def self.__pools
+              @__pools
+            end
 
-        def self.pool_size
-          8
+            def self.pool_size
+              8
+            end
+          end
         end
       end
     end
