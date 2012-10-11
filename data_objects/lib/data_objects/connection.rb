@@ -119,7 +119,7 @@ module DataObjects
 
     # Create a Command object of the right subclass using the given text
     def create_command(text)
-      concrete_command.new(self, text)
+      self.class.concrete_command.new(self, text)
     end
 
     def extension
@@ -132,19 +132,10 @@ module DataObjects
       DataObjects::const_get(self.class.name.split('::')[-2])
     end
 
-    def concrete_command
-      @concrete_command || begin
-
-        class << self
-          private
-          def concrete_command
-            @concrete_command
-          end
-        end
-
-        @concrete_command = DataObjects::const_get(self.class.name.split('::')[-2]).const_get('Command')
-      end
+    def self.concrete_command
+      @concrete_command ||= DataObjects::const_get(self.name.split('::')[-2]).const_get('Command')
     end
 
   end
+
 end
