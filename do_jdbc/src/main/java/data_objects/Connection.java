@@ -46,6 +46,8 @@ public final class Connection extends DORubyObject {
 
     private java.sql.Connection sqlConnection;
     private java.net.URI connectionUri;
+    private Map<String, String> query;
+    private String encoding;
 
     private static final ObjectAllocator CONNECTION_ALLOCATOR = new ObjectAllocator() {
 
@@ -104,8 +106,6 @@ public final class Connection extends DORubyObject {
     public IRubyObject initialize(final IRubyObject uri) {
         // System.out.println("============== initialize called " + uri);
         Ruby runtime = getRuntime();
-        String encoding = null;
-        Map<String, String> query = null;
 
         try {
             connectionUri = driver.parseConnectionURI(uri);
@@ -140,6 +140,16 @@ public final class Connection extends DORubyObject {
             }
             api.setInstanceVariable(this, "@encoding", runtime.newString(encoding));
         }
+
+        // #to_s implemented in Ruby relies on this @uri ivar
+        api.setInstanceVariable(this, "@uri", uri);
+
+        connect();
+        return runtime.getTrue();
+    }
+
+    public void connect() {
+        Ruby runtime = getRuntime();
 
         java.sql.Connection conn = null;
 
@@ -204,13 +214,7 @@ public final class Connection extends DORubyObject {
                                      + "\n\t" + ex.getLocalizedMessage());
         }
 
-
-        // #to_s implemented in Ruby relies on this @uri ivar
-        api.setInstanceVariable(this, "@uri", uri);
-
         this.sqlConnection = conn;
-
-        return runtime.getTrue();
     }
 
     /**
@@ -234,6 +238,7 @@ public final class Connection extends DORubyObject {
         }
 
         JDBCUtil.close(sqlConnection);
+        sqlConnection = null;
         return runtime.getTrue();
     }
 

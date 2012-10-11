@@ -96,8 +96,8 @@ public class Command extends DORubyObject {
         Ruby runtime = getRuntime();
         Connection connection_instance = (Connection) api.getInstanceVariable(this,
                 "@connection");
+        checkConnectionNotClosed(connection_instance);
         java.sql.Connection conn = connection_instance.getInternalConnection();
-        checkConnectionNotClosed(conn);
 
         IRubyObject insert_key = runtime.getNil();
         RubyClass resultClass = Result.createResultClass(runtime, driver);
@@ -232,8 +232,9 @@ public class Command extends DORubyObject {
         Ruby runtime = getRuntime();
         Connection connection_instance = (Connection) api.getInstanceVariable(this,
                 "@connection");
+        checkConnectionNotClosed(connection_instance);
+
         java.sql.Connection conn = connection_instance.getInternalConnection();
-        checkConnectionNotClosed(conn);
 
         RubyClass readerClass = Reader.createReaderClass(runtime, driver);
         boolean inferTypes = false;
@@ -396,10 +397,22 @@ public class Command extends DORubyObject {
      *
      * @param conn
      */
-    private void checkConnectionNotClosed(java.sql.Connection conn) {
+    private void checkConnectionNotClosed(Connection conn) {
         try {
-            if (conn == null || conn.isClosed()) {
+            java.sql.Connection internal_connection = conn.getInternalConnection();
+            if (internal_connection == null) {
                 throw Errors.newConnectionError(getRuntime(), "This connection has already been closed.");
+            }
+            if(internal_connection.isClosed()) {
+                /*
+                 * Try reconnecting here if the connection has failed without
+                 * us asking for it to be closed.
+                 */
+                conn.connect();
+                internal_connection = conn.getInternalConnection();
+                if (internal_connection == null || internal_connection.isClosed()) {
+                    throw Errors.newConnectionError(getRuntime(), "This connection has already been closed.");
+                }
             }
         } catch (SQLException ignored) {
         }
