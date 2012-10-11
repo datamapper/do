@@ -61,6 +61,26 @@ task :spec do
 
 end
 
+task :bump do
+
+  old_version = ENV["OLD"]
+  new_version = ENV["NEW"]
+
+  raise "Specify versions when bumping: OLD=x.y.z NEW=x.y.z+1 rake bump" unless old_version && new_version
+
+  # Remove any Gemfile.lock files
+  Dir["**/Gemfile.lock"].each do |f|
+    File.delete f
+  end
+
+  Dir["**/*.gemspec", "**/pom.xml", "**/version.rb", "**/compile.rake", "**/Gemfile"].each do |filename|
+    text = File.read(filename)
+    out  = text.gsub(/#{old_version}/, new_version)
+    File.open(filename, "w") { |file| file << out }
+  end
+
+end
+
 tasks.each do |name, description|
   desc description
   task name do
