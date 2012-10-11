@@ -10,7 +10,6 @@ Gem::Specification.new do |s|
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["alin_sinpalean", "bheineman", "ickzon"]
-  s.date = %q{2009-12-23}
   s.description = %q{JDBC Driver for SQL Server (jTDS), packaged as a Gem}
   s.email = %q{}
   s.extra_rdoc_files = [
