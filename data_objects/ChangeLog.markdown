@@ -1,3 +1,9 @@
+## 0.10.10 2012-10-11
+
+* JRuby performance improvements
+* Reconnect added on JRuby
+* do\_sqlite3 C driver supports busy\_timeout
+
 ## 0.10.9 2012-08-13
 
 * Don't try to escape queries when no binding parameters are given

@@ -1,3 +1,8 @@
+## 0.10.10 2012-10-11
+
+* Improve performance
+* Add reconnect handling when server disconnected
+
 ## 0.10.9 2012-08-13
 
 * Improve RETURNING handling

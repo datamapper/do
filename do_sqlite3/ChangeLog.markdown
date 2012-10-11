@@ -1,3 +1,7 @@
+## 0.10.10 2012-10-11
+
+* Add support to C driver for busy\_timeout
+
 ## 0.10.9 2012-08-13
 
 * Fix segfault when loading custom extensions
