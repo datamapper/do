@@ -158,10 +158,12 @@ public class Command extends DORubyObject {
             }
             long endTime = System.currentTimeMillis();
 
-            if (usePS)
-                debug(driver.statementToString(sqlStatement), Long.valueOf(endTime - startTime));
-            else
-                debug(sqlText, Long.valueOf(endTime - startTime));
+            if (isDebug()) {
+              if (usePS)
+                  debug(driver.statementToString(sqlStatement), Long.valueOf(endTime - startTime));
+              else
+                  debug(sqlText, Long.valueOf(endTime - startTime));
+            }
 
             if (usePS && keys == null) {
                 if (driver.supportsJdbcGeneratedKeys()) {
@@ -260,8 +262,10 @@ public class Command extends DORubyObject {
             long startTime = System.currentTimeMillis();
             resultSet = sqlStatement.executeQuery();
             long endTime = System.currentTimeMillis();
-
-            debug(driver.statementToString(sqlStatement), Long.valueOf(endTime - startTime));
+ 
+            if (isDebug()) {
+                 debug(driver.statementToString(sqlStatement), Long.valueOf(endTime - startTime));
+            }
 
             metaData = resultSet.getMetaData();
             columnCount = metaData.getColumnCount();
@@ -642,4 +646,14 @@ public class Command extends DORubyObject {
       api.callMethod(connection_instance, "log", loggerMsg);
     }
 
+    /**
+     * returns if the debug mode is turned on.
+     */
+    private boolean isDebug() {
+        RubyModule driverModule = (RubyModule) getRuntime().getModule(
+                DATA_OBJECTS_MODULE_NAME).getConstant(driver.getModuleName());
+        IRubyObject logger = api.callMethod(driverModule, "logger");
+        int level = RubyNumeric.fix2int(api.callMethod(logger, "level"));
+        return level == 0;
+    }
 }
