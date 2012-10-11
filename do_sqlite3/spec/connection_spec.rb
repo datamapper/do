@@ -17,4 +17,21 @@ describe DataObjects::Sqlite3::Connection do
   it_should_behave_like 'a Connection'
   it_should_behave_like 'a Connection via JDNI' if JRUBY
   it_should_behave_like 'a Connection with JDBC URL support' if JRUBY
+
+  unless JRUBY
+
+    describe 'connecting with busy timeout' do
+
+      it 'connects with a valid timeout' do
+        DataObjects::Connection.new("#{CONFIG.uri}?busy_timeout=200").should_not be_nil
+      end
+
+      it 'raises an error when passed an invalid value' do
+        lambda { DataObjects::Connection.new("#{CONFIG.uri}?busy_timeout=stuff") }.
+          should raise_error(ArgumentError)
+      end
+
+    end
+  end
+
 end

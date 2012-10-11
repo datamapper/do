@@ -137,6 +137,20 @@ int do_sqlite3_flags_from_uri(VALUE uri) {
 
 #endif
 
+
+int do_sqlite3_busy_timeout_from_uri(VALUE uri) {
+  VALUE query_values = rb_funcall(uri, rb_intern("query"), 0);
+  if(query_values != Qnil && TYPE(query_values) == T_HASH) {
+    VALUE timeout = rb_hash_aref(query_values, rb_str_new2("busy_timeout"));
+    if(timeout == Qnil) {
+      return -1;
+    }
+
+    return rb_cstr2inum(RSTRING_PTR(timeout), 0);
+  }
+  return -1;
+}
+
 /****** Public API ******/
 
 VALUE do_sqlite3_cConnection_initialize(VALUE self, VALUE uri) {
@@ -152,6 +166,11 @@ VALUE do_sqlite3_cConnection_initialize(VALUE self, VALUE uri) {
 
   if (ret != SQLITE_OK) {
     do_sqlite3_raise_error(self, db, Qnil);
+  }
+
+  int timeout = do_sqlite3_busy_timeout_from_uri(uri);
+  if(timeout > 0) {
+    sqlite3_busy_timeout(db, timeout);
   }
 
   rb_iv_set(self, "@uri", uri);
