@@ -54,13 +54,13 @@ typedef signed long long int do_int64;
 #endif
 
 // To store rb_intern values
-extern ID ID_NEW;
-extern ID ID_NEW_DATE;
-extern ID ID_CONST_GET;
-extern ID ID_RATIONAL;
-extern ID ID_ESCAPE;
-extern ID ID_STRFTIME;
-extern ID ID_LOG;
+extern ID DO_ID_NEW;
+extern ID DO_ID_NEW_DATE;
+extern ID DO_ID_CONST_GET;
+extern ID DO_ID_RATIONAL;
+extern ID DO_ID_ESCAPE;
+extern ID DO_ID_STRFTIME;
+extern ID DO_ID_LOG;
 
 // Reference to Extlib module
 extern VALUE mExtlib;
@@ -68,7 +68,6 @@ extern VALUE rb_cByteArray;
 
 // References to DataObjects base classes
 extern VALUE mDO;
-extern VALUE mEncoding;
 extern VALUE cDO_Quoting;
 extern VALUE cDO_Connection;
 extern VALUE cDO_Command;
@@ -77,8 +76,8 @@ extern VALUE cDO_Reader;
 extern VALUE cDO_Logger;
 extern VALUE cDO_Logger_Message;
 extern VALUE cDO_Extension;
-extern VALUE eConnectionError;
-extern VALUE eDataError;
+extern VALUE eDO_ConnectionError;
+extern VALUE eDO_DataError;
 
 // References to Ruby classes that we'll need
 extern VALUE rb_cDate;

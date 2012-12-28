@@ -27,12 +27,12 @@
 void do_mysql_full_connect(VALUE self, MYSQL *db);
 
 // Classes that we'll build in Init
-VALUE mMysql;
-VALUE mEncoding;
-VALUE cMysqlConnection;
-VALUE cMysqlCommand;
-VALUE cMysqlResult;
-VALUE cMysqlReader;
+VALUE mDO_Mysql;
+VALUE mDO_MysqlEncoding;
+VALUE cDO_MysqlConnection;
+VALUE cDO_MysqlCommand;
+VALUE cDO_MysqlResult;
+VALUE cDO_MysqlReader;
 
 // Figures out what we should cast a given mysql field type to
 VALUE do_mysql_infer_ruby_type(const MYSQL_FIELD *field) {
@@ -96,7 +96,7 @@ VALUE do_mysql_typecast(const char *value, long length, const VALUE type, int en
     return (value == 0 || strcmp("0", value) == 0) ? Qfalse : Qtrue;
   }
   else if (type == rb_cByteArray) {
-    return rb_funcall(rb_cByteArray, ID_NEW, 1, rb_str_new(value, length));
+    return rb_funcall(rb_cByteArray, DO_ID_NEW, 1, rb_str_new(value, length));
   }
   else {
     return data_objects_typecast(value, length, type, encoding);
@@ -308,7 +308,7 @@ void do_mysql_full_connect(VALUE self, MYSQL *db) {
 #ifdef HAVE_MYSQL_SET_CHARACTER_SET
   // Set the connections character set
   VALUE encoding = rb_iv_get(self, "@encoding");
-  VALUE my_encoding = rb_hash_aref(data_objects_const_get(mEncoding, "MAP"), encoding);
+  VALUE my_encoding = rb_hash_aref(data_objects_const_get(mDO_MysqlEncoding, "MAP"), encoding);
 
   if (my_encoding != Qnil) {
     int encoding_error = mysql_set_character_set(db, rb_str_ptr_readonly(my_encoding));
@@ -473,7 +473,7 @@ VALUE do_mysql_cCommand_execute_non_query(int argc, VALUE *argv, VALUE self) {
   VALUE mysql_connection = rb_iv_get(connection, "@connection");
 
   if (mysql_connection == Qnil) {
-    rb_raise(eConnectionError, "This connection has already been closed.");
+    rb_raise(eDO_ConnectionError, "This connection has already been closed.");
   }
 
   MYSQL *db = DATA_PTR(mysql_connection);
@@ -489,7 +489,7 @@ VALUE do_mysql_cCommand_execute_non_query(int argc, VALUE *argv, VALUE self) {
     return Qnil;
   }
 
-  return rb_funcall(cMysqlResult, ID_NEW, 3, self, INT2NUM(affected_rows), insert_id == 0 ? Qnil : ULL2NUM(insert_id));
+  return rb_funcall(cDO_MysqlResult, DO_ID_NEW, 3, self, INT2NUM(affected_rows), insert_id == 0 ? Qnil : ULL2NUM(insert_id));
 }
 
 VALUE do_mysql_cCommand_execute_reader(int argc, VALUE *argv, VALUE self) {
@@ -497,7 +497,7 @@ VALUE do_mysql_cCommand_execute_reader(int argc, VALUE *argv, VALUE self) {
   VALUE mysql_connection = rb_iv_get(connection, "@connection");
 
   if (mysql_connection == Qnil) {
-    rb_raise(eConnectionError, "This result set has already been closed.");
+    rb_raise(eDO_ConnectionError, "This result set has already been closed.");
   }
 
   VALUE query = data_objects_build_query_from_args(self, argc, argv);
@@ -505,11 +505,11 @@ VALUE do_mysql_cCommand_execute_reader(int argc, VALUE *argv, VALUE self) {
   MYSQL_RES *response = do_mysql_cCommand_execute(self, connection, db, query);
 
   if (!response) {
-    rb_raise(eConnectionError, "No result set received for a query that should yield one.");
+    rb_raise(eDO_ConnectionError, "No result set received for a query that should yield one.");
   }
 
   unsigned int field_count = mysql_field_count(db);
-  VALUE reader = rb_funcall(cMysqlReader, ID_NEW, 0);
+  VALUE reader = rb_funcall(cDO_MysqlReader, DO_ID_NEW, 0);
 
   rb_iv_set(reader, "@connection", connection);
   rb_iv_set(reader, "@reader", Data_Wrap_Struct(rb_cObject, 0, 0, response));
@@ -626,38 +626,38 @@ void Init_do_mysql() {
   data_objects_common_init();
 
   // Top Level Module that all the classes live under
-  mMysql    = rb_define_module_under(mDO, "Mysql");
-  mEncoding = rb_define_module_under(mMysql, "Encoding");
+  mDO_Mysql    = rb_define_module_under(mDO, "Mysql");
+  mDO_MysqlEncoding = rb_define_module_under(mDO_Mysql, "Encoding");
 
-  cMysqlConnection = rb_define_class_under(mMysql, "Connection", cDO_Connection);
-  rb_define_method(cMysqlConnection, "initialize", do_mysql_cConnection_initialize, 1);
-  rb_define_method(cMysqlConnection, "using_socket?", data_objects_cConnection_is_using_socket, 0);
-  rb_define_method(cMysqlConnection, "ssl_cipher", data_objects_cConnection_ssl_cipher, 0);
-  rb_define_method(cMysqlConnection, "character_set", data_objects_cConnection_character_set , 0);
-  rb_define_method(cMysqlConnection, "dispose", do_mysql_cConnection_dispose, 0);
-  rb_define_method(cMysqlConnection, "quote_string", do_mysql_cConnection_quote_string, 1);
-  rb_define_method(cMysqlConnection, "quote_date", data_objects_cConnection_quote_date, 1);
-  rb_define_method(cMysqlConnection, "quote_time", data_objects_cConnection_quote_time, 1);
-  rb_define_method(cMysqlConnection, "quote_datetime", data_objects_cConnection_quote_date_time, 1);
+  cDO_MysqlConnection = rb_define_class_under(mDO_Mysql, "Connection", cDO_Connection);
+  rb_define_method(cDO_MysqlConnection, "initialize", do_mysql_cConnection_initialize, 1);
+  rb_define_method(cDO_MysqlConnection, "using_socket?", data_objects_cConnection_is_using_socket, 0);
+  rb_define_method(cDO_MysqlConnection, "ssl_cipher", data_objects_cConnection_ssl_cipher, 0);
+  rb_define_method(cDO_MysqlConnection, "character_set", data_objects_cConnection_character_set , 0);
+  rb_define_method(cDO_MysqlConnection, "dispose", do_mysql_cConnection_dispose, 0);
+  rb_define_method(cDO_MysqlConnection, "quote_string", do_mysql_cConnection_quote_string, 1);
+  rb_define_method(cDO_MysqlConnection, "quote_date", data_objects_cConnection_quote_date, 1);
+  rb_define_method(cDO_MysqlConnection, "quote_time", data_objects_cConnection_quote_time, 1);
+  rb_define_method(cDO_MysqlConnection, "quote_datetime", data_objects_cConnection_quote_date_time, 1);
 
-  cMysqlCommand = rb_define_class_under(mMysql, "Command", cDO_Command);
-  rb_define_method(cMysqlCommand, "set_types", data_objects_cCommand_set_types, -1);
-  rb_define_method(cMysqlCommand, "execute_non_query", do_mysql_cCommand_execute_non_query, -1);
-  rb_define_method(cMysqlCommand, "execute_reader", do_mysql_cCommand_execute_reader, -1);
+  cDO_MysqlCommand = rb_define_class_under(mDO_Mysql, "Command", cDO_Command);
+  rb_define_method(cDO_MysqlCommand, "set_types", data_objects_cCommand_set_types, -1);
+  rb_define_method(cDO_MysqlCommand, "execute_non_query", do_mysql_cCommand_execute_non_query, -1);
+  rb_define_method(cDO_MysqlCommand, "execute_reader", do_mysql_cCommand_execute_reader, -1);
 
   // Non-Query result
-  cMysqlResult = rb_define_class_under(mMysql, "Result", cDO_Result);
+  cDO_MysqlResult = rb_define_class_under(mDO_Mysql, "Result", cDO_Result);
 
   // Query result
-  cMysqlReader = rb_define_class_under(mMysql, "Reader", cDO_Reader);
-  rb_define_method(cMysqlReader, "close", do_mysql_cReader_close, 0);
-  rb_define_method(cMysqlReader, "next!", do_mysql_cReader_next, 0);
-  rb_define_method(cMysqlReader, "values", data_objects_cReader_values, 0);
-  rb_define_method(cMysqlReader, "fields", data_objects_cReader_fields, 0);
-  rb_define_method(cMysqlReader, "field_count", data_objects_cReader_field_count, 0);
+  cDO_MysqlReader = rb_define_class_under(mDO_Mysql, "Reader", cDO_Reader);
+  rb_define_method(cDO_MysqlReader, "close", do_mysql_cReader_close, 0);
+  rb_define_method(cDO_MysqlReader, "next!", do_mysql_cReader_next, 0);
+  rb_define_method(cDO_MysqlReader, "values", data_objects_cReader_values, 0);
+  rb_define_method(cDO_MysqlReader, "fields", data_objects_cReader_fields, 0);
+  rb_define_method(cDO_MysqlReader, "field_count", data_objects_cReader_field_count, 0);
 
-  rb_global_variable(&cMysqlResult);
-  rb_global_variable(&cMysqlReader);
+  rb_global_variable(&cDO_MysqlResult);
+  rb_global_variable(&cDO_MysqlReader);
 
-  data_objects_define_errors(mMysql, do_mysql_errors);
+  data_objects_define_errors(mDO_Mysql, do_mysql_errors);
 }

@@ -2,7 +2,7 @@
 #include "do_common.h"
 #include "do_sqlite3.h"
 
-VALUE cSqlite3Extension;
+VALUE cDO_Sqlite3Extension;
 
 /*****************************************************/
 /* File used for providing extensions on the default */
@@ -32,7 +32,7 @@ VALUE do_sqlite3_cExtension_enable_load_extension(VALUE self, VALUE on) {
   int status = sqlite3_enable_load_extension(db, on == Qtrue ? 1 : 0);
 
   if (status != SQLITE_OK) {
-    rb_raise(eConnectionError, "Couldn't enable extension loading");
+    rb_raise(eDO_ConnectionError, "Couldn't enable extension loading");
   }
 
   return Qtrue;
@@ -66,7 +66,7 @@ VALUE do_sqlite3_cExtension_load_extension(VALUE self, VALUE path) {
   int status = sqlite3_load_extension(db, extension_path, 0, &errmsg);
 
   if (status != SQLITE_OK) {
-    VALUE errexp = rb_exc_new2(eConnectionError, errmsg);
+    VALUE errexp = rb_exc_new2(eDO_ConnectionError, errmsg);
 
     sqlite3_free(errmsg);
     rb_exc_raise(errexp);
@@ -80,7 +80,8 @@ VALUE do_sqlite3_cExtension_load_extension(VALUE self, VALUE path) {
 }
 
 void Init_do_sqlite3_extension() {
-  cSqlite3Extension = rb_define_class_under(mSqlite3, "Extension", cDO_Extension);
-  rb_define_method(cSqlite3Extension, "load_extension", do_sqlite3_cExtension_load_extension, 1);
-  rb_define_method(cSqlite3Extension, "enable_load_extension", do_sqlite3_cExtension_enable_load_extension, 1);
+  cDO_Sqlite3Extension = rb_define_class_under(mDO_Sqlite3, "Extension", cDO_Extension);
+  rb_global_variable(&cDO_Sqlite3Extension);
+  rb_define_method(cDO_Sqlite3Extension, "load_extension", do_sqlite3_cExtension_load_extension, 1);
+  rb_define_method(cDO_Sqlite3Extension, "enable_load_extension", do_sqlite3_cExtension_enable_load_extension, 1);
 }

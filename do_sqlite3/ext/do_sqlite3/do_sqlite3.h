@@ -13,7 +13,7 @@
 #define sqlite3_prepare_v2 sqlite3_prepare
 #endif
 
-extern VALUE mSqlite3;
+extern VALUE mDO_Sqlite3;
 extern void Init_do_sqlite3_extension();
 
 #endif

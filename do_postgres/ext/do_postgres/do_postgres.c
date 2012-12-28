@@ -42,12 +42,12 @@
 
 #include "do_common.h"
 
-VALUE mPostgres;
-VALUE mEncoding;
-VALUE cPostgresConnection;
-VALUE cPostgresCommand;
-VALUE cPostgresResult;
-VALUE cPostgresReader;
+VALUE mDO_Postgres;
+VALUE mDO_PostgresEncoding;
+VALUE cDO_PostgresConnection;
+VALUE cDO_PostgresCommand;
+VALUE cDO_PostgresResult;
+VALUE cDO_PostgresReader;
 
 void do_postgres_full_connect(VALUE self, PGconn *db);
 
@@ -88,7 +88,7 @@ VALUE do_postgres_typecast(const char *value, long length, const VALUE type, int
   else if (type == rb_cByteArray) {
     size_t new_length = 0;
     char *unescaped = (char *)PQunescapeBytea((unsigned char*)value, &new_length);
-    VALUE byte_array = rb_funcall(rb_cByteArray, ID_NEW, 1, rb_str_new(unescaped, new_length));
+    VALUE byte_array = rb_funcall(rb_cByteArray, DO_ID_NEW, 1, rb_str_new(unescaped, new_length));
 
     PQfreemem(unescaped);
     return byte_array;
@@ -155,7 +155,7 @@ VALUE do_postgres_cConnection_quote_string(VALUE self, VALUE string) {
   quoted_length = PQescapeStringConn(db, escaped + 1, source, source_len, &error);
 
   if(error) {
-    rb_raise(eDataError, "%s", PQerrorMessage(db));
+    rb_raise(eDO_DataError, "%s", PQerrorMessage(db));
   }
 
   // Wrap the escaped string in single-quotes, this is DO's convention
@@ -228,7 +228,7 @@ PGresult * do_postgres_cCommand_execute_sync(VALUE self, VALUE connection, PGcon
     }
 
     if(!response) {
-      rb_raise(eConnectionError, PQerrorMessage(db));
+      rb_raise(eDO_ConnectionError, PQerrorMessage(db));
     }
   }
 
@@ -264,7 +264,7 @@ PGresult * do_postgres_cCommand_execute_async(VALUE self, VALUE connection, PGco
     }
 
     if (!retval) {
-      rb_raise(eConnectionError, "%s", PQerrorMessage(db));
+      rb_raise(eDO_ConnectionError, "%s", PQerrorMessage(db));
     }
   }
 
@@ -285,7 +285,7 @@ PGresult * do_postgres_cCommand_execute_async(VALUE self, VALUE connection, PGco
     }
 
     if (PQconsumeInput(db) == 0) {
-      rb_raise(eConnectionError, "%s", PQerrorMessage(db));
+      rb_raise(eDO_ConnectionError, "%s", PQerrorMessage(db));
     }
 
     if (PQisBusy(db) == 0) {
@@ -412,7 +412,7 @@ void do_postgres_full_connect(VALUE self, PGconn *db) {
   );
 
   if (PQstatus(db) == CONNECTION_BAD) {
-    rb_raise(eConnectionError, "%s", PQerrorMessage(db));
+    rb_raise(eDO_ConnectionError, "%s", PQerrorMessage(db));
   }
 
   PGresult *result;
@@ -465,11 +465,11 @@ void do_postgres_full_connect(VALUE self, PGconn *db) {
 
   VALUE encoding = rb_iv_get(self, "@encoding");
 #ifdef HAVE_PQSETCLIENTENCODING
-  VALUE pg_encoding = rb_hash_aref(data_objects_const_get(mEncoding, "MAP"), encoding);
+  VALUE pg_encoding = rb_hash_aref(data_objects_const_get(mDO_PostgresEncoding, "MAP"), encoding);
 
   if (pg_encoding != Qnil) {
     if (PQsetClientEncoding(db, rb_str_ptr_readonly(pg_encoding))) {
-      rb_raise(eConnectionError, "Couldn't set encoding: %s", rb_str_ptr_readonly(encoding));
+      rb_raise(eDO_ConnectionError, "Couldn't set encoding: %s", rb_str_ptr_readonly(encoding));
     }
     else {
 #ifdef HAVE_RUBY_ENCODING_H
@@ -497,7 +497,7 @@ VALUE do_postgres_cCommand_execute_non_query(int argc, VALUE *argv, VALUE self) 
   VALUE postgres_connection = rb_iv_get(connection, "@connection");
 
   if (postgres_connection == Qnil) {
-    rb_raise(eConnectionError, "This connection has already been closed.");
+    rb_raise(eDO_ConnectionError, "This connection has already been closed.");
   }
 
   VALUE query = data_objects_build_query_from_args(self, argc, argv);
@@ -530,7 +530,7 @@ VALUE do_postgres_cCommand_execute_non_query(int argc, VALUE *argv, VALUE self) 
   }
 
   PQclear(response);
-  return rb_funcall(cPostgresResult, ID_NEW, 3, self, affected_rows, insert_id);
+  return rb_funcall(cDO_PostgresResult, DO_ID_NEW, 3, self, affected_rows, insert_id);
 }
 
 VALUE do_postgres_cCommand_execute_reader(int argc, VALUE *argv, VALUE self) {
@@ -538,7 +538,7 @@ VALUE do_postgres_cCommand_execute_reader(int argc, VALUE *argv, VALUE self) {
   VALUE postgres_connection = rb_iv_get(connection, "@connection");
 
   if (postgres_connection == Qnil) {
-    rb_raise(eConnectionError, "This connection has already been closed.");
+    rb_raise(eDO_ConnectionError, "This connection has already been closed.");
   }
 
   VALUE query = data_objects_build_query_from_args(self, argc, argv);
@@ -550,7 +550,7 @@ VALUE do_postgres_cCommand_execute_reader(int argc, VALUE *argv, VALUE self) {
   }
 
   int field_count = PQnfields(response);
-  VALUE reader = rb_funcall(cPostgresReader, ID_NEW, 0);
+  VALUE reader = rb_funcall(cDO_PostgresReader, DO_ID_NEW, 0);
 
   rb_iv_set(reader, "@connection", connection);
   rb_iv_set(reader, "@reader", Data_Wrap_Struct(rb_cObject, 0, 0, response));
@@ -614,7 +614,7 @@ VALUE do_postgres_cReader_next(VALUE self) {
   VALUE reader = rb_iv_get(self, "@reader");
 
   if(reader == Qnil) {
-    rb_raise(eConnectionError, "This result set has already been closed.");
+    rb_raise(eDO_ConnectionError, "This result set has already been closed.");
     return Qfalse;
   }
 
@@ -668,32 +668,32 @@ VALUE do_postgres_cReader_next(VALUE self) {
 void Init_do_postgres() {
   data_objects_common_init();
 
-  mPostgres = rb_define_module_under(mDO, "Postgres");
-  mEncoding = rb_define_module_under(mPostgres, "Encoding");
+  mDO_Postgres = rb_define_module_under(mDO, "Postgres");
+  mDO_PostgresEncoding = rb_define_module_under(mDO_Postgres, "Encoding");
 
-  cPostgresConnection = rb_define_class_under(mPostgres, "Connection", cDO_Connection);
-  rb_define_method(cPostgresConnection, "initialize", do_postgres_cConnection_initialize, 1);
-  rb_define_method(cPostgresConnection, "dispose", do_postgres_cConnection_dispose, 0);
-  rb_define_method(cPostgresConnection, "character_set", data_objects_cConnection_character_set , 0);
-  rb_define_method(cPostgresConnection, "quote_string", do_postgres_cConnection_quote_string, 1);
-  rb_define_method(cPostgresConnection, "quote_byte_array", do_postgres_cConnection_quote_byte_array, 1);
+  cDO_PostgresConnection = rb_define_class_under(mDO_Postgres, "Connection", cDO_Connection);
+  rb_define_method(cDO_PostgresConnection, "initialize", do_postgres_cConnection_initialize, 1);
+  rb_define_method(cDO_PostgresConnection, "dispose", do_postgres_cConnection_dispose, 0);
+  rb_define_method(cDO_PostgresConnection, "character_set", data_objects_cConnection_character_set , 0);
+  rb_define_method(cDO_PostgresConnection, "quote_string", do_postgres_cConnection_quote_string, 1);
+  rb_define_method(cDO_PostgresConnection, "quote_byte_array", do_postgres_cConnection_quote_byte_array, 1);
 
-  cPostgresCommand = rb_define_class_under(mPostgres, "Command", cDO_Command);
-  rb_define_method(cPostgresCommand, "set_types", data_objects_cCommand_set_types, -1);
-  rb_define_method(cPostgresCommand, "execute_non_query", do_postgres_cCommand_execute_non_query, -1);
-  rb_define_method(cPostgresCommand, "execute_reader", do_postgres_cCommand_execute_reader, -1);
+  cDO_PostgresCommand = rb_define_class_under(mDO_Postgres, "Command", cDO_Command);
+  rb_define_method(cDO_PostgresCommand, "set_types", data_objects_cCommand_set_types, -1);
+  rb_define_method(cDO_PostgresCommand, "execute_non_query", do_postgres_cCommand_execute_non_query, -1);
+  rb_define_method(cDO_PostgresCommand, "execute_reader", do_postgres_cCommand_execute_reader, -1);
 
-  cPostgresResult = rb_define_class_under(mPostgres, "Result", cDO_Result);
+  cDO_PostgresResult = rb_define_class_under(mDO_Postgres, "Result", cDO_Result);
 
-  cPostgresReader = rb_define_class_under(mPostgres, "Reader", cDO_Reader);
-  rb_define_method(cPostgresReader, "close", do_postgres_cReader_close, 0);
-  rb_define_method(cPostgresReader, "next!", do_postgres_cReader_next, 0);
-  rb_define_method(cPostgresReader, "values", data_objects_cReader_values, 0);
-  rb_define_method(cPostgresReader, "fields", data_objects_cReader_fields, 0);
-  rb_define_method(cPostgresReader, "field_count", data_objects_cReader_field_count, 0);
+  cDO_PostgresReader = rb_define_class_under(mDO_Postgres, "Reader", cDO_Reader);
+  rb_define_method(cDO_PostgresReader, "close", do_postgres_cReader_close, 0);
+  rb_define_method(cDO_PostgresReader, "next!", do_postgres_cReader_next, 0);
+  rb_define_method(cDO_PostgresReader, "values", data_objects_cReader_values, 0);
+  rb_define_method(cDO_PostgresReader, "fields", data_objects_cReader_fields, 0);
+  rb_define_method(cDO_PostgresReader, "field_count", data_objects_cReader_field_count, 0);
 
-  rb_global_variable(&cPostgresResult);
-  rb_global_variable(&cPostgresReader);
+  rb_global_variable(&cDO_PostgresResult);
+  rb_global_variable(&cDO_PostgresReader);
 
-  data_objects_define_errors(mPostgres, do_postgres_errors);
+  data_objects_define_errors(mDO_Postgres, do_postgres_errors);
 }
