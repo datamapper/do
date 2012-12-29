@@ -1,3 +1,7 @@
+## 0.10.11 2012-12-29
+
+* Rename C symbols to prevent name collitions
+
 ## 0.10.10 2012-10-11
 
 No changes
