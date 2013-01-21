@@ -7,6 +7,7 @@ import java.sql.Statement;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Types;
 
 import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
@@ -98,7 +99,6 @@ public class Sqlite3DriverDefinition extends AbstractDriverDefinition {
     public IRubyObject getTypecastResultSetValue(Ruby runtime,
             ResultSet rs, int col, RubyType type) throws SQLException,
             IOException {
-        // System.out.println(rs.getMetaData().getColumnTypeName(col) + " = " + type.toString());
         switch (type) {
         case DATE:
             String date = rs.getString(col);
@@ -122,6 +122,14 @@ public class Sqlite3DriverDefinition extends AbstractDriverDefinition {
         case INTEGER:
         case BIGNUM:
             try {
+                // jdbc-sqlite3 returns 0 for getLong if the column is of
+                // a float or double type. This means we have to handle this
+                // case separately here.
+                if(rs.getMetaData().getColumnType(col) == Types.FLOAT ||
+                   rs.getMetaData().getColumnType(col) == Types.DOUBLE) {
+                    double dbl = rs.getDouble(col);
+                    return RubyBignum.bignorm(runtime, (new BigDecimal(dbl)).toBigInteger());
+                }
                 // in most cases integers will fit into long type
                 // and therefore should be faster to use getLong
                 long lng = rs.getLong(col);
