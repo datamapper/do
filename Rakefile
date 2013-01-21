@@ -61,6 +61,7 @@ task :spec do
 
 end
 
+desc 'Bump version numbers, needs OLD and NEW environment variables'
 task :bump do
 
   old_version = ENV["OLD"]
