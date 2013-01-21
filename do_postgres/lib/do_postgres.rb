@@ -13,6 +13,7 @@ if RUBY_PLATFORM =~ /java/
     java.lang.Thread.currentThread.getContextClassLoader().loadClass(DataObjects::Postgres::JDBC_DRIVER, true)
   rescue java.lang.ClassNotFoundException
     require 'jdbc/postgres' # the JDBC driver, packaged as a gem
+    Jdbc::Postgres.load_driver if Jdbc::Postgres.respond_to?(:load_driver)
   end
 
   # Another way of loading the JDBC Class. This seems to be more reliable

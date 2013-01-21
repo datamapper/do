@@ -13,6 +13,7 @@ if RUBY_PLATFORM =~ /java/
     java.lang.Thread.currentThread.getContextClassLoader().loadClass(DataObjects::Mysql::JDBC_DRIVER, true)
   rescue java.lang.ClassNotFoundException
     require 'jdbc/mysql' # the JDBC driver, packaged as a gem
+    Jdbc::MySQL.load_driver if Jdbc::MySQL.respond_to?(:load_driver)
   end
 
   # Another way of loading the JDBC Class. This seems to be more reliable
