@@ -16,7 +16,7 @@ describe DataObjects::Postgres::Connection do
 
   it_should_behave_like 'a Connection'
   it_should_behave_like 'a Connection with authentication support'
-  it_should_behave_like 'a Connection allowing default database'
+  it_should_behave_like 'a Connection allowing default database' unless JRUBY
   it_should_behave_like 'a Connection with JDBC URL support' if JRUBY
 
   describe 'byte array quoting' do
