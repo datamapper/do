@@ -8,6 +8,3 @@ rvm:
   - ree
   - jruby-18mode
   - jruby-19mode
-matrix:
-  allow_failures:
-    - rvm: 2.0.0
