@@ -1,3 +1,7 @@
+## 0.10.12 2013-01-21
+
+* jdbc-h2 driver loading fix
+
 ## 0.10.11 2012-12-29
 
 No changes

@@ -1,3 +1,8 @@
+## 0.10.12 2013-01-21
+
+* jdbc-sqlite3 driver loading fix
+* Improve handling of floats / doubles in sqlite3 on JRuby
+
 ## 0.10.11 2012-12-29
 
 * Rename C symbols to prevent name collitions

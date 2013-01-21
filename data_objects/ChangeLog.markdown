@@ -1,3 +1,8 @@
+## 0.10.12 2013-01-21
+
+* Fix JRuby driver loading for newer jdbc-\* gems
+* Compatibility change for anscient MySQL versions
+
 ## 0.10.11 2012-12-29
 
 * Rename C symbols to prevent name collitions
