@@ -14,9 +14,11 @@ This driver implements the DataObjects API for the SQLite3 relational database.
 
 An example of usage:
 
-    @connection = DataObjects::Connection.new("sqlite3://employees")
-    @reader = @connection.create_command('SELECT * FROM users').execute_reader
-    @reader.next!
+```ruby
+@connection = DataObjects::Connection.new("sqlite3://employees")
+@reader = @connection.create_command('SELECT * FROM users').execute_reader
+@reader.next!
+```
 
 ## Requirements
 

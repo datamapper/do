@@ -14,9 +14,11 @@ This driver implements the DataObjects API for the Oracle relational database.
 
 An example of usage:
 
-    @connection = DataObjects::Connection.new("oracle://employees")
-    @reader = @connection.create_command('SELECT * FROM users').execute_reader
-    @reader.next!
+```ruby
+@connection = DataObjects::Connection.new("oracle://employees")
+@reader = @connection.create_command('SELECT * FROM users').execute_reader
+@reader.next!
+```
 
 ## Requirements
 

@@ -14,14 +14,16 @@ This driver implements the DataObjects API for the MySQL relational database.
 
 An example of usage:
 
-    # default user (root, no password); default port (3306)
-    DataObjects::Connection.new("mysql://host/database")
-    # specified user, specified port
-    DataObjects::Connection.new("mysql://user:pass@host:8888/database")
+```ruby
+# default user (root, no password); default port (3306)
+DataObjects::Connection.new("mysql://host/database")
+# specified user, specified port
+DataObjects::Connection.new("mysql://user:pass@host:8888/database")
 
-    @connection = DataObjects::Connection.new("mysql://localhost/employees")
-    @reader = @connection.create_command('SELECT * FROM users').execute_reader
-    @reader.next!
+@connection = DataObjects::Connection.new("mysql://localhost/employees")
+@reader = @connection.create_command('SELECT * FROM users').execute_reader
+@reader.next!
+```
 
 ## Requirements
 

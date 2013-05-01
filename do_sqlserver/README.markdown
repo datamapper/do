@@ -20,14 +20,16 @@ Problems with MRI implementation (unreleased):
 
 Examples of usage:
 
-    # default port (using SQL Server Express Edition)
-    DataObjects::Connection.new('sqlserver://user:pass@host/database;instance=SQLEXPRESS')
-    # port specified (using SQL Server Express Edition)
-    DataObjects::Connection.new('sqlserver://user:pass@host:1433/database;instance=SQLEXPRESS')
+```ruby
+# default port (using SQL Server Express Edition)
+DataObjects::Connection.new('sqlserver://user:pass@host/database;instance=SQLEXPRESS')
+# port specified (using SQL Server Express Edition)
+DataObjects::Connection.new('sqlserver://user:pass@host:1433/database;instance=SQLEXPRESS')
 
-    @connection = DataObjects::Connection.new("sqlserver://john:p3$$@localhost:1433/userinfo")
-    @reader = @connection.create_command('SELECT * FROM users').execute_reader
-    @reader.next!
+@connection = DataObjects::Connection.new("sqlserver://john:p3$$@localhost:1433/userinfo")
+@reader = @connection.create_command('SELECT * FROM users').execute_reader
+@reader.next!
+```
 
 * See also the accompanying `CONNECTING.markdown`.
 

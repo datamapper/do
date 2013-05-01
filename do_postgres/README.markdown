@@ -14,14 +14,16 @@ This driver implements the DataObjects API for the PostgreSQL relational databas
 
 An example of usage:
 
-    # default user (postgres, postgres), default port (5432)
-    DataObjects::Connection.new("postgres://host/database")
-    # specified user, specified port
-    DataObjects::Connection.new("postgres://user:pass@host:8888/database")
+```ruby
+# default user (postgres, postgres), default port (5432)
+DataObjects::Connection.new("postgres://host/database")
+# specified user, specified port
+DataObjects::Connection.new("postgres://user:pass@host:8888/database")
 
-    @connection = DataObjects::Connection.new("postgres://localhost/employees")
-    @reader = @connection.create_command('SELECT * FROM users').execute_reader
-    @reader.next!
+@connection = DataObjects::Connection.new("postgres://localhost/employees")
+@reader = @connection.create_command('SELECT * FROM users').execute_reader
+@reader.next!
+```
 
 ## Requirements
 
@@ -38,7 +40,9 @@ Additionally you should have the following prerequisites:
 
 To install the gem:
 
-    gem install do_postgres
+```ruby
+gem install do_postgres
+```
 
 To compile and install from source:
 
@@ -59,15 +63,15 @@ To compile and install from source:
     * Run `rake-compiler cross-ruby`.
     * Run `rake-compiler update-config`.
 
- * For JRuby extensions:
-   * Install the Java Development Kit (provided if you are
-     on a recent version of Mac OS X) from <http://java.sun.com>.
-   * Install a recent version of JRuby. Ensure `jruby` is in your `PATH` and/or
-     you have configured the `JRUBY_HOME` environment variable to point to your
-     JRuby installation.
-   * Install `data_objects` and `do_jdbc` with `jruby -S rake install`.
+* For JRuby extensions:
+  * Install the Java Development Kit (provided if you are
+    on a recent version of Mac OS X) from <http://java.sun.com>.
+  * Install a recent version of JRuby. Ensure `jruby` is in your `PATH` and/or
+    you have configured the `JRUBY_HOME` environment variable to point to your
+    JRuby installation.
+  * Install `data_objects` and `do_jdbc` with `jruby -S rake install`.
 
- * Then, install this driver with `(jruby -S) rake install`.
+* Then, install this driver with `(jruby -S) rake install`.
 
 For more information, see the PostgreSQL driver wiki page:
 <http://wiki.github.com/datamapper/do/postgresql>.
