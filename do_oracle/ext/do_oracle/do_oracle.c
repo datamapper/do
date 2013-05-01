@@ -128,7 +128,7 @@ static void data_objects_debug(VALUE connection, VALUE string, struct timeval* s
 }
 
 
-static char * get_uri_option(VALUE query_hash, char * key) {
+static char * get_uri_option(VALUE query_hash, const char* key) {
   VALUE query_value;
   char * value = NULL;
 
@@ -412,7 +412,7 @@ static VALUE cDO_OracleCommand_execute_try(cDO_OracleCommand_execute_try_t *arg)
   int insert_id_present;
 
   // no arguments given
-  if NIL_P(arg->args) {
+  if(NIL_P(arg->args)) {
     result = rb_funcall(arg->cursor, DO_ID_EXEC, 0);
   // arguments given - need to typecast
   } else {
@@ -463,7 +463,7 @@ static VALUE cDO_OracleConnection_initialize(VALUE self, VALUE uri) {
 
   char *host = "localhost", *port = "1521", *path = NULL;
   char *connect_string;
-  int connect_string_length;
+  long connect_string_length;
   VALUE oci8_conn;
 
   r_user = rb_funcall(uri, rb_intern("user"), 0);
@@ -555,7 +555,7 @@ static VALUE cDO_OracleCommand_execute_reader(int argc, VALUE *argv[], VALUE sel
   VALUE column_metadata, column, column_name;
 
   int i;
-  int field_count;
+  long field_count;
   int infer_types = 0;
 
   VALUE cursor = rb_funcall2(self, DO_ID_EXECUTE, argc, (VALUE *)argv);
@@ -587,7 +587,7 @@ static VALUE cDO_OracleCommand_execute_reader(int argc, VALUE *argv[], VALUE sel
     // Whoops...  wrong number of types passed to set_types.  Close the reader and raise
     // and error
     rb_funcall(reader, DO_ID_CLOSE, 0);
-    rb_raise(eArgumentError, "Field-count mismatch. Expected %ld fields, but the query yielded %d", RARRAY_LEN(field_types), field_count);
+    rb_raise(eArgumentError, "Field-count mismatch. Expected %ld fields, but the query yielded %ld", RARRAY_LEN(field_types), field_count);
   }
 
   for ( i = 0; i < field_count; i++ ) {
