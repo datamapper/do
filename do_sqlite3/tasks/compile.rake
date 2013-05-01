@@ -30,7 +30,7 @@ begin
     At the time of building this gem, the necessary DLL files where available
     in the following download:
 
-    http://www.sqlite.org/sqlitedll-#{BINARY_VERSION}.zip
+    http://www.sqlite.org/sqlite-dll-win32-x86-#{BINARY_VERSION}.zip
 
     You can put the sqlite3.dll available in this package in your Ruby bin
     directory, for example C:\\Ruby\\bin
