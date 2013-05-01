@@ -15,9 +15,11 @@ This driver is currently provided only for JRuby.
 
 An example of usage:
 
-    @connection = DataObjects::Connection.new("hsqldb://employees")
-    @reader = @connection.create_command('SELECT * FROM users').execute_reader
-    @reader.next!
+```ruby
+@connection = DataObjects::Connection.new("hsqldb://employees")
+@reader = @connection.create_command('SELECT * FROM users').execute_reader
+@reader.next!
+```
 
 The `Connection` constructor should be passed either a DataObjects-style URL or
 JDBC-style URL:

@@ -7,7 +7,9 @@ gem for you, by virtue of the RubyGems requirement system.
 
 If you want to load this driver directly:
 
-   require 'do_jdbc/sqlserver'
+```ruby
+require 'do_jdbc/sqlserver'
+```
 
 to make the driver accessible to JDBC and DataObjects code running in JRuby.
 

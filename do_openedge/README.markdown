@@ -26,9 +26,11 @@ This driver is currently provided only for JRuby.
 
 An example of usage:
 
-    @connection = DataObjects::Connection.new("openedge://localhost:4000/sports2000")
-    @reader = @connection.create_command('SELECT * FROM State').execute_reader
-    @reader.next!
+```ruby
+@connection = DataObjects::Connection.new("openedge://localhost:4000/sports2000")
+@reader = @connection.create_command('SELECT * FROM State').execute_reader
+@reader.next!
+```
 
 The `Connection` constructor should be passed either a DataObjects-style URI or
 JDBC-style URI:
