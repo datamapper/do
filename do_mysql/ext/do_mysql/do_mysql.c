@@ -504,10 +504,6 @@ VALUE do_mysql_cCommand_execute_reader(int argc, VALUE *argv, VALUE self) {
   MYSQL *db = DATA_PTR(mysql_connection);
   MYSQL_RES *response = do_mysql_cCommand_execute(self, connection, db, query);
 
-  if (!response) {
-    rb_raise(eDO_ConnectionError, "No result set received for a query that should yield one.");
-  }
-
   unsigned int field_count = mysql_field_count(db);
   VALUE reader = rb_funcall(cDO_MysqlReader, DO_ID_NEW, 0);
 
@@ -587,6 +583,9 @@ VALUE do_mysql_cReader_next(VALUE self) {
   }
 
   MYSQL_RES *reader = DATA_PTR(reader_container);
+  if(!reader) {
+    return Qfalse;
+  }
   MYSQL_ROW result = mysql_fetch_row(reader);
 
   // The Meat

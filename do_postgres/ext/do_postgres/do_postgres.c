@@ -545,7 +545,8 @@ VALUE do_postgres_cCommand_execute_reader(int argc, VALUE *argv, VALUE self) {
   PGconn *db = DATA_PTR(postgres_connection);
   PGresult *response = do_postgres_cCommand_execute(self, connection, db, query);
 
-  if (PQresultStatus(response) != PGRES_TUPLES_OK) {
+  int status = PQresultStatus(response);
+  if(status != PGRES_TUPLES_OK && status != PGRES_COMMAND_OK) {
     do_postgres_raise_error(self, response, query);
   }
 
@@ -565,8 +566,7 @@ VALUE do_postgres_cCommand_execute_reader(int argc, VALUE *argv, VALUE self) {
   if (field_types == Qnil || 0 == RARRAY_LEN(field_types)) {
     field_types = rb_ary_new();
     infer_types = 1;
-  }
-  else if (RARRAY_LEN(field_types) != field_count) {
+  } else if (RARRAY_LEN(field_types) != field_count) {
     // Whoops...  wrong number of types passed to set_types.  Close the reader and raise
     // and error
     rb_funcall(reader, rb_intern("close"), 0);
