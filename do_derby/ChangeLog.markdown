@@ -1,3 +1,7 @@
+## 0.10.13 2013-05-27
+
+No changes
+
 ## 0.10.12 2013-01-21
 
 * jdbc-derby driver loading fix

@@ -1,3 +1,9 @@
+## 0.10.13 2013-05-27
+
+* Create binaries for Ruby 2.0 on Windows
+* Fix segfault in do\_postgres
+* Fix compilation of do\_oracle for Ruby 2.0
+
 ## 0.10.12 2013-01-21
 
 * Fix JRuby driver loading for newer jdbc-\* gems
