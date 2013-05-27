@@ -4,7 +4,7 @@
   <groupId>org.dataobjects</groupId>
   <artifactId>dataobjects</artifactId>
   <packaging>pom</packaging>
-  <version>0.10.12</version>
+  <version>0.10.13</version>
   <name>dataobjects</name>
   <description>
     This POM for DataObjects is just for bootstrapping IDEs. You can't use it

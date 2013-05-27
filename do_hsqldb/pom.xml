@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.dataobjects</groupId>
     <artifactId>dataobjects</artifactId>
-    <version>0.10.12</version>
+    <version>0.10.13</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
   <artifactId>do_hsqldb</artifactId>
