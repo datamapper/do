@@ -17,6 +17,8 @@ begin
       ext.cross_compile = true
       ext.cross_platform = ['x86-mingw32', 'x86-mswin32-60']
       ext.cross_config_options << "--with-sqlite3-dir=#{sqlite3_lib}"
+      ext.cross_config_options << "--with-sqlite3-include=#{sqlite3_lib}/include"
+      ext.cross_config_options << "--with-sqlite3-lib=#{sqlite3_lib}/lib"
 
       ext.cross_compiling do |gemspec|
         gemspec.post_install_message = <<-POST_INSTALL_MESSAGE

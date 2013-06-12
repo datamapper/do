@@ -33,7 +33,7 @@ begin
 
   # download amalgamation BINARY_VERSION (for include files)
   file "vendor/sqlite-amalgamation-#{BINARY_VERSION}.zip" => ['vendor'] do |t|
-    url = "http://www.sqlite.org/#{File.basename(t.name)}"
+    url = "http://www.sqlite.org/#{Date.today.year}/#{File.basename(t.name)}"
     when_writing "downloading #{t.name}" do
       cd File.dirname(t.name) do
         system "wget -c #{url} || curl -L -C - -O #{url}"
@@ -43,7 +43,7 @@ begin
 
   # download dll binaries
   file "vendor/sqlite-dll-win32-x86-#{BINARY_VERSION}.zip" => ['vendor'] do |t|
-    url = "http://www.sqlite.org/#{File.basename(t.name)}"
+    url = "http://www.sqlite.org/#{Date.today.year}/#{File.basename(t.name)}"
     when_writing "downloading #{t.name}" do
       cd File.dirname(t.name) do
         system "wget -c #{url} || curl -L -C - -O #{url}"
