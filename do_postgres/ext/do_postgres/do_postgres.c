@@ -440,6 +440,7 @@ void do_postgres_full_connect(VALUE self, PGconn *db) {
   const char *backslash_off = "SET backslash_quote = off";
   const char *standard_strings_on = "SET standard_conforming_strings = on";
   const char *warning_messages = "SET client_min_messages = warning";
+  const char *date_format = "SET datestyle = ISO";
   VALUE r_options;
 
   r_options = rb_str_new2(backslash_off);
@@ -457,6 +458,13 @@ void do_postgres_full_connect(VALUE self, PGconn *db) {
   }
 
   r_options = rb_str_new2(warning_messages);
+  result = do_postgres_cCommand_execute(Qnil, self, db, r_options);
+
+  if (PQresultStatus(result) != PGRES_COMMAND_OK) {
+    rb_warn("%s", PQresultErrorMessage(result));
+  }
+
+  r_options = rb_str_new2(date_format);
   result = do_postgres_cCommand_execute(Qnil, self, db, r_options);
 
   if (PQresultStatus(result) != PGRES_COMMAND_OK) {
