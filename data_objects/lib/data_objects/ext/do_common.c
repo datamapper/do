@@ -193,7 +193,7 @@ VALUE data_objects_parse_date(const char *date) {
 }
 
 VALUE data_objects_parse_time(const char *date) {
-  static char const* const _fmt_datetime = "%4d-%2d-%2d %2d:%2d:%2d%7lf";
+  static char const* const _fmt_datetime = "%4d-%2d-%2d%*c%2d:%2d:%2d%7lf";
   int year = 0, month = 0, day = 0, hour = 0, min = 0, sec = 0, usec = 0;
   double subsec = 0;
 
