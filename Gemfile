@@ -1,4 +1,4 @@
-source :rubygems
+source "https://rubygems.org"
 
 gem 'addressable', '~> 2.1'
 gem 'rake'
