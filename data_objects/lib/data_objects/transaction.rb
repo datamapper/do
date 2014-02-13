@@ -6,8 +6,8 @@ module DataObjects
 
   class Transaction
 
-    # The host name. Note, this relies on the host name being configured and resolvable using DNS
-    HOST = "#{Socket::gethostbyname(Socket::gethostname)[0]}" rescue "localhost"
+    # The local host name. Do not attempt to resolve in DNS to prevent potentially long delay
+    HOST = "#{Socket::gethostname}" rescue "localhost"
     @@counter = 0
 
     # The connection object allocated for this transaction
