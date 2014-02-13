@@ -129,10 +129,6 @@ shared_examples_for 'a Connection with authentication support' do
       connecting_with("#{@driver}://#{@user}:#{@password}:#{@host}:#{@port}/someweirddatabase").should raise_error #(ArgumentError, DataObjects::Error)
     end
 
-    it 'should raise an error with a meaningless URI' do
-      connecting_with("#{@driver}://peekaboo$2!@#4543").should raise_error(Addressable::URI::InvalidURIError)
-    end
-
   end
 
 end
