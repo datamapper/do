@@ -101,11 +101,13 @@ shared_examples_for 'a Command' do
         expect { @arg_reader.execute_reader(nil, nil) }.not_to raise_error(ArgumentError)
       end
 
-      it 'returns an empty reader if the query does not return a result' do
-        runs_command   = @connection.create_command("UPDATE widgets SET name = '' WHERE name = ''")
-        res = runs_command.execute_reader
-        res.fields.should == []
-        res.next!.should == false
+      unless defined?(JRUBY)
+        it 'returns an empty reader if the query does not return a result' do
+          runs_command   = @connection.create_command("UPDATE widgets SET name = '' WHERE name = ''")
+          res = runs_command.execute_reader
+          res.fields.should == []
+          res.next!.should == false
+        end
       end
 
     end
