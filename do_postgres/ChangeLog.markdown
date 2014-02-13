@@ -1,3 +1,8 @@
+## 0.10.14 2014-02-13
+
+* Don't do DNS lookup in transaction loading
+* Set datestyle to ISO
+
 ## 0.10.13 2013-05-27
 
 * Fix segfault on invalid API usage
