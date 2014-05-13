@@ -105,7 +105,7 @@ VALUE do_mysql_typecast(const char *value, long length, const VALUE type, int en
 
 void do_mysql_raise_error(VALUE self, MYSQL *db, VALUE query) {
   int errnum = mysql_errno(db);
-  const char *message = mysql_error(db);
+  VALUE message = rb_str_new2(mysql_error(db));
   VALUE sql_state = Qnil;
 
 #ifdef HAVE_MYSQL_SQLSTATE

@@ -123,7 +123,7 @@ static inline void data_objects_define_errors(VALUE scope, const struct errcodes
   }
 }
 
-extern void data_objects_raise_error(VALUE self, const struct errcodes *errors, int errnum, const char *message, VALUE query, VALUE state);
+extern void data_objects_raise_error(VALUE self, const struct errcodes *errors, int errnum, VALUE message, VALUE query, VALUE state);
 
 extern VALUE data_objects_typecast(const char *value, long length, const VALUE type, int encoding);
 

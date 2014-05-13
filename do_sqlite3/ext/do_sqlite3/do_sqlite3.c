@@ -17,7 +17,7 @@ VALUE DO_OPEN_FLAG_FULL_MUTEX;
 
 void do_sqlite3_raise_error(VALUE self, sqlite3 *result, VALUE query) {
   int errnum = sqlite3_errcode(result);
-  const char *message = sqlite3_errmsg(result);
+  VALUE message = rb_str_new2(sqlite3_errmsg(result));
   VALUE sql_state = rb_str_new2("");
 
   data_objects_raise_error(self, do_sqlite3_errors, errnum, message, query, sql_state);

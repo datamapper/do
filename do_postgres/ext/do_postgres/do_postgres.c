@@ -99,7 +99,7 @@ VALUE do_postgres_typecast(const char *value, long length, const VALUE type, int
 }
 
 void do_postgres_raise_error(VALUE self, PGresult *result, VALUE query) {
-  const char *message = PQresultErrorMessage(result);
+  VALUE message = rb_str_new2(PQresultErrorMessage(result));
   char *sql_state = PQresultErrorField(result, PG_DIAG_SQLSTATE);
   int postgres_errno = MAKE_SQLSTATE(sql_state[0], sql_state[1], sql_state[2], sql_state[3], sql_state[4]);
   VALUE str = rb_str_new2(sql_state);
