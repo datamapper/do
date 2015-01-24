@@ -82,6 +82,8 @@ have_func 'mysql_set_character_set', 'mysql.h'
 have_func 'mysql_get_server_version', 'mysql.h'
 have_struct_member 'MYSQL_FIELD', 'charsetnr', 'mysql.h'
 
+have_func('rb_thread_fd_select')
+
 unless DateTime.respond_to?(:new!)
   $CFLAGS << ' -DHAVE_NO_DATETIME_NEWBANG'
 end

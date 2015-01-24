@@ -31,7 +31,7 @@ dir_config('pgsql-server', config_value('includedir-server'), config_value('libd
 dir_config('pgsql-client', config_value('includedir'), config_value('libdir'))
 dir_config('pgsql-win32') if RUBY_PLATFORM =~ /mswin|mingw/
 
-desired_functions = %w(localtime_r gmtime_r PQsetClientEncoding pg_encoding_to_char PQfreemem)
+desired_functions = %w(localtime_r gmtime_r PQsetClientEncoding pg_encoding_to_char PQfreemem rb_thread_fd_select)
 compat_functions = %w(PQescapeString PQexecParams)
 
 if have_build_env
