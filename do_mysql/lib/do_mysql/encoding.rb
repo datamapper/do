@@ -20,6 +20,7 @@ module DataObjects
         "GBK"          => "gbk",
         "ISO-8859-9"   => "latin5",
         "UTF-8"        => "utf8",
+        "UTF-8-MB4"    => "utf8mb4",
         "UTF-16BE"     => "ucs2",
         "IBM866"       => "cp866",
         "macCentEuro"  => "macce",
