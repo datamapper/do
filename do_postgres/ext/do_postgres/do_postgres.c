@@ -32,6 +32,18 @@
 #endif
 
 
+#ifndef HAVE_RB_THREAD_FD_SELECT
+#define rb_fdset_t fd_set
+#define rb_fd_isset(n, f) FD_ISSET(n, f)
+#define rb_fd_init(f) FD_ZERO(f)
+#define rb_fd_zero(f)  FD_ZERO(f)
+#define rb_fd_set(n, f)  FD_SET(n, f)
+#define rb_fd_clr(n, f) FD_CLR(n, f)
+#define rb_fd_term(f)
+#define rb_thread_fd_select rb_thread_select
+#endif
+
+
 #include <ruby.h>
 #include <string.h>
 #include <math.h>
@@ -270,12 +282,12 @@ PGresult * do_postgres_cCommand_execute_async(VALUE self, VALUE connection, PGco
   }
 
   int socket_fd = PQsocket(db);
-  fd_set rset;
+  rb_fdset_t rset;
 
   while (1) {
-    FD_ZERO(&rset);
-    FD_SET(socket_fd, &rset);
-    retval = rb_thread_select(socket_fd + 1, &rset, NULL, NULL, NULL);
+    rb_fd_init(&rset);
+    rb_fd_set(socket_fd, &rset);
+    retval = rb_thread_fd_select(socket_fd + 1, &rset, NULL, NULL, NULL);
 
     if (retval < 0) {
       rb_sys_fail(0);

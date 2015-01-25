@@ -22,6 +22,17 @@
 #define do_mysql_cCommand_execute do_mysql_cCommand_execute_async
 #endif
 
+#ifndef HAVE_RB_THREAD_FD_SELECT
+#define rb_fdset_t fd_set
+#define rb_fd_isset(n, f) FD_ISSET(n, f)
+#define rb_fd_init(f) FD_ZERO(f)
+#define rb_fd_zero(f)  FD_ZERO(f)
+#define rb_fd_set(n, f)  FD_SET(n, f)
+#define rb_fd_clr(n, f) FD_CLR(n, f)
+#define rb_fd_term(f)
+#define rb_thread_fd_select rb_thread_select
+#endif
+
 #define CHECK_AND_RAISE(mysql_result_value, query) if (0 != mysql_result_value) { do_mysql_raise_error(self, db, query); }
 
 void do_mysql_full_connect(VALUE self, MYSQL *db);
@@ -154,13 +165,13 @@ MYSQL_RES *do_mysql_cCommand_execute_async(VALUE self, VALUE connection, MYSQL *
   CHECK_AND_RAISE(retval, query);
 
   int socket_fd = db->net.fd;
-  fd_set rset;
+  rb_fdset_t rset;
 
   while (1) {
-    FD_ZERO(&rset);
-    FD_SET(socket_fd, &rset);
+    rb_fd_init(&rset);
+    rb_fd_set(socket_fd, &rset);
 
-    retval = rb_thread_select(socket_fd + 1, &rset, NULL, NULL, NULL);
+    retval = rb_thread_fd_select(socket_fd + 1, &rset, NULL, NULL, NULL);
 
     if (retval < 0) {
       rb_sys_fail(0);
