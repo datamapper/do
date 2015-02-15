@@ -13,7 +13,7 @@ begin
     ext.classpath = '../do_jdbc/lib/do_jdbc_internal.jar'
     ext.java_compiling do |gem|
       gem.add_dependency 'jdbc-openedge'
-      gem.add_dependency 'do_jdbc',       '0.10.14'
+      gem.add_dependency 'do_jdbc',       '0.10.15'
     end
   end
 
