@@ -1,3 +1,9 @@
+## 0.10.15 2015-02-15
+
+* Ruby 2.2 support
+* Double after free fix in do\_postgres
+* Windows support on 2.1.x and 2.2.x
+
 ## 0.10.14 2014-02-13
 
 * Don't do DNS lookup in transaction loading
