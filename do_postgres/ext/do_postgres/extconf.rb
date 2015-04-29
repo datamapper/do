@@ -14,11 +14,21 @@ def pg_config(type)
   IO.popen("pg_config --#{type}").readline.chomp rescue nil
 end
 
+# The preheader argument wasn't introduced till Ruby 1.9.3.
+def have_header_with_preheader(header, preheader)
+  if method(:have_header).arity == -2
+    have_header(header, preheader)
+  else
+    have_header(header)
+  end
+end
+
 def have_build_env
   (have_library('pq') || have_library('libpq')) &&
   have_header('libpq-fe.h') && have_header('libpq/libpq-fs.h') &&
-  have_header('postgres.h') && have_header('mb/pg_wchar.h') &&
-  have_header('catalog/pg_type.h')
+  have_header('postgres.h') &&
+  have_header_with_preheader('mb/pg_wchar.h', 'postgres.h') &&
+  have_header_with_preheader('catalog/pg_type.h', 'postgres.h')
 end
 
 $CFLAGS << ' -UENABLE_NLS -DHAVE_GETTIMEOFDAY -DHAVE_CRYPT' if RUBY_PLATFORM =~ /mswin|mingw/
