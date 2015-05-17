@@ -1,3 +1,7 @@
+## 0.10.16 2015-05-17
+
+* Fix compile issue with do\_postgres on stock OS X Ruby
+
 ## 0.10.15 2015-02-15
 
 * Ruby 2.2 support
