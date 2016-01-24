@@ -49,6 +49,7 @@
 #include <math.h>
 #include <ctype.h>
 #include <time.h>
+#include <sys/time.h>
 #include "error.h"
 #include "compat.h"
 

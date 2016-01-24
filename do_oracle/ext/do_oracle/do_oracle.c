@@ -9,6 +9,7 @@
 #include <math.h>
 #include <ctype.h>
 #include <time.h>
+#include <sys/time.h>
 
 #define DO_ID_CONST_GET rb_intern("const_get")
 

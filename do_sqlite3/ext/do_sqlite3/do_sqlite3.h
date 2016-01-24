@@ -5,6 +5,7 @@
 #include <string.h>
 #include <math.h>
 #include <time.h>
+#include <sys/time.h>
 #include <locale.h>
 #include <sqlite3.h>
 #include "compat.h"
