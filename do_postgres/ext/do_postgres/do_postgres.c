@@ -283,13 +283,14 @@ PGresult * do_postgres_cCommand_execute_async(VALUE self, VALUE connection, PGco
 
   int socket_fd = PQsocket(db);
   rb_fdset_t rset;
+  rb_fd_init(&rset);
+  rb_fd_set(socket_fd, &rset);
 
   while (1) {
-    rb_fd_init(&rset);
-    rb_fd_set(socket_fd, &rset);
     retval = rb_thread_fd_select(socket_fd + 1, &rset, NULL, NULL, NULL);
 
     if (retval < 0) {
+      rb_fd_term(&rset);
       rb_sys_fail(0);
     }
 
@@ -298,6 +299,7 @@ PGresult * do_postgres_cCommand_execute_async(VALUE self, VALUE connection, PGco
     }
 
     if (PQconsumeInput(db) == 0) {
+      rb_fd_term(&rset);
       rb_raise(eDO_ConnectionError, "%s", PQerrorMessage(db));
     }
 
@@ -306,6 +308,7 @@ PGresult * do_postgres_cCommand_execute_async(VALUE self, VALUE connection, PGco
     }
   }
 
+  rb_fd_term(&rset);
   data_objects_debug(connection, query, &start);
   return PQgetResult(db);
 }
