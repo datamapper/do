@@ -9,7 +9,9 @@
 #include <math.h>
 #include <ctype.h>
 #include <time.h>
+#ifndef _WIN32
 #include <sys/time.h>
+#endif
 
 #define DO_ID_CONST_GET rb_intern("const_get")
 
