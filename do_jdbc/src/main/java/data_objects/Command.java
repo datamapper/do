@@ -593,8 +593,8 @@ public class Command extends DORubyObject {
 
                     RubyRange range_value = (RubyRange) arg;
 
-                    driver.setPreparedStatementParam(ps, range_value.first(), index++);
-                    driver.setPreparedStatementParam(ps, range_value.last(), index++);
+                    driver.setPreparedStatementParam(ps, range_value.first(getRuntime().getCurrentContext()), index++);
+                    driver.setPreparedStatementParam(ps, range_value.last(getRuntime().getCurrentContext()), index++);
 
                 } else {
                     // Otherwise, handle each argument

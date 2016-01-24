@@ -5,5 +5,5 @@ require 'data_objects/spec/shared/encoding_spec'
 
 describe DataObjects::Sqlite3::Connection do
   it_should_behave_like 'returning correctly encoded strings for the default database encoding'
-  it_should_behave_like 'returning correctly encoded strings for the default internal encoding'
+  it_should_behave_like 'returning correctly encoded strings for the default internal encoding' unless JRUBY
 end

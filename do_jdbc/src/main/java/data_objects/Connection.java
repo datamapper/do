@@ -73,16 +73,6 @@ public final class Connection extends DORubyObject {
         connectionClass.defineAnnotatedMethods(Connection.class);
         setDriverDefinition(connectionClass, runtime, driver);
 
-        if (driver.supportsConnectionEncodings()) {
-            connectionClass.defineFastMethod("character_set", new Callback() {
-                public Arity getArity() {
-                    return Arity.NO_ARGUMENTS;
-                }
-                public IRubyObject execute(final IRubyObject recv, final IRubyObject[] args, Block block) {
-                    return recv.getInstanceVariables().fastGetInstanceVariable("@encoding");
-                }
-            });
-        }
         return connectionClass;
     }
 
@@ -264,6 +254,19 @@ public final class Connection extends DORubyObject {
     public IRubyObject quote_byte_array(final IRubyObject value) {
         String quoted = driver.quoteByteArray(this, value);
         return getRuntime().newString(quoted);
+    }
+
+    /**
+     *
+     * @return
+     */
+    @JRubyMethod
+    public IRubyObject character_set() {
+      if (driver.supportsConnectionEncodings()) {
+        return api.getInstanceVariable(this, "@encoding");
+      } else {
+        return getRuntime().getNil();
+      }
     }
 
     /**
