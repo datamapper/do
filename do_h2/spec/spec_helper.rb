@@ -28,7 +28,7 @@ at_exit { DataObjects.logger.flush }
 
 
 CONFIG              = OpenStruct.new
-CONFIG.uri          = ENV["DO_H2_SPEC_URI"] || "jdbc:h2:mem"
+CONFIG.uri          = ENV["DO_H2_SPEC_URI"] || "jdbc:h2:mem:"
 CONFIG.driver       = 'h2'
 CONFIG.jdbc_driver  = DataObjects::H2::JDBC_DRIVER
 
