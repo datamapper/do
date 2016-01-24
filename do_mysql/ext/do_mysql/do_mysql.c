@@ -332,7 +332,11 @@ void do_mysql_full_connect(VALUE self, MYSQL *db) {
     }
     else {
 #ifdef HAVE_RUBY_ENCODING_H
-      rb_iv_set(self, "@encoding_id", INT2FIX(rb_enc_find_index(rb_str_ptr_readonly(encoding))));
+      const char* ruby_encoding = rb_str_ptr_readonly(encoding);
+      if (strcasecmp("UTF-8-MB4", ruby_encoding) == 0) {
+        ruby_encoding = "UTF-8";
+      }
+      rb_iv_set(self, "@encoding_id", INT2FIX(rb_enc_find_index(ruby_encoding)));
 #endif
 
       rb_iv_set(self, "@my_encoding", my_encoding);
