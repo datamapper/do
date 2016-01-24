@@ -80,6 +80,7 @@ have_func 'mysql_sqlstate', 'mysql.h'
 have_func 'mysql_get_ssl_cipher', 'mysql.h'
 have_func 'mysql_set_character_set', 'mysql.h'
 have_func 'mysql_get_server_version', 'mysql.h'
+have_func 'mysql_real_escape_string_quote', 'mysql.h'
 have_struct_member 'MYSQL_FIELD', 'charsetnr', 'mysql.h'
 
 have_func('rb_thread_fd_select')
