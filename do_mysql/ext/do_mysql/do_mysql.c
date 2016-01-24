@@ -1,5 +1,6 @@
 #include <ruby.h>
 #include <time.h>
+#include <sys/time.h>
 #include <string.h>
 
 #include <mysql.h>
@@ -465,7 +466,16 @@ VALUE do_mysql_cConnection_quote_string(VALUE self, VALUE string) {
   VALUE result;
 
   // Escape 'source' using the current encoding in use on the conection 'db'
+#ifdef HAVE_MYSQL_REAL_ESCAPE_STRING_QUOTE
+  quoted_length = mysql_real_escape_string_quote(db, escaped + 1, source, source_len, '\'');
+#else
   quoted_length = mysql_real_escape_string(db, escaped + 1, source, source_len);
+#endif
+
+  if (quoted_length == (unsigned long)-1) {
+    free(escaped);
+    rb_raise(rb_eArgError, "Failed to quote string. Make sure to (re)compile do_mysql against the correct libmysqlclient");
+  }
 
   // Wrap the escaped string in single-quotes, this is DO's convention
   escaped[0] = escaped[quoted_length + 1] = '\'';
