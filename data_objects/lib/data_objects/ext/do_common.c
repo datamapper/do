@@ -3,7 +3,9 @@
 #include <math.h>
 #include <ctype.h>
 #include <time.h>
+#ifndef _WIN32
 #include <sys/time.h>
+#endif
 
 #include "do_common.h"
 
