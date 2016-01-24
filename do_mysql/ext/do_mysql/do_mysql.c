@@ -174,6 +174,7 @@ MYSQL_RES *do_mysql_cCommand_execute_async(VALUE self, VALUE connection, MYSQL *
     retval = rb_thread_fd_select(socket_fd + 1, &rset, NULL, NULL, NULL);
 
     if (retval < 0) {
+      rb_fd_term(&rset);
       rb_sys_fail(0);
     }
 
@@ -185,7 +186,7 @@ MYSQL_RES *do_mysql_cCommand_execute_async(VALUE self, VALUE connection, MYSQL *
       break;
     }
   }
-  rb_fd_term(&rset);     /* free memory allocated with rb_fd_init above */
+  rb_fd_term(&rset);
 
   retval = mysql_read_query_result(db);
   CHECK_AND_RAISE(retval, query);
