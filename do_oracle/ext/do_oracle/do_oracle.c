@@ -65,6 +65,7 @@ static ID DO_ID_TO_S;
 static ID DO_ID_TO_F;
 
 static ID DO_ID_UTC_OFFSET;
+static ID DO_ID_ZONE;
 static ID DO_ID_FULL_CONST_GET;
 
 static ID DO_ID_PARSE;
@@ -167,13 +168,7 @@ static VALUE parse_date(VALUE r_value) {
 static VALUE parse_date_time(VALUE r_value) {
   VALUE time_array;
   int year, month, day, hour, min, sec;
-  // int usec;
-  long int gmt_offset;
-
-  // time_t rawtime;
-  // struct tm * timeinfo;
-
-  // int tokens_read, max_tokens;
+  VALUE zone;
 
   if (rb_obj_class(r_value) == rb_cDateTime) {
     return r_value;
@@ -185,11 +180,10 @@ static VALUE parse_date_time(VALUE r_value) {
     hour = NUM2INT(rb_ary_entry(time_array, 2));
     min = NUM2INT(rb_ary_entry(time_array, 1));
     sec = NUM2INT(rb_ary_entry(time_array, 0));
+    zone = rb_funcall(r_value, DO_ID_ZONE, 0 );
 
-    gmt_offset = NUM2INT(rb_funcall(r_value, DO_ID_UTC_OFFSET, 0 ));
-
-    return rb_funcall(rb_cDateTime, DO_ID_NEW, 7, INT2NUM(year), INT2NUM(month), INT2NUM(day),
-                                               INT2NUM(hour), INT2NUM(min), INT2NUM(sec), INT2NUM(gmt_offset));
+    return  rb_funcall(rb_cDateTime, DO_ID_NEW, 7, INT2NUM(year), INT2NUM(month), INT2NUM(day),
+                                               INT2NUM(hour), INT2NUM(min), INT2NUM(sec), zone);
   } else {
     // Something went terribly wrong
     rb_raise(eDO_DataError, "Couldn't parse datetime from class %s object", rb_obj_classname(r_value));
@@ -729,6 +723,7 @@ void Init_do_oracle() {
   DO_ID_TO_F = rb_intern("to_f");
 
   DO_ID_UTC_OFFSET = rb_intern("utc_offset");
+  DO_ID_ZONE = rb_intern("zone");
   DO_ID_FULL_CONST_GET = rb_intern("full_const_get");
 
   DO_ID_PARSE = rb_intern("parse");
