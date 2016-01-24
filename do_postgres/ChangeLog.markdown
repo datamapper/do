@@ -1,3 +1,8 @@
+## 0.10.17 2016-01-24
+
+* Fix memory leak
+* Fix bug with DateTime and wrong timezone offsets  
+
 ## 0.10.16 2015-05-17
 
 * Fix compile issue with do\_postgres on stock OS X Ruby

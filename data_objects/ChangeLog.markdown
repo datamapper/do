@@ -1,3 +1,12 @@
+## 0.10.17 2016-01-24
+
+* Enable CI with Ruby 2.3
+* Improve utf8mb4 support in do\_mysql
+* Fix memory leak in do\_mysql and do\_postgres
+* Support for MySQL 5.7 in do\_mysql
+* Fix bug with DateTime and wrong timezone offsets
+* Fix compilation on JRuby 9000
+
 ## 0.10.16 2015-05-17
 
 * Fix compile issue with do\_postgres on stock OS X Ruby

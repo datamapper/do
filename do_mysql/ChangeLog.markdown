@@ -1,3 +1,14 @@
+## 0.10.17 2016-01-24
+
+* Improve utf8mb4 support
+* Fix memory leak
+* Support for MySQL 5.7
+* Fix bug with DateTime and wrong timezone offsets 
+
+## 0.10.16 2015-05-17
+
+No changes
+
 ## 0.10.15 2015-02-15
 
 * Ruby 2.2 support
