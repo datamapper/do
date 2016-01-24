@@ -64,7 +64,7 @@ public class Reader extends DORubyObject {
         RubyClass superClass = doModule.getClass(RUBY_CLASS_NAME);
         RubyModule driverModule = (RubyModule) doModule.getConstant(driver
                 .getModuleName());
-        
+
         IRubyObject readerConstant = driverModule.getConstantAt(RUBY_CLASS_NAME);
         if (readerConstant instanceof RubyClass) {
             return (RubyClass) readerConstant;
