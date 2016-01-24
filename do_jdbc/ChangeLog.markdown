@@ -1,3 +1,7 @@
+## 0.10.17 2016-01-24
+
+* Use JRuby 9000 compatible API's
+
 ## 0.10.16 2015-05-17
 
 No changes

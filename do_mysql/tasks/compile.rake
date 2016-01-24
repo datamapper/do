@@ -56,7 +56,7 @@ begin
     ext.classpath = '../do_jdbc/lib/do_jdbc_internal.jar'
     ext.java_compiling do |gem|
       gem.add_dependency 'jdbc-mysql', '>=5.0.4'
-      gem.add_dependency 'do_jdbc',    '0.10.16'
+      gem.add_dependency 'do_jdbc',    '0.10.17'
     end
   end
 rescue LoadError
