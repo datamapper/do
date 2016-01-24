@@ -63,6 +63,10 @@ module DataObjectsSpecHelpers
     EOF
 
     conn.create_command(<<-EOF).execute_non_query
+      DROP TABLE IF EXISTS `users_mb4`
+    EOF
+
+    conn.create_command(<<-EOF).execute_non_query
       DROP TABLE IF EXISTS `stuff`
     EOF
 
@@ -77,6 +81,14 @@ module DataObjectsSpecHelpers
         `fired_at` timestamp,
         PRIMARY KEY  (`id`)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+    EOF
+
+    conn.create_command(<<-EOF).execute_non_query
+      CREATE TABLE `users_mb4` (
+        `id` int(11) NOT NULL auto_increment,
+        `name` varchar(200),
+        PRIMARY KEY  (`id`)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     EOF
 
     conn.create_command(<<-EOF).execute_non_query
